@@ -30,9 +30,9 @@ export function validate3D(data){
 export const solids=objects=>objects.filter(o=>solidTypes.has(o.type)&&!o.open);
 function overlaps(p,o){return Math.abs(p.x-o.x)<o.w/2+.35&&Math.abs(p.z-o.z)<o.d/2+.35&&p.y<topAt(o,p.x,p.z)-.001&&p.y+1.7>o.y+.001;}
 export function movePlayer(p,objects,dx,dz,dt,jump){
-  const support=p.grounded?objects.find(o=>o.id===p.supportId):null;const walls=solids(objects);p.x=clamp(p.x+dx,-29,29);for(const o of walls)if(overlaps(p,o)&&dx){const top=topAt(o,p.x,p.z);if(['roof','ramp'].includes(o.type)&&p.grounded&&top-p.y<.4)p.y=top;else p.x=dx>0?o.x-o.w/2-.35:o.x+o.w/2+.35;}
-  p.z=clamp(p.z+dz,-29,29);for(const o of walls)if(overlaps(p,o)&&dz){const top=topAt(o,p.x,p.z);if(['roof','ramp'].includes(o.type)&&p.grounded&&top-p.y<.4)p.y=top;else p.z=dz>0?o.z-o.d/2-.35:o.z+o.d/2+.35;}
-  if(support&&['roof','ramp'].includes(support.type)&&Math.abs(p.x-support.x)<=support.w/2&&Math.abs(p.z-support.z)<=support.d/2){const top=topAt(support,p.x,p.z);if(Math.abs(top-p.y)<.4)p.y=top;}
+  const support=p.grounded?objects.find(o=>o.id===p.supportId):null,onSlope=!!support&&['roof','ramp'].includes(support.type);let steppedOntoOther=false;const walls=solids(objects);p.x=clamp(p.x+dx,-29,29);for(const o of walls)if(overlaps(p,o)&&dx){const top=topAt(o,p.x,p.z);if((['roof','ramp'].includes(o.type)||onSlope||['wall','floor'].includes(support?.type))&&p.grounded&&top-p.y<.4){p.y=top;if(!['roof','ramp'].includes(o.type))steppedOntoOther=true;}else p.x=dx>0?o.x-o.w/2-.35:o.x+o.w/2+.35;}
+  p.z=clamp(p.z+dz,-29,29);for(const o of walls)if(overlaps(p,o)&&dz){const top=topAt(o,p.x,p.z);if((['roof','ramp'].includes(o.type)||onSlope||['wall','floor'].includes(support?.type))&&p.grounded&&top-p.y<.4){p.y=top;if(!['roof','ramp'].includes(o.type))steppedOntoOther=true;}else p.z=dz>0?o.z-o.d/2-.35:o.z+o.d/2+.35;}
+  if(!steppedOntoOther&&onSlope&&Math.abs(p.x-support.x)<=support.w/2&&Math.abs(p.z-support.z)<=support.d/2){const top=topAt(support,p.x,p.z);if(Math.abs(top-p.y)<.4)p.y=top;}
   if(jump&&p.grounded){p.vy=7;p.grounded=false;}const before=p.y;p.vy-=19*dt;p.y+=p.vy*dt;p.grounded=false;p.supportId=null;
   for(const o of walls){if(Math.abs(p.x-o.x)>=o.w/2+.35||Math.abs(p.z-o.z)>=o.d/2+.35)continue;
     const top=topAt(o,p.x,p.z);if(p.vy<=0&&before>=top-.02&&p.y<=top){p.y=top;p.vy=0;p.grounded=true;p.supportId=o.id;}

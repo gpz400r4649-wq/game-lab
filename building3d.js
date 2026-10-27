@@ -22,7 +22,7 @@ export function snapEditorPiece(o,point,target=null,normal=null){
   if(target&&normal?.y>.5){
     if(target.type==='wall'&&['floor','roof'].includes(o.type)){o.x=target.x-(target.rotation===90?2:0);o.z=target.z-(target.rotation!==90?2:0);}
     const top=topAt(target,point.x,point.z);
-    o.y=o.type==='roof'?(target.type==='floor'?snap(target.y,3)+3:Math.ceil((top-.02)/3)*3):['wall','floor'].includes(o.type)?snap(top,3):top;
+    o.y=o.type==='wall'&&target.type==='ramp'?Math.floor((target.y+.05)/3)*3:o.type==='roof'?(target.type==='floor'?snap(target.y,3)+3:Math.ceil((top-.02)/3)*3):['wall','floor'].includes(o.type)?snap(top,3):top;
   }else if(target&&normal?.y<-.5)o.y=Math.max(0,target.y-o.h);
   else if(side)o.y=target.y;
   else o.y=o.type==='roof'?3:['wall','floor','box'].includes(o.type)?0:o.y;
@@ -33,6 +33,14 @@ function joins(a,b){
   if(a.type==='wall'&&b.type==='wall'&&a.rotation!==(b.rotation||0))return (a.w+b.w)/2-Math.abs(a.x-b.x)<=.26&&(a.d+b.d)/2-Math.abs(a.z-b.z)<=.26;
   const wall=a.type==='wall'?a:b.type==='wall'?b:null,other=wall===a?b:a;
   if(wall&&other.type==='floor'&&Math.abs(wall.y-other.y)<.02)return true;
+  if(wall&&other.type==='ramp'){
+    // Walls occupy the border of a cell; a ramp may fill that cell's interior.
+    const thickness=wall.rotation===90?wall.w:wall.d;
+    const penetration=wall.rotation===90?(wall.w+other.w)/2-Math.abs(wall.x-other.x):(wall.d+other.d)/2-Math.abs(wall.z-other.z);
+    if(penetration<=thickness/2+.02)return true;
+  }
+  const ramp=a.type==='ramp'?a:b.type==='ramp'?b:null,floor=ramp===a?b:a;
+  if(ramp&&floor.type==='floor'&&Math.abs(ramp.y-floor.y)<.02)return true;
   if(wall&&other.type==='box'){const penetration=wall.rotation===90?(wall.w+other.w)/2-Math.abs(wall.x-other.x):(wall.d+other.d)/2-Math.abs(wall.z-other.z);if(penetration<=.15)return true;}
   return false;
 }
@@ -70,7 +78,7 @@ export function placement(g,tool,point,rotation=0,level=0){
   let x=Math.round(point.x/4)*4,z=Math.round(point.z/4)*4;
   if(point.surface?.type==='wall'&&point.normal?.y>.5&&['floor','roof'].includes(tool.effect)){x=point.surface.x-(point.surface.rotation===90?2:0);z=point.surface.z-(point.surface.rotation!==90?2:0);}
   if(tool.effect==='wall'){if(rotated)x=Math.round((point.x-2)/4)*4+2;else z=Math.round((point.z-2)/4)*4+2;}
-  const base=Math.floor((Math.max(0,point.y)+.08)/3)*3;
+  const base=tool.effect==='wall'&&point.surface?.type==='ramp'?Math.floor((point.surface.y+.05)/3)*3:Math.floor((Math.max(0,point.y)+.08)/3)*3;
   const roofOffset=tool.effect==='roof'&&!(point.surface?.type==='wall'&&point.normal?.y>.5)?3:0;
   const rampBase=tool.effect==='ramp'&&point.surface?.type==='floor'&&point.normal?.y>.5?point.surface.y+point.surface.h:base;
   const y=rampBase+level*3+roofOffset,piece=constructionPart(tool.effect,x,z,y,tool.effect==='ramp'?rotation:rotated?90:0);
@@ -80,7 +88,7 @@ export function placement(g,tool,point,rotation=0,level=0){
   if(Math.hypot(x-g.player.x,y-g.player.y,z-g.player.z)>12)return no('もう少し近づこう');
   const p=g.player;if(Math.abs(x-p.x)<piece.w/2+.35&&Math.abs(z-p.z)<piece.d/2+.35&&p.y<y+piece.h&&p.y+1.7>y)return no('自分に重ならない場所に置こう');
   for(const o of g.objects){
-    if(o.open||!['wall','floor','roof','box','platform','moving','door'].includes(o.type)||joins(piece,o))continue;
+    if(o.open||!['wall','floor','roof','box','platform','moving','door','ramp'].includes(o.type)||joins(piece,o))continue;
     // Perpendicular wall ends can join to form a house corner.
     if(piece.type==='wall'&&o.type==='wall'&&piece.rotation!==(o.rotation||0)){
       const overlapX=(piece.w+o.w)/2-Math.abs(x-o.x),overlapZ=(piece.d+o.d)/2-Math.abs(z-o.z);
