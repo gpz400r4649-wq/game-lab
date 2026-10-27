@@ -25,6 +25,8 @@ jobs:
       - run: |
           mkdir public
           cp index.html style.css app.js engine.js public/
+          cp 3d.html 3d.css app3d.js engine3d.js public/
+          cp -r vendor public/
           touch public/.nojekyll
       - uses: actions/configure-pages@v5
         with:
