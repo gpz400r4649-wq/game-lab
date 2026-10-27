@@ -1,0 +1,43 @@
+import {makeTool,TOOL_EFFECTS,BUILD_TYPES,equipTool,undoStructure,keepStructures} from './building3d.js';
+import {WEAPON_PRESETS} from './engine3d.js';
+export function createToolsUI(api){
+  const {$,getProject,getGame,getMode,field,save,refresh,finishBuilding}=api;
+  let editing=0,rotation=0,level=0;
+  const dialog=document.createElement('dialog');dialog.className='tools-dialog';dialog.id='tools-dialog3';document.body.append(dialog);
+  function selectField(parent,label,values,current,change){const l=document.createElement('label');l.className='field choice-field';l.append(document.createTextNode(label));const s=document.createElement('select');values.forEach(([k,v])=>s.add(new Option(v,k)));s.value=current;s.onchange=()=>change(s.value);l.append(s);parent.append(l);}
+  function changed(){save();renderHotbar();}
+  function renderEditor(){
+    const p=getProject();editing=Math.min(editing,p.loadout.length-1);const tool=p.loadout[editing];dialog.replaceChildren();
+    const title=document.createElement('h2');title.textContent='持ちものと銃づくり';const intro=document.createElement('p');intro.textContent='「何を出す銃にする？」を選ぼう。遊んでいるときは画面の持ちもの、または数字キーで持ち替えられるよ。';dialog.append(title,intro);
+    const list=document.createElement('div');list.className='tool-editor-list';p.loadout.forEach((t,i)=>{const b=document.createElement('button');b.textContent=`${i+1}. ${t.name}`;b.classList.toggle('active',i===editing);b.onclick=()=>{editing=i;renderEditor();};list.append(b);});dialog.append(list);
+    const nameLabel=document.createElement('label');nameLabel.className='field choice-field';nameLabel.textContent='銃の名前';const name=document.createElement('input');name.type='text';name.maxLength=32;name.value=tool.name;name.oninput=()=>{if(name.value.trim()){tool.name=name.value;changed();}};name.onchange=()=>{name.value=tool.name;};nameLabel.append(name);dialog.append(nameLabel);
+    selectField(dialog,'この銃から出るもの',Object.entries(TOOL_EFFECTS),tool.effect,effect=>{tool.effect=effect;changed();renderEditor();});
+    if(tool.effect==='shoot'){
+      selectField(dialog,'かんたん設定',[['custom','いまの設定'],...Object.entries(WEAPON_PRESETS).map(([k,v])=>[k,v.name])],'custom',key=>{if(key!=='custom'){const {name,...stats}=WEAPON_PRESETS[key];Object.assign(tool,stats);changed();renderEditor();}});
+      const d=document.createElement('details'),s=document.createElement('summary');s.textContent='性能をちょうせい';d.append(s);
+      field(d,'弾の速さ',tool.speed,5,60,1,n=>{tool.speed=n;renderHotbar();});field(d,'発射の間かく（秒）',tool.interval,.1,2,.05,n=>tool.interval=n);field(d,'弾のつよさ',tool.damage,1,10,1,n=>tool.damage=Math.round(n));
+      selectField(d,'同時に出る弾',[[1,'1 発'],[3,'3 発'],[5,'5 発']],String(tool.spread),n=>{tool.spread=Number(n);changed();});dialog.append(d);
+    }else{const note=document.createElement('p');note.className='component-description';note.textContent=`狙った場所に${BUILD_TYPES[tool.effect]}を出す建築銃。緑のプレビューなら置けるよ。向きと高さは遊びながら変更できるよ。`;dialog.append(note);}
+    const addRow=document.createElement('div');addRow.className='new-tools';
+    for(const [effect,label] of [['shoot','＋ 射撃の銃'],['wall','＋ 壁の銃'],['floor','＋ 床の銃'],['roof','＋ 屋根の銃']]){const b=document.createElement('button');b.textContent=label;b.disabled=p.loadout.length>=8;b.onclick=()=>{p.loadout.push(makeTool(effect));editing=p.loadout.length-1;changed();renderEditor();};addRow.append(b);}dialog.append(addRow);
+    const del=document.createElement('button');del.textContent='この持ちものをはずす';del.disabled=p.loadout.length===1;del.onclick=()=>{p.loadout.splice(editing,1);editing=Math.max(0,editing-1);changed();renderEditor();};
+    const close=document.createElement('button');close.textContent='これであそぶ準備OK';close.className='primary';close.onclick=()=>{dialog.close();renderLauncher();};dialog.append(del,close);
+  }
+  function open(){renderEditor();dialog.showModal();}
+  function renderLauncher(){const el=$('#weapon3');el.replaceChildren();const note=document.createElement('p');note.className='component-description';note.textContent=`${getProject().loadout.length}個の持ちもの。射撃の銃も、部品を出す建築銃も追加できるよ。`;const b=document.createElement('button');b.textContent='持ちもの・銃をつくる';b.className='primary';b.onclick=open;el.append(note,b);}
+  function renderHotbar(){
+    const p=getProject(),g=getGame(),el=$('#hotbar3');el.replaceChildren();p.loadout.forEach((t,i)=>{const b=document.createElement('button');b.className='hot-slot';b.classList.toggle('active',g?.equipped===i);b.textContent=`${i+1} ${t.effect==='shoot'?'✦':'▧'} ${t.name}`;b.setAttribute('aria-label',`持ちもの ${i+1} ${t.name}`);b.onclick=()=>{if(g)equipTool(g,p,i);renderHotbar();};el.append(b);});
+    const tool=p.loadout[g?.equipped||0],building=getMode()==='play'&&tool.effect!=='shoot';$('#buildbar3').hidden=!building;$('#build-status3').hidden=!building;$('#fire3').textContent=building?'建てる ▧':'発射 ✦';$('#build-level3').textContent=`高さ ${level>=0?'+':''}${level} 段`;
+    $('#undo-build3').disabled=!g?.buildings.length;$('#keep-build3').disabled=!g?.buildings.length;
+  }
+  $('#rotate-build3').onclick=()=>{rotation=rotation===0?90:0;$('#rotate-build3').textContent=`向き ↻ ${rotation}°`;};
+  $('#lower-build3').onclick=()=>{level=Math.max(-4,level-1);renderHotbar();};$('#raise-build3').onclick=()=>{level=Math.min(4,level+1);renderHotbar();};
+  $('#undo-build3').onclick=()=>{const g=getGame();if(g){undoStructure(g);refresh();renderHotbar();}};
+  $('#keep-build3').onclick=()=>{const g=getGame();if(!g)return;const count=keepStructures(getProject(),g);save();finishBuilding(count);};
+  window.addEventListener('keydown',e=>{if(getMode()!=='play'||e.target.matches('input,select,textarea')||document.querySelector('dialog[open]'))return;
+    if(/^[1-8]$/.test(e.key)){equipTool(getGame(),getProject(),Number(e.key)-1);renderHotbar();}
+    if(e.key.toLowerCase()==='r')$('#rotate-build3').click();if(e.key==='[')$('#lower-build3').click();if(e.key===']')$('#raise-build3').click();
+  });
+  const openButton=$('#tools-open3');openButton.onclick=open;
+  return {renderLauncher,renderHotbar,getRotation:()=>rotation,getLevel:()=>level,reset(){rotation=0;level=0;$('#rotate-build3').textContent='向き ↻ 0°';renderHotbar();}};
+}
