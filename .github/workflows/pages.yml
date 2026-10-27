@@ -28,7 +28,7 @@ jobs:
           cp 3d.html 3d.css app3d.js engine3d.js public/
           cp workshop3d.js public/
           cp building3d.js tools3d.js public/
-          cp weapons3d.js combat3d.js public/
+          cp weapons3d.js combat3d.js events3d.js event-editor3d.js public/
           cp -r vendor public/
           touch public/.nojekyll
       - uses: actions/configure-pages@v5

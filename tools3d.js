@@ -13,6 +13,7 @@ export function createToolsUI(api){
     const list=document.createElement('div');list.className='tool-editor-list';p.loadout.forEach((t,i)=>{const b=document.createElement('button');b.textContent=`${i+1}. ${t.name}`;b.classList.toggle('active',i===editing);b.onclick=()=>{editing=i;renderEditor();};list.append(b);});dialog.append(list);
     const nameLabel=document.createElement('label');nameLabel.className='field choice-field';nameLabel.textContent='銃の名前';const name=document.createElement('input');name.type='text';name.maxLength=32;name.value=tool.name;name.oninput=()=>{if(name.value.trim()){tool.name=name.value;changed();}};name.onchange=()=>{name.value=tool.name;};nameLabel.append(name);dialog.append(nameLabel);
     selectField(dialog,'この銃から出るもの',Object.entries(TOOL_EFFECTS),tool.effect,effect=>{tool.effect=effect;changed();renderEditor();});
+    selectField(dialog,'この銃をいつ使える？',[['start','最初から持つ'],['pickup','イベントで拾って使う']],tool.pickupOnly?'pickup':'start',v=>{tool.pickupOnly=v==='pickup';changed();renderEditor();});
     if(tool.effect==='shoot'){
       selectField(dialog,'かんたん設定',[['custom','いまの設定'],...Object.entries(WEAPON_PRESETS).map(([k,v])=>[k,v.name])],'custom',key=>{if(key!=='custom'){const {name,...stats}=WEAPON_PRESETS[key];Object.assign(tool,stats);changed();renderEditor();}});
       selectField(dialog,'どんな弾が出る？',Object.entries(PROJECTILES),tool.projectile,v=>{tool.projectile=v;changed();renderEditor();});
@@ -35,8 +36,8 @@ export function createToolsUI(api){
   function open(){renderEditor();dialog.showModal();}
   function renderLauncher(){const el=$('#weapon3');el.replaceChildren();const note=document.createElement('p');note.className='component-description';note.textContent=`${getProject().loadout.length}個の持ちもの。射撃の銃も、部品を出す建築銃も追加できるよ。`;const b=document.createElement('button');b.textContent='持ちもの・銃をつくる';b.className='primary';b.onclick=open;el.append(note,b);}
   function renderHotbar(){
-    const p=getProject(),g=getGame(),el=$('#hotbar3');el.replaceChildren();p.loadout.forEach((t,i)=>{const b=document.createElement('button');b.className='hot-slot';b.classList.toggle('active',g?.equipped===i);b.textContent=`${i+1} ${t.effect==='shoot'?'✦':'▧'} ${t.name}`;b.setAttribute('aria-label',`持ちもの ${i+1} ${t.name}`);b.onclick=()=>{if(g)equipTool(g,p,i);renderHotbar();};el.append(b);});
-    const tool=p.loadout[g?.equipped||0],building=getMode()==='play'&&tool.effect!=='shoot';$('#buildbar3').hidden=!building;$('#build-status3').hidden=!building;$('#fire3').textContent=building?'建てる ▧':'発射 ✦';$('#build-level3').textContent=`高さ ${level>=0?'+':''}${level} 段`;
+    const p=getProject(),g=getGame(),el=$('#hotbar3');el.replaceChildren();p.loadout.forEach((t,i)=>{const b=document.createElement('button');b.className='hot-slot';b.classList.toggle('active',g?.equipped===i);const locked=getMode()==='play'&&g?.inventory&&!g.inventory.includes(t.id);b.disabled=!!locked;b.textContent=`${i+1} ${locked?'🔒 拾って使う ':''}${t.effect==='shoot'?'✦':'▧'} ${t.name}`;b.setAttribute('aria-label',`持ちもの ${i+1} ${t.name}`);b.onclick=()=>{if(g)equipTool(g,p,i);renderHotbar();};el.append(b);});
+    const tool=p.loadout[g?.equipped??0],building=getMode()==='play'&&!!tool&&tool.effect!=='shoot';$('#buildbar3').hidden=!building;$('#build-status3').hidden=!building;$('#fire3').textContent=building?'建てる ▧':tool?'発射 ✦':'銃をひろおう';$('#build-level3').textContent=`高さ ${level>=0?'+':''}${level} 段`;
     $('#undo-build3').disabled=!g?.buildings.length;$('#keep-build3').disabled=!g?.buildings.length;
   }
   $('#rotate-build3').onclick=()=>{rotation=(rotation+90)%360;$('#rotate-build3').textContent=`向き ↻ ${rotation}°`;};

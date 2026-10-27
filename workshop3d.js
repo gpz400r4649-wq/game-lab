@@ -1,3 +1,5 @@
+import {actionsFor} from './events3d.js';
+import {renderEventEditor} from './event-editor3d.js';
 import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js';
 import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js';
 import {PARTS,ENEMY_PRESETS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js';
@@ -6,9 +8,9 @@ const ICONS={select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧'
 const DESCRIPTIONS={ramp:'低いほうから歩くと、そのまま登れるスロープ。回して好きな向きにつなげよう。',wall:'家を囲う壁。向きを変えてつなげよう。',floor:'家の床と天井に使える板。壁の内側にぴったり合うよ。',roof:'壁の上にのせる三角屋根。向きを変えて家を仕上げよう。',
   box:'かべや建物をつくれる、かたいブロック。',platform:'ジャンプで乗れる足場。高さを変えてコースにしよう。',
   moving:'置くだけで行ったり来たり。乗ると一緒に運んでくれるよ。',bounce:'ふれると大ジャンプ！ 飛ぶ強さを変えてみよう。',
-  enemy:'行動タイプを選ぶだけで動くよ。速さと体力で難しさを変えよう。',star:'集めると得点アップ。ゴールを開く条件にもできるよ。',
-  key:'集めると、カギを条件にしたドアを開けられるよ。カギは使っても減らないよ。',door:'条件を満たすと自動で開くドア。カギや星と組み合わせよう。',
-  heal:'体力が減っているときに拾うと回復。１回だけ使えるよ。',checkpoint:'ふれると場所を記録。体力がなくなっても、ここから復活！',
+  enemy:'行動タイプを選ぶだけで動くよ。速さと体力で難しさを変えよう。',star:'ふれると拾える星。得点をもらうほか、銃を拾うなどの役割にも変えられるよ。',
+  key:'ふれると拾えるアイテム。取ったときに何が起きるか、イベントで変えられるよ。',door:'カギや星などの条件でイベントが起きるよ。開ける以外の役割も作れるよ。',
+  heal:'回復だけなら体力が減ったときに拾えるよ。ほかのイベントを加えると、体力が満タンでも拾えるよ。',checkpoint:'ふれたときのイベントを作ろう。元の役割は、ここから復活できる場所の記録だよ。',
   hazard:'ふれると体力が減る床。ジャンプで飛び越えてみよう。',goal:'置いただけではクリアできないよ。どんな条件でクリアにするか、自分でえらぼう。'
 };
 
@@ -38,6 +40,7 @@ export function createWorkshop(api){
     const s=o.settings;
     if(DESTRUCTIBLE_TYPES.has(o.type)){field(el,'ブロックの体力',o.hp,1,LIMITS.maxBlockHp,1,n=>o.hp=Math.round(n));selectField(el,'弾が当たったら',[['yes','体力がなくなると壊れる'],['no','こわれない']],o.destructible===false?'no':'yes',v=>o.destructible=v==='yes');}
     if(o.type==='enemy'){
+      selectField(el,'いつ出現する？',[['start','最初からいる'],['event','イベントで出現を待つ']],o.startsHidden?'event':'start',v=>{o.startsHidden=v==='event';inspect();});
       const preset=Object.keys(ENEMY_PRESETS).find(k=>JSON.stringify(ENEMY_PRESETS[k].program)===JSON.stringify(o.program))||'custom';
       selectField(el,'行動タイプ',[...Object.entries(ENEMY_PRESETS).map(([k,v])=>[k,v.name]),['custom','自分で工夫した動き']],preset,k=>{if(k!=='custom')o.program=structuredClone(ENEMY_PRESETS[k].program);inspect();});
       field(el,'体力',o.hp,1,20,1,n=>o.hp=Math.round(n));
@@ -48,19 +51,20 @@ export function createWorkshop(api){
       selectField(el,'動く方向',[['x','左右'],['z','前後'],['y','上下']],s.axis,v=>s.axis=v);
       field(el,'動くはんい',s.distance,.5,8,.5,n=>s.distance=n);field(el,'動く速さ',s.speed,.5,5,.5,n=>s.speed=n);
     }
-    if(['star','heal','hazard','bounce'].includes(o.type)){
+    if(['hazard','bounce'].includes(o.type)){
       const [label,min,max]=({star:['もらえる得点',1,20],heal:['回復する体力',1,5],hazard:['減る体力',1,5],bounce:['飛ぶ強さ',5,14]})[o.type];
       field(el,label,s.value,min,max,1,n=>s.value=Math.round(n));
     }
     if(o.type==='door'||o.type==='goal'){
       const rules=document.createElement('div');rules.className='recipe-rule';
       const trigger=document.createElement('b');trigger.textContent=o.type==='goal'?'① ゴールにふれたとき':'① 条件をたしかめる';rules.append(trigger);
-      selectField(rules,'② 条件',Object.entries(CONDITION_NAMES).map(([k,v])=>[k,k==='touch'?(o.type==='door'?'いつでも開く':'ふれるだけ'):v]),s.condition,v=>{s.condition=v;inspect();});
+      selectField(rules,'② 条件',Object.entries(CONDITION_NAMES).map(([k,v])=>[k,k==='touch'?(o.type==='door'?'いつでも':'ふれるだけ'):k==='unset'?'条件をえらぶ（まだ動かない）':v]),s.condition,v=>{s.condition=v;inspect();});
       if(['stars','keys'].includes(s.condition))field(rules,'必要な数',s.required,1,20,1,n=>{s.required=Math.round(n);updateRuleHint();});
-      const effect=document.createElement('b');effect.textContent=o.type==='goal'?(s.condition==='unset'?'③ 条件をえらぶと有効になります':'③ ステージクリア！'):'③ ドアが開く';rules.append(effect);el.append(rules);
-      function updateRuleHint(){if(!['stars','keys'].includes(s.condition))return;const type=s.condition==='stars'?'star':'key',count=p.objects.filter(x=>x.type===type).length;let note=el.querySelector('.recipe-hint');if(!note){note=document.createElement('p');note.className='recipe-hint';el.append(note);}note.hidden=count>=s.required;note.textContent=`いまのステージには${PARTS[type]}が${count}個。あと${Math.max(0,s.required-count)}個置くか、必要な数を減らそう。`;}
+      el.append(rules);
+      function updateRuleHint(){if(!['stars','keys'].includes(s.condition))return;const type=s.condition==='stars'?'star':'key',count=p.objects.reduce((n,x)=>n+actionsFor(x).filter(a=>a.type===(type==='star'?'addStar':'addKey')).length,0);let note=el.querySelector('.recipe-hint');if(!note){note=document.createElement('p');note.className='recipe-hint';el.append(note);}note.hidden=count>=s.required;note.textContent=`いまのイベントで増やせる${PARTS[type]}は${count}個。あと${Math.max(0,s.required-count)}個ぶんの効果を足すか、必要な数を減らそう。`;}
       updateRuleHint();
     }
+    renderEventEditor(el,o,p,{selectField,field,save,rebuild,inspect,partNames:PARTS});
     const label=document.createElement('div');label.className='small-heading';label.textContent='置く場所をちょうせい';el.append(label);
     const nudges=document.createElement('div');nudges.className='nudge-grid';
     for(const [name,key,amount] of [['← 左','x',-1],['奥へ ↑','z',-1],['右 →','x',1],['下げる','y',-.5],['手前 ↓','z',1],['上げる','y',.5]]){
@@ -72,7 +76,7 @@ export function createWorkshop(api){
     el.append(details('位置・大きさを数字でちょうせい',[fine]));
     if(['wall','floor','roof','ramp'].includes(o.type)){const rotate=document.createElement('button');rotate.textContent='↻ 90° 回す';rotate.onclick=()=>{rotatePiece(o);save();rebuild();inspect();};el.append(rotate);}
     const actions=document.createElement('div');actions.className='object-actions';
-    const copy=document.createElement('button');copy.textContent='＋ 同じ部品をもう１つ';copy.onclick=()=>{if(p.objects.length>=150){api.toast('部品は150個まで置けます');return;}const duplicate=structuredClone(o);duplicate.id=crypto.randomUUID();let found=false;for(const [dx,dz] of [[Math.max(4,Math.ceil(o.w/4)*4),0],[0,Math.max(4,Math.ceil(o.d/4)*4)],[-Math.max(4,Math.ceil(o.w/4)*4),0],[0,-Math.max(4,Math.ceil(o.d/4)*4)]]){duplicate.x=o.x+dx;duplicate.z=o.z+dz;if(!GRID_PARTS.has(o.type)){duplicate.x=clamp(o.x+2,-28,28);duplicate.z=o.z;found=true;break;}alignPiece(duplicate);if(!editorPlacementReason(duplicate,p.objects,p.spawn)){found=true;break;}}if(!found){api.toast('隣のマスが空いていません');return;}p.objects.push(duplicate);select(duplicate.id);save();rebuild();api.objectList();inspect();};
+    const copy=document.createElement('button');copy.textContent='＋ 同じ部品をもう１つ';copy.onclick=()=>{if(p.objects.length>=150){api.toast('部品は150個まで置けます');return;}const duplicate=structuredClone(o);duplicate.id=crypto.randomUUID();for(const a of duplicate.events||[])if(a.target===o.id)a.target=duplicate.id;let found=false;for(const [dx,dz] of [[Math.max(4,Math.ceil(o.w/4)*4),0],[0,Math.max(4,Math.ceil(o.d/4)*4)],[-Math.max(4,Math.ceil(o.w/4)*4),0],[0,-Math.max(4,Math.ceil(o.d/4)*4)]]){duplicate.x=o.x+dx;duplicate.z=o.z+dz;if(!GRID_PARTS.has(o.type)){duplicate.x=clamp(o.x+2,-28,28);duplicate.z=o.z;found=true;break;}alignPiece(duplicate);if(!editorPlacementReason(duplicate,p.objects,p.spawn)){found=true;break;}}if(!found){api.toast('隣のマスが空いていません');return;}p.objects.push(duplicate);select(duplicate.id);save();rebuild();api.objectList();inspect();};
     const del=document.createElement('button');del.textContent='削除';del.className='danger';del.onclick=()=>{p.objects=p.objects.filter(x=>x.id!==o.id);select(null);save();rebuild();api.objectList();inspect();};actions.append(copy,del);el.append(actions);
   }
   function weapons(){if(api.renderLoadout){api.renderLoadout();return;}
