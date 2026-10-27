@@ -1,0 +1,17 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {part,fresh3D,recipe3D,validate3D,create3D,step3D,solids,conditionMet} from '../engine3d.js';
+const tick=(g,p,n=1)=>{for(let i=0;i<n;i++)step3D(g,p,{},.02);};
+function stage(...objects){const p=fresh3D();p.spawn={x:0,y:0,z:0};p.objects=objects;return p;}
+
+test('３種類のお手本が保存可能で、ゲームに必要なゴールを持つ',()=>{for(const kind of ['athletic','adventure','battle']){const p=recipe3D(kind);assert.deepEqual(validate3D(p),p);assert.ok(p.objects.some(o=>o.type==='goal'));assert.ok(p.objects.length<150);}});
+test('以前の作品に部品設定を補い、既存プログラムを保持する',()=>{const p=stage(part('enemy'));delete p.objects[0].settings;p.objects[0].program=[{action:'patrol',speed:4}];const next=validate3D(p);assert.ok(next.objects[0].settings);assert.deepEqual(next.objects[0].program,p.objects[0].program);assert.equal(p.objects[0].settings,undefined);next.objects[0].settings.speed=NaN;assert.throws(()=>validate3D(next));});
+test('カギは１回だけ集められ、条件付きドアが開く',()=>{const key=part('key',0,0),door=part('door',0,-4),p=stage(key,door),g=create3D(p);assert.ok(solids(g.objects).some(o=>o.type==='door'));tick(g,p,2);assert.equal(g.keys,1);assert.ok(g.objects.find(o=>o.type==='door').open);assert.ok(!solids(g.objects).some(o=>o.type==='door'));});
+test('星の数を満たすまでクリアできず、配置順に依存しない',()=>{const goal=part('goal',0,0);goal.settings.condition='stars';goal.settings.required=2;const p=stage(goal,part('star',0,0),part('star',8,0)),g=create3D(p);tick(g,p);assert.equal(g.state,'playing');assert.equal(g.stars,1);g.player.x=8;tick(g,p);g.player.x=0;tick(g,p);assert.equal(g.state,'won');assert.equal(g.stars,2);});
+test('全滅ゴールは敵を倒して初めて開く',()=>{const goal=part('goal',0,0);goal.settings.condition='enemies';const e=part('enemy',8,-8);e.program=[];const p=stage(goal,e),g=create3D(p);tick(g,p);assert.equal(g.state,'playing');g.objects.find(o=>o.type==='enemy').hp=0;tick(g,p);assert.equal(g.state,'won');});
+test('回復は必要なときだけ拾い、効果が二重に発生しない',()=>{const heal=part('heal',0,0);heal.settings.value=3;const p=stage(heal),g=create3D(p);tick(g,p);assert.ok(!g.objects[0].collected);g.player.hp=1;tick(g,p,3);assert.equal(g.player.hp,4);assert.ok(g.objects[0].collected);});
+test('動く足場に乗ると運ばれ、ジャンプで離れられる',()=>{const platform=part('moving',0,0),p=stage(platform),g=create3D(p);g.player.y=1.5;tick(g,p);assert.equal(g.player.supportId,platform.id);const before=g.player.x;tick(g,p,30);assert.ok(g.player.x>before+.5);assert.ok(Math.abs(g.player.y-1.5)<.01);step3D(g,p,{jump:true},.02);assert.ok(!g.player.grounded);assert.ok(g.player.vy>0);});
+test('上下する足場でもプレイヤーを支え続ける',()=>{const platform=part('moving',0,0);platform.settings.axis='y';const p=stage(platform),g=create3D(p);g.player.y=3;tick(g,p,100);assert.ok(g.player.grounded);assert.equal(g.player.supportId,platform.id);assert.ok(Math.abs(g.player.y-g.objects[0].y-platform.h)<.01);});
+test('ジャンプ台で大きく飛び、広げた台の端でも働く',()=>{const bounce=part('bounce',0,0);bounce.w=6;const p=stage(bounce),g=create3D(p);g.player.x=2;tick(g,p);assert.equal(g.player.vy,11);assert.ok(!g.player.grounded);});
+test('広いダメージ床の端で被弾し、無敵中は連続被弾しない',()=>{const hazard=part('hazard',0,0);hazard.w=6;const p=stage(hazard),g=create3D(p);g.player.x=2;tick(g,p,10);assert.equal(g.player.hp,4);});
+test('中間地点から復活し、集めたものと撃破状況を保持する',()=>{const p=stage(part('checkpoint',0,0),part('key',0,0),part('hazard',5,0)),g=create3D(p);tick(g,p);g.player.x=5;g.player.hp=1;tick(g,p);assert.equal(g.state,'playing');assert.equal(g.player.x,0);assert.equal(g.player.hp,5);assert.equal(g.keys,1);assert.ok(g.player.invincible>0);});
