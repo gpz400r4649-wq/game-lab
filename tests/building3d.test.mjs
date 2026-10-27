@@ -1,11 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {fresh3D,validate3D,create3D,step3D,movePlayer,part,recipe3D} from '../engine3d.js';
+import {fresh3D as blank3D,validate3D,create3D,step3D,movePlayer,part} from '../engine3d.js';
 import {makeTool,constructionPart,placement,equipTool,placeStructure,undoStructure,keepStructures,topAt,rotatePiece} from '../building3d.js';
+function fresh3D(){const p=blank3D();p.loadout.push(makeTool('wall'),makeTool('floor'),makeTool('roof'));return p;}
 const ticks=(g,p,n=1,input={})=>{for(let i=0;i<n;i++)step3D(g,p,input,.02);};
-test('古い作品の銃の性能を引き継いで持ちものを補う',()=>{const p=fresh3D();delete p.loadout;p.weapon.damage=4;const q=validate3D(p);assert.equal(q.loadout[0].damage,4);assert.deepEqual(q.loadout.map(t=>t.effect),['shoot','wall','floor','roof']);assert.equal(p.loadout,undefined);});
+test('古い作品の銃の性能を引き継いで持ちものを補う',()=>{const p=fresh3D();delete p.loadout;p.weapon.damage=4;const q=validate3D(p);assert.equal(q.loadout[0].damage,4);assert.deepEqual(q.loadout.map(t=>t.effect),['shoot']);assert.equal(p.loadout,undefined);});
 test('新しい銃を追加して保存でき、不正な持ちものを拒否する',()=>{const p=fresh3D();const t=makeTool('floor','床づくり');p.loadout.push(t);assert.deepEqual(validate3D(p),p);t.effect='unknown';assert.throws(()=>validate3D(p));t.effect='floor';t.damage=NaN;assert.throws(()=>validate3D(p));});
-test('壁・床・屋根は向きも含め保存・読込できる',()=>{const p=fresh3D();p.objects=['wall','floor','roof'].map(t=>constructionPart(t));p.objects[0].rotation=90;[p.objects[0].w,p.objects[0].d]=[p.objects[0].d,p.objects[0].w];assert.deepEqual(validate3D(p),p);assert.ok(validate3D(recipe3D('building')));});
+test('壁・床・屋根は向きも含め保存・読込できる',()=>{const p=fresh3D();p.objects=['wall','floor','roof'].map(t=>constructionPart(t));p.objects[0].rotation=90;[p.objects[0].w,p.objects[0].d]=[p.objects[0].d,p.objects[0].w];assert.deepEqual(validate3D(p),p);});
 test('壁は境界、床は中心、屋根は壁の高さにそろう',()=>{const p=fresh3D(),g=create3D(p),pt={x:.3,y:0,z:.4};const wall=placement(g,p.loadout[1],pt),floor=placement(g,p.loadout[2],pt),roof=placement(g,p.loadout[3],pt);assert.ok(wall.valid&&floor.valid&&roof.valid);assert.equal(wall.piece.z,2);assert.equal(floor.piece.z,0);assert.equal(roof.piece.y,3);assert.equal(placement(g,p.loadout[1],pt,90).piece.x,2);assert.equal(placement(g,p.loadout[2],pt,0,1).piece.y,3);});
 test('家の壁と床と屋根を組み合わせ、壁の角もつなげられる',()=>{const p=fresh3D(),g=create3D(p),pt={x:0,y:0,z:0};for(const slot of [2,1,3]){equipTool(g,p,slot);assert.ok(placeStructure(g,p,{buildPoint:pt}).valid);}equipTool(g,p,1);assert.ok(placeStructure(g,p,{buildPoint:pt,buildRotation:90}).valid);assert.equal(g.buildings.length,4);});
 test('重複、自分との重なり、遠すぎる場所、外側、上限を拒否する',()=>{const p=fresh3D(),g=create3D(p),tool=p.loadout[2];equipTool(g,p,2);const pt={x:0,y:0,z:0};assert.ok(placeStructure(g,p,{buildPoint:pt}).valid);assert.ok(!placement(g,tool,pt).valid);assert.ok(!placement(g,tool,{x:0,y:0,z:8}).valid);assert.ok(!placement(g,tool,{x:24,y:0,z:8}).valid);assert.ok(!placement(g,tool,{x:32,y:0,z:8}).valid);g.objects=Array.from({length:150},()=>part('star'));assert.ok(!placement(g,tool,{x:4,y:0,z:4}).valid);});

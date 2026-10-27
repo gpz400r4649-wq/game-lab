@@ -1,5 +1,5 @@
 import {rotatePiece} from './building3d.js';
-import {PARTS,ENEMY_PRESETS,WEAPON_PRESETS,CONDITION_NAMES,recipe3D,clamp} from './engine3d.js';
+import {PARTS,ENEMY_PRESETS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js';
 
 const ICONS={select:'↖',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
 const DESCRIPTIONS={wall:'家を囲う壁。向きを変えてつなげよう。',floor:'家の床と天井に使える板。壁の内側にぴったり合うよ。',roof:'壁の上にのせる三角屋根。向きを変えて家を仕上げよう。',
@@ -8,7 +8,7 @@ const DESCRIPTIONS={wall:'家を囲う壁。向きを変えてつなげよう。
   enemy:'行動タイプを選ぶだけで動くよ。速さと体力で難しさを変えよう。',star:'集めると得点アップ。ゴールを開く条件にもできるよ。',
   key:'集めると、カギを条件にしたドアを開けられるよ。カギは使っても減らないよ。',door:'条件を満たすと自動で開くドア。カギや星と組み合わせよう。',
   heal:'体力が減っているときに拾うと回復。１回だけ使えるよ。',checkpoint:'ふれると場所を記録。体力がなくなっても、ここから復活！',
-  hazard:'ふれると体力が減る床。ジャンプで飛び越えてみよう。',goal:'ふれるとクリア！ 星集めや敵をたおすことを条件にできるよ。'
+  hazard:'ふれると体力が減る床。ジャンプで飛び越えてみよう。',goal:'置いただけではクリアできないよ。どんな条件でクリアにするか、自分でえらぼう。'
 };
 
 export function confirmReplace(message){
@@ -31,7 +31,7 @@ export function createWorkshop(api){
     const el=$('#inspector3'),wasOpen=el.querySelector('.advanced-program')?.open;
     advancedInspector();const loop=el.querySelector('.loop');el.replaceChildren();
     const p=getProject(),o=p.objects.find(o=>o.id===getSelected());
-    if(!o){const note=document.createElement('p');note.className='empty';note.textContent='まずは上のお手本から選ぶか、使いたい部品を置いてみよう。どの部品も、置くだけで働くよ。';el.append(note);return;}
+    if(!o){const note=document.createElement('p');note.className='empty';note.textContent='空のステージに、使いたい部品を置こう。敵の動きやクリア条件は、自分でえらんで作れるよ。';el.append(note);return;}
     const title=document.createElement('h2');title.className='inspector-heading';title.textContent=`${ICONS[o.type]} ${PARTS[o.type]}`;
     const description=document.createElement('p');description.className='component-description';description.textContent=DESCRIPTIONS[o.type];el.append(title,description);
     const s=o.settings;
@@ -55,7 +55,7 @@ export function createWorkshop(api){
       const trigger=document.createElement('b');trigger.textContent=o.type==='goal'?'① ゴールにふれたとき':'① 条件をたしかめる';rules.append(trigger);
       selectField(rules,'② 条件',Object.entries(CONDITION_NAMES).map(([k,v])=>[k,k==='touch'?(o.type==='door'?'いつでも開く':'ふれるだけ'):v]),s.condition,v=>{s.condition=v;inspect();});
       if(['stars','keys'].includes(s.condition))field(rules,'必要な数',s.required,1,20,1,n=>{s.required=Math.round(n);updateRuleHint();});
-      const effect=document.createElement('b');effect.textContent=o.type==='goal'?'③ ステージクリア！':'③ ドアが開く';rules.append(effect);el.append(rules);
+      const effect=document.createElement('b');effect.textContent=o.type==='goal'?(s.condition==='unset'?'③ 条件をえらぶと有効になります':'③ ステージクリア！'):'③ ドアが開く';rules.append(effect);el.append(rules);
       function updateRuleHint(){if(!['stars','keys'].includes(s.condition))return;const type=s.condition==='stars'?'star':'key',count=p.objects.filter(x=>x.type===type).length;let note=el.querySelector('.recipe-hint');if(!note){note=document.createElement('p');note.className='recipe-hint';el.append(note);}note.hidden=count>=s.required;note.textContent=`いまのステージには${PARTS[type]}が${count}個。あと${Math.max(0,s.required-count)}個置くか、必要な数を減らそう。`;}
       updateRuleHint();
     }
@@ -82,8 +82,5 @@ export function createWorkshop(api){
   const groups=[['つくる道具',['select','erase']],['地形・しかけ',['wall','floor','roof','box','platform','moving','bounce','hazard']],['キャラクター・アイテム',['enemy','star','key','heal']],['進みかたをつくる',['checkpoint','door','goal']]];
   const palette=$('#palette3');palette.replaceChildren();
   for(const [label,types] of groups){const heading=document.createElement('div');heading.className='palette-heading';heading.textContent=label;palette.append(heading);for(const type of types){const b=document.createElement('button');b.className='part'+(type==='select'?' active':'');b.dataset.part=type;b.innerHTML=`<span>${ICONS[type]}</span>${PARTS[type]||{select:'えらぶ',erase:'けす'}[type]}`;b.onclick=()=>setTool(type);palette.append(b);}}
-  const recipes=$('#recipes3');for(const [kind,icon,name,text] of [['building','⌂','建築ひろば','壁・床・屋根を出す銃で家をつくる'],['athletic','⇧','足場アスレチック','ジャンプ台と動く足場でコースづくり'],['adventure','⚿','宝さがし','星・カギ・ドアを組み合わせる'],['battle','🤖','ロボット対戦','敵と武器を選んでバトルづくり']]){
-    const b=document.createElement('button');b.className='recipe-card';const title=document.createElement('b');title.textContent=`${icon} ${name}`;const desc=document.createElement('small');desc.textContent=text;b.append(title,desc);b.onclick=async()=>{if(getProject().objects.length&&!await confirmReplace('今の3D作品をお手本に置き換えます。必要なら先にファイルに保存してください。'))return;loadProject(recipe3D(kind));api.toast('お手本ができたよ！ まずは「あそぶ」を押そう');};recipes.append(b);
-  }
   return {inspect,weapons};
 }

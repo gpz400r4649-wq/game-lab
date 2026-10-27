@@ -21,7 +21,7 @@ export function createToolsUI(api){
     const addRow=document.createElement('div');addRow.className='new-tools';
     for(const [effect,label] of [['shoot','＋ 射撃の銃'],['wall','＋ 壁の銃'],['floor','＋ 床の銃'],['roof','＋ 屋根の銃']]){const b=document.createElement('button');b.textContent=label;b.disabled=p.loadout.length>=8;b.onclick=()=>{p.loadout.push(makeTool(effect));editing=p.loadout.length-1;changed();renderEditor();};addRow.append(b);}dialog.append(addRow);
     const del=document.createElement('button');del.textContent='この持ちものをはずす';del.disabled=p.loadout.length===1;del.onclick=()=>{p.loadout.splice(editing,1);editing=Math.max(0,editing-1);changed();renderEditor();};
-    const close=document.createElement('button');close.textContent='これであそぶ準備OK';close.className='primary';close.onclick=()=>{dialog.close();renderLauncher();};dialog.append(del,close);
+    const close=document.createElement('button');close.textContent='設定を閉じる';close.className='primary';close.onclick=()=>{dialog.close();renderLauncher();};dialog.append(del,close);
   }
   function open(){renderEditor();dialog.showModal();}
   function renderLauncher(){const el=$('#weapon3');el.replaceChildren();const note=document.createElement('p');note.className='component-description';note.textContent=`${getProject().loadout.length}個の持ちもの。射撃の銃も、部品を出す建築銃も追加できるよ。`;const b=document.createElement('button');b.textContent='持ちもの・銃をつくる';b.className='primary';b.onclick=open;el.append(note,b);}

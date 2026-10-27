@@ -3,7 +3,7 @@ export const BUILD_TYPES={wall:'壁',floor:'床',roof:'屋根'};
 export const TOOL_EFFECTS={shoot:'弾を撃つ',wall:'壁を出す',floor:'床を出す',roof:'屋根を出す'};
 const defaults={speed:24,interval:.25,damage:1,spread:1};
 export function makeTool(effect='shoot',name){return {id:crypto.randomUUID(),name:name||(effect==='shoot'?'ブラスター':BUILD_TYPES[effect]+'を出す建築銃'),effect,...defaults};}
-export function defaultLoadout(weapon=defaults){const gun=makeTool();Object.assign(gun,weapon);return [gun,makeTool('wall'),makeTool('floor'),makeTool('roof')];}
+export function defaultLoadout(weapon=defaults){const gun=makeTool();Object.assign(gun,weapon);return [gun];}
 export function validTool(t){return !!t&&typeof t.id==='string'&&typeof t.name==='string'&&t.name.trim().length>0&&t.name.length<=32&&Object.hasOwn(TOOL_EFFECTS,t.effect)&&Number.isFinite(t.speed)&&t.speed>=5&&t.speed<=60&&Number.isFinite(t.interval)&&t.interval>=.1&&t.interval<=2&&Number.isInteger(t.damage)&&t.damage>=1&&t.damage<=10&&[1,3,5].includes(t.spread);}
 export function constructionPart(type,x=0,z=0,y=0,rotation=0){
   const turned=rotation%180!==0;

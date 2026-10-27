@@ -4,24 +4,11 @@ export const PARTS={wall:'壁',floor:'床',roof:'屋根',box:'ブロック',plat
 export const BEHAVIORS={chase:'プレイヤーを追いかける',patrol:'左右に動く',shoot:'近づいたら弾を撃つ'};
 export const ENEMY_PRESETS={chase:{name:'追いかける敵',program:[{action:'chase',speed:2}]},patrol:{name:'見はりの敵',program:[{action:'patrol',speed:2}]},guard:{name:'弾を撃つ敵',program:[{action:'shoot',speed:3}]},still:{name:'動かない的',program:[]}};
 export const WEAPON_PRESETS={standard:{name:'ふつうのブラスター',speed:24,interval:.25,damage:1,spread:1},rapid:{name:'れんしゃブラスター',speed:30,interval:.12,damage:1,spread:1},spread:{name:'ひろがるブラスター',speed:22,interval:.5,damage:1,spread:5},power:{name:'パワーブラスター',speed:18,interval:.8,damage:3,spread:1}};
-export const CONDITION_NAMES={touch:'そのまま',stars:'星を集めたら',keys:'カギを集めたら',enemies:'敵を全員たおしたら'};
+export const CONDITION_NAMES={unset:'クリア条件をえらぶ',touch:'そのまま',stars:'星を集めたら',keys:'カギを集めたら',enemies:'敵を全員たおしたら'};
 const solidTypes=new Set(['box','platform','moving','door','wall','floor','roof']);
-export function settingsFor(type){return {axis:'x',distance:3,speed:2,value:type==='bounce'?11:type==='star'?5:1,condition:type==='door'?'keys':'touch',required:1};}
-export function part(type,x=0,z=-5){if(Object.hasOwn(BUILD_TYPES,type))return constructionPart(type,x,z);return {id:crypto.randomUUID(),type,x,y:['platform','moving'].includes(type)?1:0,z,w:['platform','moving'].includes(type)?4:type==='door'?3:2,h:['platform','moving'].includes(type)?.5:['bounce','hazard'].includes(type)?.2:type==='door'?3:2,d:type==='door'?.6:2,hp:3,program:type==='enemy'?structuredClone(ENEMY_PRESETS.chase.program):[],settings:settingsFor(type)};}
+export function settingsFor(type){return {axis:'x',distance:3,speed:2,value:type==='bounce'?11:type==='star'?5:1,condition:type==='goal'?'unset':type==='door'?'keys':'touch',required:1};}
+export function part(type,x=0,z=-5){if(Object.hasOwn(BUILD_TYPES,type))return constructionPart(type,x,z);return {id:crypto.randomUUID(),type,x,y:['platform','moving'].includes(type)?1:0,z,w:['platform','moving'].includes(type)?4:type==='door'?3:2,h:['platform','moving'].includes(type)?.5:['bounce','hazard'].includes(type)?.2:type==='door'?3:2,d:type==='door'?.6:2,hp:3,program:[],settings:settingsFor(type)};}
 export function fresh3D(){const weapon={speed:24,interval:.25,damage:1,spread:1};return {version:1,kind:'game-lab-3d',title:'わたしの3Dワールド',spawn:{x:0,y:0,z:8},weapon,loadout:defaultLoadout(weapon),objects:[]};}
-export function recipe3D(kind){
-  const p=fresh3D(),add=(type,x,z,extra={})=>{const o=part(type,x,z);Object.assign(o,extra);p.objects.push(o);return o;};
-  if(kind==='building'){p.title='建築ひろば';add('floor',0,0);add('wall',0,-2);add('wall',-2,0,{rotation:90,w:.25,d:4});add('wall',2,0,{rotation:90,w:.25,d:4});add('roof',0,0,{y:3});add('floor',8,0);const target=add('enemy',-8,-9);target.program=[];
-  }else if(kind==='adventure'){
-    p.title='星とカギの宝さがし';add('star',-4,4);add('star',5,0);add('star',-3,-5);add('key',4,-5);add('door',0,-9);add('box',-3,-9,{w:3,h:3});add('box',3,-9,{w:3,h:3});
-    const goal=add('goal',0,-14);goal.settings.condition='stars';goal.settings.required=3;add('checkpoint',0,-3);add('heal',-5,-2);
-  }else if(kind==='battle'){
-    p.title='ロボットチャレンジ';add('enemy',-4,-2);const guard=add('enemy',4,-7);guard.program=structuredClone(ENEMY_PRESETS.guard.program);const patrol=add('enemy',-3,-12);patrol.program=structuredClone(ENEMY_PRESETS.patrol.program);
-    add('box',0,-4,{w:3,h:2});add('heal',4,4);add('checkpoint',-4,5);const goal=add('goal',0,-17);goal.settings.condition='enemies';
-  }else if(kind==='athletic'){
-    p.title='ジャンプアスレチック';add('platform',0,3,{y:0,h:.5,w:4,d:3});add('platform',0,-1,{y:0,h:1,w:4,d:3});add('bounce',0,-4);add('moving',0,-7,{y:1.6,w:4});add('platform',0,-12,{y:0,h:2.6,w:5,d:4});add('star',0,-1,{y:1});add('star',0,-7,{y:2.1});add('checkpoint',0,3,{y:.5});add('goal',0,-12,{y:2.6});add('hazard',6,-6,{w:4,d:4});
-  }else throw Error('お手本が見つかりません');return p;
-}
 export function validate3D(data){
   const p=structuredClone(data),number=(v,a,b)=>Number.isFinite(v)&&v>=a&&v<=b;
   if(!p||p.kind!=='game-lab-3d'||p.version!==1||typeof p.title!=='string'||p.title.length>40||!p.spawn||!['x','z'].every(k=>number(p.spawn[k],-28,28))||p.spawn.y!==0||!Array.isArray(p.objects)||p.objects.length>150)throw Error('3D作品の形式がちがいます');
@@ -50,7 +37,7 @@ export function movePlayer(p,objects,dx,dz,dt,jump){
 }
 export function create3D(p){return {player:{...p.spawn,vy:0,grounded:true,hp:5,invincible:0},objects:structuredClone(p.objects).map(o=>({...o,settings:o.settings||settingsFor(o.type),origin:{x:o.x,y:o.y,z:o.z}})),bullets:[],buildings:[],equipped:0,time:0,cooldown:0,score:0,stars:0,keys:0,checkpoint:null,message:'',messageId:0,state:'playing'};}
 export function conditionMet(o,g){const s=o.settings||settingsFor(o.type);return s.condition==='touch'||(s.condition==='stars'&&g.stars>=s.required)||(s.condition==='keys'&&g.keys>=s.required)||(s.condition==='enemies'&&!g.objects.some(x=>x.type==='enemy'&&x.hp>0));}
-export function conditionHint(o,g){const s=o.settings||settingsFor(o.type);if(s.condition==='touch')return 'ふれると'+(o.type==='door'?'開く':'クリア');if(s.condition==='enemies')return `のこりの敵 ${g.objects.filter(x=>x.type==='enemy'&&x.hp>0).length} 体`;return `${s.condition==='stars'?'星':'カギ'} ${s.condition==='stars'?g.stars:g.keys} / ${s.required}`;}
+export function conditionHint(o,g){const s=o.settings||settingsFor(o.type);if(s.condition==='unset')return 'クリア条件が未設定';if(s.condition==='touch')return 'ふれると'+(o.type==='door'?'開く':'クリア');if(s.condition==='enemies')return `のこりの敵 ${g.objects.filter(x=>x.type==='enemy'&&x.hp>0).length} 体`;return `${s.condition==='stars'?'星':'カギ'} ${s.condition==='stars'?g.stars:g.keys} / ${s.required}`;}
 function inside(b,o,r=0){return Math.abs(b.x-o.x)<o.w/2+r&&Math.abs(b.z-o.z)<o.d/2+r&&b.y>o.y-r&&b.y<topAt(o,b.x,b.z)+r;}
 export function step3D(g,p,input,dt){
   if(g.state!=='playing')return;dt=clamp(dt,0,.033);g.time+=dt;g.cooldown-=dt;const player=g.player,tell=s=>{g.message=s;g.messageId++;};player.invincible=Math.max(0,player.invincible-dt);
