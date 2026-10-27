@@ -11,3 +11,6 @@ main{grid-template-columns:minmax(0,1fr) 310px}.starter-recipes{border:0;margin:
 
 /* Game touches belong to the controls, including simultaneous fingers in Safari. */
 #viewport,#viewport canvas,#controls3,#controls3 *,#buildbar3,#buildbar3 *,#play-hud,#play-hud *{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+
+html.playing3d,html.playing3d body,html.playing3d #viewport *{touch-action:none}
+html.playing3d #viewport{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}

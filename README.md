@@ -115,6 +115,6 @@ mainへのpushでテスト後、静的ファイルのみを公開します。リ
 
 ## iPadの同時タッチ操作
 
-プレイ画面では移動スティック・視点ドラッグ・発射・ジャンプのタッチをゲーム操作として扱い、Safariのピンチ／ダブルタップ拡大や長押しメニューとの競合を抑えています。CSSの `touch-action` に加え、キャンセル可能な Touch/Gesture イベントを非passiveリスナーで処理します（[Appleのイベント資料](https://developer.apple.com/library/archive/documentation/AppleApplications/Reference/SafariWebContent/HandlingEvents/HandlingEvents.html)）。通常の持ち替え・やりなおすボタンの１本指タップは維持します。編集画面・設定画面・ゲーム画面外のズームを一括で禁止する設定は加えていません。
+プレイ画面では移動スティック・視点ドラッグ・発射・ジャンプのタッチをゲーム操作として扱い、Safariのピンチ／ダブルタップ拡大や長押しメニューとの競合を抑えています。CSSの `touch-action` に加え、キャンセル可能な Touch/Gesture イベントを非passiveリスナーで処理します（[Appleのイベント資料](https://developer.apple.com/library/archive/documentation/AppleApplications/Reference/SafariWebContent/HandlingEvents/HandlingEvents.html)）。ゲーム画面内のタッチをdocumentのcapture段階で処理し、片方の指をスティックに残したまま別の指で連打する場合も、残る指の数にかかわらずtouchendを抑止します。通常の持ち替え・やりなおすボタンは、移動していないタップを1回のクリックとして処理します。持ちもの欄の横ドラッグも専用処理で維持します。プレイ中はルート要素にもtouch-action:noneを指定し、viewportの拡大制限を補助的に設定します（Safariのバージョンによってviewport制限が無視される場合があるため、これだけには依存しません）。編集・設定に戻ると元のviewport設定へ復元します。HTMLが読み込むアプリ・CSS・入力モジュールには更新番号を付け、旧ファイルのキャッシュを避けています。
 
 入力は指のIDで管理し、別の指の終了でスティックや視点を解除しません。発射ボタンに複数の指が触れた場合は最後の指を離すまで連射を維持し、キャンセル・画面切替・フォーカス喪失時には解除します。イベント処理の自動テストは実施していますが、iPad実機での同時タッチとSafariのズーム抑制は未検証です。
