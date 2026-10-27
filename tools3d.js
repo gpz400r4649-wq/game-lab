@@ -1,3 +1,4 @@
+import {LIMITS,PROJECTILES,IMPACTS} from './weapons3d.js';
 import {makeTool,TOOL_EFFECTS,BUILD_TYPES,equipTool,undoStructure,keepStructures} from './building3d.js';
 import {WEAPON_PRESETS} from './engine3d.js';
 export function createToolsUI(api){
@@ -14,12 +15,20 @@ export function createToolsUI(api){
     selectField(dialog,'この銃から出るもの',Object.entries(TOOL_EFFECTS),tool.effect,effect=>{tool.effect=effect;changed();renderEditor();});
     if(tool.effect==='shoot'){
       selectField(dialog,'かんたん設定',[['custom','いまの設定'],...Object.entries(WEAPON_PRESETS).map(([k,v])=>[k,v.name])],'custom',key=>{if(key!=='custom'){const {name,...stats}=WEAPON_PRESETS[key];Object.assign(tool,stats);changed();renderEditor();}});
-      const d=document.createElement('details'),s=document.createElement('summary');s.textContent='性能をちょうせい';d.append(s);
-      field(d,'弾の速さ',tool.speed,5,60,1,n=>{tool.speed=n;renderHotbar();});field(d,'発射の間かく（秒）',tool.interval,.1,2,.05,n=>tool.interval=n);field(d,'弾のつよさ',tool.damage,1,10,1,n=>tool.damage=Math.round(n));
-      selectField(d,'同時に出る弾',[[1,'1 発'],[3,'3 発'],[5,'5 発']],String(tool.spread),n=>{tool.spread=Number(n);changed();});dialog.append(d);
-    }else{const note=document.createElement('p');note.className='component-description';note.textContent=`狙った場所に${BUILD_TYPES[tool.effect]}を出す建築銃。緑のプレビューなら置けるよ。向きと高さは遊びながら変更できるよ。`;dialog.append(note);}
+      selectField(dialog,'どんな弾が出る？',Object.entries(PROJECTILES),tool.projectile,v=>{tool.projectile=v;changed();renderEditor();});
+      selectField(dialog,'当たったらどうなる？',Object.entries(IMPACTS),tool.impact,v=>{tool.impact=v;changed();renderEditor();});
+      const d=document.createElement('div');d.className='weapon-settings';
+      field(d,'発射の間かく（秒）',tool.interval,LIMITS.minInterval,2,.01,n=>tool.interval=n);
+      field(d,'弾のつよさ',tool.damage,1,LIMITS.maxDamage,1,n=>tool.damage=Math.round(n));
+      field(d,'弾の大きさ（直径）',tool.size,LIMITS.minSize,LIMITS.maxSize,.05,n=>tool.size=n);
+      field(d,'いちどに出る数',tool.spread,1,LIMITS.pellets,1,n=>tool.spread=Math.round(n));
+      field(d,'弾の速さ',tool.speed,5,LIMITS.maxSpeed,1,n=>tool.speed=n);
+      field(d,'弾が広がる角度',tool.spreadAngle,0,45,1,n=>tool.spreadAngle=n);
+      if(tool.impact==='explode')field(d,'爆発の広さ',tool.blastRadius,1,LIMITS.maxBlast,.5,n=>tool.blastRadius=n);
+      dialog.append(d);const note=document.createElement('p');note.className='component-description';note.textContent='数を変えて、どう変わるか確かめよう。出せる弾は画面内で96発まで。いっぱいになったら少し待つと、また撃てるよ。';dialog.append(note);
+    }else{field(dialog,'出すブロックの体力',tool.structureHp,1,LIMITS.maxBlockHp,1,n=>tool.structureHp=Math.round(n));const note=document.createElement('p');note.className='component-description';note.textContent=`狙った場所に${BUILD_TYPES[tool.effect]}を出す建築銃。緑のプレビューなら置けるよ。向きと高さは遊びながら変更できるよ。`;dialog.append(note);}
     const addRow=document.createElement('div');addRow.className='new-tools';
-    for(const [effect,label] of [['shoot','＋ 射撃の銃'],['wall','＋ 壁の銃'],['floor','＋ 床の銃'],['roof','＋ 屋根の銃']]){const b=document.createElement('button');b.textContent=label;b.disabled=p.loadout.length>=8;b.onclick=()=>{p.loadout.push(makeTool(effect));editing=p.loadout.length-1;changed();renderEditor();};addRow.append(b);}dialog.append(addRow);
+    for(const [effect,label] of [['shoot','＋ 射撃の銃'],['wall','＋ 壁の銃'],['floor','＋ 床の銃'],['roof','＋ 屋根の銃'],['ramp','＋ スロープの銃']]){const b=document.createElement('button');b.textContent=label;b.disabled=p.loadout.length>=8;b.onclick=()=>{p.loadout.push(makeTool(effect));editing=p.loadout.length-1;changed();renderEditor();};addRow.append(b);}dialog.append(addRow);
     const del=document.createElement('button');del.textContent='この持ちものをはずす';del.disabled=p.loadout.length===1;del.onclick=()=>{p.loadout.splice(editing,1);editing=Math.max(0,editing-1);changed();renderEditor();};
     const close=document.createElement('button');close.textContent='設定を閉じる';close.className='primary';close.onclick=()=>{dialog.close();renderLauncher();};dialog.append(del,close);
   }
@@ -30,7 +39,7 @@ export function createToolsUI(api){
     const tool=p.loadout[g?.equipped||0],building=getMode()==='play'&&tool.effect!=='shoot';$('#buildbar3').hidden=!building;$('#build-status3').hidden=!building;$('#fire3').textContent=building?'建てる ▧':'発射 ✦';$('#build-level3').textContent=`高さ ${level>=0?'+':''}${level} 段`;
     $('#undo-build3').disabled=!g?.buildings.length;$('#keep-build3').disabled=!g?.buildings.length;
   }
-  $('#rotate-build3').onclick=()=>{rotation=rotation===0?90:0;$('#rotate-build3').textContent=`向き ↻ ${rotation}°`;};
+  $('#rotate-build3').onclick=()=>{rotation=(rotation+90)%360;$('#rotate-build3').textContent=`向き ↻ ${rotation}°`;};
   $('#lower-build3').onclick=()=>{level=Math.max(-4,level-1);renderHotbar();};$('#raise-build3').onclick=()=>{level=Math.min(4,level+1);renderHotbar();};
   $('#undo-build3').onclick=()=>{const g=getGame();if(g){undoStructure(g);refresh();renderHotbar();}};
   $('#keep-build3').onclick=()=>{const g=getGame();if(!g)return;const count=keepStructures(getProject(),g);save();finishBuilding(count);};

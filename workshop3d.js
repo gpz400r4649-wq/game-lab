@@ -1,8 +1,9 @@
+import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js';
 import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js';
 import {PARTS,ENEMY_PRESETS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js';
 
-const ICONS={select:'↖',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
-const DESCRIPTIONS={wall:'家を囲う壁。向きを変えてつなげよう。',floor:'家の床と天井に使える板。壁の内側にぴったり合うよ。',roof:'壁の上にのせる三角屋根。向きを変えて家を仕上げよう。',
+const ICONS={select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
+const DESCRIPTIONS={ramp:'低いほうから歩くと、そのまま登れるスロープ。回して好きな向きにつなげよう。',wall:'家を囲う壁。向きを変えてつなげよう。',floor:'家の床と天井に使える板。壁の内側にぴったり合うよ。',roof:'壁の上にのせる三角屋根。向きを変えて家を仕上げよう。',
   box:'かべや建物をつくれる、かたいブロック。',platform:'ジャンプで乗れる足場。高さを変えてコースにしよう。',
   moving:'置くだけで行ったり来たり。乗ると一緒に運んでくれるよ。',bounce:'ふれると大ジャンプ！ 飛ぶ強さを変えてみよう。',
   enemy:'行動タイプを選ぶだけで動くよ。速さと体力で難しさを変えよう。',star:'集めると得点アップ。ゴールを開く条件にもできるよ。',
@@ -35,6 +36,7 @@ export function createWorkshop(api){
     const title=document.createElement('h2');title.className='inspector-heading';title.textContent=`${ICONS[o.type]} ${PARTS[o.type]}`;
     const description=document.createElement('p');description.className='component-description';description.textContent=DESCRIPTIONS[o.type];el.append(title,description);
     const s=o.settings;
+    if(DESTRUCTIBLE_TYPES.has(o.type)){field(el,'ブロックの体力',o.hp,1,LIMITS.maxBlockHp,1,n=>o.hp=Math.round(n));selectField(el,'弾が当たったら',[['yes','体力がなくなると壊れる'],['no','こわれない']],o.destructible===false?'no':'yes',v=>o.destructible=v==='yes');}
     if(o.type==='enemy'){
       const preset=Object.keys(ENEMY_PRESETS).find(k=>JSON.stringify(ENEMY_PRESETS[k].program)===JSON.stringify(o.program))||'custom';
       selectField(el,'行動タイプ',[...Object.entries(ENEMY_PRESETS).map(([k,v])=>[k,v.name]),['custom','自分で工夫した動き']],preset,k=>{if(k!=='custom')o.program=structuredClone(ENEMY_PRESETS[k].program);inspect();});
@@ -66,9 +68,9 @@ export function createWorkshop(api){
     }el.append(nudges);
     const fine=document.createElement('div'),positions=document.createElement('div');positions.className='position-fields';
     for(const [key,name,min,max] of [['x','横 X',-28,28],['y','高さ Y',0,12],['z','奥行 Z',-28,28]])field(positions,name,o[key],min,max,gridStep(o,key),n=>{o[key]=n;alignPiece(o);return o[key];});fine.append(positions);
-    if(['box','platform','moving','door','bounce','hazard','wall','floor','roof'].includes(o.type))for(const [key,name] of [['w','はば'],['h','たかさ'],['d','おくゆき']])field(fine,name,o[key],['wall','floor','roof','bounce','hazard'].includes(o.type)?.2:.5,10,.5,n=>o[key]=n);
+    if(['box','platform','moving','door','bounce','hazard','wall','floor','roof','ramp'].includes(o.type))for(const [key,name] of [['w','はば'],['h','たかさ'],['d','おくゆき']])field(fine,name,o[key],['wall','floor','roof','bounce','hazard'].includes(o.type)?.2:.5,10,.5,n=>o[key]=n);
     el.append(details('位置・大きさを数字でちょうせい',[fine]));
-    if(['wall','floor','roof'].includes(o.type)){const rotate=document.createElement('button');rotate.textContent='↻ 90° 回す';rotate.onclick=()=>{rotatePiece(o);save();rebuild();inspect();};el.append(rotate);}
+    if(['wall','floor','roof','ramp'].includes(o.type)){const rotate=document.createElement('button');rotate.textContent='↻ 90° 回す';rotate.onclick=()=>{rotatePiece(o);save();rebuild();inspect();};el.append(rotate);}
     const actions=document.createElement('div');actions.className='object-actions';
     const copy=document.createElement('button');copy.textContent='＋ 同じ部品をもう１つ';copy.onclick=()=>{if(p.objects.length>=150){api.toast('部品は150個まで置けます');return;}const duplicate=structuredClone(o);duplicate.id=crypto.randomUUID();let found=false;for(const [dx,dz] of [[Math.max(4,Math.ceil(o.w/4)*4),0],[0,Math.max(4,Math.ceil(o.d/4)*4)],[-Math.max(4,Math.ceil(o.w/4)*4),0],[0,-Math.max(4,Math.ceil(o.d/4)*4)]]){duplicate.x=o.x+dx;duplicate.z=o.z+dz;if(!GRID_PARTS.has(o.type)){duplicate.x=clamp(o.x+2,-28,28);duplicate.z=o.z;found=true;break;}alignPiece(duplicate);if(!editorPlacementReason(duplicate,p.objects,p.spawn)){found=true;break;}}if(!found){api.toast('隣のマスが空いていません');return;}p.objects.push(duplicate);select(duplicate.id);save();rebuild();api.objectList();inspect();};
     const del=document.createElement('button');del.textContent='削除';del.className='danger';del.onclick=()=>{p.objects=p.objects.filter(x=>x.id!==o.id);select(null);save();rebuild();api.objectList();inspect();};actions.append(copy,del);el.append(actions);
@@ -79,7 +81,7 @@ export function createWorkshop(api){
     selectField(el,'武器のタイプ',[...Object.entries(WEAPON_PRESETS).map(([k,v])=>[k,v.name]),['custom','自分でちょうせい']],current,k=>{if(k!=='custom'){const {name,...weapon}=WEAPON_PRESETS[k];p.weapon=weapon;weapons();}});
     el.append(details('速さ・つよさを工夫する',advanced));
   }
-  const groups=[['つくる道具',['select','erase']],['地形・しかけ',['wall','floor','roof','box','platform','moving','bounce','hazard']],['キャラクター・アイテム',['enemy','star','key','heal']],['進みかたをつくる',['checkpoint','door','goal']]];
+  const groups=[['つくる道具',['select','erase']],['地形・しかけ',['wall','floor','roof','ramp','box','platform','moving','bounce','hazard']],['キャラクター・アイテム',['enemy','star','key','heal']],['進みかたをつくる',['checkpoint','door','goal']]];
   const palette=$('#palette3');palette.replaceChildren();
   for(const [label,types] of groups){const heading=document.createElement('div');heading.className='palette-heading';heading.textContent=label;palette.append(heading);for(const type of types){const b=document.createElement('button');b.className='part'+(type==='select'?' active':'');b.dataset.part=type;b.innerHTML=`<span>${ICONS[type]}</span>${PARTS[type]||{select:'えらぶ',erase:'けす'}[type]}`;b.onclick=()=>setTool(type);palette.append(b);}}
   return {inspect,weapons};
