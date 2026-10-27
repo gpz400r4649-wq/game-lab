@@ -8,3 +8,6 @@ main{grid-template-columns:minmax(0,1fr) 310px}.starter-recipes{border:0;margin:
 #hit-info3{position:absolute;top:116px;right:18px;z-index:2;padding:9px 12px;background:#fff3dce8;border:1px solid #e9d6ac;border-radius:8px;color:#92734a;font-size:11px;pointer-events:none}.weapon-settings{padding:12px 15px;border-radius:10px;background:#f7f4fb;border:1px solid #ebe1f4;margin-top:14px}.weapon-settings .field{font-size:12px}.weapon-settings input{width:95px}@media(max-width:700px){#hit-info3{top:154px;right:12px;font-size:10px}}
 
 .event-rules{margin:18px 0;padding:12px;border:1px solid #d5e7e0;border-radius:11px;background:#f1f8f5}.event-rules h3{font-size:13px;margin:0 0 10px;color:#4c806d}.event-trigger{font-size:11px;line-height:1.8;font-weight:650}.event-action{padding:10px;margin:10px 0;border:1px solid #d8e5df;border-radius:9px;background:#fff}.event-action>button,.event-rules>button{width:100%;font-size:10px;margin-top:7px}.event-rules .recipe-hint{margin:8px 0}.event-action select{min-width:0}
+
+/* Game touches belong to the controls, including simultaneous fingers in Safari. */
+#viewport,#viewport canvas,#controls3,#controls3 *,#buildbar3,#buildbar3 *,#play-hud,#play-hud *{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
