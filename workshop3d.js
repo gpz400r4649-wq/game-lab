@@ -53,17 +53,15 @@ export function createWorkshop(api){
       const rules=document.createElement('div');rules.className='recipe-rule';
       const trigger=document.createElement('b');trigger.textContent=o.type==='goal'?'① ゴールにふれたとき':'① 条件をたしかめる';rules.append(trigger);
       selectField(rules,'② 条件',Object.entries(CONDITION_NAMES).map(([k,v])=>[k,k==='touch'?(o.type==='door'?'いつでも開く':'ふれるだけ'):v]),s.condition,v=>{s.condition=v;inspect();});
-      if(['stars','keys'].includes(s.condition))field(rules,'必要な数',s.required,1,20,1,n=>s.required=Math.round(n));
+      if(['stars','keys'].includes(s.condition))field(rules,'必要な数',s.required,1,20,1,n=>{s.required=Math.round(n);updateRuleHint();});
       const effect=document.createElement('b');effect.textContent=o.type==='goal'?'③ ステージクリア！':'③ ドアが開く';rules.append(effect);el.append(rules);
-      if(['stars','keys'].includes(s.condition)){
-        const type=s.condition==='stars'?'star':'key',count=p.objects.filter(x=>x.type===type).length;
-        if(count<s.required){const note=document.createElement('p');note.className='recipe-hint';note.textContent=`いまのステージには${PARTS[type]}が${count}個。あと${s.required-count}個置くか、必要な数を減らそう。`;el.append(note);}
-      }
+      function updateRuleHint(){if(!['stars','keys'].includes(s.condition))return;const type=s.condition==='stars'?'star':'key',count=p.objects.filter(x=>x.type===type).length;let note=el.querySelector('.recipe-hint');if(!note){note=document.createElement('p');note.className='recipe-hint';el.append(note);}note.hidden=count>=s.required;note.textContent=`いまのステージには${PARTS[type]}が${count}個。あと${Math.max(0,s.required-count)}個置くか、必要な数を減らそう。`;}
+      updateRuleHint();
     }
     const label=document.createElement('div');label.className='small-heading';label.textContent='置く場所をちょうせい';el.append(label);
     const nudges=document.createElement('div');nudges.className='nudge-grid';
     for(const [name,key,amount] of [['← 左','x',-1],['奥へ ↑','z',-1],['右 →','x',1],['下げる','y',-.5],['手前 ↓','z',1],['上げる','y',.5]]){
-      const button=document.createElement('button');button.textContent=name;button.onclick=()=>{o[key]=clamp(o[key]+amount,key==='y'?0:-28,key==='y'?12:28);save();rebuild();};nudges.append(button);
+      const button=document.createElement('button');button.textContent=name;button.onclick=()=>{o[key]=clamp(o[key]+amount,key==='y'?0:-28,key==='y'?12:28);save();rebuild();inspect();};nudges.append(button);
     }el.append(nudges);
     const fine=document.createElement('div'),positions=document.createElement('div');positions.className='position-fields';
     for(const [key,name,min,max] of [['x','横 X',-28,28],['y','高さ Y',0,12],['z','奥行 Z',-28,28]])field(positions,name,o[key],min,max,.5,n=>o[key]=n);fine.append(positions);
