@@ -1,7 +1,7 @@
 import {bindGameAction} from './input3d.js?v=20261028l';
 import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261028l';
 import {LIMITS,PROJECTILES,IMPACTS,impactEffects,weaponPresetKey,SHOT_PATTERNS,cadenceHandling} from './weapons3d.js?v=20261028l';
-import {facingBuildRotation,makeTool,TOOL_EFFECTS,BUILD_TYPES,equipTool,undoStructure,keepStructures,equipBlock} from './building3d.js?v=20261028l';
+import {facingBuildRotation,makeTool,TOOL_EFFECTS,BUILD_TYPES,equipTool,keepStructures,equipBlock} from './building3d.js?v=20261028l';
 import {WEAPON_PRESETS,PARTS} from './engine3d.js?v=20261028l';
 export function createToolsUI(api){
   const {$,getProject,getGame,getMode,field,save,refresh,finishBuilding}=api;
@@ -69,12 +69,11 @@ export function createToolsUI(api){
     const p=getProject(),g=getGame(),el=$('#hotbar3');el.replaceChildren();p.loadout.forEach((t,i)=>{const b=document.createElement('button');b.className='hot-slot';b.classList.toggle('active',g?.equipped===i);const locked=getMode()==='play'&&g?.inventory&&!g.inventory.includes(t.id);b.disabled=!!locked;setReadingText(b,`${i+1} ${locked?'🔒 拾って使う ':''}${t.effect==='shoot'?'✦':'▧'} ${t.name}`);b.setAttribute('aria-label',`持ちもの ${i+1} ${t.name}`);b.onclick=()=>{if(g)equipTool(g,p,i);renderHotbar();};el.append(b);});
     if(g)for(const stack of g.blockInventory||[]){if(stack.count<=0&&g.blockEquipped!==stack.id)continue;const b=document.createElement('button');b.className='hot-slot';b.classList.toggle('active',g.blockEquipped===stack.id);setReadingText(b,'▧ '+PARTS[stack.template.type]+' ×'+stack.count);b.setAttribute('aria-label','拾ったブロック '+PARTS[stack.template.type]+' '+stack.count+'個');b.onclick=()=>{equipBlock(g,stack.id);renderHotbar();};el.append(b);}
     const tool=p.loadout[g?.equipped??0],building=getMode()==='play'&&(!!g?.blockEquipped||(!!tool&&tool.effect!=='shoot'));$('#rotate-build3').hidden=!building;$('#buildbar3').hidden=!building;$('#build-status3').hidden=!building;setReadingText($('#fire3'),building?'建てる ▧':tool?'発射 ✦':'銃をひろおう');setReadingText($('#build-level3'),`高さ ${level>=0?'+':''}${level} 段`);
-    $('#undo-build3').disabled=!g?.buildings.length;$('#keep-build3').disabled=!g?.buildings.length;
+    $('#keep-build3').disabled=!g?.buildings.length;
   }
   function setRotation(value){rotation=value;setReadingText($('#rotate-build3'),'↻ 90° 回す');$('#rotate-build3').setAttribute('aria-label',`90度回す（見る向きから ${rotation}度）`);}
   bindGameAction($('#rotate-build3'),()=>setRotation((rotation+90)%360));
   $('#lower-build3').onclick=()=>{level=Math.max(-4,level-1);renderHotbar();};$('#raise-build3').onclick=()=>{level=Math.min(4,level+1);renderHotbar();};
-  $('#undo-build3').onclick=()=>{const g=getGame();if(g){undoStructure(g);refresh();renderHotbar();}};
   $('#keep-build3').onclick=()=>{const g=getGame();if(!g)return;const count=keepStructures(getProject(),g);save();finishBuilding(count);};
   window.addEventListener('keydown',e=>{if(getMode()!=='play'||e.target.matches('input,select,textarea')||document.querySelector('dialog[open]'))return;
     if(/^[1-8]$/.test(e.key)){equipTool(getGame(),getProject(),Number(e.key)-1);renderHotbar();}
