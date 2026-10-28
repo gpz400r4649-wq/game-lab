@@ -1,7 +1,7 @@
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261028d';
-import {LIMITS,PROJECTILES,IMPACTS,impactEffects,weaponPresetKey} from './weapons3d.js?v=20261028d';
-import {makeTool,TOOL_EFFECTS,BUILD_TYPES,equipTool,undoStructure,keepStructures} from './building3d.js?v=20261028d';
-import {WEAPON_PRESETS} from './engine3d.js?v=20261028d';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261028e';
+import {LIMITS,PROJECTILES,IMPACTS,impactEffects,weaponPresetKey,SHOT_PATTERNS,cadenceHandling} from './weapons3d.js?v=20261028e';
+import {makeTool,TOOL_EFFECTS,BUILD_TYPES,equipTool,undoStructure,keepStructures} from './building3d.js?v=20261028e';
+import {WEAPON_PRESETS} from './engine3d.js?v=20261028e';
 export function createToolsUI(api){
   const {$,getProject,getGame,getMode,field,save,refresh,finishBuilding}=api;
   let editing=0,rotation=0,level=0;
@@ -15,10 +15,10 @@ export function createToolsUI(api){
     const nameLabel=document.createElement('label');nameLabel.className='field choice-field';const nameCaption=document.createElement('span');setReadingText(nameCaption,'銃の名前');nameLabel.append(nameCaption);const name=document.createElement('input');name.type='text';name.setAttribute('aria-label','銃の名前');name.maxLength=32;name.value=tool.name;name.oninput=()=>{if(name.value.trim()){tool.name=name.value;changed();}};name.onchange=()=>{name.value=tool.name;};nameLabel.append(name);dialog.append(nameLabel);
     selectField(dialog,'この銃から出るもの',Object.entries(TOOL_EFFECTS),tool.effect,effect=>{tool.effect=effect;changed();renderEditor();});
     selectField(dialog,'この銃をいつ使える？',[['start','最初から持つ'],['pickup','イベントで拾って使う']],tool.pickupOnly?'pickup':'start',v=>{tool.pickupOnly=v==='pickup';changed();renderEditor();});
-    let syncPreset=()=>{};
+    let syncPreset=()=>{};const tuningControls=new Map();
       function performanceField(parent,label,key,min,max,step,choices){
         let sync=()=>{};
-        const assign=n=>{tool[key]=step===1?Math.round(n):n;sync();syncPreset();return tool[key];};
+        const assign=n=>{const previous=tool[key];tool[key]=step===1?Math.round(n):n;if(key==='interval'&&Math.abs(previous-tool[key])>.000001){Object.assign(tool,cadenceHandling(tool.interval));tuningControls.get('recoil')?.();tuningControls.get('aimJitter')?.();}sync();syncPreset();return tool[key];};
         const old=field(parent,label,tool[key],min,max,step,assign),number=old.querySelector('input'),row=document.createElement('div'),caption=document.createElement('label'),group=document.createElement('div');
         row.className='performance-field';number.id=`tune-${editing}-${key}`;caption.htmlFor=number.id;setReadingText(caption,label);group.className='tuning-options';group.setAttribute('role','radiogroup');group.setAttribute('aria-label',label+'のかんたん調整');
         const radios=[];
@@ -27,7 +27,7 @@ export function createToolsUI(api){
           radio.onchange=()=>{if(!radio.checked)return;number.value=value;assign(value);changed();};
         }
         const custom=document.createElement('label'),customRadio=document.createElement('input'),customText=document.createElement('span');customRadio.type='radio';customRadio.name=number.id;customRadio.value='custom';customRadio.setAttribute('aria-label','数値で調整');setReadingText(customText,'こまかく');custom.append(customRadio,customText);group.append(custom);customRadio.onchange=()=>number.focus();
-        sync=()=>{let matched=false;for(const [radio,value] of radios){radio.checked=Math.abs(tool[key]-value)<.000001;matched||=radio.checked;}customRadio.checked=!matched;};sync();row.append(caption,group,number);old.replaceWith(row);
+        sync=()=>{let matched=false;for(const [radio,value] of radios){radio.checked=Math.abs(tool[key]-value)<.000001;matched||=radio.checked;}customRadio.checked=!matched;};sync();tuningControls.set(key,()=>{number.value=tool[key];sync();});row.append(caption,group,number);old.replaceWith(row);
       }
     if(tool.effect==='shoot'){
       let presetSelect;
@@ -40,16 +40,22 @@ export function createToolsUI(api){
         const row=document.createElement('label'),check=document.createElement('input'),caption=document.createElement('span');check.type='checkbox';check.value=value;check.checked=selected.includes(value);check.setAttribute('aria-label',label);setReadingText(caption,label);
         check.onchange=()=>{const values=new Set(impactEffects(tool));if(check.checked)values.add(value);else values.delete(value);tool.impacts=[...values];changed();const scroll=dialog.scrollTop;renderEditor();dialog.scrollTop=scroll;};row.append(check,caption);impacts.append(row);
       }
-      const help=document.createElement('p');help.className='component-description';setReadingText(help,'跳ね返る＋爆発なら、ぶつかるたびに爆発して弾は跳ね返るよ。２回まで跳ね返り、その次にぶつかると消えるよ。ダメージは同じ命中で二重にはならないよ。');impacts.append(help);dialog.append(impacts);
+      const help=document.createElement('p');help.className='component-description';setReadingText(help,'跳ね返る＋爆発なら、ぶつかるたびに爆発して弾は跳ね返るよ。２回まで跳ね返り、その次にぶつかると消えるよ。ダメージは同じ命中で二重にはならないよ。');impacts.append(help);
       const d=document.createElement('div');d.className='weapon-settings';
+      selectField(d,'弾の出る形',Object.entries(SHOT_PATTERNS),tool.pattern,v=>{tool.pattern=v;syncPreset();changed();});
+      performanceField(d,'どこまで届く？（m）','range',2,LIMITS.maxRange,1,[['ちかく',10],['なかくらい',30],['とおく',60]]);
       performanceField(d,'発射の間かく（秒）','interval',LIMITS.minInterval,2,.01,[['ゆっくり',.8],['ふつう',.25],['はやい',.08]]);
+      const handlingNote=document.createElement('p');handlingNote.className='handling-note';setReadingText(handlingNote,'連射を速くすると、反動とブレも大きくなるよ。次はこの２つを下げて、自分が使いやすい銃にしよう。速さをもう一度変えると、この２つの数値も変わるよ。');d.append(handlingNote);
+      performanceField(d,'銃の反動（角度）','recoil',0,LIMITS.maxRecoil,.1,[['なし',0],['すこし',1],['おおきい',4]]);
+      performanceField(d,'照準のブレ（角度）','aimJitter',0,LIMITS.maxJitter,.1,[['なし',0],['すこし',1],['おおきい',5]]);
+      const meaning=document.createElement('p');meaning.className='component-description';setReadingText(meaning,'反動は撃つと視点が上がる強さ。ブレは弾がねらいからずれる広さで、照準の丸が広いほど当てにくくなるよ。');d.append(meaning);
       performanceField(d,'弾のつよさ','damage',1,LIMITS.maxDamage,1,[['よわい',1],['ふつう',5],['つよい',20]]);
       performanceField(d,'弾の大きさ（直径）','size',LIMITS.minSize,LIMITS.maxSize,.05,[['ちいさい',.1],['ふつう',.2],['おおきい',1]]);
       performanceField(d,'いちどに出る数','spread',1,LIMITS.pellets,1,[['すくない',1],['ふつう',3],['たくさん',8]]);
       performanceField(d,'弾の速さ','speed',5,LIMITS.maxSpeed,1,[['ゆっくり',5],['ふつう',24],['はやい',60]]);
       performanceField(d,'弾が広がる角度','spreadAngle',0,45,1,[['まっすぐ',0],['すこし',20],['ひろい',45]]);
       if(selected.includes('explode'))performanceField(d,'爆発の広さ','blastRadius',1,LIMITS.maxBlast,.5,[['せまい',1],['ふつう',3],['ひろい',6]]);
-      dialog.append(d);const note=document.createElement('p');note.className='component-description';setReadingText(note,'まるを選ぶと右の数値も変わるよ。数値を直接変えてもOK。「こまかく」は、右の数値で決める設定だよ。広がる角度は、弾が２個以上のときに変化がわかるよ。出せる弾は画面内で96発まで。');dialog.append(note);
+      dialog.append(d,impacts);const note=document.createElement('p');note.className='component-description';setReadingText(note,'まるを選ぶと右の数値も変わるよ。数値を直接変えてもOK。「こまかく」は、右の数値で決める設定だよ。弾の出る形と広がる角度は、弾が２個以上のときに変化がわかるよ。届く距離は、跳ね返った道のりも数えるよ。出せる弾は画面内で96発まで。');dialog.append(note);
     }else{const d=document.createElement('div');d.className='weapon-settings';performanceField(d,'出すブロックの体力','structureHp',1,LIMITS.maxBlockHp,1,[['もろい',5],['ふつう',20],['かたい',100]]);dialog.append(d);const note=document.createElement('p');note.className='component-description';setReadingText(note,`狙った場所に${BUILD_TYPES[tool.effect]}を出す建築銃。緑のプレビューなら置けるよ。向きと高さは遊びながら変更できるよ。`);dialog.append(note);}
     const addRow=document.createElement('div');addRow.className='new-tools';
     for(const [effect,label] of [['shoot','＋ 射撃の銃'],['wall','＋ 壁の銃'],['floor','＋ 床の銃'],['roof','＋ 屋根の銃'],['ramp','＋ スロープの銃']]){const b=document.createElement('button');setReadingText(b,label);b.disabled=p.loadout.length>=8;b.onclick=()=>{p.loadout.push(makeTool(effect));editing=p.loadout.length-1;changed();renderEditor();};addRow.append(b);}dialog.append(addRow);

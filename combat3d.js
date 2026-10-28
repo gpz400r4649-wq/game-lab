@@ -1,16 +1,22 @@
-import {topAt} from './building3d.js?v=20261028d';
-import {LIMITS,safeShot,DESTRUCTIBLE_TYPES,impactEffects} from './weapons3d.js?v=20261028d';
+import {topAt} from './building3d.js?v=20261028e';
+import {LIMITS,safeShot,DESTRUCTIBLE_TYPES,impactEffects} from './weapons3d.js?v=20261028e';
 const solidType=o=>DESTRUCTIBLE_TYPES.has(o.type)||o.type==='door';
 const alive=o=>(o.type!=='enemy'&&!DESTRUCTIBLE_TYPES.has(o.type))||o.hp>0||(DESTRUCTIBLE_TYPES.has(o.type)&&o.destructible===false);
-export function shootVolley(g,origin,direction,tool,enemy=false){
+function axes(f){const length=Math.hypot(f.x,f.z),right=length>.00001?{x:-f.z/length,y:0,z:f.x/length}:{x:1,y:0,z:0};return {right,up:{x:right.y*f.z-right.z*f.y,y:right.z*f.x-right.x*f.z,z:right.x*f.y-right.y*f.x}};}
+function coneDirection(f,radius,azimuth){const {right:r,up:u}=axes(f),c=Math.cos(radius),s=Math.sin(radius),x=Math.cos(azimuth)*s,y=Math.sin(azimuth)*s;return {x:f.x*c+r.x*x+u.x*y,y:f.y*c+r.y*x+u.y*y,z:f.z*c+r.z*x+u.z*y};}
+export function shootVolley(g,origin,direction,tool,enemy=false,random=Math.random){
   const s=safeShot(tool),length=Math.hypot(direction.x,direction.y,direction.z);
   if(!Number.isFinite(length)||length<.0001||!['x','y','z'].every(k=>Number.isFinite(origin[k])))return 0;
-  const f={x:direction.x/length,y:direction.y/length,z:direction.z/length};let count=0;
+  let f={x:direction.x/length,y:direction.y/length,z:direction.z/length};let count=0;
+  if(s.jitter>0)f=coneDirection(f,Math.sqrt(random())*s.jitter*Math.PI/180,random()*Math.PI*2);
+  const {right}=axes(f);
   for(let i=0;i<s.count&&g.bullets.length<LIMITS.bullets;i++){
     const a=s.count===1?0:(i/(s.count-1)-.5)*s.angle;
-    g.bullets.push({...origin,vx:(f.x*Math.cos(a)+f.z*Math.sin(a))*s.speed,vy:f.y*s.speed,vz:(-f.x*Math.sin(a)+f.z*Math.cos(a))*s.speed,life:3,enemy,damage:s.damage,radius:s.radius,projectile:s.projectile,impact:s.impact,impacts:s.impacts,blastRadius:s.blastRadius,bounces:2,lastHit:null,ignoreUntil:0});count++;
+    const v=s.pattern==='cone'&&s.count>1?coneDirection(f,Math.sqrt((i+.5)/s.count)*s.angle/2,i*2.399963229728653):{x:f.x*Math.cos(a)+right.x*Math.sin(a),y:f.y*Math.cos(a)+right.y*Math.sin(a),z:f.z*Math.cos(a)+right.z*Math.sin(a)};
+    g.bullets.push({...origin,vx:v.x*s.speed,vy:v.y*s.speed,vz:v.z*s.speed,remaining:s.range,life:Math.min(LIMITS.maxLife,s.range/s.speed/(.85*.85)+.1),enemy,damage:s.damage,radius:s.radius,projectile:s.projectile,impact:s.impact,impacts:s.impacts,blastRadius:s.blastRadius,bounces:2,lastHit:null,ignoreUntil:0});count++;
   }return count;
 }
+
 function effect(g,point,radius,kind){if(g.effects.length>=LIMITS.effects)g.effects.shift();g.effects.push({x:point.x,y:point.y,z:point.z,radius,kind,life:kind==='blast'?.45:.16,maxLife:kind==='blast'?.45:.16});}
 function damageObject(g,o,damage){
   const block=DESTRUCTIBLE_TYPES.has(o.type);
@@ -30,11 +36,11 @@ export function updateCombat(g,dt){
   g.effects=g.effects.filter(e=>(e.life-=dt)>0);if(g.bullets.length>LIMITS.bullets)g.bullets.length=LIMITS.bullets;
   const solid=g.objects.filter(o=>solidType(o)&&!o.open),enemies=g.objects.filter(o=>o.type==='enemy');
   for(const b of g.bullets){
-    b.radius??=.1;b.impact??='damage';b.bounces??=2;const impacts=impactEffects(b);
+    b.remaining??=60;b.radius??=.1;b.impact??='damage';b.bounces??=2;const impacts=impactEffects(b);
     const end={x:b.x+b.vx*dt,y:b.y+b.vy*dt,z:b.z+b.vz*dt},targets=[...solid,...(!b.enemy?enemies:[])].filter(o=>!o.hidden&&alive(o)&&nearbySweep(b,end,o));
     const steps=Math.min(24,Math.max(1,Math.ceil(Math.hypot(b.vx,b.vy,b.vz)*dt/.15)));
     for(let i=0;i<steps&&b.life>0;i++){
-      b.x+=b.vx*dt/steps;b.y+=b.vy*dt/steps;b.z+=b.vz*dt/steps;
+      const speed=Math.hypot(b.vx,b.vy,b.vz),travel=Math.min(speed*dt/steps,b.remaining);if(travel<=.000001){b.life=0;break;}const fraction=travel/(speed||1);b.x+=b.vx*fraction;b.y+=b.vy*fraction;b.z+=b.vz*fraction;b.remaining-=travel;
       if(Math.abs(b.x)>30||Math.abs(b.z)>30||b.y>40){b.life=0;break;}
       const ground=b.y-b.radius<=0,hit=targets.find(o=>alive(o)&&!(o.id===b.lastHit&&g.time<b.ignoreUntil)&&contains(b,o));
       const playerHit=b.enemy&&Math.hypot(b.x-g.player.x,b.z-g.player.z)<.35+b.radius&&b.y>g.player.y-b.radius&&b.y<g.player.y+1.7+b.radius;
@@ -43,9 +49,9 @@ export function updateCombat(g,dt){
       if(impacts.includes('explode'))explode(g,b);
       else {if(hit&&impacts.includes('damage'))damageObject(g,hit,b.damage||1);effect(g,b,.3,'hit');}
       if(impacts.includes('bounce')&&b.bounces>0&&hit?.type!=='enemy'){
-        const n=normalAt(b,hit),dot=b.vx*n.x+b.vy*n.y+b.vz*n.z;b.vx=(b.vx-2*dot*n.x)*.85;b.vy=(b.vy-2*dot*n.y)*.85;b.vz=(b.vz-2*dot*n.z)*.85;b.x+=n.x*.1;b.y+=n.y*.1;b.z+=n.z*.1;b.bounces--;b.lastHit=hit?.id;b.ignoreUntil=g.time+.08;break;
+        const n=normalAt(b,hit),dot=b.vx*n.x+b.vy*n.y+b.vz*n.z;b.vx=(b.vx-2*dot*n.x)*.85;b.vy=(b.vy-2*dot*n.y)*.85;b.vz=(b.vz-2*dot*n.z)*.85;const push=Math.min(.1,b.remaining);b.x+=n.x*push;b.y+=n.y*push;b.z+=n.z*push;b.remaining-=push;b.bounces--;b.lastHit=hit?.id;b.ignoreUntil=g.time+.08;break;
       }b.life=0;break;
-    }b.life-=dt;
+    }b.life-=dt;if(b.remaining<=.000001)b.life=0;
   }
   g.bullets=g.bullets.filter(b=>b.life>0);g.objects=g.objects.filter(alive);const ids=new Set(g.objects.map(o=>o.id));g.buildings=g.buildings.filter(o=>ids.has(o.id));
 }

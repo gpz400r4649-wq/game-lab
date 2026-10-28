@@ -33,7 +33,7 @@ export function fireEvents(g,p,o,tell){
       case 'addScore':g.score+=a.amount;messages.push(`得点 ＋${a.amount}`);break;
       case 'heal':g.player.hp=Math.min(5,g.player.hp+a.amount);messages.push('体力を回復した！');break;
       case 'openDoor':{const door=g.objects.find(x=>x.id===a.target&&x.type==='door');if(door){door.open=true;messages.push('ドアのカギがあいた！');}break;}
-      case 'giveTool':{const index=p.loadout.findIndex(t=>t.id===a.target);if(index>=0){const tool=p.loadout[index];if(!g.inventory.includes(tool.id))g.inventory.push(tool.id);g.equipped=index;g.cooldown=0;messages.push(tool.name+'をひろった！');}break;}
+      case 'giveTool':{const index=p.loadout.findIndex(t=>t.id===a.target);if(index>=0){const tool=p.loadout[index];if(!g.inventory.includes(tool.id))g.inventory.push(tool.id);g.equipped=index;g.cooldown=0;g.recoilPitch=0;messages.push(tool.name+'をひろった！');}break;}
       case 'spawnEnemy':{const enemy=g.objects.find(x=>x.id===a.target&&x.type==='enemy'&&x.hidden&&x.hp>0);if(enemy){enemy.hidden=false;messages.push('敵が出現した！');}break;}
       case 'checkpoint':g.checkpoint={id:o.id,x:o.x,y:o.y,z:o.z};messages.push('セーブポイントを記録したよ');break;
       case 'win':if(g.player.hp>0){g.state='won';messages.push('ステージクリア！');}break;
