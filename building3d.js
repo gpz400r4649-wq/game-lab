@@ -1,4 +1,4 @@
-import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261028e';
+import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261028g';
 // Shared by editor, gameplay and placement preview. No browser dependency.
 export const BUILD_TYPES={wall:'壁',floor:'床',roof:'屋根',ramp:'スロープ'};
 export const GRID={cell:4,layer:3,size:60};
@@ -98,15 +98,49 @@ export function placement(g,tool,point,rotation=0,level=0){
   }
   return {piece,valid:true,reason:'発射ボタンで置く'};
 }
-export function equipTool(g,p,index){if(!Number.isInteger(index)||index<0||index>=p.loadout.length||(g.inventory&&!g.inventory.includes(p.loadout[index].id)))return false;g.equipped=index;g.cooldown=0;g.recoilPitch=0;return true;}
+export function equipTool(g,p,index){if(!Number.isInteger(index)||index<0||index>=p.loadout.length||(g.inventory&&!g.inventory.includes(p.loadout[index].id)))return false;g.equipped=index;g.blockEquipped=null;g.cooldown=0;g.recoilPitch=0;return true;}
 export function placeStructure(g,p,input){
   const tool=p.loadout?.[g.equipped];
   const result=placement(g,tool,input.buildPoint,input.buildRotation||0,input.buildLevel||0);
   if(!result.valid){g.message=result.reason;g.messageId++;return result;}
   const o=result.piece;o.hp=Math.max(1,Math.min(200,Math.round(tool.structureHp||20)));o.maxHp=o.hp;o.origin={x:o.x,y:o.y,z:o.z};o.built=true;g.objects.push(o);g.buildings.push(o);g.message=BUILD_TYPES[o.type]+'を建てた！';g.messageId++;return result;
 }
-export function undoStructure(g){const o=g.buildings.pop();if(!o)return false;g.objects=g.objects.filter(x=>x.id!==o.id);g.message='最後の建築をもどしたよ';g.messageId++;return true;}
+export function undoStructure(g){const o=g.buildings.at(-1);if(!o)return false;if(o.fromBlockItem&&!giveBlock(g,blockTemplate(o))){g.message='ブロックの持ちものがいっぱいです';g.messageId++;return false;}g.buildings.pop();g.objects=g.objects.filter(x=>x.id!==o.id);g.message='最後の建築をもどしたよ';g.messageId++;return true;}
 export function keepStructures(p,g){
-  const ids=new Set(p.objects.map(o=>o.id)),available=Math.max(0,150-p.objects.length),pieces=g.buildings.filter(o=>!ids.has(o.id)).slice(0,available).map(o=>{const {built,origin,maxHp,hitUntil,...piece}=o;if(maxHp)piece.hp=maxHp;return structuredClone(piece);});
+  const ids=new Set(p.objects.map(o=>o.id)),available=Math.max(0,150-p.objects.length),pieces=g.buildings.filter(o=>!ids.has(o.id)).slice(0,available).map(o=>{const {built,origin,maxHp,hitUntil,fromBlockItem,...piece}=o;if(maxHp)piece.hp=maxHp;return structuredClone(piece);});
   p.objects.push(...pieces);return pieces.length;
+}
+
+export function blockTemplate(o){
+ const turned=(o.rotation||0)%180===90;
+ return {type:o.type,w:turned?o.d:o.w,h:o.h,d:turned?o.w:o.d,rotation:0,hp:Math.max(1,Math.min(200,o.maxHp||o.hp||1)),destructible:o.destructible!==false,program:structuredClone(o.program||[]),settings:structuredClone(o.settings),destroyEvents:structuredClone(o.destroyEvents||[])};
+}
+export function giveBlock(g,template){
+ g.blockInventory??=[];const key=JSON.stringify(template);let stack=g.blockInventory.find(s=>s.key===key);
+ if(stack&&stack.count>=99)return false;
+ if(!stack){g.blockInventory=g.blockInventory.filter(s=>s.count>0);if(g.blockInventory.length>=8)return false;stack={id:crypto.randomUUID(),key,template:structuredClone(template),count:0};g.blockInventory.push(stack);}
+ stack.count++;g.blockEquipped=stack.id;g.equipped=-1;g.recoilPitch=0;return true;
+}
+export function equipBlock(g,id){const stack=g.blockInventory?.find(s=>s.id===id&&s.count>0);if(!stack)return false;g.blockEquipped=id;g.equipped=-1;g.cooldown=0;g.recoilPitch=0;return true;}
+export function blockPlacement(g,point,rotation=0,level=0){
+ const stack=g.blockInventory?.find(s=>s.id===g.blockEquipped),no=reason=>({piece:null,valid:false,reason});
+ if(!stack||stack.count<=0)return no('拾ったブロックがありません');
+ if(!point||!['x','y','z'].every(k=>Number.isFinite(point[k]))||![0,90,180,270].includes(rotation)||!Number.isInteger(level)||Math.abs(level)>4)return no('置く場所をえらぼう');
+ const t=stack.template;let piece;
+ if(Object.hasOwn(BUILD_TYPES,t.type)){
+  const result=placement(g,{effect:t.type},point,rotation,level);if(!result.piece)return result;
+  const turned=rotation%180!==0;piece={...structuredClone(t),id:crypto.randomUUID(),x:result.piece.x,y:result.piece.y,z:result.piece.z,rotation:result.piece.rotation,w:turned?t.d:t.w,d:turned?t.w:t.d};
+ }else{
+  piece=snapEditorPiece({...structuredClone(t),id:crypto.randomUUID(),x:0,y:0,z:0},point,point.surface,point.normal);piece.y+=level*3;
+  if(rotation%180!==0)[piece.w,piece.d]=[piece.d,piece.w];piece.rotation=rotation%180;
+ }
+ let reason=editorPlacementReason(piece,g.objects,g.player);
+ if(piece.y<0||piece.y>12)reason='ステージの中に置こう';
+ if(Math.hypot(piece.x-g.player.x,piece.y-g.player.y,piece.z-g.player.z)>12)reason='もう少し近づこう';
+ return {piece,valid:!reason,reason:reason||'発射ボタンで拾ったブロックを置く'};
+}
+export function placeBlock(g,input){
+ const result=blockPlacement(g,input.buildPoint,input.buildRotation||0,input.buildLevel||0);
+ if(!result.valid){g.message=result.reason;g.messageId++;return result;}
+ const stack=g.blockInventory.find(s=>s.id===g.blockEquipped),o=result.piece;stack.count--;o.maxHp=o.hp;o.origin={x:o.x,y:o.y,z:o.z};o.built=true;o.fromBlockItem=true;g.objects.push(o);g.buildings.push(o);g.message='拾ったブロックを置いたよ';g.messageId++;return result;
 }

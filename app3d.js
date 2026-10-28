@@ -1,13 +1,13 @@
-import {configureNumericInput} from './numeric3d.js?v=20261028f';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261028f';
+import {configureNumericInput} from './numeric3d.js?v=20261028g';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261028g';
 import {installGameTouchGuard,bindHeldButton,createGamePageMode} from './input3d.js?v=20261028b';
-import {actionsFor,ACTION_NAMES} from './events3d.js?v=20261028f';
-import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261028f';
-import {BUILD_TYPES,placement,GRID,GRID_PARTS,snapEditorPiece,editorPlacementReason} from './building3d.js?v=20261028f';
-import {createToolsUI} from './tools3d.js?v=20261028f';
+import {actionsFor,ACTION_NAMES} from './events3d.js?v=20261028g';
+import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261028g';
+import {BUILD_TYPES,placement,GRID,GRID_PARTS,snapEditorPiece,editorPlacementReason,blockPlacement} from './building3d.js?v=20261028g';
+import {createToolsUI} from './tools3d.js?v=20261028g';
 import * as T from './vendor/three.module.min.js';
-import {PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,conditionHint} from './engine3d.js?v=20261028f';
-import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261028f';
+import {PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,conditionHint} from './engine3d.js?v=20261028g';
+import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261028g';
 const $=s=>document.querySelector(s),view=$('#viewport'),KEY='tsukuru-lab-3d-v1';
 let project=fresh3D(),selected=null,tool='select',mode='edit',perspective='tps',game=null,yaw=0,pitch=-.05,editYaw=.55,editPitch=.7,editDistance=30,editTarget=new T.Vector3(0,0,0),stick={x:0,z:0},keys=new Set(),fireHeld=false,firePressed=false,jumpPressed=false,look=null,saveTimer,toastTimer,lastTime=0;
 function toast(s){setReadingText($('#toast3'),s);$('#toast3').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast3').classList.remove('show'),3200);}
@@ -31,13 +31,15 @@ const rampShape=new T.Shape();rampShape.moveTo(-.5,0);rampShape.lineTo(.5,0);ram
 function structureModel(o,override){const g=new T.Group(),turned=(o.rotation||0)%180===90,w=turned?o.d:o.w,d=turned?o.w:o.d,mat=override||materials[o.type];g.rotation.y=(o.rotation||0)*Math.PI/180;if(o.type==='roof'||o.type==='ramp'){const m=new T.Mesh(o.type==='ramp'?rampGeometry:roofGeometry,mat);m.scale.set(w,o.h,d);g.add(m);}else{box(g,mat,0,o.h/2,0,w,o.h,d);if(o.type==='wall'){for(const x of [-w*.44,0,w*.44])box(g,override||materials.floor,x,o.h/2,-d/2-.025,.1,o.h,.06);for(const y of [.12,o.h-.12])box(g,override||materials.floor,0,y,-d/2-.04,w,.12,.07);}else{for(let x=-w*.4;x<=w*.4;x+=.45)box(g,override||materials.wall,x,o.h+.012,0,.025,.025,d*.96);}}return g;}
 const ghost=new T.Group(),ghostMaterial=new T.MeshBasicMaterial({color:0x67d8bd,transparent:true,opacity:.42,depthWrite:false});scene.add(ghost);let ghostShape='',buildCount=-1,editorPointer=null;
 const portalGeometry=new T.TorusGeometry(.9,.12,8,24),keyGeometry=new T.TorusGeometry(.23,.08,6,16);
-function rebuild(){
- objectsGroup.clear();meshes.clear();const objects=mode==='play'?game.objects:project.objects;
- for(const o of objects){let mesh=new T.Group();
+function partModel(o){let mesh=new T.Group();
   if(Object.hasOwn(BUILD_TYPES,o.type)){mesh=structureModel(o);}
   else if(['box','platform','moving'].includes(o.type)){
    box(mesh,materials[o.type],0,o.h/2,0,o.w,o.h,o.d);box(mesh,o.type==='box'?materials.white:materials.player,0,o.h+.015,0,o.w*.92,.03,o.d*.92);
    if(o.type==='moving'){box(mesh,materials.white,0,o.h+.04,0,.7,.04,.18);box(mesh,materials.white,-.27,o.h+.04,0,.12,.04,.4);box(mesh,materials.white,.27,o.h+.04,0,.12,.04,.4);}
+  }else if(o.type==='weapon'){
+   box(mesh,materials.player,0,.55,0,.75,.22,.3);box(mesh,materials.dark,.48,.55,0,.55,.12,.15);box(mesh,materials.dark,-.15,.32,0,.15,.36,.2);const ring=new T.Mesh(portalGeometry,materials.star);ring.rotation.x=Math.PI/2;ring.scale.setScalar(.55);ring.position.y=.08;mesh.add(ring);
+  }else if(o.type==='blockItem'){
+   const t=o.blockTemplate,mini=Object.hasOwn(BUILD_TYPES,t.type)?structureModel(t):new T.Group();if(!Object.hasOwn(BUILD_TYPES,t.type))box(mini,materials[t.type]||materials.box,0,t.h/2,0,t.w,t.h,t.d);mini.scale.setScalar(.2);mini.position.y=.12;mesh.add(mini);const ring=new T.Mesh(portalGeometry,materials.star);ring.rotation.x=Math.PI/2;ring.scale.setScalar(.5);ring.position.y=.06;mesh.add(ring);
   }else if(o.type==='enemy')mesh=robot(materials.enemy);
   else if(o.type==='star'){const m=new T.Mesh(starGeometry,materials.star);m.position.y=.85;mesh.add(m);}
   else if(o.type==='door'){
@@ -56,8 +58,10 @@ function rebuild(){
   }else if(o.type==='bounce'){
    box(mesh,materials.dark,0,.06,0,o.w,.12,o.d);box(mesh,materials.bounce,0,.2,0,o.w*.9,.14,o.d*.9);box(mesh,materials.white,0,.29,0,.16,.04,.8);box(mesh,materials.white,0,.29,-.3,.6,.04,.16);
   }
-  mesh.position.set(o.x,o.y,o.z);mesh.visible=mode!=='play'||(!o.hidden&&!o.collected);mesh.userData.id=o.id;objectsGroup.add(mesh);meshes.set(o.id,mesh);
- }
+return mesh;}
+function rebuild(){
+ objectsGroup.clear();meshes.clear();const objects=mode==='play'?[...game.objects,...game.drops]:project.objects;
+ for(const o of objects){const mesh=partModel(o);mesh.position.set(o.x,o.y,o.z);mesh.visible=mode!=='play'||(!o.hidden&&!o.collected);mesh.userData.id=o.id;objectsGroup.add(mesh);meshes.set(o.id,mesh);}
  solidMeshes=solids(objects).map(o=>meshes.get(o.id));updateSelection();
 }
 function updateSelection(){const mesh=meshes.get(selected);selectionBox.visible=!!mesh&&mode==='edit';if(mesh)selectionBox.setFromObject(mesh);}
@@ -92,11 +96,11 @@ let lastMessageId=0,currentRules='',inventoryStamp='',reticleStamp='';
 const effectPool=[],bulletPool=[];function syncGameMeshes(){
  const equipped=project.loadout[game.equipped],jitter=equipped?.effect==='shoot'?(equipped.aimJitter||0):0,stampAim=jitter+':'+view.clientHeight;
  if(reticleStamp!==stampAim){reticleStamp=stampAim;$('#crosshair').style.setProperty('--aim-size',(view.clientHeight*Math.tan(jitter*Math.PI/180)/Math.tan(camera.fov*Math.PI/360))+'px');$('#crosshair').classList.toggle('has-jitter',jitter>0);}
- const live=new Set(game.objects.map(o=>o.id));for(const [id,mesh] of meshes)if(!live.has(id)){objectsGroup.remove(mesh);meshes.delete(id);}
- for(const o of game.objects){let mesh=meshes.get(o.id);if(!mesh&&Object.hasOwn(BUILD_TYPES,o.type)){mesh=structureModel(o);mesh.userData.id=o.id;objectsGroup.add(mesh);meshes.set(o.id,mesh);}if(!mesh)continue;mesh.position.set(o.x,o.y,o.z);mesh.visible=!o.collected&&!o.hidden;
+ const visibleObjects=[...game.objects,...game.drops],live=new Set(visibleObjects.map(o=>o.id));for(const [id,mesh] of meshes)if(!live.has(id)){objectsGroup.remove(mesh);meshes.delete(id);}
+ for(const o of visibleObjects){let mesh=meshes.get(o.id);if(!mesh){mesh=partModel(o);mesh.userData.id=o.id;objectsGroup.add(mesh);meshes.set(o.id,mesh);}if(!mesh)continue;mesh.position.set(o.x,o.y,o.z);mesh.visible=!o.collected&&!o.hidden;
   if(DESTRUCTIBLE_TYPES.has(o.type)||o.type==='enemy')mesh.traverse(child=>{if(child.isMesh){child.userData.baseMaterial??=child.material;child.material=o.hitUntil>game.time?materials.hitFlash:child.userData.baseMaterial;}});
   if(o.type==='enemy')mesh.rotation.y=Math.atan2(game.player.x-o.x,game.player.z-o.z)+Math.PI;
-  if(o.type==='star'||o.type==='key')mesh.rotation.y=game.time;
+  if(['star','key','weapon','blockItem'].includes(o.type))mesh.rotation.y=game.time;
   if(o.type==='door')mesh.userData.panel.visible=!o.open;
   if(o.type==='goal')mesh.userData.portal.material=conditionMet(o,game)?materials.ready:materials.goal;
   if(o.type==='checkpoint')mesh.userData.flag.material=game.checkpoint?.id===o.id?materials.ready:materials.checkpoint;
@@ -107,7 +111,7 @@ const effectPool=[],bulletPool=[];function syncGameMeshes(){
  while(effectPool.length<game.effects.length&&effectPool.length<LIMITS.effects){const m=new T.Mesh(starGeometry,new T.MeshBasicMaterial({color:'#ffb86e',transparent:true,opacity:.4,depthWrite:false}));effectPool.push(m);bulletGroup.add(m);}
  effectPool.forEach((m,i)=>{const e=game.effects[i];m.visible=!!e;if(e){const progress=1-e.life/e.maxLife;m.position.set(e.x,e.y,e.z);m.scale.setScalar(e.radius*(.3+.7*progress)/.45);m.material.color.set(e.kind==='blast'?'#ffb86e':'#fff5cd');m.material.opacity=(1-progress)*.45;}});
  const hit=game.hitInfo;$('#hit-info3').hidden=!(hit&&hit.until>game.time);if(hit&&hit.until>game.time)setReadingText($('#hit-info3'),hit.hp===0?hit.name+'をこわした！':hit.name+'　体力 '+hit.hp+' / '+hit.maxHp);
- const stamp=game.inventory.join(',')+':'+game.equipped;if(buildCount!==game.buildings.length||inventoryStamp!==stamp){buildCount=game.buildings.length;inventoryStamp=stamp;toolsUI.renderHotbar();}
+ const stamp=game.inventory.join(',')+':'+game.equipped+':'+game.blockEquipped+':'+game.blockInventory.map(s=>s.id+'='+s.count).join(',');if(buildCount!==game.buildings.length||inventoryStamp!==stamp){buildCount=game.buildings.length;inventoryStamp=stamp;toolsUI.renderHotbar();}
  if(game.messageId!==lastMessageId){lastMessageId=game.messageId;toast(game.message);}
  const goals=game.objects.filter(o=>o.type==='goal'),rule=goals.length?'ゴール：'+goals.map(o=>conditionHint(o,game)+' → '+(actionsFor(o).map(a=>ACTION_NAMES[a.type]).join('・')||'効果なし')).join(' / '):'部品を置き、動きやクリア条件をえらぼう';
  if(currentRules!==rule){currentRules=rule;setReadingText($('#mission3'),rule);}
@@ -117,7 +121,8 @@ function showGhost(o,valid){const shape=[o.type,o.rotation||0,o.w,o.h,o.d].join(
 function updateEditorGhost(){if(!editorPointer||!GRID_PARTS.has(tool)){ghost.visible=false;return;}const candidate=editorCandidate(editorPointer);if(!candidate){ghost.visible=false;return;}showGhost(candidate.piece,!candidate.reason);setReadingText($('#edit-tip'),candidate.reason||'緑のマスをタップして置く · 上面で積む、側面でつなぐ');}
 function visibleHit(hit){let o=hit.object;while(o){if(!o.visible)return false;o=o.parent;}return true;}
 function buildTarget(){ray.setFromCamera(new T.Vector2(0,0),camera);const hit=ray.intersectObjects([...objectsGroup.children,ground],true).find(h=>h.point.distanceTo(new T.Vector3(game.player.x,game.player.y+1.35,game.player.z))<8&&visibleHit(h));if(hit){const p=hit.point.clone();if(hit.face)p.addScaledVector(hit.face.normal.clone().transformDirection(hit.object.matrixWorld),.03);const surface=game.objects.find(o=>o.id===objectId(hit.object))||null,normal=hit.face?hit.face.normal.clone().transformDirection(hit.object.matrixWorld):null;return {x:p.x,y:p.y,z:p.z,surface,normal};}const p=game.player;return {x:p.x-Math.sin(yaw)*6,y:Math.floor(p.y/3)*3,z:p.z-Math.cos(yaw)*6};}
-function updateGhost(point){const tool=project.loadout[game.equipped],building=tool&&tool.effect!=='shoot';ghost.visible=!!building;if(!building)return;const result=placement(game,tool,point,toolsUI.getRotation(),toolsUI.getLevel()),o=result.piece;if(!o){ghost.visible=false;return;}showGhost(o,result.valid);setReadingText($('#build-status3'),result.reason);$('#build-status3').classList.toggle('blocked',!result.valid);}
+function updateGhost(point){const tool=project.loadout[game.equipped],building=!!game.blockEquipped||(tool&&tool.effect!=='shoot');ghost.visible=!!building;if(!building)return;const result=game.blockEquipped?blockPlacement(game,point,toolsUI.getRotation(),toolsUI.getLevel()):placement(game,tool,point,toolsUI.getRotation(),toolsUI.getLevel()),o=result.piece;setReadingText($('#build-status3'),result.reason);$('#build-status3').classList.toggle('blocked',!result.valid);if(!o){ghost.visible=false;return;}showGhost(o,result.valid);}
+
 function frame(time){const dt=lastTime?Math.min((time-lastTime)/1000,.033):0;lastTime=time;const w=view.clientWidth,h=view.clientHeight;const size=renderer.getSize(new T.Vector2());if(size.x!==w||size.y!==h){renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}if(mode==='play'){positionCamera();ray.setFromCamera(new T.Vector2(0,0),camera);const hit=ray.intersectObjects(objectsGroup.children,true).find(visibleHit),target=hit?hit.point:ray.ray.at(80,new T.Vector3()),origin=new T.Vector3(game.player.x,game.player.y+1.35,game.player.z),aim=target.clone().sub(origin).normalize(),buildPoint=buildTarget();step3D(game,project,{x:stick.x+(keys.has('d')||keys.has('arrowright')?1:0)-(keys.has('a')||keys.has('arrowleft')?1:0),z:stick.z+(keys.has('s')||keys.has('arrowdown')?1:0)-(keys.has('w')||keys.has('arrowup')?1:0),yaw,aim,buildPoint,buildRotation:toolsUI.getRotation(),buildLevel:toolsUI.getLevel(),jump:jumpPressed,fire:fireHeld||firePressed||keys.has('f')},dt);jumpPressed=false;firePressed=false;syncGameMeshes();updateGhost(buildPoint);setReadingText($('#hp3'),'♥'.repeat(Math.max(0,game.player.hp))+'♡'.repeat(5-Math.max(0,game.player.hp)));setReadingText($('#score3'),`✦ ${game.stars}　⚿ ${game.keys}　得点 ${game.score}`);setReadingText($('#stats3'),perspective==='fps'?'自分の目で見る世界':'うしろから見る世界');$('#lost3').hidden=game.state==='playing';setReadingText($('#result-title3'),game.state==='won'?'ステージクリア！':'もう一度チャレンジ！');setReadingText($('#result-note3'),game.state==='won'?'自分のルールで、ちゃんとゲームになったね！':'セーブポイントを置くと、途中からやり直せるよ。');}else{$('#hit-info3').hidden=true;updateEditorGhost();effectPool.forEach(m=>m.visible=false);bulletPool.forEach(m=>m.visible=false);setReadingText($('#stats3'),`60m × 60m · ${project.objects.length} パーツ`);}positionCamera();renderer.render(scene,camera);requestAnimationFrame(frame);}
 renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();$('#loading').hidden=false;setReadingText($('#loading'),'3Dの表示が中断されました。ページを再読み込みしてください。作品は自動保存されています。');});const toolsUI=createToolsUI({$,getProject:()=>project,getGame:()=>game,getMode:()=>mode,field,save,refresh:()=>syncGameMeshes(),finishBuilding:count=>{selected=null;setMode('edit');objectList();inspector();toast(count+'個の建築を作品に残しました');}});
 const workshop=createWorkshop({renderLoadout:()=>toolsUI.renderLauncher(),$,getProject:()=>project,getSelected:()=>selected,select:id=>selected=id,save,rebuild,field,advancedInspector,advancedWeaponFields,loadProject,toast,objectList,setTool:id=>{if(mode==='play')setMode('edit');tool=id;document.querySelectorAll('[data-part]').forEach(x=>x.classList.toggle('active',x.dataset.part===id));setReadingText($('#edit-tip'),id==='select'?'部品をタップして選択 · ドラッグで見わたす':id==='erase'?'消したい部品をタップ':PARTS[id]+'を置く地面をタップしよう');}});

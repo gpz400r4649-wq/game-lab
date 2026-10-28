@@ -1,12 +1,12 @@
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261028f';
-import {actionsFor} from './events3d.js?v=20261028f';
-import {renderEventEditor} from './event-editor3d.js?v=20261028f';
-import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261028f';
-import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261028f';
-import {PARTS,ENEMY_PRESETS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261028f';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261028g';
+import {actionsFor} from './events3d.js?v=20261028g';
+import {renderEventEditor} from './event-editor3d.js?v=20261028g';
+import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261028g';
+import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261028g';
+import {PARTS,ENEMY_PRESETS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261028g';
 
-const ICONS={select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
-const DESCRIPTIONS={ramp:'低いほうから歩くと、そのまま登れるスロープ。回して好きな向きにつなげよう。',wall:'家を囲う壁。向きを変えてつなげよう。',floor:'家の床と天井に使える板。壁の内側にぴったり合うよ。',roof:'壁の上にのせる三角屋根。向きを変えて家を仕上げよう。',
+const ICONS={weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
+const DESCRIPTIONS={weapon:'地面に置いて、ふれると拾える銃。持ちもの・銃づくりで用意した銃をえらぼう。',ramp:'低いほうから歩くと、そのまま登れるスロープ。回して好きな向きにつなげよう。',wall:'家を囲う壁。向きを変えてつなげよう。',floor:'家の床と天井に使える板。壁の内側にぴったり合うよ。',roof:'壁の上にのせる三角屋根。向きを変えて家を仕上げよう。',
   box:'かべや建物をつくれる、かたいブロック。',platform:'ジャンプで乗れる足場。高さを変えてコースにしよう。',
   moving:'置くだけで行ったり来たり。乗ると一緒に運んでくれるよ。',bounce:'ふれると大ジャンプ！ 飛ぶ強さを変えてみよう。',
   enemy:'行動タイプを選ぶだけで動くよ。速さと体力で難しさを変えよう。',star:'ふれると拾える星。得点をもらうほか、銃を拾うなどの役割にも変えられるよ。',
@@ -39,6 +39,12 @@ export function createWorkshop(api){
     const title=document.createElement('h2');title.className='inspector-heading';setReadingText(title,`${ICONS[o.type]} ${PARTS[o.type]}`);
     const description=document.createElement('p');description.className='component-description';setReadingText(description,DESCRIPTIONS[o.type]);el.append(title,description);
     const s=o.settings;
+    if(o.type==='weapon'){
+      const missing=o.weaponId&&!p.loadout.some(t=>t.id===o.weaponId);
+      selectField(el,'ひろう銃',[['','銃をえらぼう'],...(missing?[[o.weaponId,'銃が削除されています']]:[]),...p.loadout.map(t=>[t.id,t.name+(t.pickupOnly?'（拾って使う）':'（最初から持つ）')])],o.weaponId||'',v=>{o.weaponId=v;inspect();});
+      const gun=p.loadout.find(t=>t.id===o.weaponId),note=document.createElement('p');note.className='component-description';setReadingText(note,!gun?'まだ銃が決まっていません。先に銃をつくり、ここでえらぼう。':gun.pickupOnly?'この銃は拾うまで使えないよ。':'この銃は最初から持っています。拾って使う設定にすると、拾うまで使えなくなるよ。');el.append(note);
+      if(gun&&!gun.pickupOnly){const prepare=document.createElement('button');setReadingText(prepare,'この銃を「拾って使う」にする');prepare.onclick=()=>{gun.pickupOnly=true;save();inspect();};el.append(prepare);}
+    }
     if(DESTRUCTIBLE_TYPES.has(o.type)){field(el,'ブロックの体力',o.hp,1,LIMITS.maxBlockHp,1,n=>o.hp=Math.round(n));selectField(el,'弾が当たったら',[['yes','体力がなくなると壊れる'],['no','こわれない']],o.destructible===false?'no':'yes',v=>o.destructible=v==='yes');}
     if(o.type==='enemy'){
       selectField(el,'いつ出現する？',[['start','最初からいる'],['event','イベントで出現を待つ']],o.startsHidden?'event':'start',v=>{o.startsHidden=v==='event';inspect();});
@@ -62,7 +68,7 @@ export function createWorkshop(api){
       selectField(rules,'② 条件',Object.entries(CONDITION_NAMES).map(([k,v])=>[k,k==='touch'?(o.type==='door'?'いつでも':'ふれるだけ'):k==='unset'?'条件をえらぶ（まだ動かない）':v]),s.condition,v=>{s.condition=v;inspect();});
       if(['stars','keys'].includes(s.condition))field(rules,'必要な数',s.required,1,20,1,n=>{s.required=Math.round(n);updateRuleHint();});
       el.append(rules);
-      function updateRuleHint(){if(!['stars','keys'].includes(s.condition))return;const type=s.condition==='stars'?'star':'key',count=p.objects.reduce((n,x)=>n+actionsFor(x).filter(a=>a.type===(type==='star'?'addStar':'addKey')).length,0);let note=el.querySelector('.recipe-hint');if(!note){note=document.createElement('p');note.className='recipe-hint';el.append(note);}note.hidden=count>=s.required;setReadingText(note,`いまのイベントで増やせる${PARTS[type]}は${count}個。あと${Math.max(0,s.required-count)}個ぶんの効果を足すか、必要な数を減らそう。`);}
+      function updateRuleHint(){if(!['stars','keys'].includes(s.condition))return;const type=s.condition==='stars'?'star':'key',count=p.objects.reduce((n,x)=>n+[...actionsFor(x),...(x.destroyEvents||[])].filter(a=>a.type===(type==='star'?'addStar':'addKey')||(a.type==='dropItem'&&a.target===type)).length,0);let note=el.querySelector('.recipe-hint');if(!note){note=document.createElement('p');note.className='recipe-hint';el.append(note);}note.hidden=count>=s.required;setReadingText(note,`いまのイベントで増やせる${PARTS[type]}は${count}個。あと${Math.max(0,s.required-count)}個ぶんの効果を足すか、必要な数を減らそう。`);}
       updateRuleHint();
     }
     renderEventEditor(el,o,p,{selectField,field,save,rebuild,inspect,partNames:PARTS});
@@ -86,7 +92,7 @@ export function createWorkshop(api){
     selectField(el,'武器のタイプ',[...Object.entries(WEAPON_PRESETS).map(([k,v])=>[k,v.name]),['custom','自分でちょうせい']],current,k=>{if(k!=='custom'){const {name,...weapon}=WEAPON_PRESETS[k];p.weapon=weapon;weapons();}});
     el.append(details('速さ・つよさを工夫する',advanced));
   }
-  const groups=[['つくる道具',['select','erase']],['地形・しかけ',['wall','floor','roof','ramp','box','platform','moving','bounce','hazard']],['キャラクター・アイテム',['enemy','star','key','heal']],['進みかたをつくる',['checkpoint','door','goal']]];
+  const groups=[['つくる道具',['select','erase']],['地形・しかけ',['wall','floor','roof','ramp','box','platform','moving','bounce','hazard']],['キャラクター・アイテム',['enemy','weapon','star','key','heal']],['進みかたをつくる',['checkpoint','door','goal']]];
   const palette=$('#palette3');palette.replaceChildren();
   for(const [label,types] of groups){const heading=document.createElement('div');heading.className='palette-heading';setReadingText(heading,label);palette.append(heading);for(const type of types){const b=document.createElement('button');b.className='part'+(type==='select'?' active':'');b.dataset.part=type;b.innerHTML=`<span>${ICONS[type]}</span>${PARTS[type]||{select:'えらぶ',erase:'けす'}[type]}`;b.onclick=()=>setTool(type);applyReadings(b);palette.append(b);}}
   return {inspect,weapons};
