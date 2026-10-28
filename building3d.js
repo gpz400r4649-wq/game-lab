@@ -1,5 +1,5 @@
-import {worldHalf,coordinateLimit} from './world3d.js?v=20261028i';
-import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261028i';
+import {worldHalf,coordinateLimit} from './world3d.js?v=20261028j';
+import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261028j';
 // Shared by editor, gameplay and placement preview. No browser dependency.
 export const BUILD_TYPES={wall:'壁',floor:'床',roof:'屋根',ramp:'スロープ'};
 export const GRID={cell:4,layer:3,size:60};
@@ -84,7 +84,8 @@ export function placement(g,tool,point,rotation=0,level=0){
   const rotated=rotation%180!==0;
   let x=Math.round(point.x/4)*4,z=Math.round(point.z/4)*4;
   if(point.surface?.type==='wall'&&point.normal?.y>.5&&['floor','roof'].includes(tool.effect)){x=point.surface.x-(point.surface.rotation===90?2:0);z=point.surface.z-(point.surface.rotation!==90?2:0);}
-  if(tool.effect==='wall'){if(rotated)x=Math.round((point.x-2)/4)*4+2;else z=Math.round((point.z-2)/4)*4+2;}
+  // Rotate around the aimed cell, including the opposite two edges.
+  if(tool.effect==='wall'){if(rotated)x+=rotation===90?2:-2;else z+=rotation===0?2:-2;}
   const base=tool.effect==='wall'&&point.surface?.type==='ramp'?Math.floor((point.surface.y+.05)/3)*3:Math.floor((Math.max(0,point.y)+.08)/3)*3;
   const roofOffset=tool.effect==='roof'&&!(point.surface?.type==='wall'&&point.normal?.y>.5)?3:0;
   const rampBase=tool.effect==='ramp'&&point.surface?.type==='floor'&&point.normal?.y>.5?point.surface.y+point.surface.h:base;

@@ -3,7 +3,7 @@
 export function installGameTouchGuard(view,isPlaying){
   const doc=view.ownerDocument,active=new Map();let lastTouchAt=-Infinity;
   const cancel=e=>{if(e.cancelable)e.preventDefault();};
-  const direct=target=>!!target?.closest?.('canvas, #stick3, #fire3, #jump3');
+  const direct=target=>!!target?.closest?.('canvas, #stick3, #fire3, #jump3, [data-game-action]');
   function touch(e){
     if(!isPlaying())return;
     const changed=Array.from(e.changedTouches||[]),inside=view.contains(e.target)||changed.some(t=>active.has(t.identifier));
@@ -54,4 +54,14 @@ export function bindHeldButton(button,press,release){
   function up(e){if(!pointers.delete(e.pointerId))return;if(!pointers.size)release();}
   for(const type of ['pointerup','pointercancel','lostpointercapture'])button.addEventListener(type,up);
   return ()=>{pointers.clear();release();};
+}
+
+// Handle taps through Pointer Events even when Safari's touch zoom guard cancels
+// compatibility clicks. Keep keyboard activation and suppress duplicate clicks.
+export function bindGameAction(button,action){
+ button.setAttribute('data-game-action','');let pointer=null,lastPointer=-Infinity;
+ button.addEventListener('pointerdown',e=>{if(button.disabled||pointer)return;e.preventDefault();lastPointer=Date.now();pointer={id:e.pointerId,x:e.clientX,y:e.clientY};button.setPointerCapture(e.pointerId);});
+ button.addEventListener('pointerup',e=>{if(pointer?.id!==e.pointerId)return;const start=pointer;pointer=null;lastPointer=Date.now();if(!button.disabled&&Math.hypot(e.clientX-start.x,e.clientY-start.y)<=16)action();});
+ for(const type of ['pointercancel','lostpointercapture'])button.addEventListener(type,e=>{if(pointer?.id===e.pointerId){pointer=null;lastPointer=Date.now();}});
+ button.addEventListener('click',e=>{if(button.disabled)return;if((e.isTrusted&&e.detail===0)||Date.now()-lastPointer>700)action();});
 }
