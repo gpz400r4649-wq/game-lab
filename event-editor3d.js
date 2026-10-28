@@ -1,5 +1,5 @@
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261028e';
-import {EVENT_TYPES,EVENT_LIMIT,ACTION_NAMES,AMOUNT_ACTIONS,TARGET_ACTIONS,actionsFor,newAction} from './events3d.js?v=20261028e';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261028f';
+import {EVENT_TYPES,EVENT_LIMIT,ACTION_NAMES,AMOUNT_ACTIONS,TARGET_ACTIONS,actionsFor,newAction} from './events3d.js?v=20261028f';
 
 export function renderEventEditor(parent,o,p,{selectField,field,save,rebuild,inspect,partNames}){
   if(!EVENT_TYPES.has(o.type))return;

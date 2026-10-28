@@ -1,7 +1,7 @@
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261028e';
-import {LIMITS,PROJECTILES,IMPACTS,impactEffects,weaponPresetKey,SHOT_PATTERNS,cadenceHandling} from './weapons3d.js?v=20261028e';
-import {makeTool,TOOL_EFFECTS,BUILD_TYPES,equipTool,undoStructure,keepStructures} from './building3d.js?v=20261028e';
-import {WEAPON_PRESETS} from './engine3d.js?v=20261028e';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261028f';
+import {LIMITS,PROJECTILES,IMPACTS,impactEffects,weaponPresetKey,SHOT_PATTERNS,cadenceHandling} from './weapons3d.js?v=20261028f';
+import {makeTool,TOOL_EFFECTS,BUILD_TYPES,equipTool,undoStructure,keepStructures} from './building3d.js?v=20261028f';
+import {WEAPON_PRESETS} from './engine3d.js?v=20261028f';
 export function createToolsUI(api){
   const {$,getProject,getGame,getMode,field,save,refresh,finishBuilding}=api;
   let editing=0,rotation=0,level=0;
@@ -27,7 +27,7 @@ export function createToolsUI(api){
           radio.onchange=()=>{if(!radio.checked)return;number.value=value;assign(value);changed();};
         }
         const custom=document.createElement('label'),customRadio=document.createElement('input'),customText=document.createElement('span');customRadio.type='radio';customRadio.name=number.id;customRadio.value='custom';customRadio.setAttribute('aria-label','数値で調整');setReadingText(customText,'こまかく');custom.append(customRadio,customText);group.append(custom);customRadio.onchange=()=>number.focus();
-        sync=()=>{let matched=false;for(const [radio,value] of radios){radio.checked=Math.abs(tool[key]-value)<.000001;matched||=radio.checked;}customRadio.checked=!matched;};sync();tuningControls.set(key,()=>{number.value=tool[key];sync();});row.append(caption,group,number);old.replaceWith(row);
+        sync=()=>{number.setAttribute('aria-valuenow',tool[key]);let matched=false;for(const [radio,value] of radios){radio.checked=Math.abs(tool[key]-value)<.000001;matched||=radio.checked;}customRadio.checked=!matched;};sync();tuningControls.set(key,()=>{number.value=tool[key];sync();});row.append(caption,group,number);old.replaceWith(row);
       }
     if(tool.effect==='shoot'){
       let presetSelect;

@@ -1,9 +1,9 @@
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261028e';
-import {actionsFor} from './events3d.js?v=20261028e';
-import {renderEventEditor} from './event-editor3d.js?v=20261028e';
-import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261028e';
-import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261028e';
-import {PARTS,ENEMY_PRESETS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261028e';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261028f';
+import {actionsFor} from './events3d.js?v=20261028f';
+import {renderEventEditor} from './event-editor3d.js?v=20261028f';
+import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261028f';
+import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261028f';
+import {PARTS,ENEMY_PRESETS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261028f';
 
 const ICONS={select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
 const DESCRIPTIONS={ramp:'低いほうから歩くと、そのまま登れるスロープ。回して好きな向きにつなげよう。',wall:'家を囲う壁。向きを変えてつなげよう。',floor:'家の床と天井に使える板。壁の内側にぴったり合うよ。',roof:'壁の上にのせる三角屋根。向きを変えて家を仕上げよう。',
