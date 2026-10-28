@@ -1,8 +1,8 @@
-import {settleLoot} from './loot3d.js?v=20261028g';
-import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261028g';
-import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261028g';
-import {shootVolley,updateCombat} from './combat3d.js?v=20261028g';
-import {BUILD_TYPES,constructionPart,topAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261028g';
+import {settleLoot} from './loot3d.js?v=20261028h';
+import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261028h';
+import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261028h';
+import {shootVolley,updateCombat} from './combat3d.js?v=20261028h';
+import {BUILD_TYPES,constructionPart,topAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261028h';
 export const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export const PARTS={weapon:'銃アイテム',ramp:'スロープ',wall:'壁',floor:'床',roof:'屋根',box:'ブロック',platform:'足場',moving:'動く足場',bounce:'ジャンプ台',enemy:'敵ロボット',star:'星',key:'カギ',door:'ドア',heal:'回復',checkpoint:'セーブポイント',hazard:'ダメージ床',goal:'ゴール'};
 export const BEHAVIORS={chase:'プレイヤーを追いかける',patrol:'左右に動く',shoot:'近づいたら弾を撃つ'};
@@ -33,8 +33,11 @@ export function validate3D(data){
 export const solids=objects=>objects.filter(o=>solidTypes.has(o.type)&&!o.open);
 function overlaps(p,o){return Math.abs(p.x-o.x)<o.w/2+.35&&Math.abs(p.z-o.z)<o.d/2+.35&&p.y<topAt(o,p.x,p.z)-.001&&p.y+1.7>o.y+.001;}
 export function movePlayer(p,objects,dx,dz,dt,jump){
-  const support=p.grounded?objects.find(o=>o.id===p.supportId):null,onSlope=!!support&&['roof','ramp'].includes(support.type);let steppedOntoOther=false;const walls=solids(objects);p.x=clamp(p.x+dx,-29,29);for(const o of walls)if(overlaps(p,o)&&dx){const top=topAt(o,p.x,p.z);if((['roof','ramp'].includes(o.type)||onSlope||['wall','floor'].includes(support?.type))&&p.grounded&&top-p.y<.4){p.y=top;if(!['roof','ramp'].includes(o.type))steppedOntoOther=true;}else p.x=dx>0?o.x-o.w/2-.35:o.x+o.w/2+.35;}
-  p.z=clamp(p.z+dz,-29,29);for(const o of walls)if(overlaps(p,o)&&dz){const top=topAt(o,p.x,p.z);if((['roof','ramp'].includes(o.type)||onSlope||['wall','floor'].includes(support?.type))&&p.grounded&&top-p.y<.4){p.y=top;if(!['roof','ramp'].includes(o.type))steppedOntoOther=true;}else p.z=dz>0?o.z-o.d/2-.35:o.z+o.d/2+.35;}
+  const support=p.grounded?objects.find(o=>o.id===p.supportId):null,onSlope=!!support&&['roof','ramp'].includes(support.type),walls=solids(objects);let steppedOntoOther=false;
+  // A thin floor is a step from the ground, provided the player's head fits.
+  const canStep=(o,top)=>(['floor','roof','ramp'].includes(o.type)||onSlope||['wall','floor'].includes(support?.type))&&p.grounded&&top-p.y<.4&&!walls.some(ceiling=>ceiling!==o&&ceiling.y>=p.y+1.7-.02&&overlaps({...p,y:top},ceiling));
+  p.x=clamp(p.x+dx,-29,29);for(const o of walls)if(overlaps(p,o)&&dx){const top=topAt(o,p.x,p.z);if(canStep(o,top)){p.y=top;if(!['roof','ramp'].includes(o.type))steppedOntoOther=true;}else p.x=dx>0?o.x-o.w/2-.35:o.x+o.w/2+.35;}
+  p.z=clamp(p.z+dz,-29,29);for(const o of walls)if(overlaps(p,o)&&dz){const top=topAt(o,p.x,p.z);if(canStep(o,top)){p.y=top;if(!['roof','ramp'].includes(o.type))steppedOntoOther=true;}else p.z=dz>0?o.z-o.d/2-.35:o.z+o.d/2+.35;}
   if(!steppedOntoOther&&onSlope&&Math.abs(p.x-support.x)<=support.w/2&&Math.abs(p.z-support.z)<=support.d/2){const top=topAt(support,p.x,p.z);if(Math.abs(top-p.y)<.4)p.y=top;}
   if(jump&&p.grounded){p.vy=7;p.grounded=false;}const before=p.y;p.vy-=19*dt;p.y+=p.vy*dt;p.grounded=false;p.supportId=null;
   for(const o of walls){if(Math.abs(p.x-o.x)>=o.w/2+.35||Math.abs(p.z-o.z)>=o.d/2+.35)continue;

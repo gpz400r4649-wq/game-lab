@@ -1,13 +1,13 @@
-import {configureNumericInput} from './numeric3d.js?v=20261028g';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261028g';
+import {configureNumericInput} from './numeric3d.js?v=20261028h';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261028h';
 import {installGameTouchGuard,bindHeldButton,createGamePageMode} from './input3d.js?v=20261028b';
-import {actionsFor,ACTION_NAMES} from './events3d.js?v=20261028g';
-import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261028g';
-import {BUILD_TYPES,placement,GRID,GRID_PARTS,snapEditorPiece,editorPlacementReason,blockPlacement} from './building3d.js?v=20261028g';
-import {createToolsUI} from './tools3d.js?v=20261028g';
+import {actionsFor,ACTION_NAMES} from './events3d.js?v=20261028h';
+import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261028h';
+import {BUILD_TYPES,placement,GRID,GRID_PARTS,snapEditorPiece,editorPlacementReason,blockPlacement} from './building3d.js?v=20261028h';
+import {createToolsUI} from './tools3d.js?v=20261028h';
 import * as T from './vendor/three.module.min.js';
-import {PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,conditionHint} from './engine3d.js?v=20261028g';
-import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261028g';
+import {PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,conditionHint} from './engine3d.js?v=20261028h';
+import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261028h';
 const $=s=>document.querySelector(s),view=$('#viewport'),KEY='tsukuru-lab-3d-v1';
 let project=fresh3D(),selected=null,tool='select',mode='edit',perspective='tps',game=null,yaw=0,pitch=-.05,editYaw=.55,editPitch=.7,editDistance=30,editTarget=new T.Vector3(0,0,0),stick={x:0,z:0},keys=new Set(),fireHeld=false,firePressed=false,jumpPressed=false,look=null,saveTimer,toastTimer,lastTime=0;
 function toast(s){setReadingText($('#toast3'),s);$('#toast3').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast3').classList.remove('show'),3200);}

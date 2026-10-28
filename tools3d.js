@@ -1,7 +1,7 @@
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261028g';
-import {LIMITS,PROJECTILES,IMPACTS,impactEffects,weaponPresetKey,SHOT_PATTERNS,cadenceHandling} from './weapons3d.js?v=20261028g';
-import {makeTool,TOOL_EFFECTS,BUILD_TYPES,equipTool,undoStructure,keepStructures,equipBlock} from './building3d.js?v=20261028g';
-import {WEAPON_PRESETS,PARTS} from './engine3d.js?v=20261028g';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261028h';
+import {LIMITS,PROJECTILES,IMPACTS,impactEffects,weaponPresetKey,SHOT_PATTERNS,cadenceHandling} from './weapons3d.js?v=20261028h';
+import {makeTool,TOOL_EFFECTS,BUILD_TYPES,equipTool,undoStructure,keepStructures,equipBlock} from './building3d.js?v=20261028h';
+import {WEAPON_PRESETS,PARTS} from './engine3d.js?v=20261028h';
 export function createToolsUI(api){
   const {$,getProject,getGame,getMode,field,save,refresh,finishBuilding}=api;
   let editing=0,rotation=0,level=0;
