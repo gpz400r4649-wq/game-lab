@@ -30,4 +30,5 @@ ruby{ruby-position:over}rt{font-size:max(9px,.62em);font-weight:500;letter-spaci
 
 #world-dialog3{max-width:520px}.map-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}#world-dialog3 select{padding:8px}
 
-.build-directions{display:flex;align-items:center;gap:4px;background:#ffffffe6;border-radius:9px;padding:4px}.build-directions>span{padding:0 4px}#buildbar3 .build-directions button{min-width:52px;min-height:44px;border-color:#b9a9df}#buildbar3 .build-directions button.active{background:#7d62dd;color:#fff;border-color:#7d62dd}#buildbar3 [data-game-action]{touch-action:none}#buildbar3{max-width:750px}@media(max-width:700px){#buildbar3 .build-directions button{min-width:44px;padding:5px;min-height:44px}}
+
+.build-fire-controls{position:relative}.right-controls #rotate-build3{position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%);width:108px;min-height:44px;padding:8px 5px;border-radius:10px;background:#fffffff0;color:#7952bd;font-size:11px;text-shadow:none;touch-action:none}
