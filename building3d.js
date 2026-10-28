@@ -1,15 +1,22 @@
-import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261028h';
+import {worldHalf,coordinateLimit} from './world3d.js?v=20261028i';
+import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261028i';
 // Shared by editor, gameplay and placement preview. No browser dependency.
 export const BUILD_TYPES={wall:'壁',floor:'床',roof:'屋根',ramp:'スロープ'};
 export const GRID={cell:4,layer:3,size:60};
 export const GRID_PARTS=new Set(['box','platform','moving','bounce','hazard','door','wall','floor','roof','ramp']);
 const snap=(value,step=GRID.cell,offset=0)=>Math.round((value-offset)/step)*step+offset;
-function boundedGrid(value,extent,offset=0){const lo=Math.ceil((-30+extent-offset)/4)*4+offset,hi=Math.floor((30-extent-offset)/4)*4+offset;return Math.max(lo,Math.min(hi,snap(value,4,offset)));}
-export function alignPiece(o){if(!GRID_PARTS.has(o.type))return o;const turned=o.type==='wall'&&o.rotation===90;o.x=boundedGrid(o.x,o.w/2,turned?2:0);o.z=boundedGrid(o.z,o.d/2,o.type==='wall'&&!turned?2:0);return o;}
+function boundedGrid(value,extent,offset=0,world=60){extent=Math.max(2,extent);const lo=Math.ceil((-worldHalf(world)+extent-offset)/4)*4+offset,hi=Math.floor((worldHalf(world)-extent-offset)/4)*4+offset;return Math.max(lo,Math.min(hi,snap(value,4,offset)));}
+export function alignPiece(o,world=60){if(!GRID_PARTS.has(o.type))return o;const turned=o.type==='wall'&&o.rotation===90;o.x=boundedGrid(o.x,o.w/2,turned?2:0,world);o.z=boundedGrid(o.z,o.d/2,o.type==='wall'&&!turned?2:0,world);return o;}
 export function gridStep(o,axis){return GRID_PARTS.has(o.type)?axis==='y'?(['box','wall','floor','roof','ramp'].includes(o.type)?3:.5):4:axis==='y'?.5:1;}
-export function snapEditorPiece(o,point,target=null,normal=null){
+function rampFloorAnchor(ramp,normal,floor){
+ const angle=(ramp.rotation||0)*Math.PI/180,high={x:-Math.sin(angle),z:-Math.cos(angle)},dot=(normal?.x||0)*high.x+(normal?.z||0)*high.z,side=normal&&Math.abs(normal.y)<.5;
+ const low=side&&dot<-.5,dir=side&&Math.abs(dot)<.5?normal:low?{x:-high.x,z:-high.z}:high;
+ return {x:snap(ramp.x+dir.x*(ramp.w+floor.w)/2),z:snap(ramp.z+dir.z*(ramp.d+floor.d)/2),y:snap(low?ramp.y:ramp.y+ramp.h,3)};
+}
+export function snapEditorPiece(o,point,target=null,normal=null,world=60){
   o.x=point.x;o.z=point.z;
-  if(!GRID_PARTS.has(o.type)){o.x=Math.max(-28,Math.min(28,Math.round(o.x)));o.z=Math.max(-28,Math.min(28,Math.round(o.z)));if(target&&normal?.y>.5)o.y=Math.max(0,Math.min(12,topAt(target,point.x,point.z)));return o;}
+  if(o.type==='floor'&&target?.type==='ramp'){Object.assign(o,rampFloorAnchor(target,normal,o));return alignPiece(o,world);}
+  if(!GRID_PARTS.has(o.type)){o.x=Math.max(-coordinateLimit(world),Math.min(coordinateLimit(world),Math.round(o.x)));o.z=Math.max(-coordinateLimit(world),Math.min(coordinateLimit(world),Math.round(o.z)));if(target&&normal?.y>.5)o.y=Math.max(0,Math.min(12,topAt(target,point.x,point.z)));return o;}
   const side=target&&normal&&Math.abs(normal.y)<.5;
   if(o.type==='wall'){
     o.rotation=side?(Math.abs(normal.x)>.5?90:0):Math.abs(point.x-snap(point.x,4,2))<Math.abs(point.z-snap(point.z,4,2))?90:0;
@@ -26,7 +33,7 @@ export function snapEditorPiece(o,point,target=null,normal=null){
   }else if(target&&normal?.y<-.5)o.y=Math.max(0,target.y-o.h);
   else if(side)o.y=target.y;
   else o.y=o.type==='roof'?3:['wall','floor','box'].includes(o.type)?0:o.y;
-  o.y=Math.max(0,Math.min(12,o.y));return alignPiece(o);
+  o.y=Math.max(0,Math.min(12,o.y));return alignPiece(o,world);
 }
 function joins(a,b){
   if(!intersects(a,b))return true;
@@ -44,10 +51,10 @@ function joins(a,b){
   if(wall&&other.type==='box'){const penetration=wall.rotation===90?(wall.w+other.w)/2-Math.abs(wall.x-other.x):(wall.d+other.d)/2-Math.abs(wall.z-other.z);if(penetration<=.15)return true;}
   return false;
 }
-export function editorPlacementReason(piece,objects,spawn){
+export function editorPlacementReason(piece,objects,spawn,world=60){
   if(objects.length>=150)return '部品は150個まで置けます';
   if(!GRID_PARTS.has(piece.type))return '';
-  if(Math.abs(piece.x)+piece.w/2>30||Math.abs(piece.z)+piece.d/2>30)return 'ステージの中に置こう';
+  if(Math.abs(piece.x)>coordinateLimit(world)||Math.abs(piece.z)>coordinateLimit(world)||Math.abs(piece.x)+piece.w/2>worldHalf(world)||Math.abs(piece.z)+piece.d/2>worldHalf(world))return 'ステージの中に置こう';
   if(spawn&&Math.abs(piece.x-spawn.x)<piece.w/2+.35&&Math.abs(piece.z-spawn.z)<piece.d/2+.35&&piece.y<spawn.y+1.7&&piece.y+piece.h>spawn.y)return 'スタートに重ならない場所に置こう';
   if(objects.some(o=>['wall','floor','roof','box','platform','moving','door','ramp'].includes(o.type)&&!joins(piece,o)))return '部品が重なるよ。別の面やマスをえらぼう';
   return '';
@@ -65,7 +72,7 @@ export function constructionPart(type,x=0,z=0,y=0,rotation=0){
     d:type==='wall'?(turned?4:.25):4,hp:20,destructible:true,program:[],
     settings:{axis:'x',distance:3,speed:2,value:1,condition:'touch',required:1}};
 }
-export function rotatePiece(o){if(!Object.hasOwn(BUILD_TYPES,o.type))return;const anchor={x:o.x-(o.type==='wall'&&o.rotation===90?2:0),z:o.z-(o.type==='wall'&&o.rotation!==90?2:0)};[o.w,o.d]=[o.d,o.w];o.rotation=o.type==='ramp'?((o.rotation||0)+90)%360:o.rotation===90?0:90;if(o.type==='wall'){o.x=anchor.x+(o.rotation===90?2:0);o.z=anchor.z+(o.rotation===0?2:0);}alignPiece(o);}
+export function rotatePiece(o,world=60){if(!Object.hasOwn(BUILD_TYPES,o.type))return;const anchor={x:o.x-(o.type==='wall'&&o.rotation===90?2:0),z:o.z-(o.type==='wall'&&o.rotation!==90?2:0)};[o.w,o.d]=[o.d,o.w];o.rotation=o.type==='ramp'?((o.rotation||0)+90)%360:o.rotation===90?0:90;if(o.type==='wall'){o.x=anchor.x+(o.rotation===90?2:0);o.z=anchor.z+(o.rotation===0?2:0);}alignPiece(o,world);}
 export function topAt(o,x,z){
   if(o.type==='ramp'){const angle=(o.rotation||0)*Math.PI/180,localZ=Math.sin(angle)*(x-o.x)+Math.cos(angle)*(z-o.z),depth=(o.rotation||0)%180===90?o.w:o.d;return o.y+o.h*Math.max(0,Math.min(1,.5-localZ/depth));}if(o.type!=='roof')return o.y+o.h;
   const turned=o.rotation===90,offset=turned?z-o.z:x-o.x,width=turned?o.d:o.w;
@@ -81,10 +88,12 @@ export function placement(g,tool,point,rotation=0,level=0){
   const base=tool.effect==='wall'&&point.surface?.type==='ramp'?Math.floor((point.surface.y+.05)/3)*3:Math.floor((Math.max(0,point.y)+.08)/3)*3;
   const roofOffset=tool.effect==='roof'&&!(point.surface?.type==='wall'&&point.normal?.y>.5)?3:0;
   const rampBase=tool.effect==='ramp'&&point.surface?.type==='floor'&&point.normal?.y>.5?point.surface.y+point.surface.h:base;
-  const y=rampBase+level*3+roofOffset,piece=constructionPart(tool.effect,x,z,y,tool.effect==='ramp'?rotation:rotated?90:0);
+  let y=rampBase+level*3+roofOffset;
+  if(tool.effect==='floor'&&point.surface?.type==='ramp'){const anchor=rampFloorAnchor(point.surface,point.normal,{w:4,d:4});x=anchor.x;z=anchor.z;y=anchor.y+level*3;}
+  const piece=constructionPart(tool.effect,x,z,y,tool.effect==='ramp'?rotation:rotated?90:0);
   const no=reason=>({piece,valid:false,reason});
   if(g.objects.length>=150)return no('部品は全部で150個まで置けます');
-  if(Math.abs(x)+piece.w/2>30||Math.abs(z)+piece.d/2>30||y<0||y>12)return no('ステージの中に置こう');
+  if(Math.abs(x)>coordinateLimit(g)||Math.abs(z)>coordinateLimit(g)||Math.abs(x)+piece.w/2>worldHalf(g)||Math.abs(z)+piece.d/2>worldHalf(g)||y<0||y>12)return no('ステージの中に置こう');
   if(Math.hypot(x-g.player.x,y-g.player.y,z-g.player.z)>12)return no('もう少し近づこう');
   const p=g.player;if(Math.abs(x-p.x)<piece.w/2+.35&&Math.abs(z-p.z)<piece.d/2+.35&&p.y<y+piece.h&&p.y+1.7>y)return no('自分に重ならない場所に置こう');
   for(const o of g.objects){
@@ -131,10 +140,10 @@ export function blockPlacement(g,point,rotation=0,level=0){
   const result=placement(g,{effect:t.type},point,rotation,level);if(!result.piece)return result;
   const turned=rotation%180!==0;piece={...structuredClone(t),id:crypto.randomUUID(),x:result.piece.x,y:result.piece.y,z:result.piece.z,rotation:result.piece.rotation,w:turned?t.d:t.w,d:turned?t.w:t.d};
  }else{
-  piece=snapEditorPiece({...structuredClone(t),id:crypto.randomUUID(),x:0,y:0,z:0},point,point.surface,point.normal);piece.y+=level*3;
+  piece=snapEditorPiece({...structuredClone(t),id:crypto.randomUUID(),x:0,y:0,z:0},point,point.surface,point.normal,g);piece.y+=level*3;
   if(rotation%180!==0)[piece.w,piece.d]=[piece.d,piece.w];piece.rotation=rotation%180;
  }
- let reason=editorPlacementReason(piece,g.objects,g.player);
+ let reason=editorPlacementReason(piece,g.objects,g.player,g);
  if(piece.y<0||piece.y>12)reason='ステージの中に置こう';
  if(Math.hypot(piece.x-g.player.x,piece.y-g.player.y,piece.z-g.player.z)>12)reason='もう少し近づこう';
  return {piece,valid:!reason,reason:reason||'発射ボタンで拾ったブロックを置く'};

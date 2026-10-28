@@ -1,8 +1,9 @@
-import {settleLoot} from './loot3d.js?v=20261028h';
-import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261028h';
-import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261028h';
-import {shootVolley,updateCombat} from './combat3d.js?v=20261028h';
-import {BUILD_TYPES,constructionPart,topAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261028h';
+import {worldSize,worldHalf,coordinateLimit,WORLD_SIZES} from './world3d.js?v=20261028i';
+import {settleLoot} from './loot3d.js?v=20261028i';
+import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261028i';
+import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261028i';
+import {shootVolley,updateCombat} from './combat3d.js?v=20261028i';
+import {BUILD_TYPES,constructionPart,topAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261028i';
 export const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export const PARTS={weapon:'銃アイテム',ramp:'スロープ',wall:'壁',floor:'床',roof:'屋根',box:'ブロック',platform:'足場',moving:'動く足場',bounce:'ジャンプ台',enemy:'敵ロボット',star:'星',key:'カギ',door:'ドア',heal:'回復',checkpoint:'セーブポイント',hazard:'ダメージ床',goal:'ゴール'};
 export const BEHAVIORS={chase:'プレイヤーを追いかける',patrol:'左右に動く',shoot:'近づいたら弾を撃つ'};
@@ -12,10 +13,12 @@ export const CONDITION_NAMES={unset:'クリア条件をえらぶ',touch:'その�
 const solidTypes=new Set(['box','platform','moving','door','wall','floor','roof','ramp']);
 export function settingsFor(type){return {axis:'x',distance:3,speed:2,value:type==='bounce'?11:type==='star'?5:1,condition:type==='goal'?'unset':type==='door'?'keys':'touch',required:1};}
 export function part(type,x=0,z=-5){if(Object.hasOwn(BUILD_TYPES,type))return constructionPart(type,x,z);return {id:crypto.randomUUID(),type,x,y:['platform','moving'].includes(type)?1:0,z,w:['box','platform','moving'].includes(type)?4:type==='door'?3:2,h:type==='box'?3:['platform','moving'].includes(type)?.5:['bounce','hazard'].includes(type)?.2:type==='door'?3:2,d:type==='door'?.6:['box','platform','moving'].includes(type)?4:2,hp:DESTRUCTIBLE_TYPES.has(type)?20:3,...(DESTRUCTIBLE_TYPES.has(type)?{destructible:true}:{}),program:[],settings:settingsFor(type),...(type==='weapon'?{weaponId:''}:{})};}
-export function fresh3D(){const weapon={speed:24,interval:.25,damage:1,spread:1};return {version:1,kind:'game-lab-3d',title:'わたしの3Dワールド',spawn:{x:0,y:0,z:8},weapon,loadout:defaultLoadout(weapon),objects:[]};}
+export function fresh3D(){const weapon={speed:24,interval:.25,damage:1,spread:1};return {version:1,kind:'game-lab-3d',worldSize:60,title:'わたしの3Dワールド',spawn:{x:0,y:0,z:8},weapon,loadout:defaultLoadout(weapon),objects:[]};}
 export function validate3D(data){
   const p=structuredClone(data),number=(v,a,b)=>Number.isFinite(v)&&v>=a&&v<=b;
-  if(!p||p.kind!=='game-lab-3d'||p.version!==1||typeof p.title!=='string'||p.title.length>40||!p.spawn||!['x','z'].every(k=>number(p.spawn[k],-28,28))||p.spawn.y!==0||!Array.isArray(p.objects)||p.objects.length>150)throw Error('3D作品の形式がちがいます');
+  if(p?.worldSize!==undefined&&!WORLD_SIZES.includes(p.worldSize))throw Error('マップのひろさを確認してください');
+  const limit=coordinateLimit(p);if(p)p.worldSize=worldSize(p);
+  if(!p||p.kind!=='game-lab-3d'||p.version!==1||typeof p.title!=='string'||p.title.length>40||!p.spawn||!['x','z'].every(k=>number(p.spawn[k],-limit,limit))||p.spawn.y!==0||!Array.isArray(p.objects)||p.objects.length>150)throw Error('3D作品の形式がちがいます');
   if(!p.weapon||!number(p.weapon.speed,5,60)||!number(p.weapon.interval,.1,2)||!Number.isInteger(p.weapon.damage)||!number(p.weapon.damage,1,10)||![1,3,5].includes(p.weapon.spread))throw Error('武器の設定を確認してください');
   if(p.loadout===undefined)p.loadout=defaultLoadout(p.weapon);
   if(Array.isArray(p.loadout))p.loadout.forEach(upgradeTool);
@@ -24,37 +27,57 @@ export function validate3D(data){
     if(!validEvents(o))throw Error('イベントの設定を確認してください');
     const sizes=['w','h','d'].every(k=>number(o[k],['wall','floor','roof','ramp','bounce','hazard'].includes(o.type)?.2:.5,10));
     if(o.rotation!==undefined&&!(o.type==='ramp'?[0,90,180,270]:[0,90]).includes(o.rotation))throw Error('部品の向きを確認してください');
-    if(!Object.hasOwn(PARTS,o.type)||typeof o.id!=='string'||ids.has(o.id)||!['x','z'].every(k=>number(o[k],-28,28))||!number(o.y,0,12)||!sizes||!Number.isInteger(o.hp)||!number(o.hp,1,DESTRUCTIBLE_TYPES.has(o.type)?200:20)||!Array.isArray(o.program)||o.program.length>8)throw Error('パーツの設定を確認してください');ids.add(o.id);if(DESTRUCTIBLE_TYPES.has(o.type)){if(o.destructible===undefined)o.destructible=true;if(typeof o.destructible!=='boolean')throw Error('ブロックの体力設定を確認してください');}
+    if(!Object.hasOwn(PARTS,o.type)||typeof o.id!=='string'||ids.has(o.id)||!['x','z'].every(k=>number(o[k],-limit,limit))||!number(o.y,0,12)||!sizes||!Number.isInteger(o.hp)||!number(o.hp,1,DESTRUCTIBLE_TYPES.has(o.type)?200:20)||!Array.isArray(o.program)||o.program.length>8)throw Error('パーツの設定を確認してください');ids.add(o.id);if(DESTRUCTIBLE_TYPES.has(o.type)){if(o.destructible===undefined)o.destructible=true;if(typeof o.destructible!=='boolean')throw Error('ブロックの体力設定を確認してください');}
     for(const b of o.program)if(!Object.hasOwn(BEHAVIORS,b.action)||!number(b.speed,.5,8))throw Error('うごきの設定を確認してください');
     if(o.settings===undefined)o.settings=settingsFor(o.type);
     const s=o.settings;if(!s||!['x','y','z'].includes(s.axis)||!number(s.distance,.5,8)||!number(s.speed,.5,5)||!Number.isInteger(s.value)||!number(s.value,1,20)||!Object.hasOwn(CONDITION_NAMES,s.condition)||!Number.isInteger(s.required)||!number(s.required,1,20))throw Error('しかけの設定を確認してください');
   }return p;
 }
 export const solids=objects=>objects.filter(o=>solidTypes.has(o.type)&&!o.open);
-function overlaps(p,o){return Math.abs(p.x-o.x)<o.w/2+.35&&Math.abs(p.z-o.z)<o.d/2+.35&&p.y<topAt(o,p.x,p.z)-.001&&p.y+1.7>o.y+.001;}
-export function movePlayer(p,objects,dx,dz,dt,jump){
-  const support=p.grounded?objects.find(o=>o.id===p.supportId):null,onSlope=!!support&&['roof','ramp'].includes(support.type),walls=solids(objects);let steppedOntoOther=false;
-  // A thin floor is a step from the ground, provided the player's head fits.
-  const canStep=(o,top)=>(['floor','roof','ramp'].includes(o.type)||onSlope||['wall','floor'].includes(support?.type))&&p.grounded&&top-p.y<.4&&!walls.some(ceiling=>ceiling!==o&&ceiling.y>=p.y+1.7-.02&&overlaps({...p,y:top},ceiling));
-  p.x=clamp(p.x+dx,-29,29);for(const o of walls)if(overlaps(p,o)&&dx){const top=topAt(o,p.x,p.z);if(canStep(o,top)){p.y=top;if(!['roof','ramp'].includes(o.type))steppedOntoOther=true;}else p.x=dx>0?o.x-o.w/2-.35:o.x+o.w/2+.35;}
-  p.z=clamp(p.z+dz,-29,29);for(const o of walls)if(overlaps(p,o)&&dz){const top=topAt(o,p.x,p.z);if(canStep(o,top)){p.y=top;if(!['roof','ramp'].includes(o.type))steppedOntoOther=true;}else p.z=dz>0?o.z-o.d/2-.35:o.z+o.d/2+.35;}
-  if(!steppedOntoOther&&onSlope&&Math.abs(p.x-support.x)<=support.w/2&&Math.abs(p.z-support.z)<=support.d/2){const top=topAt(support,p.x,p.z);if(Math.abs(top-p.y)<.4)p.y=top;}
-  if(jump&&p.grounded){p.vy=7;p.grounded=false;}const before=p.y;p.vy-=19*dt;p.y+=p.vy*dt;p.grounded=false;p.supportId=null;
-  for(const o of walls){if(Math.abs(p.x-o.x)>=o.w/2+.35||Math.abs(p.z-o.z)>=o.d/2+.35)continue;
-    const top=topAt(o,p.x,p.z);if(p.vy<=0&&before>=top-.02&&p.y<=top){p.y=top;p.vy=0;p.grounded=true;p.supportId=o.id;}
-    else if(p.vy>0&&before+1.7<=o.y+.02&&p.y+1.7>=o.y){p.y=o.y-1.7;p.vy=0;}}
-  if(p.y<=0){p.y=0;p.vy=0;p.grounded=true;p.supportId=null;}
+function overlaps(p,o){return Math.abs(p.x-o.x)<o.w/2+.35-.00001&&Math.abs(p.z-o.z)<o.d/2+.35-.00001&&p.y<topAt(o,p.x,p.z)-.001&&p.y+1.7>o.y+.001;}
+export function movePlayer(p,objects,dx,dz,dt,jump,world=60){
+ const support=p.grounded?objects.find(o=>o.id===p.supportId):null,onSlope=!!support&&['roof','ramp'].includes(support.type),walls=solids(objects);let steppedOntoOther=false;
+ const canStep=(o,top)=>{
+  const landing=onSlope&&o.type==='floor'&&o.h<=.4&&Math.abs(o.y-support.y-support.h)<=.3&&topAt(support,p.x,p.z)>support.y+support.h-.8;
+  // Include the capsule radius on a slope, and legacy floor-thickness offsets.
+  const height=landing ? .95 : .4;
+  return (['floor','roof','ramp'].includes(o.type)||onSlope||['wall','floor'].includes(support?.type))&&p.grounded&&top-p.y<height&&!walls.some(ceiling=>ceiling!==o&&ceiling.y>=p.y+1.7-.02&&overlaps({...p,y:top},ceiling));
+ };
+ function moveAxis(axis,amount){
+  if(!amount)return;const start=p[axis];p[axis]=clamp(start+amount,-worldHalf(world)+1,worldHalf(world)-1);
+  for(const o of walls){if(!overlaps(p,o))continue;const top=topAt(o,p.x,p.z);
+   if(canStep(o,top)){p.y=top;if(!['roof','ramp'].includes(o.type))steppedOntoOther=true;continue;}
+   const extent=(axis==='x'?o.w:o.d)/2+.35,lo=o[axis]-extent,hi=o[axis]+extent;
+   // Resolve only the crossed face. A corner overlap must never send the
+   // player to the opposite end of a long wall.
+   if(amount>0&&start<=lo+.00001)p[axis]=Math.min(p[axis],lo);
+   else if(amount<0&&start>=hi-.00001)p[axis]=Math.max(p[axis],hi);
+   else {const exiting=amount>0?hi-start<start-lo:start-lo<hi-start;if(!exiting)p[axis]=start;}
+  }
+ }
+ moveAxis('x',dx);moveAxis('z',dz);
+ if(!steppedOntoOther&&onSlope&&Math.abs(p.x-support.x)<=support.w/2&&Math.abs(p.z-support.z)<=support.d/2){const top=topAt(support,p.x,p.z);if(Math.abs(top-p.y)<.4)p.y=top;}
+ if(jump&&p.grounded){p.vy=7;p.grounded=false;}const before=p.y;p.vy-=19*dt;p.y+=p.vy*dt;p.grounded=false;p.supportId=null;
+ let landing=null;
+ for(const o of walls){if(Math.abs(p.x-o.x)>=o.w/2+.35||Math.abs(p.z-o.z)>=o.d/2+.35)continue;
+  const top=topAt(o,p.x,p.z);
+  if(p.vy<=0&&before>=top-.02&&p.y<=top&&(!landing||top>landing.top))landing={o,top};
+  else if(p.vy>0&&before+1.7<=o.y+.02&&p.y+1.7>=o.y){p.y=o.y-1.7;p.vy=0;}
+ }
+ if(landing){p.y=landing.top;p.vy=0;p.grounded=true;p.supportId=landing.o.id;}
+ if(p.y<=0){p.y=0;p.vy=0;p.grounded=true;p.supportId=null;}
 }
-export function create3D(p){const inventory=(p.loadout||[]).filter(t=>!t.pickupOnly).map(t=>t.id);return {inventory,toolCatalog:structuredClone(p.loadout||[]),drops:[],blockInventory:[],blockEquipped:null,player:{...p.spawn,vy:0,grounded:true,hp:5,invincible:0},objects:structuredClone(p.objects).map(o=>({...o,maxHp:o.hp,settings:o.settings||settingsFor(o.type),origin:{x:o.x,y:o.y,z:o.z},hidden:o.type==='enemy'&&o.startsHidden===true})),bullets:[],effects:[],hitInfo:null,buildings:[],recoilPitch:0,equipped:p.loadout?p.loadout.findIndex(t=>inventory.includes(t.id)):0,time:0,cooldown:0,score:0,stars:0,keys:0,checkpoint:null,message:'',messageId:0,state:'playing'};}
+
+export function create3D(p){const inventory=(p.loadout||[]).filter(t=>!t.pickupOnly).map(t=>t.id);return {worldSize:worldSize(p),inventory,toolCatalog:structuredClone(p.loadout||[]),drops:[],blockInventory:[],blockEquipped:null,player:{...p.spawn,vy:0,grounded:true,hp:5,invincible:0},objects:structuredClone(p.objects).map(o=>({...o,maxHp:o.hp,settings:o.settings||settingsFor(o.type),origin:{x:o.x,y:o.y,z:o.z},hidden:o.type==='enemy'&&o.startsHidden===true})),bullets:[],effects:[],hitInfo:null,buildings:[],recoilPitch:0,equipped:p.loadout?p.loadout.findIndex(t=>inventory.includes(t.id)):0,time:0,cooldown:0,score:0,stars:0,keys:0,checkpoint:null,message:'',messageId:0,state:'playing'};}
 export function conditionMet(o,g){const s=o.settings||settingsFor(o.type);return s.condition==='touch'||(s.condition==='stars'&&g.stars>=s.required)||(s.condition==='keys'&&g.keys>=s.required)||(s.condition==='enemies'&&!g.objects.some(x=>x.type==='enemy'&&x.hp>0));}
 export function conditionHint(o,g){const s=o.settings||settingsFor(o.type);if(s.condition==='unset')return 'クリア条件が未設定';if(s.condition==='touch')return o.type==='door'?'いつでも':'ふれるだけ';if(s.condition==='enemies')return `のこりの敵 ${g.objects.filter(x=>x.type==='enemy'&&x.hp>0).length} 体`;return `${s.condition==='stars'?'星':'カギ'} ${s.condition==='stars'?g.stars:g.keys} / ${s.required}`;}
 function inside(b,o,r=0){return Math.abs(b.x-o.x)<o.w/2+r&&Math.abs(b.z-o.z)<o.d/2+r&&b.y>o.y-r&&b.y<topAt(o,b.x,b.z)+r;}
 export function step3D(g,p,input,dt){
-  if(g.state!=='playing')return;dt=clamp(dt,0,.033);g.time+=dt;g.cooldown-=dt;g.recoilPitch=Math.max(0,(g.recoilPitch||0)-8*Math.PI/180*dt);const player=g.player,tell=s=>{g.message=s;g.messageId++;};player.invincible=Math.max(0,player.invincible-dt);
+  if(g.state!=='playing')return;const limit=coordinateLimit(g);dt=clamp(dt,0,.033);g.time+=dt;g.cooldown-=dt;g.recoilPitch=Math.max(0,(g.recoilPitch||0)-8*Math.PI/180*dt);const player=g.player,tell=s=>{g.message=s;g.messageId++;};player.invincible=Math.max(0,player.invincible-dt);
   for(const o of g.objects){if(o.type==='moving'){
-    const s=o.settings,before={x:o.x,y:o.y,z:o.z},axis=s.axis;o[axis]=clamp(o.origin[axis]+Math.sin(g.time*s.speed/s.distance)*s.distance,axis==='y'?0:-28,axis==='y'?12:28);
+    const s=o.settings,before={x:o.x,y:o.y,z:o.z},axis=s.axis;o[axis]=clamp(o.origin[axis]+Math.sin(g.time*s.speed/s.distance)*s.distance,axis==='y'?0:-limit,axis==='y'?12:limit);
     if(player.grounded&&player.supportId===o.id){player.x+=o.x-before.x;player.y+=o.y-before.y;player.z+=o.z-before.z;}}}
-  let x=input.x||0,z=input.z||0,len=Math.hypot(x,z);if(len>1){x/=len;z/=len;}const yaw=input.yaw||0;movePlayer(player,g.objects,(x*Math.cos(yaw)+z*Math.sin(yaw))*5*dt,(-x*Math.sin(yaw)+z*Math.cos(yaw))*5*dt,dt,input.jump);
+  let x=input.x||0,z=input.z||0,len=Math.hypot(x,z);if(len>1){x/=len;z/=len;}const yaw=input.yaw||0;movePlayer(player,g.objects,(x*Math.cos(yaw)+z*Math.sin(yaw))*5*dt,(-x*Math.sin(yaw)+z*Math.cos(yaw))*5*dt,dt,input.jump,g);
   const tool=p.loadout?p.loadout[g.equipped]:p.weapon;
   if((tool||g.blockEquipped)&&input.fire&&g.cooldown<=0){
     if(g.blockEquipped){placeBlock(g,input);g.cooldown=.35;}
@@ -65,7 +88,7 @@ export function step3D(g,p,input,dt){
   const walls=solids(g.objects);for(const o of g.objects)if(o.type==='enemy'&&!o.hidden){
     o.cooldown=Math.max(0,(o.cooldown||0)-dt);for(const b of o.program){const dx=player.x-o.x,dz=player.z-o.z,d=Math.hypot(dx,dz)||1;let mx=0,mz=0;
       if(b.action==='chase'){mx=dx/d*b.speed*dt;mz=dz/d*b.speed*dt;}if(b.action==='patrol')mx=Math.cos(g.time)*b.speed*dt;
-      if(mx||mz){const body={x:o.x+mx,y:o.y,z:o.z};if(!walls.some(w=>inside({...body,y:o.y+.9},w,.55)))o.x=clamp(body.x,-28,28);body.x=o.x;body.z+=mz;if(!walls.some(w=>inside({...body,y:o.y+.9},w,.55)))o.z=clamp(body.z,-28,28);}
+      if(mx||mz){const body={x:o.x+mx,y:o.y,z:o.z};if(!walls.some(w=>inside({...body,y:o.y+.9},w,.55)))o.x=clamp(body.x,-limit,limit);body.x=o.x;body.z+=mz;if(!walls.some(w=>inside({...body,y:o.y+.9},w,.55)))o.z=clamp(body.z,-limit,limit);}
       if(b.action==='shoot'&&d<18&&o.cooldown<=0){shootVolley(g,{x:o.x,y:o.y+1.1,z:o.z},{x:dx,y:player.y+.9-(o.y+1.1),z:dz},{speed:b.speed+5,damage:1,spread:1},true);o.cooldown=1.4;}}
     if(Math.hypot(o.x-player.x,o.z-player.z)<1&&Math.abs(o.y-player.y)<1.7&&player.invincible<=0){player.hp--;player.invincible=1;}}
   updateCombat(g,dt);settleLoot(g,dt);
