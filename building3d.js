@@ -1,5 +1,6 @@
-import {worldHalf,coordinateLimit} from './world3d.js?v=20261028l';
-import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261028l';
+import {MAX_PARTS} from './limits3d.js?v=20261028o';
+import {worldHalf,coordinateLimit} from './world3d.js?v=20261028o';
+import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261028o';
 // Shared by editor, gameplay and placement preview. No browser dependency.
 export const BUILD_TYPES={wall:'壁',floor:'床',roof:'屋根',ramp:'スロープ'};
 export const GRID={cell:4,layer:3,size:60};
@@ -52,7 +53,7 @@ function joins(a,b){
   return false;
 }
 export function editorPlacementReason(piece,objects,spawn,world=60){
-  if(objects.length>=150)return '部品は150個まで置けます';
+  if(objects.length>=MAX_PARTS)return '部品は2000個まで置けます';
   if(!GRID_PARTS.has(piece.type))return '';
   if(Math.abs(piece.x)>coordinateLimit(world)||Math.abs(piece.z)>coordinateLimit(world)||Math.abs(piece.x)+piece.w/2>worldHalf(world)||Math.abs(piece.z)+piece.d/2>worldHalf(world))return 'ステージの中に置こう';
   if(spawn&&Math.abs(piece.x-spawn.x)<piece.w/2+.35&&Math.abs(piece.z-spawn.z)<piece.d/2+.35&&piece.y<spawn.y+1.7&&piece.y+piece.h>spawn.y)return 'スタートに重ならない場所に置こう';
@@ -63,7 +64,7 @@ export const TOOL_EFFECTS={shoot:'弾を撃つ',wall:'壁を出す',floor:'床�
 const defaults={speed:24,interval:.25,damage:1,spread:1};
 export function makeTool(effect='shoot',name){return {id:crypto.randomUUID(),name:name||(effect==='shoot'?'ブラスター':BUILD_TYPES[effect]+'を出す建築銃'),effect,...defaults,...SHOT_DEFAULTS};}
 export function defaultLoadout(weapon=defaults){const gun=makeTool();Object.assign(gun,weapon);return [gun];}
-export function validTool(t){return !!t&&validHandling(t)&&(t.impacts===undefined||validImpacts(t.impacts))&&(t.pickupOnly===undefined||typeof t.pickupOnly==='boolean')&&typeof t.id==='string'&&typeof t.name==='string'&&t.name.trim().length>0&&t.name.length<=32&&Object.hasOwn(TOOL_EFFECTS,t.effect)&&Number.isFinite(t.speed)&&t.speed>=5&&t.speed<=60&&Number.isFinite(t.interval)&&t.interval>=LIMITS.minInterval&&t.interval<=2&&Number.isInteger(t.damage)&&t.damage>=1&&t.damage<=LIMITS.maxDamage&&Number.isInteger(t.spread)&&t.spread>=1&&t.spread<=LIMITS.pellets&&Object.hasOwn(PROJECTILES,t.projectile)&&Object.hasOwn(IMPACTS,t.impact)&&Number.isFinite(t.size)&&t.size>=LIMITS.minSize&&t.size<=LIMITS.maxSize&&Number.isFinite(t.spreadAngle)&&t.spreadAngle>=0&&t.spreadAngle<=45&&Number.isFinite(t.blastRadius)&&t.blastRadius>=1&&t.blastRadius<=6&&Number.isInteger(t.structureHp)&&t.structureHp>=1&&t.structureHp<=200;}
+export function validTool(t){return !!t&&validBuildChoices(t)&&validHandling(t)&&(t.impacts===undefined||validImpacts(t.impacts))&&(t.pickupOnly===undefined||typeof t.pickupOnly==='boolean')&&typeof t.id==='string'&&typeof t.name==='string'&&t.name.trim().length>0&&t.name.length<=32&&Object.hasOwn(TOOL_EFFECTS,t.effect)&&Number.isFinite(t.speed)&&t.speed>=5&&t.speed<=60&&Number.isFinite(t.interval)&&t.interval>=LIMITS.minInterval&&t.interval<=2&&Number.isInteger(t.damage)&&t.damage>=1&&t.damage<=LIMITS.maxDamage&&Number.isInteger(t.spread)&&t.spread>=1&&t.spread<=LIMITS.pellets&&Object.hasOwn(PROJECTILES,t.projectile)&&Object.hasOwn(IMPACTS,t.impact)&&Number.isFinite(t.size)&&t.size>=LIMITS.minSize&&t.size<=LIMITS.maxSize&&Number.isFinite(t.spreadAngle)&&t.spreadAngle>=0&&t.spreadAngle<=45&&Number.isFinite(t.blastRadius)&&t.blastRadius>=1&&t.blastRadius<=6&&Number.isInteger(t.structureHp)&&t.structureHp>=1&&t.structureHp<=200;}
 export function constructionPart(type,x=0,z=0,y=0,rotation=0){
   const turned=rotation%180!==0;
   return {id:crypto.randomUUID(),type,x,y,z,rotation:type==='ramp'?rotation%360:turned?90:0,
@@ -86,6 +87,7 @@ export function facingBuildRotation(yaw,offset=0){
  return ((Math.round(angle/(Math.PI/2))*90+offset)%360+360)%360;
 }
 export function placement(g,tool,point,rotation=0,level=0){
+  tool=activeBuildTool(g,tool);
   if(!tool||!Object.hasOwn(BUILD_TYPES,tool.effect)||!point||!['x','y','z'].every(k=>Number.isFinite(point[k]))||![0,90,180,270].includes(rotation)||!Number.isInteger(level)||Math.abs(level)>4)return {piece:null,valid:false,reason:'建築する場所をえらぼう'};
   const rotated=rotation%180!==0;
   let x=Math.round(point.x/4)*4,z=Math.round(point.z/4)*4;
@@ -99,7 +101,7 @@ export function placement(g,tool,point,rotation=0,level=0){
   if(tool.effect==='floor'&&point.surface?.type==='ramp'){const anchor=rampFloorAnchor(point.surface,point.normal,{w:4,d:4});x=anchor.x;z=anchor.z;y=anchor.y+level*3;}
   const piece=constructionPart(tool.effect,x,z,y,tool.effect==='ramp'?rotation:rotated?90:0);
   const no=reason=>({piece,valid:false,reason});
-  if(g.objects.length>=150)return no('部品は全部で150個まで置けます');
+  if(g.objects.length>=MAX_PARTS)return no('部品は全部で2000個まで置けます');
   if(Math.abs(x)>coordinateLimit(g)||Math.abs(z)>coordinateLimit(g)||Math.abs(x)+piece.w/2>worldHalf(g)||Math.abs(z)+piece.d/2>worldHalf(g)||y<0||y>12)return no('ステージの中に置こう');
   if(Math.hypot(x-g.player.x,y-g.player.y,z-g.player.z)>12)return no('もう少し近づこう');
   const p=g.player;if(Math.abs(x-p.x)<piece.w/2+.35&&Math.abs(z-p.z)<piece.d/2+.35&&p.y<y+piece.h&&p.y+1.7>y)return no('自分に重ならない場所に置こう');
@@ -123,7 +125,7 @@ export function placeStructure(g,p,input){
 }
 export function undoStructure(g){const o=g.buildings.at(-1);if(!o)return false;if(o.fromBlockItem&&!giveBlock(g,blockTemplate(o))){g.message='ブロックの持ちものがいっぱいです';g.messageId++;return false;}g.buildings.pop();g.objects=g.objects.filter(x=>x.id!==o.id);g.message='最後の建築をもどしたよ';g.messageId++;return true;}
 export function keepStructures(p,g){
-  const ids=new Set(p.objects.map(o=>o.id)),available=Math.max(0,150-p.objects.length),pieces=g.buildings.filter(o=>!ids.has(o.id)).slice(0,available).map(o=>{const {built,origin,maxHp,hitUntil,fromBlockItem,...piece}=o;if(maxHp)piece.hp=maxHp;return structuredClone(piece);});
+  const ids=new Set(p.objects.map(o=>o.id)),available=Math.max(0,MAX_PARTS-p.objects.length),pieces=g.buildings.filter(o=>!ids.has(o.id)).slice(0,available).map(o=>{const {built,origin,maxHp,hitUntil,fromBlockItem,...piece}=o;if(maxHp)piece.hp=maxHp;return structuredClone(piece);});
   p.objects.push(...pieces);return pieces.length;
 }
 
@@ -160,3 +162,9 @@ export function placeBlock(g,input){
  if(!result.valid){g.message=result.reason;g.messageId++;return result;}
  const stack=g.blockInventory.find(s=>s.id===g.blockEquipped),o=result.piece;stack.count--;o.maxHp=o.hp;o.origin={x:o.x,y:o.y,z:o.z};o.built=true;o.fromBlockItem=true;g.objects.push(o);g.buildings.push(o);g.message='拾ったブロックを置いたよ';g.messageId++;return result;
 }
+
+export function validBuildChoices(tool){return tool.buildChoices===undefined||(tool.effect!=='shoot'&&Array.isArray(tool.buildChoices)&&tool.buildChoices.length>=1&&tool.buildChoices.length<=4&&new Set(tool.buildChoices).size===tool.buildChoices.length&&tool.buildChoices.includes(tool.effect)&&tool.buildChoices.every(t=>Object.hasOwn(BUILD_TYPES,t)));}
+export function buildChoices(tool){return tool&&Object.hasOwn(BUILD_TYPES,tool.effect)?tool.buildChoices||[tool.effect]:[];}
+export function activeBuildTool(g,tool){const selected=g?.buildSelection?.[tool?.id];return selected&&buildChoices(tool).includes(selected)?{...tool,effect:selected}:tool;}
+export function selectBuildType(g,p,type){const tool=p.loadout?.[g.equipped];if(g.blockEquipped||!buildChoices(tool).includes(type)||(g.inventory&&!g.inventory.includes(tool.id)))return false;g.buildSelection??={};g.buildSelection[tool.id]=type;return true;}
+export function cycleBuildType(g,p){const tool=p.loadout?.[g.equipped],choices=buildChoices(tool);if(choices.length<2||g.blockEquipped)return false;return selectBuildType(g,p,choices[(choices.indexOf(activeBuildTool(g,tool).effect)+1)%choices.length]);}

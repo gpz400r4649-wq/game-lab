@@ -1,8 +1,8 @@
-import {bindGameAction} from './input3d.js?v=20261028l';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261028l';
-import {LIMITS,PROJECTILES,IMPACTS,impactEffects,weaponPresetKey,SHOT_PATTERNS,cadenceHandling} from './weapons3d.js?v=20261028l';
-import {facingBuildRotation,makeTool,TOOL_EFFECTS,BUILD_TYPES,equipTool,keepStructures,equipBlock} from './building3d.js?v=20261028l';
-import {WEAPON_PRESETS,PARTS} from './engine3d.js?v=20261028l';
+import {bindGameAction} from './input3d.js?v=20261028o';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261028o';
+import {LIMITS,PROJECTILES,IMPACTS,impactEffects,weaponPresetKey,SHOT_PATTERNS,cadenceHandling} from './weapons3d.js?v=20261028o';
+import {buildChoices,activeBuildTool,cycleBuildType,facingBuildRotation,makeTool,TOOL_EFFECTS,BUILD_TYPES,equipTool,keepStructures,equipBlock} from './building3d.js?v=20261028o';
+import {WEAPON_PRESETS,PARTS} from './engine3d.js?v=20261028o';
 export function createToolsUI(api){
   const {$,getProject,getGame,getMode,field,save,refresh,finishBuilding}=api;
   let editing=0,rotation=0,level=0;
@@ -14,7 +14,7 @@ export function createToolsUI(api){
     const title=document.createElement('h2');setReadingText(title,'持ちものと銃づくり');const intro=document.createElement('p');setReadingText(intro,'「何を出す銃にする？」を選ぼう。遊んでいるときは画面の持ちもの、または数字キーで持ち替えられるよ。');dialog.append(title,intro);
     const list=document.createElement('div');list.className='tool-editor-list';p.loadout.forEach((t,i)=>{const b=document.createElement('button');setReadingText(b,`${i+1}. ${t.name}`);b.classList.toggle('active',i===editing);b.onclick=()=>{editing=i;renderEditor();};list.append(b);});dialog.append(list);
     const nameLabel=document.createElement('label');nameLabel.className='field choice-field';const nameCaption=document.createElement('span');setReadingText(nameCaption,'銃の名前');nameLabel.append(nameCaption);const name=document.createElement('input');name.type='text';name.setAttribute('aria-label','銃の名前');name.maxLength=32;name.value=tool.name;name.oninput=()=>{if(name.value.trim()){tool.name=name.value;changed();}};name.onchange=()=>{name.value=tool.name;};nameLabel.append(name);dialog.append(nameLabel);
-    selectField(dialog,'この銃から出るもの',Object.entries(TOOL_EFFECTS),tool.effect,effect=>{tool.effect=effect;changed();renderEditor();});
+    selectField(dialog,'この銃から出るもの',Object.entries(TOOL_EFFECTS),tool.effect,effect=>{tool.effect=effect;delete tool.buildChoices;changed();renderEditor();});
     selectField(dialog,'この銃をいつ使える？',[['start','最初から持つ'],['pickup','イベントで拾って使う']],tool.pickupOnly?'pickup':'start',v=>{tool.pickupOnly=v==='pickup';changed();renderEditor();});
     let syncPreset=()=>{};const tuningControls=new Map();
       function performanceField(parent,label,key,min,max,step,choices){
@@ -57,7 +57,11 @@ export function createToolsUI(api){
       performanceField(d,'弾が広がる角度','spreadAngle',0,45,1,[['まっすぐ',0],['すこし',20],['ひろい',45]]);
       if(selected.includes('explode'))performanceField(d,'爆発の広さ','blastRadius',1,LIMITS.maxBlast,.5,[['せまい',1],['ふつう',3],['ひろい',6]]);
       dialog.append(d,impacts);const note=document.createElement('p');note.className='component-description';setReadingText(note,'まるを選ぶと右の数値も変わるよ。数値を直接変えてもOK。「こまかく」は、右の数値で決める設定だよ。弾の出る形と広がる角度は、弾が２個以上のときに変化がわかるよ。届く距離は、跳ね返った道のりも数えるよ。出せる弾は画面内で96発まで。');dialog.append(note);
-    }else{const d=document.createElement('div');d.className='weapon-settings';performanceField(d,'出すブロックの体力','structureHp',1,LIMITS.maxBlockHp,1,[['もろい',5],['ふつう',20],['かたい',100]]);dialog.append(d);const note=document.createElement('p');note.className='component-description';setReadingText(note,`狙った場所に${BUILD_TYPES[tool.effect]}を出す建築銃。緑のプレビューなら置けるよ。見る方向に合わせて向きがそろうよ。「90° 回す」で向きを変えることもできるよ。`);dialog.append(note);}
+    }else{
+      const choices=document.createElement('fieldset'),legend=document.createElement('legend');choices.className='impact-choices';setReadingText(legend,'この銃で切り替えられるブロック');choices.append(legend);
+      for(const [type,label] of Object.entries(BUILD_TYPES)){const row=document.createElement('label'),check=document.createElement('input'),caption=document.createElement('span');check.type='checkbox';check.checked=buildChoices(tool).includes(type);check.setAttribute('aria-label',label+'を切り替えに入れる');setReadingText(caption,label);row.append(check,caption);choices.append(row);check.onchange=()=>{let values=buildChoices(tool).filter(t=>t!==type);if(check.checked)values.push(type);if(!values.length){check.checked=true;return;}tool.buildChoices=values;if(!values.includes(tool.effect))tool.effect=values[0];changed();renderEditor();};}
+      const rule=document.createElement('p');setReadingText(rule,'① 切り替えボタンを押したら → ② 次にえらんだブロックを出す。２つ以上えらぶと、１つの銃で切り替えられるよ。チェック１つなら、そのブロックだけを出す銃だよ。');choices.append(rule);dialog.append(choices);
+      const d=document.createElement('div');d.className='weapon-settings';performanceField(d,'出すブロックの体力','structureHp',1,LIMITS.maxBlockHp,1,[['もろい',5],['ふつう',20],['かたい',100]]);dialog.append(d);const note=document.createElement('p');note.className='component-description';setReadingText(note,`狙った場所に${BUILD_TYPES[tool.effect]}を出す建築銃。緑のプレビューなら置けるよ。見る方向に合わせて向きがそろうよ。「90° 回す」で向きを変えることもできるよ。`);dialog.append(note);}
     const addRow=document.createElement('div');addRow.className='new-tools';
     for(const [effect,label] of [['shoot','＋ 射撃の銃'],['wall','＋ 壁の銃'],['floor','＋ 床の銃'],['roof','＋ 屋根の銃'],['ramp','＋ スロープの銃']]){const b=document.createElement('button');setReadingText(b,label);b.disabled=p.loadout.length>=8;b.onclick=()=>{p.loadout.push(makeTool(effect));editing=p.loadout.length-1;changed();renderEditor();};addRow.append(b);}dialog.append(addRow);
     const del=document.createElement('button');setReadingText(del,'この持ちものをはずす');del.disabled=p.loadout.length===1;del.onclick=()=>{p.loadout.splice(editing,1);editing=Math.max(0,editing-1);changed();renderEditor();};
@@ -69,14 +73,16 @@ export function createToolsUI(api){
     const p=getProject(),g=getGame(),el=$('#hotbar3');el.replaceChildren();p.loadout.forEach((t,i)=>{const b=document.createElement('button');b.className='hot-slot';b.classList.toggle('active',g?.equipped===i);const locked=getMode()==='play'&&g?.inventory&&!g.inventory.includes(t.id);b.disabled=!!locked;setReadingText(b,`${i+1} ${locked?'🔒 拾って使う ':''}${t.effect==='shoot'?'✦':'▧'} ${t.name}`);b.setAttribute('aria-label',`持ちもの ${i+1} ${t.name}`);b.onclick=()=>{if(g)equipTool(g,p,i);renderHotbar();};el.append(b);});
     if(g)for(const stack of g.blockInventory||[]){if(stack.count<=0&&g.blockEquipped!==stack.id)continue;const b=document.createElement('button');b.className='hot-slot';b.classList.toggle('active',g.blockEquipped===stack.id);setReadingText(b,'▧ '+PARTS[stack.template.type]+' ×'+stack.count);b.setAttribute('aria-label','拾ったブロック '+PARTS[stack.template.type]+' '+stack.count+'個');b.onclick=()=>{equipBlock(g,stack.id);renderHotbar();};el.append(b);}
     const tool=p.loadout[g?.equipped??0],building=getMode()==='play'&&(!!g?.blockEquipped||(!!tool&&tool.effect!=='shoot'));$('#keep-build3').hidden=!building;$('#rotate-build3').hidden=!building;$('#buildbar3').hidden=!building;$('#build-status3').hidden=!building;setReadingText($('#fire3'),building?'建てる ▧':tool?'発射 ✦':'銃をひろおう');setReadingText($('#build-level3'),`高さ ${level>=0?'+':''}${level} 段`);
-    $('#keep-build3').disabled=!g?.buildings.length;
+    $('#keep-build3').disabled=!g?.buildings.length;const choices=buildChoices(tool),switcher=$('#switch-build3');switcher.hidden=!building||!!g?.blockEquipped||choices.length<2;setReadingText(switcher,'ブロック：'+(BUILD_TYPES[activeBuildTool(g,tool)?.effect]||'')+' ↻');
   }
   function setRotation(value){rotation=value;setReadingText($('#rotate-build3'),'↻ 90° 回す');$('#rotate-build3').setAttribute('aria-label',`90度回す（見る向きから ${rotation}度）`);}
+  bindGameAction($('#switch-build3'),()=>{if(cycleBuildType(getGame(),getProject()))renderHotbar();});
   bindGameAction($('#rotate-build3'),()=>setRotation((rotation+90)%360));
   $('#lower-build3').onclick=()=>{level=Math.max(-4,level-1);renderHotbar();};$('#raise-build3').onclick=()=>{level=Math.min(4,level+1);renderHotbar();};
   $('#keep-build3').onclick=()=>{const g=getGame();if(!g)return;const count=keepStructures(getProject(),g);save();finishBuilding(count);};
   window.addEventListener('keydown',e=>{if(getMode()!=='play'||e.target.matches('input,select,textarea')||document.querySelector('dialog[open]'))return;
     if(/^[1-8]$/.test(e.key)){equipTool(getGame(),getProject(),Number(e.key)-1);renderHotbar();}
+    if(e.key.toLowerCase()==='q'&&!e.repeat){e.preventDefault();if(cycleBuildType(getGame(),getProject()))renderHotbar();}
     if(e.key.toLowerCase()==='r'&&!e.repeat){e.preventDefault();setRotation((rotation+90)%360);}if(e.key==='[')$('#lower-build3').click();if(e.key===']')$('#raise-build3').click();
   });
   const openButton=$('#tools-open3');openButton.onclick=open;

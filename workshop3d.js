@@ -1,10 +1,11 @@
-import {coordinateLimit} from './world3d.js?v=20261028l';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261028l';
-import {actionsFor} from './events3d.js?v=20261028l';
-import {renderEventEditor} from './event-editor3d.js?v=20261028l';
-import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261028l';
-import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261028l';
-import {PARTS,ENEMY_PRESETS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261028l';
+import {MAX_PARTS} from './limits3d.js?v=20261028o';
+import {coordinateLimit} from './world3d.js?v=20261028o';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261028o';
+import {actionsFor} from './events3d.js?v=20261028o';
+import {renderEventEditor} from './event-editor3d.js?v=20261028o';
+import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261028o';
+import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261028o';
+import {PARTS,ENEMY_PRESETS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261028o';
 
 const ICONS={weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
 const DESCRIPTIONS={weapon:'地面に置いて、ふれると拾える銃。持ちもの・銃づくりで用意した銃をえらぼう。',ramp:'低いほうから歩くと、そのまま登れるスロープ。回して好きな向きにつなげよう。',wall:'家を囲う壁。向きを変えてつなげよう。',floor:'家の床と天井に使える板。壁の内側にぴったり合うよ。',roof:'壁の上にのせる三角屋根。向きを変えて家を仕上げよう。',
@@ -84,7 +85,7 @@ export function createWorkshop(api){
     el.append(details('位置・大きさを数字でちょうせい',[fine]));
     if(['wall','floor','roof','ramp'].includes(o.type)){const rotate=document.createElement('button');setReadingText(rotate,'↻ 90° 回す');rotate.onclick=()=>{rotatePiece(o,p);save();rebuild();inspect();};el.append(rotate);}
     const actions=document.createElement('div');actions.className='object-actions';
-    const copy=document.createElement('button');setReadingText(copy,'＋ 同じ部品をもう１つ');copy.onclick=()=>{if(p.objects.length>=150){api.toast('部品は150個まで置けます');return;}const duplicate=structuredClone(o);duplicate.id=crypto.randomUUID();for(const a of duplicate.events||[])if(a.target===o.id)a.target=duplicate.id;let found=false;for(const [dx,dz] of [[Math.max(4,Math.ceil(o.w/4)*4),0],[0,Math.max(4,Math.ceil(o.d/4)*4)],[-Math.max(4,Math.ceil(o.w/4)*4),0],[0,-Math.max(4,Math.ceil(o.d/4)*4)]]){duplicate.x=o.x+dx;duplicate.z=o.z+dz;if(!GRID_PARTS.has(o.type)){duplicate.x=clamp(o.x+2,-coordinateLimit(p),coordinateLimit(p));duplicate.z=o.z;found=true;break;}alignPiece(duplicate,p);if(!editorPlacementReason(duplicate,p.objects,p.spawn)){found=true;break;}}if(!found){api.toast('隣のマスが空いていません');return;}p.objects.push(duplicate);select(duplicate.id);save();rebuild();api.objectList();inspect();};
+    const copy=document.createElement('button');setReadingText(copy,'＋ 同じ部品をもう１つ');copy.onclick=()=>{if(p.objects.length>=MAX_PARTS){api.toast('部品は2000個まで置けます');return;}const duplicate=structuredClone(o);duplicate.id=crypto.randomUUID();for(const a of duplicate.events||[])if(a.target===o.id)a.target=duplicate.id;let found=false;for(const [dx,dz] of [[Math.max(4,Math.ceil(o.w/4)*4),0],[0,Math.max(4,Math.ceil(o.d/4)*4)],[-Math.max(4,Math.ceil(o.w/4)*4),0],[0,-Math.max(4,Math.ceil(o.d/4)*4)]]){duplicate.x=o.x+dx;duplicate.z=o.z+dz;if(!GRID_PARTS.has(o.type)){duplicate.x=clamp(o.x+2,-coordinateLimit(p),coordinateLimit(p));duplicate.z=o.z;found=true;break;}alignPiece(duplicate,p);if(!editorPlacementReason(duplicate,p.objects,p.spawn)){found=true;break;}}if(!found){api.toast('隣のマスが空いていません');return;}p.objects.push(duplicate);select(duplicate.id);save();rebuild();api.objectList();inspect();};
     const del=document.createElement('button');setReadingText(del,'削除');del.className='danger';del.onclick=()=>{p.objects=p.objects.filter(x=>x.id!==o.id);select(null);save();rebuild();api.objectList();inspect();};actions.append(copy,del);el.append(actions);
   }
   function weapons(){if(api.renderLoadout){api.renderLoadout();return;}

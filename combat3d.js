@@ -1,7 +1,8 @@
-import {worldHalf} from './world3d.js?v=20261028l';
-import {fireDestructionEvents} from './events3d.js?v=20261028l';
-import {topAt} from './building3d.js?v=20261028l';
-import {LIMITS,safeShot,DESTRUCTIBLE_TYPES,impactEffects} from './weapons3d.js?v=20261028l';
+import {nearbyObjects} from './spatial3d.js?v=20261028o';
+import {worldHalf} from './world3d.js?v=20261028o';
+import {fireDestructionEvents} from './events3d.js?v=20261028o';
+import {topAt} from './building3d.js?v=20261028o';
+import {LIMITS,safeShot,DESTRUCTIBLE_TYPES,impactEffects} from './weapons3d.js?v=20261028o';
 const solidType=o=>DESTRUCTIBLE_TYPES.has(o.type)||o.type==='door';
 const alive=o=>(o.type!=='enemy'&&!DESTRUCTIBLE_TYPES.has(o.type))||o.hp>0||(DESTRUCTIBLE_TYPES.has(o.type)&&o.destructible===false);
 function axes(f){const length=Math.hypot(f.x,f.z),right=length>.00001?{x:-f.z/length,y:0,z:f.x/length}:{x:1,y:0,z:0};return {right,up:{x:right.y*f.z-right.z*f.y,y:right.z*f.x-right.x*f.z,z:right.x*f.y-right.y*f.x}};}
@@ -36,10 +37,10 @@ function nearbySweep(b,end,o){const r=b.radius||.1,w=o.type==='enemy'?1.3:o.w,h=
 function normalAt(b,o){if(!o)return {x:0,y:1,z:0};const r=b.radius||.1,faces=[{d:Math.abs(b.x-(o.x-o.w/2-r)),x:-1,y:0,z:0},{d:Math.abs(b.x-(o.x+o.w/2+r)),x:1,y:0,z:0},{d:Math.abs(b.z-(o.z-o.d/2-r)),x:0,y:0,z:-1},{d:Math.abs(b.z-(o.z+o.d/2+r)),x:0,y:0,z:1},{d:Math.abs(b.y-(o.y-r)),x:0,y:-1,z:0},{d:Math.abs(b.y-topAt(o,b.x,b.z)-r),x:0,y:1,z:0}];return faces.reduce((a,b)=>a.d<b.d?a:b);}
 export function updateCombat(g,dt){
   g.effects=g.effects.filter(e=>(e.life-=dt)>0);if(g.bullets.length>LIMITS.bullets)g.bullets.length=LIMITS.bullets;
-  const solid=g.objects.filter(o=>solidType(o)&&!o.open),enemies=g.objects.filter(o=>o.type==='enemy');
+
   for(const b of g.bullets){
     b.remaining??=60;b.radius??=.1;b.impact??='damage';b.bounces??=2;const impacts=impactEffects(b);
-    const end={x:b.x+b.vx*dt,y:b.y+b.vy*dt,z:b.z+b.vz*dt},targets=[...solid,...(!b.enemy?enemies:[])].filter(o=>!o.hidden&&alive(o)&&nearbySweep(b,end,o));
+    const end={x:b.x+b.vx*dt,y:b.y+b.vy*dt,z:b.z+b.vz*dt},targets=nearbyObjects(g,Math.min(b.x,end.x)-(b.radius||.1),Math.min(b.z,end.z)-(b.radius||.1),Math.max(b.x,end.x)+(b.radius||.1),Math.max(b.z,end.z)+(b.radius||.1)).filter(o=>(solidType(o)&&!o.open||!b.enemy&&o.type==='enemy')&&!o.hidden&&alive(o)&&nearbySweep(b,end,o));
     const steps=Math.min(24,Math.max(1,Math.ceil(Math.hypot(b.vx,b.vy,b.vz)*dt/.15)));
     for(let i=0;i<steps&&b.life>0;i++){
       const speed=Math.hypot(b.vx,b.vy,b.vz),travel=Math.min(speed*dt/steps,b.remaining);if(travel<=.000001){b.life=0;break;}const fraction=travel/(speed||1);b.x+=b.vx*fraction;b.y+=b.vy*fraction;b.z+=b.vz*fraction;b.remaining-=travel;

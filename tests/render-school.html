@@ -1,0 +1,9 @@
+<!doctype html><html lang="ja"><meta charset="utf-8"><title>2000部品の描画チェック</title><style>body{margin:0;background:#d9e6ef;font-family:system-ui}#result{position:absolute;top:10px;left:10px;background:white;padding:12px;border-radius:8px}canvas{display:block}</style><output id="result">描画中</output><script type="module">
+import * as T from '../vendor/three.module.min.js';
+import {createStructureRenderer,BATCH_TYPES} from '../structure-render3d.js';
+import {constructionPart} from '../building3d.js';
+const renderer=new T.WebGLRenderer({antialias:true});renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(1);document.body.append(renderer.domElement);const scene=new T.Scene();scene.background=new T.Color('#d9e6ef');scene.add(new T.HemisphereLight(0xffffff,0x607080,2));const camera=new T.PerspectiveCamera(55,innerWidth/innerHeight,.1,800);camera.position.set(150,130,170);camera.lookAt(0,0,0);camera.layers.enable(2);
+const colors={wall:'#d8b587',floor:'#c99d6c',roof:'#a98168',ramp:'#80b5ad',box:'#91acbf',platform:'#b3a2d9'},materials=Object.fromEntries(Object.entries(colors).map(([type,color])=>[type,new T.MeshStandardMaterial({color})])),geometry=new T.BoxGeometry(),batch=createStructureRenderer(scene,materials,{box:geometry}),objects=[],meshes=new Map();
+for(let i=0;i<2000;i++){const type=i%2?'wall':'floor',o=constructionPart(type,(i%40)*4-78,Math.floor(i/40)%25*4-48,Math.floor(i/1000)*3),group=new T.Group(),mesh=new T.Mesh(geometry,materials[type]);mesh.scale.set(o.w,o.h,o.d);mesh.position.y=o.h/2;group.position.set(o.x,o.y,o.z);group.add(mesh);batch.mark(group);scene.add(group);objects.push(o);meshes.set(o.id,group);}
+batch.sync(objects,meshes);let frames=0;function render(){renderer.render(scene,camera);if(++frames===30)document.querySelector('#result').textContent=`${objects.length} パーツ / 描画 ${renderer.info.render.calls} 回 / ${renderer.info.render.triangles} 三角形`;if(frames<30)requestAnimationFrame(render);}render();
+</script></html>

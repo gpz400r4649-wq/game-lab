@@ -1,0 +1,24 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import * as T from '../vendor/three.module.min.js';
+import {MAX_PARTS} from '../limits3d.js';
+import {fresh3D,validate3D,create3D,step3D,part} from '../engine3d.js';
+import {makeTool,constructionPart,buildChoices,activeBuildTool,selectBuildType,cycleBuildType,placement,keepStructures} from '../building3d.js';
+import {nearbyObjects} from '../spatial3d.js';
+import {createStructureRenderer} from '../structure-render3d.js';
+function school(){const p=fresh3D();p.worldSize=240;p.spawn={x:-100,y:0,z:-100};p.objects=Array.from({length:MAX_PARTS},(_,i)=>constructionPart(i%2?'wall':'floor',(i%40)*4-80,Math.floor(i/40)*4-100,(i%3)*3));return p;}
+test('2000部品の学校を保存・読込でき、2001個目は拒否する',()=>{const p=school();assert.equal(validate3D(JSON.parse(JSON.stringify(p))).objects.length,MAX_PARTS);p.objects.push(constructionPart('floor'));assert.throws(()=>validate3D(p));});
+test('１つの建築銃で４種類を選んで建築でき、射撃銃７種類も保持できる',()=>{
+ const p=fresh3D(),builder=makeTool('wall');builder.buildChoices=['wall','floor','roof','ramp'];p.loadout=[builder,...Array.from({length:7},()=>makeTool())];assert.equal(validate3D(p).loadout.length,8);const before=JSON.stringify(p),g=create3D(p);
+ for(const type of builder.buildChoices){assert.ok(selectBuildType(g,p,type));const preview=placement(g,builder,{x:0,y:0,z:0});assert.ok(preview.valid,preview.reason);assert.equal(preview.piece.type,type);step3D(g,p,{fire:true,buildPoint:{x:0,y:0,z:0}},.02);assert.equal(g.objects.at(-1).type,type);g.objects=[];g.buildings=[];g.cooldown=0;}
+ assert.equal(JSON.stringify(p),before);assert.equal(activeBuildTool(create3D(p),builder).effect,'wall');
+});
+test('子どもが登録した順だけを切り替え、未登録の部品は出さない',()=>{const p=fresh3D(),t=makeTool('floor');t.buildChoices=['floor','ramp'];p.loadout=[t];const g=create3D(p);assert.deepEqual(buildChoices(t),['floor','ramp']);assert.equal(selectBuildType(g,p,'roof'),false);assert.ok(cycleBuildType(g,p));assert.equal(activeBuildTool(g,t).effect,'ramp');assert.ok(cycleBuildType(g,p));assert.equal(activeBuildTool(g,t).effect,'floor');assert.equal(cycleBuildType(create3D(fresh3D()),fresh3D()),false);});
+test('旧作品は１種類の建築銃として動き、不正な切り替え設定を拒否する',()=>{for(const choices of [[],['wall','wall'],['shoot'],['roof'],['wall','enemy'],'wall',null]){const p=fresh3D();p.loadout=[{...makeTool('wall'),buildChoices:choices}];assert.throws(()=>validate3D(p));}const p=fresh3D();p.loadout=[makeTool('wall')];assert.deepEqual(buildChoices(validate3D(p).loadout[0]),['wall']);p.loadout[0].effect='shoot';p.loadout[0].buildChoices=['wall'];assert.throws(()=>validate3D(p));});
+test('拾っていない建築銃では切り替えできず、建築の保持も2000個で止まる',()=>{const p=fresh3D();p.loadout=[{...makeTool('wall'),buildChoices:['wall','ramp'],pickupOnly:true}];const g=create3D(p);g.equipped=0;assert.equal(selectBuildType(g,p,'ramp'),false);p.objects=Array.from({length:MAX_PARTS-1},()=>constructionPart('floor'));g.buildings=[constructionPart('floor'),constructionPart('wall')];assert.equal(keepStructures(p,g),1);assert.equal(p.objects.length,MAX_PARTS);});
+test('近傍検索が遠くの部品を除外し、新規建築・移動・削除を反映する',()=>{const g={time:0,objects:[constructionPart('wall',0,0),constructionPart('floor',100,100)]};assert.equal(nearbyObjects(g,-1,-1,1,1).length,1);g.objects.push(constructionPart('ramp',0,0));assert.equal(nearbyObjects(g,-1,-1,1,1).length,2);g.time++;g.objects[0].x=100;assert.equal(nearbyObjects(g,-1,-1,1,1).length,1);g.objects=g.objects.filter(o=>o.type!=='ramp');assert.equal(nearbyObjects(g,-1,-1,1,1).length,0);});
+test('2000個の床を１つの描画バッチにまとめ、選択・破壊後の表示も保つ',()=>{const scene=new T.Scene(),material=new T.MeshStandardMaterial({color:'#c99d6c'}),materials=Object.fromEntries(['wall','floor','roof','ramp','box','platform'].map(t=>[t,material])),geometry=new T.BoxGeometry(),renderer=createStructureRenderer(scene,materials,{box:geometry}),objects=Array.from({length:MAX_PARTS},(_,i)=>constructionPart('floor',i*4,0)),meshes=new Map();
+ for(const o of objects){const group=new T.Group(),mesh=new T.Mesh(geometry,material);mesh.position.y=o.h/2;mesh.scale.set(o.w,o.h,o.d);group.position.set(o.x,o.y,o.z);group.add(mesh);renderer.mark(group);meshes.set(o.id,group);assert.equal(mesh.layers.mask,2);}
+ renderer.sync(objects,meshes);const batch=scene.children.find(m=>m.count===MAX_PARTS);assert.ok(batch);assert.equal(scene.children.filter(m=>m.count>0).length,1);const matrix=new T.Matrix4();batch.getMatrixAt(1999,matrix);assert.equal(matrix.elements[12],1999*4);assert.equal(matrix.elements[13],.125);renderer.sync(objects.slice(1),meshes,1);assert.equal(batch.count,1999);batch.getMatrixAt(0,matrix);assert.equal(matrix.elements[12],4);
+});
+test('2000部品のステージでも移動と最大連射を続け、弾の上限を維持する',()=>{const p=school(),g=create3D(p);for(let i=0;i<120;i++)step3D(g,p,{x:1,fire:true,aim:{x:0,y:.5,z:-1}},.02);assert.ok(g.player.x>p.spawn.x);assert.ok(g.bullets.length<=96);assert.equal(p.objects.length,MAX_PARTS);});

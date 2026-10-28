@@ -29,7 +29,7 @@ test('広い世界でも移動・建築・弾が旧境界を越えて働き、�
  const p=fresh3D();p.worldSize=960;p.spawn={x:200,y:0,z:200};const g=create3D(p);for(let i=0;i<20;i++)step3D(g,p,{x:1},.02);assert.ok(g.player.x>201);
  const piece=snapEditorPiece(constructionPart('floor'),{x:204,z:204},null,null,p);assert.equal(piece.x,204);assert.equal(editorPlacementReason(piece,[],p.spawn,p),'');assert.equal(alignPiece(constructionPart('floor',900,900),p).x,476);
  const result=placement(g,makeTool('floor'),{x:204,y:0,z:204});assert.ok(result.valid,result.reason);
- assert.ok(!placement({...g,objects:Array(150).fill(piece)},makeTool('floor'),{x:204,y:0,z:204}).valid);
+ assert.ok(!placement({...g,objects:Array(2000).fill(piece)},makeTool('floor'),{x:204,y:0,z:204}).valid);
  shootVolley(g,{x:200,y:1,z:200},{x:1,y:0,z:0},p.loadout[0]);updateCombat(g,.02);assert.equal(g.bullets.length,1);
  g.player.x=478.99;for(let i=0;i<20;i++)step3D(g,p,{x:1},.02);assert.equal(g.player.x,479);
 });

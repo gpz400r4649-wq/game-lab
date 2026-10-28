@@ -1,10 +1,11 @@
-import {worldSize,coordinateLimit,WORLD_SIZES,resizeReason,spawnReason} from './world3d.js?v=20261028l';
-import {setReadingText} from './readings3d.js?v=20261028l';
+import {MAX_PARTS} from './limits3d.js?v=20261028o';
+import {worldSize,coordinateLimit,WORLD_SIZES,resizeReason,spawnReason} from './world3d.js?v=20261028o';
+import {setReadingText} from './readings3d.js?v=20261028o';
 export function createWorldUI(api){
  const dialog=document.createElement('dialog');dialog.id='world-dialog3';
  const title=document.createElement('h2'),label=document.createElement('label'),sizes=document.createElement('select'),note=document.createElement('p'),canvas=document.createElement('canvas'),status=document.createElement('p'),actions=document.createElement('div');
  setReadingText(title,'マップ');setReadingText(label,'ひろさ ');sizes.setAttribute('aria-label','マップのひろさ');WORLD_SIZES.forEach(n=>sizes.add(new Option(`${n}m × ${n}m`,n)));label.append(sizes);
- setReadingText(note,'マップをタップして、つくる場所をえらぼう。部品は150こまで。ひろげても部品はふえません。');
+ setReadingText(note,'マップをタップして、つくる場所をえらぼう。部品は2000こまで。ひろげても部品はふえません。');
  canvas.width=512;canvas.height=512;canvas.style.cssText='width:min(100%,44vh,360px);height:auto;display:block;margin:0 auto;touch-action:none;border:1px solid #acbdcd;border-radius:12px';canvas.tabIndex=0;canvas.setAttribute('role','img');canvas.setAttribute('aria-label','マップ。タップまたは矢印キーで場所をえらぶ');
  let point={x:0,z:0};
  function draw(){const p=api.getProject(),size=worldSize(p),half=size/2,ctx=canvas.getContext('2d'),at=v=>(v+half)/size*512;ctx.fillStyle='#e2e8ed';ctx.fillRect(0,0,512,512);ctx.strokeStyle='#c7d2dc';const step=size<=60?4:size/12;for(let n=-half;n<=half;n+=step){ctx.beginPath();ctx.moveTo(at(n),0);ctx.lineTo(at(n),512);ctx.moveTo(0,at(n));ctx.lineTo(512,at(n));ctx.stroke();}for(const o of p.objects){ctx.fillStyle=o.type==='enemy'?'#ce6870':'#758aab';ctx.fillRect(at(o.x-o.w/2),at(o.z-o.d/2),Math.max(3,o.w/size*512),Math.max(3,o.d/size*512));}ctx.fillStyle='#198b6e';ctx.beginPath();ctx.arc(at(p.spawn.x),at(p.spawn.z),6,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#e46c22';ctx.lineWidth=2;ctx.beginPath();ctx.arc(at(point.x),at(point.z),9,0,Math.PI*2);ctx.moveTo(at(point.x)-13,at(point.z));ctx.lineTo(at(point.x)+13,at(point.z));ctx.moveTo(at(point.x),at(point.z)-13);ctx.lineTo(at(point.x),at(point.z)+13);ctx.stroke();ctx.lineWidth=1;setReadingText(status,`えらんだ場所 X ${point.x} / Z ${point.z}　みどり：スタート`);}
