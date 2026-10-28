@@ -14,3 +14,8 @@ main{grid-template-columns:minmax(0,1fr) 310px}.starter-recipes{border:0;margin:
 
 html.playing3d,html.playing3d body,html.playing3d #viewport *{touch-action:none}
 html.playing3d #viewport{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+
+/* Readable ruby in explanations, hiragana in compact controls. */
+ruby{ruby-position:over}rt{font-size:max(9px,.62em);font-weight:500;letter-spacing:.03em;color:#675584}h1,h2,h3,.component-description,.recipe-hint,.intro,dialog p,dialog li,.field,.creation-guide{line-height:2.15}select{font-size:12px}.part{line-height:1.6}.part span{line-height:1.1}.event-action .choice-field{line-height:2}.tools-dialog>p{line-height:2.2}
+
+.component-description,.recipe-hint,.intro,.field,.event-trigger{font-size:12px}.event-rules .component-description{font-size:12px}.choice-field>span{display:block}
