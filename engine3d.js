@@ -1,9 +1,9 @@
-import {validEvents,actionsFor,fireEvents} from './events3d.js';
-import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js';
-import {shootVolley,updateCombat} from './combat3d.js';
-import {BUILD_TYPES,constructionPart,topAt,defaultLoadout,validTool,placeStructure} from './building3d.js';
+import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261028d';
+import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261028d';
+import {shootVolley,updateCombat} from './combat3d.js?v=20261028d';
+import {BUILD_TYPES,constructionPart,topAt,defaultLoadout,validTool,placeStructure} from './building3d.js?v=20261028d';
 export const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
-export const PARTS={ramp:'スロープ',wall:'壁',floor:'床',roof:'屋根',box:'ブロック',platform:'足場',moving:'動く足場',bounce:'ジャンプ台',enemy:'敵ロボット',star:'星',key:'カギ',door:'ドア',heal:'回復',checkpoint:'中間地点',hazard:'ダメージ床',goal:'ゴール'};
+export const PARTS={ramp:'スロープ',wall:'壁',floor:'床',roof:'屋根',box:'ブロック',platform:'足場',moving:'動く足場',bounce:'ジャンプ台',enemy:'敵ロボット',star:'星',key:'カギ',door:'ドア',heal:'回復',checkpoint:'セーブポイント',hazard:'ダメージ床',goal:'ゴール'};
 export const BEHAVIORS={chase:'プレイヤーを追いかける',patrol:'左右に動く',shoot:'近づいたら弾を撃つ'};
 export const ENEMY_PRESETS={chase:{name:'追いかける敵',program:[{action:'chase',speed:2}]},patrol:{name:'見はりの敵',program:[{action:'patrol',speed:2}]},guard:{name:'弾を撃つ敵',program:[{action:'shoot',speed:3}]},still:{name:'動かない的',program:[]}};
 export const WEAPON_PRESETS={standard:{name:'ふつうのブラスター',speed:24,interval:.25,damage:1,spread:1,projectile:'ball',impact:'damage',size:.2,spreadAngle:20,blastRadius:3},rapid:{name:'マシンガンのヒント',speed:40,interval:.08,damage:2,spread:1,projectile:'ball',impact:'damage',size:.15,spreadAngle:10,blastRadius:3},spread:{name:'ひろがる弾のヒント',speed:22,interval:.5,damage:2,spread:5,projectile:'ball',impact:'damage',size:.2,spreadAngle:35,blastRadius:3},power:{name:'パワーブラスター',speed:18,interval:.8,damage:10,spread:1,projectile:'ball',impact:'damage',size:.5,spreadAngle:20,blastRadius:3},rocket:{name:'ロケットランチャーのヒント',speed:18,interval:.8,damage:20,spread:1,projectile:'rocket',impact:'explode',size:.5,spreadAngle:0,blastRadius:4}};
@@ -75,5 +75,5 @@ export function step3D(g,p,input,dt){
     if(o.type==='hazard'&&player.y<=o.y+o.h+.1&&player.invincible<=0){player.hp-=o.settings.value;player.invincible=1;}}
   // Items are collected before testing conditions. Each source fires once per test play.
   for(const o of g.objects)if(!o.triggered&&((o.type==='door'&&conditionMet(o,g))||(o.type==='checkpoint'&&nearby(o))||(o.type==='goal'&&nearby(o)&&conditionMet(o,g)&&player.hp>0)))fireEvents(g,p,o,tell);
-  if(player.hp<=0){if(g.checkpoint){Object.assign(player,{x:g.checkpoint.x,y:g.checkpoint.y,z:g.checkpoint.z,vy:0,hp:5,invincible:2,grounded:false,supportId:null});g.bullets=[];tell('中間地点からもう一度！');}else g.state='lost';}
+  if(player.hp<=0){if(g.checkpoint){Object.assign(player,{x:g.checkpoint.x,y:g.checkpoint.y,z:g.checkpoint.z,vy:0,hp:5,invincible:2,grounded:false,supportId:null});g.bullets=[];tell('セーブポイントからもう一度！');}else g.state='lost';}
 }

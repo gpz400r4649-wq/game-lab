@@ -1,5 +1,5 @@
-import {topAt} from './building3d.js';
-import {LIMITS,safeShot,DESTRUCTIBLE_TYPES} from './weapons3d.js';
+import {topAt} from './building3d.js?v=20261028d';
+import {LIMITS,safeShot,DESTRUCTIBLE_TYPES,impactEffects} from './weapons3d.js?v=20261028d';
 const solidType=o=>DESTRUCTIBLE_TYPES.has(o.type)||o.type==='door';
 const alive=o=>(o.type!=='enemy'&&!DESTRUCTIBLE_TYPES.has(o.type))||o.hp>0||(DESTRUCTIBLE_TYPES.has(o.type)&&o.destructible===false);
 export function shootVolley(g,origin,direction,tool,enemy=false){
@@ -8,7 +8,7 @@ export function shootVolley(g,origin,direction,tool,enemy=false){
   const f={x:direction.x/length,y:direction.y/length,z:direction.z/length};let count=0;
   for(let i=0;i<s.count&&g.bullets.length<LIMITS.bullets;i++){
     const a=s.count===1?0:(i/(s.count-1)-.5)*s.angle;
-    g.bullets.push({...origin,vx:(f.x*Math.cos(a)+f.z*Math.sin(a))*s.speed,vy:f.y*s.speed,vz:(-f.x*Math.sin(a)+f.z*Math.cos(a))*s.speed,life:3,enemy,damage:s.damage,radius:s.radius,projectile:s.projectile,impact:s.impact,blastRadius:s.blastRadius,bounces:2,lastHit:null,ignoreUntil:0});count++;
+    g.bullets.push({...origin,vx:(f.x*Math.cos(a)+f.z*Math.sin(a))*s.speed,vy:f.y*s.speed,vz:(-f.x*Math.sin(a)+f.z*Math.cos(a))*s.speed,life:3,enemy,damage:s.damage,radius:s.radius,projectile:s.projectile,impact:s.impact,impacts:s.impacts,blastRadius:s.blastRadius,bounces:2,lastHit:null,ignoreUntil:0});count++;
   }return count;
 }
 function effect(g,point,radius,kind){if(g.effects.length>=LIMITS.effects)g.effects.shift();g.effects.push({x:point.x,y:point.y,z:point.z,radius,kind,life:kind==='blast'?.45:.16,maxLife:kind==='blast'?.45:.16});}
@@ -30,7 +30,7 @@ export function updateCombat(g,dt){
   g.effects=g.effects.filter(e=>(e.life-=dt)>0);if(g.bullets.length>LIMITS.bullets)g.bullets.length=LIMITS.bullets;
   const solid=g.objects.filter(o=>solidType(o)&&!o.open),enemies=g.objects.filter(o=>o.type==='enemy');
   for(const b of g.bullets){
-    b.radius??=.1;b.impact??='damage';b.bounces??=2;
+    b.radius??=.1;b.impact??='damage';b.bounces??=2;const impacts=impactEffects(b);
     const end={x:b.x+b.vx*dt,y:b.y+b.vy*dt,z:b.z+b.vz*dt},targets=[...solid,...(!b.enemy?enemies:[])].filter(o=>!o.hidden&&alive(o)&&nearbySweep(b,end,o));
     const steps=Math.min(24,Math.max(1,Math.ceil(Math.hypot(b.vx,b.vy,b.vz)*dt/.15)));
     for(let i=0;i<steps&&b.life>0;i++){
@@ -40,9 +40,9 @@ export function updateCombat(g,dt){
       const playerHit=b.enemy&&Math.hypot(b.x-g.player.x,b.z-g.player.z)<.35+b.radius&&b.y>g.player.y-b.radius&&b.y<g.player.y+1.7+b.radius;
       if(playerHit){b.life=0;if(g.player.invincible<=0){g.player.hp-=b.damage;g.player.invincible=1;}effect(g,b,.35,'hit');break;}
       if(!ground&&!hit)continue;
-      if(b.impact==='explode'){explode(g,b);b.life=0;break;}
-      if(hit)damageObject(g,hit,b.damage||1);effect(g,b,.3,'hit');
-      if(b.impact==='bounce'&&b.bounces>0&&hit?.type!=='enemy'){
+      if(impacts.includes('explode'))explode(g,b);
+      else {if(hit&&impacts.includes('damage'))damageObject(g,hit,b.damage||1);effect(g,b,.3,'hit');}
+      if(impacts.includes('bounce')&&b.bounces>0&&hit?.type!=='enemy'){
         const n=normalAt(b,hit),dot=b.vx*n.x+b.vy*n.y+b.vz*n.z;b.vx=(b.vx-2*dot*n.x)*.85;b.vy=(b.vy-2*dot*n.y)*.85;b.vz=(b.vz-2*dot*n.z)*.85;b.x+=n.x*.1;b.y+=n.y*.1;b.z+=n.z*.1;b.bounces--;b.lastHit=hit?.id;b.ignoreUntil=g.time+.08;break;
       }b.life=0;break;
     }b.life-=dt;

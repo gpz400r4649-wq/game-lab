@@ -1,7 +1,7 @@
 // A fixed menu of one-shot events: no scripts, loops or new object allocation.
 export const EVENT_TYPES=new Set(['star','key','heal','door','checkpoint','goal']);
 export const EVENT_LIMIT=6;
-export const ACTION_NAMES={addStar:'星の数をふやす',addKey:'カギの数をふやす',addScore:'得点をふやす',heal:'体力を回復する',openDoor:'ドアのカギをあける',giveTool:'設定した銃をひろう',spawnEnemy:'待機中の敵を出現させる',checkpoint:'ここを中間地点にする',win:'ステージクリアにする'};
+export const ACTION_NAMES={addStar:'星の数をふやす',addKey:'カギの数をふやす',addScore:'得点をふやす',heal:'体力を回復する',openDoor:'ドアのカギをあける',giveTool:'設定した銃をひろう',spawnEnemy:'待機中の敵を出現させる',checkpoint:'ここをセーブポイントにする',win:'ステージクリアにする'};
 export const AMOUNT_ACTIONS=new Set(['addScore','heal']);
 export const TARGET_ACTIONS=new Set(['openDoor','giveTool','spawnEnemy']);
 export function defaultActions(o){
@@ -35,7 +35,7 @@ export function fireEvents(g,p,o,tell){
       case 'openDoor':{const door=g.objects.find(x=>x.id===a.target&&x.type==='door');if(door){door.open=true;messages.push('ドアのカギがあいた！');}break;}
       case 'giveTool':{const index=p.loadout.findIndex(t=>t.id===a.target);if(index>=0){const tool=p.loadout[index];if(!g.inventory.includes(tool.id))g.inventory.push(tool.id);g.equipped=index;g.cooldown=0;messages.push(tool.name+'をひろった！');}break;}
       case 'spawnEnemy':{const enemy=g.objects.find(x=>x.id===a.target&&x.type==='enemy'&&x.hidden&&x.hp>0);if(enemy){enemy.hidden=false;messages.push('敵が出現した！');}break;}
-      case 'checkpoint':g.checkpoint={id:o.id,x:o.x,y:o.y,z:o.z};messages.push('中間地点を記録したよ');break;
+      case 'checkpoint':g.checkpoint={id:o.id,x:o.x,y:o.y,z:o.z};messages.push('セーブポイントを記録したよ');break;
       case 'win':if(g.player.hp>0){g.state='won';messages.push('ステージクリア！');}break;
     }
   }

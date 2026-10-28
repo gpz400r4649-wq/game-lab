@@ -1,12 +1,12 @@
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261028c';
-import {LIMITS,PROJECTILES,IMPACTS} from './weapons3d.js';
-import {makeTool,TOOL_EFFECTS,BUILD_TYPES,equipTool,undoStructure,keepStructures} from './building3d.js';
-import {WEAPON_PRESETS} from './engine3d.js';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261028d';
+import {LIMITS,PROJECTILES,IMPACTS,impactEffects,weaponPresetKey} from './weapons3d.js?v=20261028d';
+import {makeTool,TOOL_EFFECTS,BUILD_TYPES,equipTool,undoStructure,keepStructures} from './building3d.js?v=20261028d';
+import {WEAPON_PRESETS} from './engine3d.js?v=20261028d';
 export function createToolsUI(api){
   const {$,getProject,getGame,getMode,field,save,refresh,finishBuilding}=api;
   let editing=0,rotation=0,level=0;
   const dialog=document.createElement('dialog');dialog.className='tools-dialog';dialog.id='tools-dialog3';document.body.append(dialog);
-  function selectField(parent,label,values,current,change){const l=document.createElement('label');l.className='field choice-field';const caption=document.createElement('span');setReadingText(caption,label);l.append(caption);const s=document.createElement('select');s.setAttribute('aria-label',label);values.forEach(([k,v])=>s.add(new Option(kanaText(v),k)));s.value=current;s.onchange=()=>change(s.value);l.append(s);parent.append(l);}
+  function selectField(parent,label,values,current,change){const l=document.createElement('label');l.className='field choice-field';const caption=document.createElement('span');setReadingText(caption,label);l.append(caption);const s=document.createElement('select');s.setAttribute('aria-label',label);values.forEach(([k,v])=>s.add(new Option(kanaText(v),k)));s.value=current;s.onchange=()=>change(s.value);l.append(s);parent.append(l);return s;}
   function changed(){save();renderHotbar();}
   function renderEditor(){
     const p=getProject();editing=Math.min(editing,p.loadout.length-1);const tool=p.loadout[editing];dialog.replaceChildren();
@@ -15,20 +15,42 @@ export function createToolsUI(api){
     const nameLabel=document.createElement('label');nameLabel.className='field choice-field';const nameCaption=document.createElement('span');setReadingText(nameCaption,'銃の名前');nameLabel.append(nameCaption);const name=document.createElement('input');name.type='text';name.setAttribute('aria-label','銃の名前');name.maxLength=32;name.value=tool.name;name.oninput=()=>{if(name.value.trim()){tool.name=name.value;changed();}};name.onchange=()=>{name.value=tool.name;};nameLabel.append(name);dialog.append(nameLabel);
     selectField(dialog,'この銃から出るもの',Object.entries(TOOL_EFFECTS),tool.effect,effect=>{tool.effect=effect;changed();renderEditor();});
     selectField(dialog,'この銃をいつ使える？',[['start','最初から持つ'],['pickup','イベントで拾って使う']],tool.pickupOnly?'pickup':'start',v=>{tool.pickupOnly=v==='pickup';changed();renderEditor();});
+    let syncPreset=()=>{};
+      function performanceField(parent,label,key,min,max,step,choices){
+        let sync=()=>{};
+        const assign=n=>{tool[key]=step===1?Math.round(n):n;sync();syncPreset();return tool[key];};
+        const old=field(parent,label,tool[key],min,max,step,assign),number=old.querySelector('input'),row=document.createElement('div'),caption=document.createElement('label'),group=document.createElement('div');
+        row.className='performance-field';number.id=`tune-${editing}-${key}`;caption.htmlFor=number.id;setReadingText(caption,label);group.className='tuning-options';group.setAttribute('role','radiogroup');group.setAttribute('aria-label',label+'のかんたん調整');
+        const radios=[];
+        for(const [text,value] of choices){
+          const choice=document.createElement('label'),radio=document.createElement('input'),textNode=document.createElement('span');radio.type='radio';radio.name=number.id;radio.value=value;radio.setAttribute('aria-label',text);setReadingText(textNode,text);const amount=document.createElement('small');amount.textContent=value;choice.append(radio,textNode,amount);group.append(choice);radios.push([radio,value]);
+          radio.onchange=()=>{if(!radio.checked)return;number.value=value;assign(value);changed();};
+        }
+        const custom=document.createElement('label'),customRadio=document.createElement('input'),customText=document.createElement('span');customRadio.type='radio';customRadio.name=number.id;customRadio.value='custom';customRadio.setAttribute('aria-label','数値で調整');setReadingText(customText,'こまかく');custom.append(customRadio,customText);group.append(custom);customRadio.onchange=()=>number.focus();
+        sync=()=>{let matched=false;for(const [radio,value] of radios){radio.checked=Math.abs(tool[key]-value)<.000001;matched||=radio.checked;}customRadio.checked=!matched;};sync();row.append(caption,group,number);old.replaceWith(row);
+      }
     if(tool.effect==='shoot'){
-      selectField(dialog,'かんたん設定',[['custom','いまの設定'],...Object.entries(WEAPON_PRESETS).map(([k,v])=>[k,v.name])],'custom',key=>{if(key!=='custom'){const {name,...stats}=WEAPON_PRESETS[key];Object.assign(tool,stats);changed();renderEditor();}});
-      selectField(dialog,'どんな弾が出る？',Object.entries(PROJECTILES),tool.projectile,v=>{tool.projectile=v;changed();renderEditor();});
-      selectField(dialog,'当たったらどうなる？',Object.entries(IMPACTS),tool.impact,v=>{tool.impact=v;changed();renderEditor();});
+      let presetSelect;
+      syncPreset=()=>{if(presetSelect)presetSelect.value=weaponPresetKey(tool,WEAPON_PRESETS);};
+      presetSelect=selectField(dialog,'かんたん設定',[['custom','自分で調整中'],...Object.entries(WEAPON_PRESETS).map(([k,v])=>[k,v.name])],weaponPresetKey(tool,WEAPON_PRESETS),key=>{if(key!=='custom'){const {name,...stats}=WEAPON_PRESETS[key];Object.assign(tool,stats);delete tool.impacts;changed();renderEditor();}});
+      selectField(dialog,'どんな弾が出る？',Object.entries(PROJECTILES),tool.projectile,v=>{tool.projectile=v;syncPreset();changed();});
+      const impacts=document.createElement('fieldset');impacts.className='impact-choices';const legend=document.createElement('legend');setReadingText(legend,'当たったらどうなる？（いくつでも選べる）');impacts.append(legend);
+      const selected=impactEffects(tool);
+      for(const [value,label] of Object.entries(IMPACTS)){
+        const row=document.createElement('label'),check=document.createElement('input'),caption=document.createElement('span');check.type='checkbox';check.value=value;check.checked=selected.includes(value);check.setAttribute('aria-label',label);setReadingText(caption,label);
+        check.onchange=()=>{const values=new Set(impactEffects(tool));if(check.checked)values.add(value);else values.delete(value);tool.impacts=[...values];changed();const scroll=dialog.scrollTop;renderEditor();dialog.scrollTop=scroll;};row.append(check,caption);impacts.append(row);
+      }
+      const help=document.createElement('p');help.className='component-description';setReadingText(help,'跳ね返る＋爆発なら、ぶつかるたびに爆発して弾は跳ね返るよ。２回まで跳ね返り、その次にぶつかると消えるよ。ダメージは同じ命中で二重にはならないよ。');impacts.append(help);dialog.append(impacts);
       const d=document.createElement('div');d.className='weapon-settings';
-      field(d,'発射の間かく（秒）',tool.interval,LIMITS.minInterval,2,.01,n=>tool.interval=n);
-      field(d,'弾のつよさ',tool.damage,1,LIMITS.maxDamage,1,n=>tool.damage=Math.round(n));
-      field(d,'弾の大きさ（直径）',tool.size,LIMITS.minSize,LIMITS.maxSize,.05,n=>tool.size=n);
-      field(d,'いちどに出る数',tool.spread,1,LIMITS.pellets,1,n=>tool.spread=Math.round(n));
-      field(d,'弾の速さ',tool.speed,5,LIMITS.maxSpeed,1,n=>tool.speed=n);
-      field(d,'弾が広がる角度',tool.spreadAngle,0,45,1,n=>tool.spreadAngle=n);
-      if(tool.impact==='explode')field(d,'爆発の広さ',tool.blastRadius,1,LIMITS.maxBlast,.5,n=>tool.blastRadius=n);
-      dialog.append(d);const note=document.createElement('p');note.className='component-description';setReadingText(note,'数を変えて、どう変わるか確かめよう。出せる弾は画面内で96発まで。いっぱいになったら少し待つと、また撃てるよ。');dialog.append(note);
-    }else{field(dialog,'出すブロックの体力',tool.structureHp,1,LIMITS.maxBlockHp,1,n=>tool.structureHp=Math.round(n));const note=document.createElement('p');note.className='component-description';setReadingText(note,`狙った場所に${BUILD_TYPES[tool.effect]}を出す建築銃。緑のプレビューなら置けるよ。向きと高さは遊びながら変更できるよ。`);dialog.append(note);}
+      performanceField(d,'発射の間かく（秒）','interval',LIMITS.minInterval,2,.01,[['ゆっくり',.8],['ふつう',.25],['はやい',.08]]);
+      performanceField(d,'弾のつよさ','damage',1,LIMITS.maxDamage,1,[['よわい',1],['ふつう',5],['つよい',20]]);
+      performanceField(d,'弾の大きさ（直径）','size',LIMITS.minSize,LIMITS.maxSize,.05,[['ちいさい',.1],['ふつう',.2],['おおきい',1]]);
+      performanceField(d,'いちどに出る数','spread',1,LIMITS.pellets,1,[['すくない',1],['ふつう',3],['たくさん',8]]);
+      performanceField(d,'弾の速さ','speed',5,LIMITS.maxSpeed,1,[['ゆっくり',5],['ふつう',24],['はやい',60]]);
+      performanceField(d,'弾が広がる角度','spreadAngle',0,45,1,[['まっすぐ',0],['すこし',20],['ひろい',45]]);
+      if(selected.includes('explode'))performanceField(d,'爆発の広さ','blastRadius',1,LIMITS.maxBlast,.5,[['せまい',1],['ふつう',3],['ひろい',6]]);
+      dialog.append(d);const note=document.createElement('p');note.className='component-description';setReadingText(note,'まるを選ぶと右の数値も変わるよ。数値を直接変えてもOK。「こまかく」は、右の数値で決める設定だよ。広がる角度は、弾が２個以上のときに変化がわかるよ。出せる弾は画面内で96発まで。');dialog.append(note);
+    }else{const d=document.createElement('div');d.className='weapon-settings';performanceField(d,'出すブロックの体力','structureHp',1,LIMITS.maxBlockHp,1,[['もろい',5],['ふつう',20],['かたい',100]]);dialog.append(d);const note=document.createElement('p');note.className='component-description';setReadingText(note,`狙った場所に${BUILD_TYPES[tool.effect]}を出す建築銃。緑のプレビューなら置けるよ。向きと高さは遊びながら変更できるよ。`);dialog.append(note);}
     const addRow=document.createElement('div');addRow.className='new-tools';
     for(const [effect,label] of [['shoot','＋ 射撃の銃'],['wall','＋ 壁の銃'],['floor','＋ 床の銃'],['roof','＋ 屋根の銃'],['ramp','＋ スロープの銃']]){const b=document.createElement('button');setReadingText(b,label);b.disabled=p.loadout.length>=8;b.onclick=()=>{p.loadout.push(makeTool(effect));editing=p.loadout.length-1;changed();renderEditor();};addRow.append(b);}dialog.append(addRow);
     const del=document.createElement('button');setReadingText(del,'この持ちものをはずす');del.disabled=p.loadout.length===1;del.onclick=()=>{p.loadout.splice(editing,1);editing=Math.max(0,editing-1);changed();renderEditor();};

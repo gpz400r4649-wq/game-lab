@@ -1,4 +1,4 @@
-import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES} from './weapons3d.js';
+import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts} from './weapons3d.js?v=20261028d';
 // Shared by editor, gameplay and placement preview. No browser dependency.
 export const BUILD_TYPES={wall:'壁',floor:'床',roof:'屋根',ramp:'スロープ'};
 export const GRID={cell:4,layer:3,size:60};
@@ -56,7 +56,7 @@ export const TOOL_EFFECTS={shoot:'弾を撃つ',wall:'壁を出す',floor:'床�
 const defaults={speed:24,interval:.25,damage:1,spread:1};
 export function makeTool(effect='shoot',name){return {id:crypto.randomUUID(),name:name||(effect==='shoot'?'ブラスター':BUILD_TYPES[effect]+'を出す建築銃'),effect,...defaults,...SHOT_DEFAULTS};}
 export function defaultLoadout(weapon=defaults){const gun=makeTool();Object.assign(gun,weapon);return [gun];}
-export function validTool(t){return !!t&&(t.pickupOnly===undefined||typeof t.pickupOnly==='boolean')&&typeof t.id==='string'&&typeof t.name==='string'&&t.name.trim().length>0&&t.name.length<=32&&Object.hasOwn(TOOL_EFFECTS,t.effect)&&Number.isFinite(t.speed)&&t.speed>=5&&t.speed<=60&&Number.isFinite(t.interval)&&t.interval>=LIMITS.minInterval&&t.interval<=2&&Number.isInteger(t.damage)&&t.damage>=1&&t.damage<=LIMITS.maxDamage&&Number.isInteger(t.spread)&&t.spread>=1&&t.spread<=LIMITS.pellets&&Object.hasOwn(PROJECTILES,t.projectile)&&Object.hasOwn(IMPACTS,t.impact)&&Number.isFinite(t.size)&&t.size>=LIMITS.minSize&&t.size<=LIMITS.maxSize&&Number.isFinite(t.spreadAngle)&&t.spreadAngle>=0&&t.spreadAngle<=45&&Number.isFinite(t.blastRadius)&&t.blastRadius>=1&&t.blastRadius<=6&&Number.isInteger(t.structureHp)&&t.structureHp>=1&&t.structureHp<=200;}
+export function validTool(t){return !!t&&(t.impacts===undefined||validImpacts(t.impacts))&&(t.pickupOnly===undefined||typeof t.pickupOnly==='boolean')&&typeof t.id==='string'&&typeof t.name==='string'&&t.name.trim().length>0&&t.name.length<=32&&Object.hasOwn(TOOL_EFFECTS,t.effect)&&Number.isFinite(t.speed)&&t.speed>=5&&t.speed<=60&&Number.isFinite(t.interval)&&t.interval>=LIMITS.minInterval&&t.interval<=2&&Number.isInteger(t.damage)&&t.damage>=1&&t.damage<=LIMITS.maxDamage&&Number.isInteger(t.spread)&&t.spread>=1&&t.spread<=LIMITS.pellets&&Object.hasOwn(PROJECTILES,t.projectile)&&Object.hasOwn(IMPACTS,t.impact)&&Number.isFinite(t.size)&&t.size>=LIMITS.minSize&&t.size<=LIMITS.maxSize&&Number.isFinite(t.spreadAngle)&&t.spreadAngle>=0&&t.spreadAngle<=45&&Number.isFinite(t.blastRadius)&&t.blastRadius>=1&&t.blastRadius<=6&&Number.isInteger(t.structureHp)&&t.structureHp>=1&&t.structureHp<=200;}
 export function constructionPart(type,x=0,z=0,y=0,rotation=0){
   const turned=rotation%180!==0;
   return {id:crypto.randomUUID(),type,x,y,z,rotation:type==='ramp'?rotation%360:turned?90:0,
