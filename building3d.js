@@ -1,5 +1,5 @@
-import {worldHalf,coordinateLimit} from './world3d.js?v=20261028j';
-import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261028j';
+import {worldHalf,coordinateLimit} from './world3d.js?v=20261028l';
+import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261028l';
 // Shared by editor, gameplay and placement preview. No browser dependency.
 export const BUILD_TYPES={wall:'壁',floor:'床',roof:'屋根',ramp:'スロープ'};
 export const GRID={cell:4,layer:3,size:60};
@@ -79,6 +79,12 @@ export function topAt(o,x,z){
   return o.y+o.h*Math.max(0,1-Math.abs(offset)/(width/2));
 }
 function intersects(a,b){return Math.abs(a.x-b.x)<(a.w+b.w)/2-.015&&Math.abs(a.z-b.z)<(a.d+b.d)/2-.015&&a.y<b.y+b.h-.015&&a.y+a.h>b.y+.015;}
+// Camera yaw and ramps share the same forward vector (-sin(yaw), -cos(yaw)).
+// The wall's matching edge is the near edge, facing the player.
+export function facingBuildRotation(yaw,offset=0){
+ const angle=Number.isFinite(yaw)?yaw:0;
+ return ((Math.round(angle/(Math.PI/2))*90+offset)%360+360)%360;
+}
 export function placement(g,tool,point,rotation=0,level=0){
   if(!tool||!Object.hasOwn(BUILD_TYPES,tool.effect)||!point||!['x','y','z'].every(k=>Number.isFinite(point[k]))||![0,90,180,270].includes(rotation)||!Number.isInteger(level)||Math.abs(level)>4)return {piece:null,valid:false,reason:'建築する場所をえらぼう'};
   const rotated=rotation%180!==0;
