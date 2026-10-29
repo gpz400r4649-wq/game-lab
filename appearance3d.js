@@ -18,16 +18,16 @@ export function gunLayout(tool){const a=appearanceFor(tool),parts=[],dark='#2733
   case 'rifle':length=.65;box('magazine',0,-.26,-.15,.14,.28,.2);box('sight',0,.2,-.16,.08,.13,.12);break;
   case 'sniper':length=1;radius=.045;box('scopeMount',0,.19,-.08,.12,.15,.28);tube('scope',0,.3,.18,.64,.085);box('magazine',0,-.23,-.12,.13,.24,.22);break;
   case 'shotgun':length=.76;radius=.075;box('pump',0,-.1,-.57,.22,.17,.4,a.color);tube('magazineTube',0,-.07,-.4,.6,.045);break;
-  case 'grenade':length=.48;radius=.13;parts.push({type:'drum',role:'drum',x:0,y:-.19,z:-.03,length:.3,radius:.22,color:a.accent});box('grip',0,-.24,.3,.14,.3,.17);break;
-  case 'launcher':length=.86;radius=.22;rear=-.15;y=.05;box('sight',0,.34,-.27,.11,.1,.22,a.color);break;
-  case 'powerLauncher':length=1.08;radius=.28;rear=-.2;y=.08;box('brace',0,.45,-.3,.16,.12,.4,a.color);box('sidePlate',0,-.02,-.12,.54,.18,.3,a.color);break;
+  case 'grenade':length=.48;radius=.13;parts.push({type:'drum',role:'drum',axis:'z',x:0,y:-.19,z:-.03,length:.3,radius:.22,color:a.accent});box('grip',0,-.24,.3,.14,.3,.17);break;
+  case 'launcher':length=.86;radius=.22;rear=-.15;y=.05;box('sight',0,y+radius+.05-.02,-.3,.11,.1,.22,a.color);break;
+  case 'powerLauncher':length=1.08;radius=.28;rear=-.2;y=.08;box('brace',0,y+radius+.06-.02,-.42,.16,.12,.4,a.color);box('sidePlate',0,-.02,-.12,.54,.18,.3,a.color);break;
  }
  const barrel=tube('barrel',0,y,rear,length*a.barrel,radius);
  let muzzle=barrel;
  if(a.suppressor)muzzle=tube('suppressor',barrel.x,barrel.y,barrel.z+.025,.34,Math.max(.08,radius*1.28));
  return {parts,muzzle};}
 export function gunPreviewSVG(tool){const {parts}=gunLayout(tool);let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
- for(const p of parts){const d=p.type==='box'?p.d:p.type==='drum'?p.radius*2:p.length,h=p.type==='box'?p.h:p.radius*2;minX=Math.min(minX,-p.z-d/2);maxX=Math.max(maxX,-p.z+d/2);minY=Math.min(minY,p.y-h/2);maxY=Math.max(maxY,p.y+h/2);}
+ for(const p of parts){const d=p.type==='box'?p.d:p.type==='drum'&&p.axis!=='z'?p.radius*2:p.length,h=p.type==='box'?p.h:p.radius*2;minX=Math.min(minX,-p.z-d/2);maxX=Math.max(maxX,-p.z+d/2);minY=Math.min(minY,p.y-h/2);maxY=Math.max(maxY,p.y+h/2);}
  const scale=Math.min(310/(maxX-minX),125/(maxY-minY)),ox=(360-(maxX-minX)*scale)/2,oy=(170-(maxY-minY)*scale)/2,X=z=>ox+(-z-minX)*scale,Y=y=>oy+(maxY-y)*scale;
- let shapes='';for(const p of parts){if(p.type==='box')shapes+=`<rect x="${X(p.z+p.d/2)}" y="${Y(p.y+p.h/2)}" width="${p.d*scale}" height="${p.h*scale}" rx="2" fill="${p.color}"/>`;else if(p.type==='drum')shapes+=`<circle cx="${X(p.z)}" cy="${Y(p.y)}" r="${p.radius*scale}" fill="${p.color}"/>`;else{const front=p.z-p.length/2,cx=X(front),cy=Y(p.y),r=p.radius*scale,rx=Math.min(6,r*.25);shapes+=`<rect x="${X(p.z+p.length/2)}" y="${cy-r}" width="${p.length*scale}" height="${r*2}" fill="${p.color}"/><ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${r}" fill="${p.color}" stroke="#27334a" stroke-width="1"/><ellipse cx="${cx+.3}" cy="${cy}" rx="${rx*.62}" ry="${r*.65}" fill="#27334a"/>`;}}
+ let shapes='';for(const p of parts){if(p.type==='box')shapes+=`<rect x="${X(p.z+p.d/2)}" y="${Y(p.y+p.h/2)}" width="${p.d*scale}" height="${p.h*scale}" rx="2" fill="${p.color}"/>`;else if(p.type==='drum'){if(p.axis==='z'){const front=X(p.z-p.length/2),cy=Y(p.y),r=p.radius*scale;shapes+=`<rect x="${X(p.z+p.length/2)}" y="${cy-r}" width="${p.length*scale}" height="${r*2}" fill="${p.color}"/><ellipse cx="${front}" cy="${cy}" rx="${Math.min(6,r*.25)}" ry="${r}" fill="${p.color}" stroke="#27334a" stroke-width="1"/>`;}else shapes+=`<circle cx="${X(p.z)}" cy="${Y(p.y)}" r="${p.radius*scale}" fill="${p.color}"/>`;}else{const front=p.z-p.length/2,cx=X(front),cy=Y(p.y),r=p.radius*scale,rx=Math.min(6,r*.25);shapes+=`<rect x="${X(p.z+p.length/2)}" y="${cy-r}" width="${p.length*scale}" height="${r*2}" fill="${p.color}"/><ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${r}" fill="${p.color}" stroke="#27334a" stroke-width="1"/><ellipse cx="${cx+.3}" cy="${cy}" rx="${rx*.62}" ry="${r*.65}" fill="#27334a"/>`;}}
  return `<svg viewBox="0 0 360 170" role="img" aria-label="銃の見た目のプレビュー"><rect width="360" height="170" rx="12" fill="#eef3f9"/>${shapes}</svg>`;}
