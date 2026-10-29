@@ -1,7 +1,8 @@
-import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261029t';
-import {MOVE_MAX_CELLS,RANGE_MAX,rangeCell,rangeCells,worldMoveRange} from './enemy-range3d.js?v=20261029t';
-import {moveGridWindow,moveGridPages} from './world3d.js?v=20261029t';
-import {setReadingText,kanaText} from './readings3d.js?v=20261029t';
+import {createMapStick,panMapCenter} from './map-stick3d.js?v=20261029u';
+import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261029u';
+import {MOVE_MAX_CELLS,RANGE_MAX,rangeCell,rangeCells,worldMoveRange} from './enemy-range3d.js?v=20261029u';
+import {moveGridWindow,moveGridPages} from './world3d.js?v=20261029u';
+import {setReadingText,kanaText} from './readings3d.js?v=20261029u';
 export function openMoveMap(o,{getProject,save,rebuild,lookFromAbove,onClose}){
  const p=getProject(),limit=moveGridWindow(p).limit,d=document.createElement('dialog');d.className='enemy-range-dialog';d.style.setProperty('--range-color','#91c7ee');
  o.moveRange=o.moveRange?worldMoveRange(o.moveRange,o):{space:'world',cells:[]};save();rebuild();
@@ -20,14 +21,19 @@ export function openMoveMap(o,{getProject,save,rebuild,lookFromAbove,onClose}){
  const pageCenters=moveGridPages(p);for(const center of [centerX,centerZ])if(!pageCenters.includes(center))pageCenters.push(center);pageCenters.sort((a,b)=>a-b);
  const areas=pageCenters.map(n=>{const w=moveGridWindow(p,n,n);return [String(n),`${w.minX*4}〜${w.maxX*4}`];});
  places.hidden=moveGridPages(p).length===1;
- select(area,'横 X の場所',areas,String(centerX),v=>{centerX=Number(v);shape.value='custom';paint();});select(area,'奥行 Z の場所',areas,String(centerZ),v=>{centerZ=Number(v);shape.value='custom';paint();});
+ const xPlace=select(area,'横 X の場所',areas,String(centerX),v=>{centerX=Number(v);shape.value='custom';paint();});const zPlace=select(area,'奥行 Z の場所',areas,String(centerZ),v=>{centerZ=Number(v);shape.value='custom';paint();});
+ const navigation=document.createElement('div'),stick=document.createElement('div'),caption=document.createElement('span');navigation.className='move-map-pan';navigation.hidden=places.hidden;stick.className='map-pan-stick';stick.tabIndex=0;stick.setAttribute('role','group');stick.setAttribute('aria-label','マップ移動スティック');stick.innerHTML='<span class="map-stick-up">まえ ↑</span><span class="map-stick-down">↓ うしろ</span><span class="map-stick-left">←</span><span class="map-stick-right">→</span><span class="map-stick-thumb">いどう</span>';setReadingText(caption,'マップをうごかす');navigation.append(caption,stick);
+ let panInput={x:0,z:0},panPosition={x:centerX,z:centerZ},panFrameId=0,panTime=0,panCenter={x:centerX,z:centerZ};
+ function panFrame(time){panFrameId=0;if(!d.open||!d.isConnected)return;if(panCenter.x!==centerX||panCenter.z!==centerZ)panPosition={x:centerX,z:centerZ};panPosition=panMapCenter(panPosition,panInput,panTime?(time-panTime)/1000:0,p);panTime=time;const w=moveGridWindow(p,panPosition.x,panPosition.z);if(w.centerX!==centerX||w.centerZ!==centerZ){centerX=w.centerX;centerZ=w.centerZ;shape.value='custom';paint();}panCenter={x:centerX,z:centerZ};if(Math.hypot(panInput.x,panInput.z)>=.15)panFrameId=requestAnimationFrame(panFrame);}
+ const mapStick=createMapStick(stick,input=>{panInput=input;if(Math.hypot(input.x,input.z)<.15){cancelAnimationFrame(panFrameId);panFrameId=0;panTime=0;return;}if(!panFrameId)panFrameId=requestAnimationFrame(panFrame);});
+ function syncPlace(input,center){for(const option of [...input.options])if(option.dataset.live==='yes')option.remove();if(![...input.options].some(option=>option.value===String(center))){const w=moveGridWindow(p,center,center),option=new Option(`${w.minX*4}〜${w.maxX*4}`,String(center));option.dataset.live='yes';input.add(option);}input.value=String(center);}
  const buttons=[];for(let dz=-Math.floor(initialWindow.count/2);dz<=Math.floor(initialWindow.count/2);dz++)for(let dx=-Math.floor(initialWindow.count/2);dx<=Math.floor(initialWindow.count/2);dx++){
   const b=document.createElement('button');b.type='button';b.onclick=()=>{const key=`${centerX+dx},${centerZ+dz}`;if(chosen.has(key))chosen.delete(key);else if(chosen.size<MOVE_MAX_CELLS)chosen.add(key);shape.value='custom';changed();};buttons.push({b,dx,dz});grid.append(b);
  }
- function paint(){for(const {b,dx,dz}of buttons){const x=centerX+dx,z=centerZ+dz,key=`${x},${z}`,active=chosen.has(key);b.disabled=false;b.classList.toggle('range-world-edge',Math.abs(x)===limit||Math.abs(z)===limit);b.setAttribute('aria-label',`X ${x*4} Z ${z*4} のマス`);b.setAttribute('aria-pressed',String(active));b.classList.toggle('active',active);markRobotCell(b,x===rangeCell(o.x)&&z===rangeCell(o.z));b.textContent=x===rangeCell(o.x)&&z===rangeCell(o.z)?'🤖':x===rangeCell(p.spawn.x)&&z===rangeCell(p.spawn.z)?'●':'';}
+ function paint(){syncPlace(xPlace,centerX);syncPlace(zPlace,centerZ);for(const {b,dx,dz}of buttons){const x=centerX+dx,z=centerZ+dz,key=`${x},${z}`,active=chosen.has(key);b.disabled=false;b.classList.toggle('range-world-edge',Math.abs(x)===limit||Math.abs(z)===limit);b.setAttribute('aria-label',`X ${x*4} Z ${z*4} のマス`);b.setAttribute('aria-pressed',String(active));b.classList.toggle('active',active);markRobotCell(b,x===rangeCell(o.x)&&z===rangeCell(o.z));b.textContent=x===rangeCell(o.x)&&z===rangeCell(o.z)?'🤖':x===rangeCell(p.spawn.x)&&z===rangeCell(p.spawn.z)?'●':'';}
   crossInput.value=String(cross);circleInput.value=String(circle);crossInput.disabled=shape.value==='custom'||shape.value==='circle';circleInput.disabled=shape.value==='custom'||shape.value==='cross';setReadingText(count,`青：${chosen.size} / ${MOVE_MAX_CELLS}マス　表示 X ${(centerX-Math.floor(initialWindow.count/2))*4}〜${(centerX+Math.floor(initialWindow.count/2))*4} / Z ${(centerZ-Math.floor(initialWindow.count/2))*4}〜${(centerZ+Math.floor(initialWindow.count/2))*4}　太いわくがマップの端だよ。`);
  }
  function changed(){o.moveRange={space:'world',cells:[...chosen].map(key=>key.split(',').map(Number))};save();rebuild();paint();}
- const finish=()=>{onClose();d.close();d.remove();};const unlimited=document.createElement('button');setReadingText(unlimited,'移動の制限をなくす');unlimited.onclick=()=>{delete o.moveRange;save();rebuild();finish();};
- setReadingText(close,'できた・ステージで見る');close.className='primary';close.onclick=finish;d.oncancel=e=>{e.preventDefault();finish();};const view=document.createElement('button');setReadingText(view,'↑ 同じ向きでステージを見る');view.onclick=()=>{finish();lookFromAbove?.();};d.append(h,note,controls,clear,directionFrame(grid),count,places,unlimited,view,close);document.body.append(d);paint();d.showModal();
+ const finish=()=>{mapStick.destroy();cancelAnimationFrame(panFrameId);onClose();d.close();d.remove();};const unlimited=document.createElement('button');setReadingText(unlimited,'移動の制限をなくす');unlimited.onclick=()=>{delete o.moveRange;save();rebuild();finish();};
+ setReadingText(close,'できた・ステージで見る');close.className='primary';close.onclick=finish;d.oncancel=e=>{e.preventDefault();finish();};const view=document.createElement('button');setReadingText(view,'↑ 同じ向きでステージを見る');view.onclick=()=>{finish();lookFromAbove?.();};d.append(h,note,controls,clear,navigation,directionFrame(grid),count,places,unlimited,view,close);document.body.append(d);paint();d.showModal();
 }

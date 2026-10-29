@@ -1,7 +1,7 @@
-import {validAppearance} from './appearance3d.js?v=20261029t';
-import {MAX_PARTS} from './limits3d.js?v=20261029t';
-import {worldHalf,coordinateLimit} from './world3d.js?v=20261029t';
-import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261029t';
+import {validAppearance} from './appearance3d.js?v=20261029u';
+import {MAX_PARTS} from './limits3d.js?v=20261029u';
+import {worldHalf,coordinateLimit} from './world3d.js?v=20261029u';
+import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261029u';
 // Shared by editor, gameplay and placement preview. No browser dependency.
 export const BUILD_TYPES={wall:'壁',floor:'床',roof:'屋根',ramp:'スロープ'};
 export const GRID={cell:4,layer:3,size:60};

@@ -1,4 +1,4 @@
-import {setReadingText} from './readings3d.js?v=20261029t';
+import {setReadingText} from './readings3d.js?v=20261029u';
 export const RANGE_DIRECTIONS=[{key:'front',label:'まえ',x:0,z:-1,color:'#e59336'},{key:'right',label:'みぎ',x:1,z:0,color:'#508dc1'},{key:'back',label:'うしろ',x:0,z:1,color:'#8793a5'},{key:'left',label:'ひだり',x:-1,z:0,color:'#508dc1'}];
 export function directionFrame(grid){
  const frame=document.createElement('div');frame.className='range-direction-frame';
