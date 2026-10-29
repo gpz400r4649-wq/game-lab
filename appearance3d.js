@@ -1,8 +1,8 @@
 export const GUN_SHAPES={blaster:'ブラスター',pistol:'ピストル',smg:'サブマシンガン',rifle:'ライフル',sniper:'スナイパーライフル',shotgun:'ショットガン',grenade:'グレネードランチャー',launcher:'ランチャー',powerLauncher:'パワーランチャー'};
 export const GUN_COLORS={'#6ec3c0':'みずいろ','#7d62dd':'むらさき','#ee91a5':'ピンク','#eeb35f':'オレンジ','#6eae76':'みどり','#557ac0':'あお','#edf1f7':'しろ','#46516b':'くろ'};
 export const DEFAULT_APPEARANCE=Object.freeze({shape:'blaster',color:'#6ec3c0',accent:'#46516b',barrel:1,suppressor:false});
-export function appearanceFor(tool){const a=tool?.appearance||{};return {shape:Object.hasOwn(GUN_SHAPES,a.shape)?a.shape:'blaster',color:Object.hasOwn(GUN_COLORS,a.color)?a.color:DEFAULT_APPEARANCE.color,accent:Object.hasOwn(GUN_COLORS,a.accent)?a.accent:DEFAULT_APPEARANCE.accent,barrel:Number.isFinite(a.barrel)?Math.max(.5,Math.min(1.8,a.barrel)):1,suppressor:a.suppressor===true};}
-export function validAppearance(a){return a===undefined||!!a&&Object.hasOwn(GUN_SHAPES,a.shape)&&Object.hasOwn(GUN_COLORS,a.color)&&Object.hasOwn(GUN_COLORS,a.accent)&&Number.isFinite(a.barrel)&&a.barrel>=.5&&a.barrel<=1.8&&(a.suppressor===undefined||typeof a.suppressor==='boolean');}
+export function appearanceFor(tool){const a=tool?.appearance||{};return {shape:Object.hasOwn(GUN_SHAPES,a.shape)?a.shape:'blaster',color:Object.hasOwn(GUN_COLORS,a.color)?a.color:DEFAULT_APPEARANCE.color,accent:Object.hasOwn(GUN_COLORS,a.accent)?a.accent:DEFAULT_APPEARANCE.accent,barrel:Number.isFinite(a.barrel)?Math.max(1,Math.min(1.8,a.barrel)):1,suppressor:a.suppressor===true};}
+export function validAppearance(a){return a===undefined||!!a&&Object.hasOwn(GUN_SHAPES,a.shape)&&Object.hasOwn(GUN_COLORS,a.color)&&Object.hasOwn(GUN_COLORS,a.accent)&&Number.isFinite(a.barrel)&&a.barrel>=1&&a.barrel<=1.8&&(a.suppressor===undefined||typeof a.suppressor==='boolean');}
 // A single layout drives both the side preview and the 3D model. Forward is -Z.
 export function gunLayout(tool){const a=appearanceFor(tool),parts=[],dark='#27334a';
  const box=(role,x,y,z,w,h,d,color=a.accent)=>parts.push({type:'box',role,x,y,z,w,h,d,color});

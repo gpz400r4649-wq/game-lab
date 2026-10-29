@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.min.js';
-import {gunLayout} from './appearance3d.js?v=20261029e';
+import {gunLayout} from './appearance3d.js?v=20261029f';
 const cube=new T.BoxGeometry(),tube=new T.CylinderGeometry(1,1,1,12,1,true),drum=new T.CylinderGeometry(1,1,1,12),disk=new T.CircleGeometry(1,12),rim=new T.RingGeometry(.68,1,12),materials=new Map();
 function material(color){if(!materials.has(color))materials.set(color,new T.MeshStandardMaterial({color,roughness:.65,side:T.DoubleSide}));return materials.get(color);}
 export function makeGunModel(tool){const {parts,muzzle}=gunLayout(tool),group=new T.Group();group.userData.muzzle=muzzle;
