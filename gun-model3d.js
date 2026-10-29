@@ -1,11 +1,12 @@
 import * as T from './vendor/three.module.min.js';
-import {gunLayout} from './appearance3d.js?v=20261029h';
-// Screen-space framing: muzzle near center, grip in the lower-right corner.
+import {gunLayout} from './appearance3d.js?v=20261029i';
+// Keep the established lower-right position and size. Calibration rotation
+// affects the anchor calculation only; the displayed barrel faces camera-forward.
 export const FPS_FRAMING=Object.freeze({muzzle:Object.freeze({x:.56,y:.57,depth:.64}),grip:Object.freeze({x:.85,y:1.06,depth:.36})});
 export function applyFPSGunPose(group,tool,aspect,fov=65){
  const {parts,muzzle}=gunLayout(tool),grip=parts.find(p=>p.role==='grip'),tan=Math.tan(fov*Math.PI/360);
  const at=p=>new T.Vector3((p.x*2-1)*p.depth*tan*aspect,(1-p.y*2)*p.depth*tan,-p.depth),a=at(FPS_FRAMING.muzzle),b=at(FPS_FRAMING.grip),sourceA=new T.Vector3(muzzle.x,muzzle.y,muzzle.z),sourceB=new T.Vector3(grip.x,grip.y,grip.z),source=sourceA.clone().sub(sourceB),target=a.clone().sub(b),scale=target.length()/source.length();
- group.quaternion.setFromUnitVectors(source.normalize(),target.normalize());group.scale.setScalar(scale);group.position.copy(b).sub(sourceB.multiplyScalar(scale).applyQuaternion(group.quaternion));group.updateMatrix();
+ const calibration=new T.Quaternion().setFromUnitVectors(source.normalize(),target.normalize());group.scale.setScalar(scale);group.position.copy(b).sub(sourceB.multiplyScalar(scale).applyQuaternion(calibration));group.quaternion.identity();group.updateMatrix();
 }
 const cube=new T.BoxGeometry(),tube=new T.CylinderGeometry(1,1,1,12,1,true),drum=new T.CylinderGeometry(1,1,1,12),disk=new T.CircleGeometry(1,12),rim=new T.RingGeometry(.68,1,12),materials=new Map();
 function material(color){if(!materials.has(color))materials.set(color,new T.MeshStandardMaterial({color,roughness:.65,side:T.DoubleSide}));return materials.get(color);}
