@@ -1,18 +1,17 @@
-import {openMoveMap} from './move-map-ui3d.js?v=20261029o';
-import {RANGE_MAX,makeAttackRange,rangeCells} from './enemy-range3d.js?v=20261029o';
-import {setReadingText,kanaText} from './readings3d.js?v=20261029o';
+import {openMoveMap} from './move-map-ui3d.js?v=20261029p';
+import {RANGE_MAX,makeAttackRange,rangeCells} from './enemy-range3d.js?v=20261029p';
+import {setReadingText,kanaText} from './readings3d.js?v=20261029p';
 const RANGE_UI={
  attackRange:{label:'弾を撃つ',title:'敵が弾を撃つマス',note:'色のついたマスに入ったら → 弾を撃つ。',empty:'これまでの近くに来たら撃つ設定',center:'敵のいるマスが中心。敵と一緒に動くよ。',color:'#ef9aae'},
  moveRange:{label:'動ける',title:'敵が動けるマス',note:'色のついたマスの中だけを歩けるよ。つながっていないマスには行けないよ。',empty:'制限なし',center:'敵を置いたマスが中心。ゲーム中もこの場所に固定だよ。',color:'#91c7ee'},
  searchRange:{label:'探す',title:'プレイヤーを見つけるマス',note:'色のついたマスにプレイヤーが入ると → 見つける。追いかけ方は別にえらぼう。',empty:'近くで見つける設定（18m）',center:'敵のいるマスが中心。敵と一緒に動くよ。',color:'#efcf74'}
 };
 export function renderAttackRange(parent,o,api){renderEnemyRange(parent,o,api,'attackRange');}
-export function renderEnemyRange(parent,o,{save,rebuild,showRange,getProject,materials},key){
- const config=RANGE_UI[key],summary=document.createElement('p'),edit=document.createElement('button');summary.className='component-description';
+export function renderEnemyRange(parent,o,{save,rebuild,showRange,getProject},key){
+ const config=RANGE_UI[key],edit=document.createElement('button'),label=document.createElement('span'),summary=document.createElement('small');edit.className='enemy-range-choice';setReadingText(label,`▦ ${config.label}マスをえらぶ`);edit.setAttribute('aria-label',kanaText(`▦ ${config.label}マスをえらぶ`));
  const names={cross:'十字',circle:'円',mixed:'十字＋円',custom:'自分でつくった形'};
- const update=()=>setReadingText(summary,`${config.label}はんい：${o[key]?`${o[key].space==='world'?'マップ上':names[o[key].shape]}・${o[key].cells.length}マス`:config.empty}`);update();
- setReadingText(edit,`▦ ${config.label}マスをえらぶ`);edit.onclick=()=>{showRange?.(key);if(key==='moveRange')openMoveMap(o,{getProject,save,rebuild,onClose:update});else openRangeEditor(o,{key,config,save,rebuild,onClose:update});};parent.append(summary,edit);if(materials){const shelf=document.createElement('button');setReadingText(shelf,config.label+'はんいの素材');shelf.onclick=()=>materials(key);parent.append(shelf);}
- if(key==='moveRange'){const reset=document.createElement('button');setReadingText(reset,'移動の制限をなくす');reset.hidden=!o[key];reset.onclick=()=>{delete o[key];update();save();rebuild();reset.hidden=true;};parent.append(reset);edit.addEventListener('click',()=>{reset.hidden=false;});}
+ const update=()=>setReadingText(summary,o[key]?`${o[key].space==='world'?'マップ上':names[o[key].shape]}・${o[key].cells.length}マス`:config.empty);update();
+ edit.onclick=()=>{showRange?.(key);if(key==='moveRange')openMoveMap(o,{getProject,save,rebuild,onClose:update});else openRangeEditor(o,{key,config,save,rebuild,onClose:update});};edit.append(label,summary);parent.append(edit);
 }
 function openRangeEditor(o,{key,config,save,rebuild,onClose}){
  if(!o[key]){o[key]=makeAttackRange('circle',4,key==='moveRange'?3:4);save();rebuild();}

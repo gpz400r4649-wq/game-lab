@@ -1,5 +1,5 @@
-import {saveRangeAsset,saveEnemyAsset,applyRangeAsset,applyEnemyAsset,ASSET_LIMITS} from './assets3d.js?v=20261029o';
-import {setReadingText} from './readings3d.js?v=20261029o';
+import {saveRangeAsset,saveEnemyAsset,applyRangeAsset,applyEnemyAsset,ASSET_LIMITS} from './assets3d.js?v=20261029p';
+import {setReadingText} from './readings3d.js?v=20261029p';
 const labels={enemy:'敵',moveRange:'移動はんい',searchRange:'探すはんい',attackRange:'攻撃はんい'};
 export function openAssetShelf(p,o,kind,{save,rebuild,inspect}){
  const d=document.createElement('dialog');d.className='asset-dialog';const h=document.createElement('h2'),note=document.createElement('p'),name=document.createElement('input'),add=document.createElement('button'),list=document.createElement('div'),status=document.createElement('p'),close=document.createElement('button');
