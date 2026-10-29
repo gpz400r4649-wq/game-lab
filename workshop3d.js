@@ -1,13 +1,15 @@
-import {gunPreviewSVG} from './appearance3d.js?v=20261029k';
-import {DOOR_PRESETS} from './doors3d.js?v=20261029k';
-import {MAX_PARTS} from './limits3d.js?v=20261029k';
-import {coordinateLimit} from './world3d.js?v=20261029k';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261029k';
-import {actionsFor} from './events3d.js?v=20261029k';
-import {renderEventEditor} from './event-editor3d.js?v=20261029k';
-import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261029k';
-import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261029k';
-import {PARTS,ENEMY_PRESETS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261029k';
+import {renderAttackRange} from './enemy-range-ui3d.js?v=20261029l';
+import {makeAttackRange} from './enemy-range3d.js?v=20261029l';
+import {gunPreviewSVG} from './appearance3d.js?v=20261029l';
+import {DOOR_PRESETS} from './doors3d.js?v=20261029l';
+import {MAX_PARTS} from './limits3d.js?v=20261029l';
+import {coordinateLimit} from './world3d.js?v=20261029l';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261029l';
+import {actionsFor} from './events3d.js?v=20261029l';
+import {renderEventEditor} from './event-editor3d.js?v=20261029l';
+import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261029l';
+import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261029l';
+import {PARTS,ENEMY_PRESETS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261029l';
 
 const ICONS={weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
 const DESCRIPTIONS={weapon:'地面に置いて、ふれると拾える銃。持ちもの・銃づくりで用意した銃をえらぼう。',ramp:'低いほうから歩くと、そのまま登れるスロープ。回して好きな向きにつなげよう。',wall:'家を囲う壁。向きを変えてつなげよう。',floor:'家の床と天井に使える板。壁の内側にぴったり合うよ。',roof:'壁の上にのせる三角屋根。向きを変えて家を仕上げよう。',
@@ -53,9 +55,10 @@ export function createWorkshop(api){
     if(o.type==='enemy'){
       selectField(el,'いつ出現する？',[['start','最初からいる'],['event','イベントで出現を待つ']],o.startsHidden?'event':'start',v=>{o.startsHidden=v==='event';inspect();});
       const preset=Object.keys(ENEMY_PRESETS).find(k=>JSON.stringify(ENEMY_PRESETS[k].program)===JSON.stringify(o.program))||'custom';
-      selectField(el,'行動タイプ',[...Object.entries(ENEMY_PRESETS).map(([k,v])=>[k,v.name]),['custom','自分で工夫した動き']],preset,k=>{if(k!=='custom')o.program=structuredClone(ENEMY_PRESETS[k].program);inspect();});
+      selectField(el,'行動タイプ',[...Object.entries(ENEMY_PRESETS).map(([k,v])=>[k,v.name]),['custom','自分で工夫した動き']],preset,k=>{if(k!=='custom'){o.program=structuredClone(ENEMY_PRESETS[k].program);if(k==='guard'&&!o.attackRange)o.attackRange=makeAttackRange();}inspect();});
       field(el,'体力',o.hp,1,20,1,n=>o.hp=Math.round(n));
       if(o.program.length)field(el,'動きの速さ',o.program[0].speed,.5,8,.5,n=>{o.program.forEach(b=>b.speed=n);});
+      if(o.program.some(b=>b.action==='shoot'))renderAttackRange(el,o,{save,rebuild:api.refreshRange||rebuild});
       if(loop){const d=details('さらに工夫する：うごきを組む',[loop],wasOpen);d.className='advanced-program';el.append(d);}
     }
     if(o.type==='moving'){

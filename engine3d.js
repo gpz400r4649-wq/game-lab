@@ -1,13 +1,14 @@
-import {playerGunMuzzle,finitePoint} from './muzzle3d.js?v=20261029k';
-import {validDoor,nearbyDoor,doorwayOccupied,animateDoors} from './doors3d.js?v=20261029k';
-import {nearbyObjects} from './spatial3d.js?v=20261029k';
-import {MAX_PARTS} from './limits3d.js?v=20261029k';
-import {worldSize,worldHalf,coordinateLimit,WORLD_SIZES} from './world3d.js?v=20261029k';
-import {settleLoot} from './loot3d.js?v=20261029k';
-import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261029k';
-import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261029k';
-import {shootVolley,updateCombat,resolveShotOrigin} from './combat3d.js?v=20261029k';
-import {BUILD_TYPES,constructionPart,topAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261029k';
+import {validAttackRange,inAttackRange} from './enemy-range3d.js?v=20261029l';
+import {playerGunMuzzle,finitePoint} from './muzzle3d.js?v=20261029l';
+import {validDoor,nearbyDoor,doorwayOccupied,animateDoors} from './doors3d.js?v=20261029l';
+import {nearbyObjects} from './spatial3d.js?v=20261029l';
+import {MAX_PARTS} from './limits3d.js?v=20261029l';
+import {worldSize,worldHalf,coordinateLimit,WORLD_SIZES} from './world3d.js?v=20261029l';
+import {settleLoot} from './loot3d.js?v=20261029l';
+import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261029l';
+import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261029l';
+import {shootVolley,updateCombat,resolveShotOrigin} from './combat3d.js?v=20261029l';
+import {BUILD_TYPES,constructionPart,topAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261029l';
 export const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export const PARTS={weapon:'銃アイテム',ramp:'スロープ',wall:'壁',floor:'床',roof:'屋根',box:'ブロック',platform:'足場',moving:'動く足場',bounce:'ジャンプ台',enemy:'敵ロボット',star:'星',key:'カギ',door:'ドア',heal:'回復',checkpoint:'セーブポイント',hazard:'ダメージ床',goal:'ゴール'};
 export const BEHAVIORS={chase:'プレイヤーを追いかける',patrol:'左右に動く',shoot:'近づいたら弾を撃つ'};
@@ -28,6 +29,7 @@ export function validate3D(data){
   if(Array.isArray(p.loadout))p.loadout.forEach(upgradeTool);
   if(!Array.isArray(p.loadout)||!p.loadout.length||p.loadout.length>8||!p.loadout.every(validTool)||new Set(p.loadout.map(t=>t.id)).size!==p.loadout.length)throw Error('持ちものの設定を確認してください');
   const ids=new Set();for(const o of p.objects){
+    if(o.attackRange!==undefined&&(o.type!=='enemy'||!validAttackRange(o.attackRange)))throw Error('敵の射撃はんいを確認してください');
     if(!validDoor(o))throw Error('ドアの設定を確認してください');
     if(!validEvents(o))throw Error('イベントの設定を確認してください');
     const sizes=['w','h','d'].every(k=>number(o[k],['wall','floor','roof','ramp','bounce','hazard'].includes(o.type)?.2:.5,10));
@@ -95,7 +97,7 @@ export function step3D(g,p,input,dt){
     o.cooldown=Math.max(0,(o.cooldown||0)-dt);for(const b of o.program){const dx=player.x-o.x,dz=player.z-o.z,d=Math.hypot(dx,dz)||1;let mx=0,mz=0;
       if(b.action==='chase'){mx=dx/d*b.speed*dt;mz=dz/d*b.speed*dt;}if(b.action==='patrol')mx=Math.cos(g.time)*b.speed*dt;
       if(mx||mz){const body={x:o.x+mx,y:o.y,z:o.z};if(!walls.some(w=>inside({...body,y:o.y+.9},w,.55)))o.x=clamp(body.x,-limit,limit);body.x=o.x;body.z+=mz;if(!walls.some(w=>inside({...body,y:o.y+.9},w,.55)))o.z=clamp(body.z,-limit,limit);}
-      if(b.action==='shoot'&&d<18&&o.cooldown<=0){shootVolley(g,{x:o.x,y:o.y+1.1,z:o.z},{x:dx,y:player.y+.9-(o.y+1.1),z:dz},{speed:b.speed+5,damage:1,spread:1},true);o.cooldown=1.4;}}
+      if(b.action==='shoot'&&inAttackRange(o,player)&&o.cooldown<=0){shootVolley(g,{x:o.x,y:o.y+1.1,z:o.z},{x:dx,y:player.y+.9-(o.y+1.1),z:dz},{speed:b.speed+5,damage:1,spread:1},true);o.cooldown=1.4;}}
     if(Math.hypot(o.x-player.x,o.z-player.z)<1&&Math.abs(o.y-player.y)<1.7&&player.invincible<=0){player.hp--;player.invincible=1;}}
   updateCombat(g,dt);settleLoot(g,dt);
   // Collect before evaluating goals, independent of editor placement order.
