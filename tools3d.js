@@ -1,9 +1,9 @@
-import {appearanceFor,GUN_SHAPES,GUN_COLORS,gunPreviewSVG} from './appearance3d.js?v=20261029d';
-import {bindGameAction} from './input3d.js?v=20261029d';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261029d';
-import {LIMITS,PROJECTILES,IMPACTS,impactEffects,weaponPresetKey,SHOT_PATTERNS,cadenceHandling} from './weapons3d.js?v=20261029d';
-import {buildChoices,activeBuildTool,cycleBuildType,facingBuildRotation,makeTool,TOOL_EFFECTS,BUILD_TYPES,equipTool,keepStructures,equipBlock} from './building3d.js?v=20261029d';
-import {WEAPON_PRESETS,PARTS} from './engine3d.js?v=20261029d';
+import {appearanceFor,GUN_SHAPES,GUN_COLORS,gunPreviewSVG} from './appearance3d.js?v=20261029e';
+import {bindGameAction} from './input3d.js?v=20261029e';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261029e';
+import {LIMITS,PROJECTILES,IMPACTS,impactEffects,weaponPresetKey,SHOT_PATTERNS,cadenceHandling} from './weapons3d.js?v=20261029e';
+import {buildChoices,activeBuildTool,cycleBuildType,facingBuildRotation,makeTool,TOOL_EFFECTS,BUILD_TYPES,equipTool,keepStructures,equipBlock} from './building3d.js?v=20261029e';
+import {WEAPON_PRESETS,PARTS} from './engine3d.js?v=20261029e';
 export function createToolsUI(api){
   const {$,getProject,getGame,getMode,field,save,refresh,finishBuilding}=api;
   let editing=0,rotation=0,level=0;
@@ -19,7 +19,7 @@ export function createToolsUI(api){
     selectField(dialog,'この銃をいつ使える？',[['start','最初から持つ'],['pickup','イベントで拾って使う']],tool.pickupOnly?'pickup':'start',v=>{tool.pickupOnly=v==='pickup';changed();renderEditor();});
     const lookPanel=document.createElement('details'),lookTitle=document.createElement('summary'),preview=document.createElement('div');lookPanel.className='gun-appearance';setReadingText(lookTitle,'銃の見た目をつくる');lookPanel.append(lookTitle,preview);preview.className='gun-preview';
     const syncLook=()=>{preview.innerHTML=gunPreviewSVG(tool);};const changeLook=patch=>{tool.appearance={...appearanceFor(tool),...patch};syncLook();changed();api.onAppearanceChange?.();};syncLook();
-    selectField(lookPanel,'銃の形',Object.entries(GUN_SHAPES),appearanceFor(tool).shape,v=>changeLook({shape:v}));selectField(lookPanel,'本体の色',Object.entries(GUN_COLORS),appearanceFor(tool).color,v=>changeLook({color:v}));selectField(lookPanel,'かざりの色',Object.entries(GUN_COLORS),appearanceFor(tool).accent,v=>changeLook({accent:v}));field(lookPanel,'銃身の長さ',appearanceFor(tool).barrel,.5,1.8,.1,n=>changeLook({barrel:n}));dialog.append(lookPanel);
+    selectField(lookPanel,'銃の形',Object.entries(GUN_SHAPES),appearanceFor(tool).shape,v=>changeLook({shape:v}));selectField(lookPanel,'本体の色',Object.entries(GUN_COLORS),appearanceFor(tool).color,v=>changeLook({color:v}));selectField(lookPanel,'かざりの色',Object.entries(GUN_COLORS),appearanceFor(tool).accent,v=>changeLook({accent:v}));field(lookPanel,'銃身の長さ',appearanceFor(tool).barrel,.5,1.8,.1,n=>changeLook({barrel:n}));const accessory=document.createElement('label'),suppressor=document.createElement('input'),accessoryText=document.createElement('span');accessory.className='suppressor-choice';suppressor.type='checkbox';suppressor.checked=appearanceFor(tool).suppressor;suppressor.setAttribute('aria-label','サプレッサーをつける');setReadingText(accessoryText,'サプレッサーをつける');suppressor.onchange=()=>changeLook({suppressor:suppressor.checked});accessory.append(suppressor,accessoryText);lookPanel.append(accessory);dialog.append(lookPanel);
     let syncPreset=()=>{};const tuningControls=new Map();
       function performanceField(parent,label,key,min,max,step,choices){
         let sync=()=>{};
