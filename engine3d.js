@@ -1,12 +1,13 @@
-import {validDoor,nearbyDoor,doorwayOccupied,animateDoors} from './doors3d.js?v=20261029j';
-import {nearbyObjects} from './spatial3d.js?v=20261029j';
-import {MAX_PARTS} from './limits3d.js?v=20261029j';
-import {worldSize,worldHalf,coordinateLimit,WORLD_SIZES} from './world3d.js?v=20261029j';
-import {settleLoot} from './loot3d.js?v=20261029j';
-import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261029j';
-import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261029j';
-import {shootVolley,updateCombat} from './combat3d.js?v=20261029j';
-import {BUILD_TYPES,constructionPart,topAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261029j';
+import {playerGunMuzzle,finitePoint} from './muzzle3d.js?v=20261029k';
+import {validDoor,nearbyDoor,doorwayOccupied,animateDoors} from './doors3d.js?v=20261029k';
+import {nearbyObjects} from './spatial3d.js?v=20261029k';
+import {MAX_PARTS} from './limits3d.js?v=20261029k';
+import {worldSize,worldHalf,coordinateLimit,WORLD_SIZES} from './world3d.js?v=20261029k';
+import {settleLoot} from './loot3d.js?v=20261029k';
+import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261029k';
+import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261029k';
+import {shootVolley,updateCombat,resolveShotOrigin} from './combat3d.js?v=20261029k';
+import {BUILD_TYPES,constructionPart,topAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261029k';
 export const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export const PARTS={weapon:'銃アイテム',ramp:'スロープ',wall:'壁',floor:'床',roof:'屋根',box:'ブロック',platform:'足場',moving:'動く足場',bounce:'ジャンプ台',enemy:'敵ロボット',star:'星',key:'カギ',door:'ドア',heal:'回復',checkpoint:'セーブポイント',hazard:'ダメージ床',goal:'ゴール'};
 export const BEHAVIORS={chase:'プレイヤーを追いかける',patrol:'左右に動く',shoot:'近づいたら弾を撃つ'};
@@ -88,7 +89,7 @@ export function step3D(g,p,input,dt){
     if(g.blockEquipped){placeBlock(g,input);g.cooldown=.35;}
     else
     if(tool.effect&&tool.effect!=='shoot'){placeStructure(g,p,input);g.cooldown=.35;}
-    else {const shot=safeShot(tool),count=shootVolley(g,{x:player.x,y:player.y+1.35,z:player.z},input.aim||{x:-Math.sin(yaw)*Math.cos(g.recoilPitch),y:Math.sin(g.recoilPitch),z:-Math.cos(yaw)*Math.cos(g.recoilPitch)},tool);if(count)g.recoilPitch=Math.min(12*Math.PI/180,g.recoilPitch+shot.recoil*Math.PI/180);g.cooldown=shot.interval;}
+    else {const shot=safeShot(tool),eye={x:player.x,y:player.y+1.35,z:player.z},candidate=typeof input.getShotOrigin==='function'?input.getShotOrigin(player):null,muzzle=finitePoint(candidate)&&Math.hypot(candidate.x-eye.x,candidate.y-eye.y,candidate.z-eye.z)<=3?candidate:playerGunMuzzle(player,tool,yaw),origin=resolveShotOrigin(g,eye,muzzle,shot.radius),direction=finitePoint(input.aimTarget)?{x:input.aimTarget.x-origin.x,y:input.aimTarget.y-origin.y,z:input.aimTarget.z-origin.z}:input.aim||{x:-Math.sin(yaw)*Math.cos(g.recoilPitch),y:Math.sin(g.recoilPitch),z:-Math.cos(yaw)*Math.cos(g.recoilPitch)},count=shootVolley(g,origin,direction,tool);if(count)g.recoilPitch=Math.min(12*Math.PI/180,g.recoilPitch+shot.recoil*Math.PI/180);g.cooldown=shot.interval;}
   }
   for(const o of g.objects)if(o.type==='enemy'&&!o.hidden){const walls=solids(nearbyObjects(g,o.x-1,o.z-1,o.x+1,o.z+1));
     o.cooldown=Math.max(0,(o.cooldown||0)-dt);for(const b of o.program){const dx=player.x-o.x,dz=player.z-o.z,d=Math.hypot(dx,dz)||1;let mx=0,mz=0;

@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.min.js';
-import {gunLayout} from './appearance3d.js?v=20261029j';
+import {gunLayout} from './appearance3d.js?v=20261029k';
 // Keep the established lower-right position and size. Calibration rotation
 // affects the anchor calculation only; the displayed barrel faces camera-forward.
 export const FPS_FRAMING=Object.freeze({muzzle:Object.freeze({x:.56,y:.57,depth:.64}),grip:Object.freeze({x:.85,y:1.06,depth:.36})});
@@ -20,3 +20,5 @@ export function makeGunModel(tool){const {parts,muzzle}=gunLayout(tool),group=ne
   }
  }
  return group;}
+
+export function worldGunMuzzle(model){const muzzle=model?.userData.muzzle;if(!muzzle)return null;model.updateWorldMatrix(true,false);return new T.Vector3(muzzle.x,muzzle.y,muzzle.z).applyMatrix4(model.matrixWorld);}
