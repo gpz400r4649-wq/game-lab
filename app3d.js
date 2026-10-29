@@ -1,21 +1,21 @@
-import {configureDoor,nearbyDoor} from './doors3d.js?v=20261029g';
-import {appearanceFor} from './appearance3d.js?v=20261029g';
-import {makeGunModel,FPS_GUN_POSITION} from './gun-model3d.js?v=20261029g';
-import {moveEditorCamera,createEditorNavigation} from './editor-camera3d.js?v=20261029g';
-import {createStructureRenderer,BATCH_TYPES} from './structure-render3d.js?v=20261029g';
-import {MAX_PROJECT_BYTES} from './limits3d.js?v=20261029g';
-import {worldSize,coordinateLimit} from './world3d.js?v=20261029g';
-import {createWorldUI} from './world-ui3d.js?v=20261029g';
-import {configureNumericInput} from './numeric3d.js?v=20261029g';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261029g';
-import {installGameTouchGuard,bindHeldButton,bindGameAction,createGamePageMode} from './input3d.js?v=20261029g';
-import {actionsFor,ACTION_NAMES} from './events3d.js?v=20261029g';
-import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261029g';
-import {BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,editorPlacementReason,blockPlacement} from './building3d.js?v=20261029g';
-import {createToolsUI} from './tools3d.js?v=20261029g';
+import {configureDoor,nearbyDoor} from './doors3d.js?v=20261029h';
+import {appearanceFor} from './appearance3d.js?v=20261029h';
+import {makeGunModel,applyFPSGunPose} from './gun-model3d.js?v=20261029h';
+import {moveEditorCamera,createEditorNavigation} from './editor-camera3d.js?v=20261029h';
+import {createStructureRenderer,BATCH_TYPES} from './structure-render3d.js?v=20261029h';
+import {MAX_PROJECT_BYTES} from './limits3d.js?v=20261029h';
+import {worldSize,coordinateLimit} from './world3d.js?v=20261029h';
+import {createWorldUI} from './world-ui3d.js?v=20261029h';
+import {configureNumericInput} from './numeric3d.js?v=20261029h';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261029h';
+import {installGameTouchGuard,bindHeldButton,bindGameAction,createGamePageMode} from './input3d.js?v=20261029h';
+import {actionsFor,ACTION_NAMES} from './events3d.js?v=20261029h';
+import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261029h';
+import {BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,editorPlacementReason,blockPlacement} from './building3d.js?v=20261029h';
+import {createToolsUI} from './tools3d.js?v=20261029h';
 import * as T from './vendor/three.module.min.js';
-import {PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,conditionHint} from './engine3d.js?v=20261029g';
-import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261029g';
+import {PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,conditionHint} from './engine3d.js?v=20261029h';
+import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261029h';
 const $=s=>document.querySelector(s),view=$('#viewport'),KEY='tsukuru-lab-3d-v1';
 let project=fresh3D(),selected=null,tool='select',doorPreset='key',weaponPresetId='',mode='edit',perspective='tps',game=null,yaw=0,pitch=-.05,editYaw=.55,editPitch=.7,editDistance=30,editTarget=new T.Vector3(0,0,0),stick={x:0,z:0},keys=new Set(),fireHeld=false,firePressed=false,jumpPressed=false,doorPressed=false,look=null,saveTimer,toastTimer,lastTime=0;
 function toast(s){setReadingText($('#toast3'),s);$('#toast3').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast3').classList.remove('show'),3200);}
@@ -32,7 +32,7 @@ const objectsGroup=new T.Group(),bulletGroup=new T.Group();scene.add(objectsGrou
 const unitBox=new T.BoxGeometry(1,1,1),sphere=new T.SphereGeometry(.09,7,5),starGeometry=new T.OctahedronGeometry(.45);
 function box(parent,mat,x,y,z,w,h,d){const m=new T.Mesh(unitBox,mat);m.position.set(x,y,z);m.scale.set(w,h,d);parent.add(m);return m;}
 function robot(material,armed=true){const group=new T.Group();box(group,material,0,1,0,.66,.72,.4);box(group,material,0,1.57,0,.6,.48,.48);box(group,materials.dark,0,1.59,-.25,.44,.17,.035);box(group,materials.white,-.12,1.6,-.275,.07,.07,.02);box(group,materials.white,.12,1.6,-.275,.07,.07,.02);const left=box(group,material,-.45,.94,0,.19,.65,.21),right=box(group,material,.45,.94,0,.19,.65,.21),leg1=box(group,material,-.19,.34,0,.23,.67,.28),leg2=box(group,material,.19,.34,0,.23,.67,.28);if(armed)box(group,materials.dark,.45,1,-.34,.15,.17,.65);group.userData.limbs=[left,right,leg1,leg2];return group;}
-const playerMesh=robot(materials.player,false);scene.add(playerMesh);const gun=new T.Group(),carriedGun=new T.Group();carriedGun.position.set(.45,1,-.25);carriedGun.scale.setScalar(.6);playerMesh.add(carriedGun);camera.add(gun);gun.position.set(...FPS_GUN_POSITION);gun.scale.setScalar(.5);scene.add(camera);let gunLookStamp='';function syncHeldGun(){const tool=project.loadout[mode==='play'?game?.equipped:0],stamp=tool?JSON.stringify(appearanceFor(tool)):'none';if(stamp!==gunLookStamp){gunLookStamp=stamp;gun.clear();carriedGun.clear();if(tool){gun.add(makeGunModel(tool));carriedGun.add(makeGunModel(tool));}}carriedGun.visible=!!tool;return !!tool;}
+const playerMesh=robot(materials.player,false);scene.add(playerMesh);const gun=new T.Group(),carriedGun=new T.Group();carriedGun.position.set(.45,1,-.25);carriedGun.scale.setScalar(.6);playerMesh.add(carriedGun);camera.add(gun);scene.add(camera);let gunLookStamp='',gunPoseStamp='';function syncHeldGun(){const tool=project.loadout[mode==='play'?game?.equipped:0],stamp=tool?JSON.stringify(appearanceFor(tool)):'none';if(stamp!==gunLookStamp){gunLookStamp=stamp;gun.clear();carriedGun.clear();if(tool){gun.add(makeGunModel(tool));carriedGun.add(makeGunModel(tool));}}const poseStamp=stamp+':'+camera.aspect+':'+camera.fov;if(tool&&poseStamp!==gunPoseStamp){gunPoseStamp=poseStamp;applyFPSGunPose(gun,tool,camera.aspect,camera.fov);}carriedGun.visible=!!tool;return !!tool;}
 const selectionBox=new T.BoxHelper(new T.Mesh(unitBox),0x9670e5);scene.add(selectionBox);selectionBox.visible=false;const meshes=new Map();let solidMeshes=[];
 Object.assign(materials,Object.fromEntries(Object.entries({moving:'#80b7db',bounce:'#72d5bb',door:'#dcb36e',heal:'#73c4ab',checkpoint:'#86bccc',hazard:'#e8949a',goal:'#a192dd',ready:'#66c4a8'}).map(([k,color])=>[k,new T.MeshStandardMaterial({color,roughness:.7})])));
 Object.assign(materials,{wall:new T.MeshStandardMaterial({color:'#d8b587',roughness:.9}),floor:new T.MeshStandardMaterial({color:'#c99d6c',roughness:.9}),roof:new T.MeshStandardMaterial({color:'#a98168',roughness:.9}),ramp:new T.MeshStandardMaterial({color:'#80b5ad',roughness:.8}),hitFlash:new T.MeshBasicMaterial({color:'#fff6dd'}),rocket:new T.MeshBasicMaterial({color:'#ff9f60'})});
