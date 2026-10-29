@@ -1,4 +1,4 @@
-import {topAt} from './building3d.js?v=20261029q';
+import {topAt} from './building3d.js?v=20261029r';
 export const LOOT_LIMIT=64;
 export function makePickup(type,x=0,y=0,z=0,extra={}){return {id:crypto.randomUUID(),type,x,y,z,w:1,h:1,d:1,hp:1,program:[],settings:{axis:'x',distance:3,speed:2,value:type==='star'?5:1,condition:'touch',required:1},...extra};}
 export function dropPickup(g,type,source,extra={}){

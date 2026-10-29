@@ -1,6 +1,6 @@
-import {MOVE_MAX_CELLS,RANGE_MAX,rangeCell,rangeCells,worldMoveRange} from './enemy-range3d.js?v=20261029q';
-import {coordinateLimit} from './world3d.js?v=20261029q';
-import {setReadingText,kanaText} from './readings3d.js?v=20261029q';
+import {MOVE_MAX_CELLS,RANGE_MAX,rangeCell,rangeCells,worldMoveRange} from './enemy-range3d.js?v=20261029r';
+import {coordinateLimit} from './world3d.js?v=20261029r';
+import {setReadingText,kanaText} from './readings3d.js?v=20261029r';
 export function openMoveMap(o,{getProject,save,rebuild,onClose}){
  const p=getProject(),limit=Math.floor(coordinateLimit(p)/4),d=document.createElement('dialog');d.className='enemy-range-dialog';d.style.setProperty('--range-color','#91c7ee');
  o.moveRange=o.moveRange?worldMoveRange(o.moveRange,o):{space:'world',cells:[]};save();rebuild();
