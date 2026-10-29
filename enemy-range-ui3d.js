@@ -1,7 +1,7 @@
-import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261029u';
-import {openMoveMap} from './move-map-ui3d.js?v=20261029u';
-import {RANGE_MAX,makeAttackRange,rangeCells} from './enemy-range3d.js?v=20261029u';
-import {setReadingText,kanaText} from './readings3d.js?v=20261029u';
+import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261029v';
+import {openMoveMap} from './move-map-ui3d.js?v=20261029v';
+import {RANGE_MAX,makeAttackRange,rangeCells} from './enemy-range3d.js?v=20261029v';
+import {setReadingText,kanaText} from './readings3d.js?v=20261029v';
 const RANGE_UI={
  attackRange:{label:'弾を撃つ',title:'敵が弾を撃つマス',note:'色のついたマスに入ったら → 弾を撃つ。',empty:'これまでの近くに来たら撃つ設定',center:'敵のいるマスが中心。敵と一緒に動くよ。',color:'#ef9aae'},
  moveRange:{label:'動ける',title:'敵が動けるマス',note:'色のついたマスの中だけを歩けるよ。つながっていないマスには行けないよ。',empty:'制限なし',center:'敵を置いたマスが中心。ゲーム中もこの場所に固定だよ。',color:'#91c7ee'},
@@ -18,7 +18,7 @@ function openRangeEditor(o,{key,config,save,rebuild,lookFromAbove,onClose}){
  if(!o[key]){o[key]=makeAttackRange('circle',4,key==='moveRange'?3:4);save();rebuild();}
  const r=o[key],d=document.createElement('dialog');d.className='enemy-range-dialog';d.style.setProperty('--range-color',config.color);
  const h=document.createElement('h2'),note=document.createElement('p'),controls=document.createElement('div'),grid=document.createElement('div'),count=document.createElement('p'),close=document.createElement('button');
- setReadingText(h,config.title);setReadingText(note,config.note+' マスをタップして追加・削除しよう。↑は、つくる画面の敵のまえ。ステージのオレンジの矢印と同じ向きだよ。');
+ setReadingText(h,config.title);setReadingText(note,config.note+' マスをタップして追加・削除しよう。↑は、つくる画面の敵のまえ。「同じ向きでステージを見る」で、向きをそろえて確認できるよ。');
  controls.className='range-controls';grid.className='enemy-range-grid';grid.setAttribute('role','group');grid.setAttribute('aria-label',config.label+'はんいのマス');count.setAttribute('aria-live','polite');
  function choose(label,values,value,change){const l=document.createElement('label'),s=document.createElement('span'),select=document.createElement('select');setReadingText(s,label);select.setAttribute('aria-label',label);for(const [v,text]of values)select.add(new Option(kanaText(text),v));select.value=value;select.onchange=()=>change(select.value);l.append(s,select);controls.append(l);return select;}
  const sizes={};

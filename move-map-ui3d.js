@@ -1,15 +1,15 @@
-import {createMapStick,panMapCenter} from './map-stick3d.js?v=20261029u';
-import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261029u';
-import {MOVE_MAX_CELLS,RANGE_MAX,rangeCell,rangeCells,worldMoveRange} from './enemy-range3d.js?v=20261029u';
-import {moveGridWindow,moveGridPages} from './world3d.js?v=20261029u';
-import {setReadingText,kanaText} from './readings3d.js?v=20261029u';
+import {createMapStick,panMapCenter} from './map-stick3d.js?v=20261029v';
+import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261029v';
+import {MOVE_MAX_CELLS,RANGE_MAX,rangeCell,rangeCells,worldMoveRange} from './enemy-range3d.js?v=20261029v';
+import {moveGridWindow,moveGridPages} from './world3d.js?v=20261029v';
+import {setReadingText,kanaText} from './readings3d.js?v=20261029v';
 export function openMoveMap(o,{getProject,save,rebuild,lookFromAbove,onClose}){
  const p=getProject(),limit=moveGridWindow(p).limit,d=document.createElement('dialog');d.className='enemy-range-dialog';d.style.setProperty('--range-color','#91c7ee');
  o.moveRange=o.moveRange?worldMoveRange(o.moveRange,o):{space:'world',cells:[]};save();rebuild();
  const chosen=new Set(o.moveRange.cells.map(c=>c.join(','))),h=document.createElement('h2'),note=document.createElement('p'),controls=document.createElement('div'),grid=document.createElement('div'),count=document.createElement('p'),close=document.createElement('button');
  const initial=o.moveRange.cells,cx=initial.length?Math.round((Math.min(...initial.map(c=>c[0]))+Math.max(...initial.map(c=>c[0])))/2):rangeCell(o.x),cz=initial.length?Math.round((Math.min(...initial.map(c=>c[1]))+Math.max(...initial.map(c=>c[1])))/2):rangeCell(o.z);
  const initialWindow=moveGridWindow(p,cx,cz);let centerX=initialWindow.centerX,centerZ=initialWindow.centerZ,cross=4,circle=3;
- setReadingText(h,'敵が動けるマス');setReadingText(note,'形をえらび、マスをタップして追加・削除しよう。青い場所はマップに固定。敵を動かしても変わらないよ。🤖は敵、●はスタート。まえ・うしろ・ひだり・みぎは、ステージの目印と同じ向きだよ。形をえらび直すと、今のはんいを置き換えるよ。');
+ setReadingText(h,'敵が動けるマス');setReadingText(note,'形をえらび、マスをタップして追加・削除しよう。青い場所はマップに固定。敵を動かしても変わらないよ。🤖は敵、●はスタート。「同じ向きでステージを見る」で、マップと向きをそろえられるよ。形をえらび直すと、今のはんいを置き換えるよ。');
  controls.className='range-controls';grid.className='enemy-range-grid move-world-grid';grid.style.gridTemplateColumns=`repeat(${initialWindow.count},minmax(0,1fr))`;grid.setAttribute('role','group');grid.setAttribute('aria-label','動けるはんいのマス');count.setAttribute('aria-live','polite');
  function select(parent,label,values,value,change){const row=document.createElement('label'),text=document.createElement('span'),input=document.createElement('select');setReadingText(text,label);input.setAttribute('aria-label',label);for(const [v,t]of values)input.add(new Option(kanaText(t),v));input.value=value;input.onchange=()=>change(input.value);row.append(text,input);parent.append(row);return input;}
  function preset(){if(shape.value==='custom')return;chosen.clear();for(const [x,z]of rangeCells(shape.value,cross,circle)){if(Math.abs(centerX+x)<=limit&&Math.abs(centerZ+z)<=limit)chosen.add(`${centerX+x},${centerZ+z}`);}changed();}
