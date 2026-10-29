@@ -1,5 +1,6 @@
 // Readings apply only to displayed UI text. Project data and input values stay intact.
 const READINGS={
+ '素材':'そざい','全体':'ぜんたい',
  '左右に歩く':'さゆうにあるく',
  '歩き回って':'あるきまわって','歩ける':'あるける','中心':'ちゅうしん','青':'あお','追う':'おう','いる間':'いるあいだ',
  '探す':'さがす','探し':'さがし','黄色':'きいろ','制限':'せいげん',

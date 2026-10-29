@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {fresh3D,part,create3D,step3D,validate3D} from '../engine3d.js';
-import {makeAttackRange,inGridRange,rangeCell} from '../enemy-range3d.js';
+import {worldMoveRange,makeAttackRange,inGridRange,rangeCell} from '../enemy-range3d.js';
 function setup(action='chase',mode='inside'){const p=fresh3D(),e=part('enemy',0,0);p.spawn={x:8,y:0,z:0};e.attackEnabled=false;e.program=[{action,speed:2}];e.chaseMode=mode;e.searchRange=makeAttackRange('circle',1,1);p.objects=[e];return {p,g:create3D(p)};}
 const tick=(g,p,n=1)=>{for(let i=0;i<n;i++)step3D(g,p,{},.02);};
 test('範囲内だけ追う設定は外で止まり、見つけたらずっと追う設定は追跡を続ける',()=>{
@@ -29,8 +29,8 @@ test('空の移動範囲では動けず、壁もすり抜けない',()=>{
  p.objects[0].moveRange=makeAttackRange('circle',2,2);const wall=part('box',3,0);wall.w=1;wall.h=3;wall.d=8;p.objects.push(wall);g=create3D(p);tick(g,p,200);assert.ok(g.objects[0].x<2);
 });
 test('新しい設定を保存でき、不正な範囲や追跡方法を拒否する',()=>{
- const {p}=setup('search','remember');p.objects[0].moveRange=makeAttackRange('mixed',4,2);assert.deepEqual(validate3D(JSON.parse(JSON.stringify(p))),p);
- for(const key of ['moveRange','searchRange']){const bad=structuredClone(p);bad.objects[0][key].cells=[[9,0]];assert.throws(()=>validate3D(bad));}
+ const {p}=setup('search','remember');p.objects[0].moveRange=worldMoveRange(makeAttackRange('mixed',4,2),p.objects[0]);assert.deepEqual(validate3D(JSON.parse(JSON.stringify(p))),p);
+ for(const key of ['moveRange','searchRange']){const bad=structuredClone(p);bad.objects[0][key].cells=[[key==='moveRange'?120:9,0]];assert.throws(()=>validate3D(bad));}
  const bad=structuredClone(p);bad.objects[0].chaseMode='bad';assert.throws(()=>validate3D(bad));
 });
 test('以前の左右移動と追跡は保存後も動き、発見の記憶はプレイごとに消える',()=>{
