@@ -27,6 +27,7 @@ jobs:
           cp index.html style.css app.js engine.js public/
           cp 3d.html 3d.css app3d.js engine3d.js public/
           cp assets3d.js asset-ui3d.js move-map-ui3d.js public/
+          cp range-direction3d.js public/
           cp enemy-ai3d.js enemy-range3d.js enemy-range-ui3d.js public/
           cp workshop3d.js world3d.js world-ui3d.js limits3d.js structure-render3d.js spatial3d.js public/
           cp building3d.js tools3d.js editor-camera3d.js appearance3d.js gun-model3d.js doors3d.js muzzle3d.js public/
