@@ -1,0 +1,6 @@
+export const DOOR_PRESETS={key:{name:'カギであけるドア',mode:'key',style:'swing'},swing:{name:'ふつうのドア',mode:'free',style:'swing'},slide:{name:'スライドドア',mode:'free',style:'slide'},keyslide:{name:'カギつきスライドドア',mode:'key',style:'slide'}};
+export function configureDoor(o,preset){const p=DOOR_PRESETS[preset];if(!p)return o;o.doorMode=p.mode;o.doorStyle=p.style;o.settings.condition=p.mode==='key'?'keys':'touch';return o;}
+export function validDoor(o){return (o.doorMode===undefined||o.type==='door'&&['free','key'].includes(o.doorMode))&&(o.doorStyle===undefined||o.type==='door'&&['swing','slide'].includes(o.doorStyle));}
+export function nearbyDoor(g,yaw=0){const p=g.player;let closest=null,distance=3;for(const o of g.objects){if(o.type!=='door'||!o.doorMode||Math.abs(o.y-p.y)>2.5)continue;const dx=o.x-p.x,dz=o.z-p.z,d=Math.hypot(dx,dz);if(d<distance&&(d<.5||(-Math.sin(yaw)*dx-Math.cos(yaw)*dz)/d>-.15)){closest=o;distance=d;}}return closest;}
+export function doorwayOccupied(o,p){return Math.abs(o.x-p.x)<o.w/2+.35&&Math.abs(o.z-p.z)<o.d/2+.35&&p.y<o.y+o.h&&p.y+1.7>o.y;}
+export function animateDoors(g,dt){for(const o of g.objects)if(o.type==='door'&&o.doorStyle){const target=o.open?1:0,current=o.doorAmount||0;o.doorAmount=Math.max(0,Math.min(1,current+Math.sign(target-current)*Math.min(Math.abs(target-current),dt*4)));}}

@@ -1,11 +1,13 @@
-import {MAX_PARTS} from './limits3d.js?v=20261028o';
-import {coordinateLimit} from './world3d.js?v=20261028o';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261028o';
-import {actionsFor} from './events3d.js?v=20261028o';
-import {renderEventEditor} from './event-editor3d.js?v=20261028o';
-import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261028o';
-import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261028o';
-import {PARTS,ENEMY_PRESETS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261028o';
+import {gunPreviewSVG} from './appearance3d.js?v=20261029d';
+import {DOOR_PRESETS} from './doors3d.js?v=20261029d';
+import {MAX_PARTS} from './limits3d.js?v=20261029d';
+import {coordinateLimit} from './world3d.js?v=20261029d';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261029d';
+import {actionsFor} from './events3d.js?v=20261029d';
+import {renderEventEditor} from './event-editor3d.js?v=20261029d';
+import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261029d';
+import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261029d';
+import {PARTS,ENEMY_PRESETS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261029d';
 
 const ICONS={weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
 const DESCRIPTIONS={weapon:'地面に置いて、ふれると拾える銃。持ちもの・銃づくりで用意した銃をえらぼう。',ramp:'低いほうから歩くと、そのまま登れるスロープ。回して好きな向きにつなげよう。',wall:'家を囲う壁。向きを変えてつなげよう。',floor:'家の床と天井に使える板。壁の内側にぴったり合うよ。',roof:'壁の上にのせる三角屋根。向きを変えて家を仕上げよう。',
@@ -44,7 +46,7 @@ export function createWorkshop(api){
     if(o.type==='weapon'){
       const missing=o.weaponId&&!p.loadout.some(t=>t.id===o.weaponId);
       selectField(el,'ひろう銃',[['','銃をえらぼう'],...(missing?[[o.weaponId,'銃が削除されています']]:[]),...p.loadout.map(t=>[t.id,t.name+(t.pickupOnly?'（拾って使う）':'（最初から持つ）')])],o.weaponId||'',v=>{o.weaponId=v;inspect();});
-      const gun=p.loadout.find(t=>t.id===o.weaponId),note=document.createElement('p');note.className='component-description';setReadingText(note,!gun?'まだ銃が決まっていません。先に銃をつくり、ここでえらぼう。':gun.pickupOnly?'この銃は拾うまで使えないよ。':'この銃は最初から持っています。拾って使う設定にすると、拾うまで使えなくなるよ。');el.append(note);
+      const gun=p.loadout.find(t=>t.id===o.weaponId),note=document.createElement('p');note.className='component-description';setReadingText(note,!gun?'まだ銃が決まっていません。先に銃をつくり、ここでえらぼう。':gun.pickupOnly?'この銃は拾うまで使えないよ。':'この銃は最初から持っています。同じ銃を拾うと、同じ枠の個数がふえるよ。');el.append(note);
       if(gun&&!gun.pickupOnly){const prepare=document.createElement('button');setReadingText(prepare,'この銃を「拾って使う」にする');prepare.onclick=()=>{gun.pickupOnly=true;save();inspect();};el.append(prepare);}
     }
     if(DESTRUCTIBLE_TYPES.has(o.type)){field(el,'ブロックの体力',o.hp,1,LIMITS.maxBlockHp,1,n=>o.hp=Math.round(n));selectField(el,'弾が当たったら',[['yes','体力がなくなると壊れる'],['no','こわれない']],o.destructible===false?'no':'yes',v=>o.destructible=v==='yes');}
@@ -63,6 +65,11 @@ export function createWorkshop(api){
     if(['hazard','bounce'].includes(o.type)){
       const [label,min,max]=({star:['もらえる得点',1,20],heal:['回復する体力',1,5],hazard:['減る体力',1,5],bounce:['飛ぶ強さ',5,14]})[o.type];
       field(el,label,s.value,min,max,1,n=>s.value=Math.round(n));
+    }
+    if(o.type==='door'){
+      selectField(el,'ドアの開き方',[['swing','手前にひらく'],['slide','横にスライド']],o.doorStyle||'swing',v=>o.doorStyle=v);
+      selectField(el,'ドアの使い方',[['auto','これまでの自動ドア'],['free','ふつうに開け閉めする'],['key','カギで開け閉めする']],o.doorMode||'auto',v=>{if(v==='auto')delete o.doorMode;else{o.doorMode=v;o.doorStyle??='swing';s.condition=v==='key'?'keys':'touch';}inspect();});
+      const turn=document.createElement('button');setReadingText(turn,'↻ ドアを90°回す');turn.onclick=()=>{[o.w,o.d]=[o.d,o.w];o.rotation=o.rotation===90?0:90;save();rebuild();inspect();};el.append(turn);
     }
     if(o.type==='door'||o.type==='goal'){
       const rules=document.createElement('div');rules.className='recipe-rule';
@@ -95,7 +102,9 @@ export function createWorkshop(api){
     el.append(details('速さ・つよさを工夫する',advanced));
   }
   const groups=[['つくる道具',['select','erase']],['地形・しかけ',['wall','floor','roof','ramp','box','platform','moving','bounce','hazard']],['キャラクター・アイテム',['enemy','weapon','star','key','heal']],['進みかたをつくる',['checkpoint','door','goal']]];
+  function chooseWeapon(){const d=document.createElement('dialog'),h=document.createElement('h2');setReadingText(h,'どの銃をアイテムにする？');d.append(h);for(const tool of getProject().loadout){const b=document.createElement('button'),icon=document.createElement('span'),caption=document.createElement('span');b.className='door-choice';icon.className='hot-gun-icon';icon.innerHTML=gunPreviewSVG(tool);setReadingText(caption,tool.name);b.append(icon,caption);b.onclick=()=>{setTool('weapon',tool.id);d.close();d.remove();};d.append(b);}const cancel=document.createElement('button');setReadingText(cancel,'もどる');cancel.onclick=()=>{d.close();d.remove();};d.oncancel=()=>d.remove();d.append(cancel);document.body.append(d);d.showModal();}
+  function chooseDoor(){const d=document.createElement('dialog'),h=document.createElement('h2'),note=document.createElement('p');setReadingText(h,'どのドアを置く？');setReadingText(note,'近づいて「あける」ボタンで開け閉めできるよ。');d.append(h,note);for(const [key,preset]of Object.entries(DOOR_PRESETS)){const b=document.createElement('button');b.className='door-choice';setReadingText(b,preset.name);b.onclick=()=>{setTool('door',key);d.close();d.remove();};d.append(b);}const cancel=document.createElement('button');setReadingText(cancel,'もどる');cancel.onclick=()=>{d.close();d.remove();};d.oncancel=()=>d.remove();d.append(cancel);document.body.append(d);d.showModal();}
   const palette=$('#palette3');palette.replaceChildren();
-  for(const [label,types] of groups){const heading=document.createElement('div');heading.className='palette-heading';setReadingText(heading,label);palette.append(heading);for(const type of types){const b=document.createElement('button');b.className='part'+(type==='select'?' active':'');b.dataset.part=type;b.innerHTML=`<span>${ICONS[type]}</span>${PARTS[type]||{select:'えらぶ',erase:'けす'}[type]}`;b.onclick=()=>setTool(type);applyReadings(b);palette.append(b);}}
+  for(const [label,types] of groups){const heading=document.createElement('div');heading.className='palette-heading';setReadingText(heading,label);palette.append(heading);for(const type of types){const b=document.createElement('button');b.className='part'+(type==='select'?' active':'');b.dataset.part=type;b.innerHTML=`<span>${ICONS[type]}</span>${PARTS[type]||{select:'えらぶ',erase:'けす'}[type]}`;b.onclick=()=>type==='door'?chooseDoor():type==='weapon'?chooseWeapon():setTool(type);applyReadings(b);palette.append(b);}}
   return {inspect,weapons};
 }

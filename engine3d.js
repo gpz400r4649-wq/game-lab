@@ -1,11 +1,12 @@
-import {nearbyObjects} from './spatial3d.js?v=20261028o';
-import {MAX_PARTS} from './limits3d.js?v=20261028o';
-import {worldSize,worldHalf,coordinateLimit,WORLD_SIZES} from './world3d.js?v=20261028o';
-import {settleLoot} from './loot3d.js?v=20261028o';
-import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261028o';
-import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261028o';
-import {shootVolley,updateCombat} from './combat3d.js?v=20261028o';
-import {BUILD_TYPES,constructionPart,topAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261028o';
+import {validDoor,nearbyDoor,doorwayOccupied,animateDoors} from './doors3d.js?v=20261029d';
+import {nearbyObjects} from './spatial3d.js?v=20261029d';
+import {MAX_PARTS} from './limits3d.js?v=20261029d';
+import {worldSize,worldHalf,coordinateLimit,WORLD_SIZES} from './world3d.js?v=20261029d';
+import {settleLoot} from './loot3d.js?v=20261029d';
+import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261029d';
+import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261029d';
+import {shootVolley,updateCombat} from './combat3d.js?v=20261029d';
+import {BUILD_TYPES,constructionPart,topAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261029d';
 export const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export const PARTS={weapon:'銃アイテム',ramp:'スロープ',wall:'壁',floor:'床',roof:'屋根',box:'ブロック',platform:'足場',moving:'動く足場',bounce:'ジャンプ台',enemy:'敵ロボット',star:'星',key:'カギ',door:'ドア',heal:'回復',checkpoint:'セーブポイント',hazard:'ダメージ床',goal:'ゴール'};
 export const BEHAVIORS={chase:'プレイヤーを追いかける',patrol:'左右に動く',shoot:'近づいたら弾を撃つ'};
@@ -26,6 +27,7 @@ export function validate3D(data){
   if(Array.isArray(p.loadout))p.loadout.forEach(upgradeTool);
   if(!Array.isArray(p.loadout)||!p.loadout.length||p.loadout.length>8||!p.loadout.every(validTool)||new Set(p.loadout.map(t=>t.id)).size!==p.loadout.length)throw Error('持ちものの設定を確認してください');
   const ids=new Set();for(const o of p.objects){
+    if(!validDoor(o))throw Error('ドアの設定を確認してください');
     if(!validEvents(o))throw Error('イベントの設定を確認してください');
     const sizes=['w','h','d'].every(k=>number(o[k],['wall','floor','roof','ramp','bounce','hazard'].includes(o.type)?.2:.5,10));
     if(o.rotation!==undefined&&!(o.type==='ramp'?[0,90,180,270]:[0,90]).includes(o.rotation))throw Error('部品の向きを確認してください');
@@ -70,7 +72,7 @@ export function movePlayer(p,objects,dx,dz,dt,jump,world=60){
  if(p.y<=0){p.y=0;p.vy=0;p.grounded=true;p.supportId=null;}
 }
 
-export function create3D(p){const inventory=(p.loadout||[]).filter(t=>!t.pickupOnly).map(t=>t.id);return {buildSelection:{},worldSize:worldSize(p),inventory,toolCatalog:structuredClone(p.loadout||[]),drops:[],blockInventory:[],blockEquipped:null,player:{...p.spawn,vy:0,grounded:true,hp:5,invincible:0},objects:structuredClone(p.objects).map(o=>({...o,maxHp:o.hp,settings:o.settings||settingsFor(o.type),origin:{x:o.x,y:o.y,z:o.z},hidden:o.type==='enemy'&&o.startsHidden===true})),bullets:[],effects:[],hitInfo:null,buildings:[],recoilPitch:0,equipped:p.loadout?p.loadout.findIndex(t=>inventory.includes(t.id)):0,time:0,cooldown:0,score:0,stars:0,keys:0,checkpoint:null,message:'',messageId:0,state:'playing'};}
+export function create3D(p){const inventory=(p.loadout||[]).filter(t=>!t.pickupOnly).map(t=>t.id);return {inventoryCounts:Object.fromEntries(inventory.map(id=>[id,1])),buildSelection:{},worldSize:worldSize(p),inventory,toolCatalog:structuredClone(p.loadout||[]),drops:[],blockInventory:[],blockEquipped:null,player:{...p.spawn,vy:0,grounded:true,hp:5,invincible:0},objects:structuredClone(p.objects).map(o=>({...o,maxHp:o.hp,settings:o.settings||settingsFor(o.type),origin:{x:o.x,y:o.y,z:o.z},hidden:o.type==='enemy'&&o.startsHidden===true})),bullets:[],effects:[],hitInfo:null,buildings:[],recoilPitch:0,equipped:p.loadout?p.loadout.findIndex(t=>inventory.includes(t.id)):0,time:0,cooldown:0,score:0,stars:0,keys:0,checkpoint:null,message:'',messageId:0,state:'playing'};}
 export function conditionMet(o,g){const s=o.settings||settingsFor(o.type);return s.condition==='touch'||(s.condition==='stars'&&g.stars>=s.required)||(s.condition==='keys'&&g.keys>=s.required)||(s.condition==='enemies'&&!g.objects.some(x=>x.type==='enemy'&&x.hp>0));}
 export function conditionHint(o,g){const s=o.settings||settingsFor(o.type);if(s.condition==='unset')return 'クリア条件が未設定';if(s.condition==='touch')return o.type==='door'?'いつでも':'ふれるだけ';if(s.condition==='enemies')return `のこりの敵 ${g.objects.filter(x=>x.type==='enemy'&&x.hp>0).length} 体`;return `${s.condition==='stars'?'星':'カギ'} ${s.condition==='stars'?g.stars:g.keys} / ${s.required}`;}
 function inside(b,o,r=0){return Math.abs(b.x-o.x)<o.w/2+r&&Math.abs(b.z-o.z)<o.d/2+r&&b.y>o.y-r&&b.y<topAt(o,b.x,b.z)+r;}
@@ -80,6 +82,7 @@ export function step3D(g,p,input,dt){
     const s=o.settings,before={x:o.x,y:o.y,z:o.z},axis=s.axis;o[axis]=clamp(o.origin[axis]+Math.sin(g.time*s.speed/s.distance)*s.distance,axis==='y'?0:-limit,axis==='y'?12:limit);
     if(player.grounded&&player.supportId===o.id){player.x+=o.x-before.x;player.y+=o.y-before.y;player.z+=o.z-before.z;}}}
   let x=input.x||0,z=input.z||0,len=Math.hypot(x,z);if(len>1){x/=len;z/=len;}const yaw=input.yaw||0;movePlayer(player,nearbyObjects(g,player.x-1,player.z-1,player.x+1,player.z+1),(x*Math.cos(yaw)+z*Math.sin(yaw))*5*dt,(-x*Math.sin(yaw)+z*Math.cos(yaw))*5*dt,dt,input.jump,g);
+  if(input.useDoor){const door=nearbyDoor(g,input.yaw||0);if(door){if(door.open){if(doorwayOccupied(door,player))tell('ドアから少しはなれよう');else{door.open=false;tell('ドアをしめた');}}else if(!conditionMet(door,g))tell('まだあけられません。'+conditionHint(door,g));else if(!door.triggered)fireEvents(g,p,door,tell);else if(actionsFor(door).some(a=>a.type==='openDoor'&&a.target===door.id)){door.open=true;tell('ドアをあけた');}}}
   const tool=p.loadout?p.loadout[g.equipped]:p.weapon;
   if((tool||g.blockEquipped)&&input.fire&&g.cooldown<=0){
     if(g.blockEquipped){placeBlock(g,input);g.cooldown=.35;}
@@ -102,12 +105,14 @@ export function step3D(g,p,input,dt){
       if(o.type==='weapon'&&!p.loadout.some(t=>t.id===o.weaponId))continue;
       const actions=actionsFor(o);
       if(o.type==='heal'&&player.hp>=5&&actions.length&&actions.every(a=>a.type==='heal'))continue;
+      if(o.type==='weapon'&&actions.length>0&&actions.every(a=>a.type==='giveTool'&&(g.inventoryCounts?.[a.target]||0)>=99)){tell('同じ銃は99こまで持てます');continue;}
       o.collected=true;fireEvents(g,p,o,tell);
     }
     if(o.type==='bounce'&&player.vy<=0&&player.y>=o.y-.1&&player.y<=o.y+o.h+.2){player.y=o.y+o.h+.02;player.vy=o.settings.value;player.grounded=false;player.supportId=null;}
     if(o.type==='hazard'&&player.y<=o.y+o.h+.1&&player.invincible<=0){player.hp-=o.settings.value;player.invincible=1;}}
   g.drops=g.drops.filter(o=>!o.collected);
   // Items are collected before testing conditions. Each source fires once per test play.
-  for(const o of g.objects)if(!o.triggered&&((o.type==='door'&&conditionMet(o,g))||(o.type==='checkpoint'&&nearby(o))||(o.type==='goal'&&nearby(o)&&conditionMet(o,g)&&player.hp>0)))fireEvents(g,p,o,tell);
+  for(const o of g.objects)if(!o.triggered&&((o.type==='door'&&!o.doorMode&&conditionMet(o,g))||(o.type==='checkpoint'&&nearby(o))||(o.type==='goal'&&nearby(o)&&conditionMet(o,g)&&player.hp>0)))fireEvents(g,p,o,tell);
+  animateDoors(g,dt);
   if(player.hp<=0){if(g.checkpoint){Object.assign(player,{x:g.checkpoint.x,y:g.checkpoint.y,z:g.checkpoint.z,vy:0,hp:5,invincible:2,grounded:false,supportId:null});g.bullets=[];tell('セーブポイントからもう一度！');}else g.state='lost';}
 }

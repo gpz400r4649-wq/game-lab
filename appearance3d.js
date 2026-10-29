@@ -1,0 +1,6 @@
+export const GUN_SHAPES={blaster:'ブラスター',rifle:'ながい銃',launcher:'ランチャー'};
+export const GUN_COLORS={'#6ec3c0':'みずいろ','#7d62dd':'むらさき','#ee91a5':'ピンク','#eeb35f':'オレンジ','#6eae76':'みどり','#557ac0':'あお','#edf1f7':'しろ','#46516b':'くろ'};
+export const DEFAULT_APPEARANCE=Object.freeze({shape:'blaster',color:'#6ec3c0',accent:'#46516b',barrel:1});
+export const appearanceFor=tool=>({...DEFAULT_APPEARANCE,...tool?.appearance});
+export function validAppearance(a){return a===undefined||!!a&&Object.hasOwn(GUN_SHAPES,a.shape)&&Object.hasOwn(GUN_COLORS,a.color)&&Object.hasOwn(GUN_COLORS,a.accent)&&Number.isFinite(a.barrel)&&a.barrel>=.5&&a.barrel<=1.8;}
+export function gunPreviewSVG(tool){const a=appearanceFor(tool),length=55*a.barrel,body=a.shape==='rifle'?100:70;return `<svg viewBox="0 0 300 130" role="img" aria-label="銃の見た目のプレビュー"><rect width="300" height="130" rx="12" fill="#eef3f9"/><path d="M76 58h${body}v29H76z" fill="${a.color}"/><path d="M${76+body} 65h${length}v${a.shape==='launcher'?28:12}h-${length}z" fill="${a.accent}"/><path d="M90 84h22l-7 30H84z" fill="${a.accent}"/>${a.shape==='rifle'?`<path d="M48 60h28v24H48z M117 47h37v12h-37z" fill="${a.accent}"/>`:a.shape==='launcher'?`<circle cx="${76+body+length}" cy="79" r="19" fill="${a.accent}"/><circle cx="${76+body+length}" cy="79" r="11" fill="#27334a"/>`:''}</svg>`;}

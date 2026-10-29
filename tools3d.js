@@ -1,8 +1,9 @@
-import {bindGameAction} from './input3d.js?v=20261028o';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261028o';
-import {LIMITS,PROJECTILES,IMPACTS,impactEffects,weaponPresetKey,SHOT_PATTERNS,cadenceHandling} from './weapons3d.js?v=20261028o';
-import {buildChoices,activeBuildTool,cycleBuildType,facingBuildRotation,makeTool,TOOL_EFFECTS,BUILD_TYPES,equipTool,keepStructures,equipBlock} from './building3d.js?v=20261028o';
-import {WEAPON_PRESETS,PARTS} from './engine3d.js?v=20261028o';
+import {appearanceFor,GUN_SHAPES,GUN_COLORS,gunPreviewSVG} from './appearance3d.js?v=20261029d';
+import {bindGameAction} from './input3d.js?v=20261029d';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261029d';
+import {LIMITS,PROJECTILES,IMPACTS,impactEffects,weaponPresetKey,SHOT_PATTERNS,cadenceHandling} from './weapons3d.js?v=20261029d';
+import {buildChoices,activeBuildTool,cycleBuildType,facingBuildRotation,makeTool,TOOL_EFFECTS,BUILD_TYPES,equipTool,keepStructures,equipBlock} from './building3d.js?v=20261029d';
+import {WEAPON_PRESETS,PARTS} from './engine3d.js?v=20261029d';
 export function createToolsUI(api){
   const {$,getProject,getGame,getMode,field,save,refresh,finishBuilding}=api;
   let editing=0,rotation=0,level=0;
@@ -16,6 +17,9 @@ export function createToolsUI(api){
     const nameLabel=document.createElement('label');nameLabel.className='field choice-field';const nameCaption=document.createElement('span');setReadingText(nameCaption,'銃の名前');nameLabel.append(nameCaption);const name=document.createElement('input');name.type='text';name.setAttribute('aria-label','銃の名前');name.maxLength=32;name.value=tool.name;name.oninput=()=>{if(name.value.trim()){tool.name=name.value;changed();}};name.onchange=()=>{name.value=tool.name;};nameLabel.append(name);dialog.append(nameLabel);
     selectField(dialog,'この銃から出るもの',Object.entries(TOOL_EFFECTS),tool.effect,effect=>{tool.effect=effect;delete tool.buildChoices;changed();renderEditor();});
     selectField(dialog,'この銃をいつ使える？',[['start','最初から持つ'],['pickup','イベントで拾って使う']],tool.pickupOnly?'pickup':'start',v=>{tool.pickupOnly=v==='pickup';changed();renderEditor();});
+    const lookPanel=document.createElement('details'),lookTitle=document.createElement('summary'),preview=document.createElement('div');lookPanel.className='gun-appearance';setReadingText(lookTitle,'銃の見た目をつくる');lookPanel.append(lookTitle,preview);preview.className='gun-preview';
+    const syncLook=()=>{preview.innerHTML=gunPreviewSVG(tool);};const changeLook=patch=>{tool.appearance={...appearanceFor(tool),...patch};syncLook();changed();api.onAppearanceChange?.();};syncLook();
+    selectField(lookPanel,'銃の形',Object.entries(GUN_SHAPES),appearanceFor(tool).shape,v=>changeLook({shape:v}));selectField(lookPanel,'本体の色',Object.entries(GUN_COLORS),appearanceFor(tool).color,v=>changeLook({color:v}));selectField(lookPanel,'かざりの色',Object.entries(GUN_COLORS),appearanceFor(tool).accent,v=>changeLook({accent:v}));field(lookPanel,'銃身の長さ',appearanceFor(tool).barrel,.5,1.8,.1,n=>changeLook({barrel:n}));dialog.append(lookPanel);
     let syncPreset=()=>{};const tuningControls=new Map();
       function performanceField(parent,label,key,min,max,step,choices){
         let sync=()=>{};
@@ -70,7 +74,7 @@ export function createToolsUI(api){
   function open(){renderEditor();dialog.showModal();}
   function renderLauncher(){const el=$('#weapon3');el.replaceChildren();const note=document.createElement('p');note.className='component-description';setReadingText(note,`${getProject().loadout.length}個の持ちもの。射撃の銃も、部品を出す建築銃も追加できるよ。`);const b=document.createElement('button');setReadingText(b,'持ちもの・銃をつくる');b.className='primary';b.onclick=open;el.append(note,b);}
   function renderHotbar(){
-    const p=getProject(),g=getGame(),el=$('#hotbar3');el.replaceChildren();p.loadout.forEach((t,i)=>{const b=document.createElement('button');b.className='hot-slot';b.classList.toggle('active',g?.equipped===i);const locked=getMode()==='play'&&g?.inventory&&!g.inventory.includes(t.id);b.disabled=!!locked;setReadingText(b,`${i+1} ${locked?'🔒 拾って使う ':''}${t.effect==='shoot'?'✦':'▧'} ${t.name}`);b.setAttribute('aria-label',`持ちもの ${i+1} ${t.name}`);b.onclick=()=>{if(g)equipTool(g,p,i);renderHotbar();};el.append(b);});
+    const p=getProject(),g=getGame(),el=$('#hotbar3');el.replaceChildren();p.loadout.forEach((t,i)=>{const b=document.createElement('button');b.className='hot-slot';b.classList.toggle('active',g?.equipped===i);const locked=getMode()==='play'&&g?.inventory&&!g.inventory.includes(t.id);b.disabled=!!locked;setReadingText(b,`${i+1} ${locked?'🔒 拾って使う ':''}${t.effect==='shoot'?'✦':'▧'} ${t.name}${(g?.inventoryCounts?.[t.id]||0)>1?' ×'+g.inventoryCounts[t.id]:''}`);const icon=document.createElement('span');icon.className='hot-gun-icon';icon.innerHTML=gunPreviewSVG(t);b.prepend(icon);b.setAttribute('aria-label',`持ちもの ${i+1} ${t.name}`);b.onclick=()=>{if(g)equipTool(g,p,i);renderHotbar();};el.append(b);});
     if(g)for(const stack of g.blockInventory||[]){if(stack.count<=0&&g.blockEquipped!==stack.id)continue;const b=document.createElement('button');b.className='hot-slot';b.classList.toggle('active',g.blockEquipped===stack.id);setReadingText(b,'▧ '+PARTS[stack.template.type]+' ×'+stack.count);b.setAttribute('aria-label','拾ったブロック '+PARTS[stack.template.type]+' '+stack.count+'個');b.onclick=()=>{equipBlock(g,stack.id);renderHotbar();};el.append(b);}
     const tool=p.loadout[g?.equipped??0],building=getMode()==='play'&&(!!g?.blockEquipped||(!!tool&&tool.effect!=='shoot'));$('#keep-build3').hidden=!building;$('#rotate-build3').hidden=!building;$('#buildbar3').hidden=!building;$('#build-status3').hidden=!building;setReadingText($('#fire3'),building?'建てる ▧':tool?'発射 ✦':'銃をひろおう');setReadingText($('#build-level3'),`高さ ${level>=0?'+':''}${level} 段`);
     $('#keep-build3').disabled=!g?.buildings.length;const choices=buildChoices(tool),switcher=$('#switch-build3');switcher.hidden=!building||!!g?.blockEquipped||choices.length<2;setReadingText(switcher,'ブロック：'+(BUILD_TYPES[activeBuildTool(g,tool)?.effect]||'')+' ↻');
