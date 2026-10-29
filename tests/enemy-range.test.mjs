@@ -25,13 +25,13 @@ test('壊れた範囲データ・重複・上限越え・偽の形名を拒否�
  }
  assert.ok(validAttackRange(makeAttackRange('cross',RANGE_MAX,1)));
 });
-function scenario(cells,spawn){const p=fresh3D();p.spawn={x:spawn.x,y:0,z:spawn.z};const e=part('enemy',0,0);e.program=[{action:'shoot',speed:3}];if(cells)e.attackRange={shape:'custom',cross:1,circle:1,cells};p.objects.push(e);return {p,g:create3D(p)};}
-test('選んだマスに入ると発射し、外・穴・非表示・射撃行動なしでは発射しない',()=>{
+function scenario(cells,spawn){const p=fresh3D();p.spawn={x:spawn.x,y:0,z:spawn.z};const e=part('enemy',0,0);if(cells===undefined){delete e.attackEnabled;delete e.attackSpeed;delete e.attackRange;e.program=[{action:'shoot',speed:3}];}if(cells)e.attackRange={shape:'custom',cross:1,circle:1,cells};p.objects.push(e);return {p,g:create3D(p)};}
+test('選んだマスに入ると発射し、外・穴・非表示・攻撃オフでは発射しない',()=>{
  for(const [cells,spawn,expected]of [[[[1,0]],{x:4,z:0},true],[[[1,0]],{x:4,z:4},false],[[],{x:4,z:0},false],[[[5,0]],{x:20,z:0},true]]){
   const {p,g}=scenario(cells,spawn),before=JSON.stringify(p);step3D(g,p,{},.016);assert.equal(g.bullets.length>0,expected);assert.equal(JSON.stringify(p),before);
  }
  const {p,g}=scenario([[1,0]],{x:4,z:4});step3D(g,p,{},.016);assert.equal(g.bullets.length,0);g.player.z=0;step3D(g,p,{},.016);assert.ok(g.bullets.length>0);
- for(const hidden of [true,false]){const {p,g}=scenario([[1,0]],{x:4,z:0});g.objects[0].hidden=hidden;if(!hidden)g.objects[0].program=[];step3D(g,p,{},.016);assert.equal(g.bullets.length,0);}
+ for(const hidden of [true,false]){const {p,g}=scenario([[1,0]],{x:4,z:0});g.objects[0].hidden=hidden;if(!hidden)g.objects[0].attackEnabled=false;step3D(g,p,{},.016);assert.equal(g.bullets.length,0);}
 });
 test('既存の作品の射程18mは読み込みだけでは変わらない',()=>{
  for(const [x,expected]of [[17.99,true],[18,false],[20,false]]){const {p,g}=scenario(undefined,{x,z:0});assert.equal(validate3D(p).objects[0].attackRange,undefined);step3D(g,p,{},.016);assert.equal(g.bullets.length>0,expected);}

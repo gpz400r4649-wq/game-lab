@@ -1,23 +1,23 @@
-import {rangeCell,RANGE_MAX} from './enemy-range3d.js?v=20261029l';
-import {TPS_GUN_MOUNT} from './muzzle3d.js?v=20261029l';
-import {configureDoor,nearbyDoor} from './doors3d.js?v=20261029l';
-import {appearanceFor} from './appearance3d.js?v=20261029l';
-import {makeGunModel,applyFPSGunPose,worldGunMuzzle} from './gun-model3d.js?v=20261029l';
-import {moveEditorCamera,createEditorNavigation} from './editor-camera3d.js?v=20261029l';
-import {createStructureRenderer,BATCH_TYPES} from './structure-render3d.js?v=20261029l';
-import {MAX_PROJECT_BYTES} from './limits3d.js?v=20261029l';
-import {worldSize,coordinateLimit} from './world3d.js?v=20261029l';
-import {createWorldUI} from './world-ui3d.js?v=20261029l';
-import {configureNumericInput} from './numeric3d.js?v=20261029l';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261029l';
-import {installGameTouchGuard,bindHeldButton,bindGameAction,createGamePageMode} from './input3d.js?v=20261029l';
-import {actionsFor,ACTION_NAMES} from './events3d.js?v=20261029l';
-import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261029l';
-import {BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,editorPlacementReason,blockPlacement} from './building3d.js?v=20261029l';
-import {createToolsUI} from './tools3d.js?v=20261029l';
+import {rangeCell,RANGE_MAX} from './enemy-range3d.js?v=20261029m';
+import {TPS_GUN_MOUNT} from './muzzle3d.js?v=20261029m';
+import {configureDoor,nearbyDoor} from './doors3d.js?v=20261029m';
+import {appearanceFor} from './appearance3d.js?v=20261029m';
+import {makeGunModel,applyFPSGunPose,worldGunMuzzle} from './gun-model3d.js?v=20261029m';
+import {moveEditorCamera,createEditorNavigation} from './editor-camera3d.js?v=20261029m';
+import {createStructureRenderer,BATCH_TYPES} from './structure-render3d.js?v=20261029m';
+import {MAX_PROJECT_BYTES} from './limits3d.js?v=20261029m';
+import {worldSize,coordinateLimit} from './world3d.js?v=20261029m';
+import {createWorldUI} from './world-ui3d.js?v=20261029m';
+import {configureNumericInput} from './numeric3d.js?v=20261029m';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261029m';
+import {installGameTouchGuard,bindHeldButton,bindGameAction,createGamePageMode} from './input3d.js?v=20261029m';
+import {actionsFor,ACTION_NAMES} from './events3d.js?v=20261029m';
+import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261029m';
+import {BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,editorPlacementReason,blockPlacement} from './building3d.js?v=20261029m';
+import {createToolsUI} from './tools3d.js?v=20261029m';
 import * as T from './vendor/three.module.min.js';
-import {PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,conditionHint} from './engine3d.js?v=20261029l';
-import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261029l';
+import {PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,conditionHint} from './engine3d.js?v=20261029m';
+import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261029m';
 const $=s=>document.querySelector(s),view=$('#viewport'),KEY='tsukuru-lab-3d-v1';
 let project=fresh3D(),selected=null,tool='select',doorPreset='key',weaponPresetId='',mode='edit',perspective='tps',game=null,yaw=0,pitch=-.05,editYaw=.55,editPitch=.7,editDistance=30,editTarget=new T.Vector3(0,0,0),stick={x:0,z:0},keys=new Set(),fireHeld=false,firePressed=false,jumpPressed=false,doorPressed=false,look=null,saveTimer,toastTimer,lastTime=0;
 function toast(s){setReadingText($('#toast3'),s);$('#toast3').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast3').classList.remove('show'),3200);}
@@ -79,7 +79,7 @@ function rebuild(){updateWorld();
  for(const o of objects){const mesh=partModel(o);mesh.position.set(o.x,o.y,o.z);mesh.visible=mode!=='play'||(!o.hidden&&!o.collected);mesh.userData.id=o.id;objectsGroup.add(mesh);meshes.set(o.id,mesh);}
  structureRenderer.sync(objects,meshes);solidMeshes=solids(objects).map(o=>meshes.get(o.id));updateSelection();
 }
-function updateSelection(){const mesh=meshes.get(selected);selectionBox.visible=!!mesh&&mode==='edit';if(mesh)selectionBox.setFromObject(mesh);const o=project.objects.find(o=>o.id===selected);rangeOverlay.visible=mode==='edit'&&o?.type==='enemy'&&!!o.attackRange&&o.program.some(b=>b.action==='shoot');if(rangeOverlay.visible){const m=new T.Matrix4(),cx=rangeCell(o.x)*4,cz=rangeCell(o.z)*4;rangeOverlay.count=o.attackRange.cells.length;o.attackRange.cells.forEach(([x,z],i)=>rangeOverlay.setMatrixAt(i,m.makeTranslation(cx+x*4,.025,cz+z*4)));rangeOverlay.instanceMatrix.needsUpdate=true;}}
+function updateSelection(){const mesh=meshes.get(selected);selectionBox.visible=!!mesh&&mode==='edit';if(mesh)selectionBox.setFromObject(mesh);const o=project.objects.find(o=>o.id===selected);rangeOverlay.visible=mode==='edit'&&o?.type==='enemy'&&!!o.attackRange;if(rangeOverlay.visible){const m=new T.Matrix4(),cx=rangeCell(o.x)*4,cz=rangeCell(o.z)*4;rangeOverlay.count=o.attackRange.cells.length;o.attackRange.cells.forEach(([x,z],i)=>rangeOverlay.setMatrixAt(i,m.makeTranslation(cx+x*4,.025,cz+z*4)));rangeOverlay.instanceMatrix.needsUpdate=true;}}
 function save(){clearTimeout(saveTimer);setReadingText($('#saved3'),'保存中…');saveTimer=setTimeout(()=>{try{localStorage.setItem(KEY,JSON.stringify(project));setReadingText($('#saved3'),'✓ このブラウザに保存しました');}catch{setReadingText($('#saved3'),'保存できません。ファイルに保存してください');}},250);}
 function field(parent,name,value,min,max,step,fn){
  const l=document.createElement('label');l.className='field';const s=document.createElement('span');setReadingText(s,name);const input=document.createElement('input');input.setAttribute('aria-label',name);

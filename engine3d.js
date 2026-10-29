@@ -1,23 +1,23 @@
-import {validAttackRange,inAttackRange} from './enemy-range3d.js?v=20261029l';
-import {playerGunMuzzle,finitePoint} from './muzzle3d.js?v=20261029l';
-import {validDoor,nearbyDoor,doorwayOccupied,animateDoors} from './doors3d.js?v=20261029l';
-import {nearbyObjects} from './spatial3d.js?v=20261029l';
-import {MAX_PARTS} from './limits3d.js?v=20261029l';
-import {worldSize,worldHalf,coordinateLimit,WORLD_SIZES} from './world3d.js?v=20261029l';
-import {settleLoot} from './loot3d.js?v=20261029l';
-import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261029l';
-import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261029l';
-import {shootVolley,updateCombat,resolveShotOrigin} from './combat3d.js?v=20261029l';
-import {BUILD_TYPES,constructionPart,topAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261029l';
+import {makeAttackRange,validAttackRange,inAttackRange} from './enemy-range3d.js?v=20261029m';
+import {playerGunMuzzle,finitePoint} from './muzzle3d.js?v=20261029m';
+import {validDoor,nearbyDoor,doorwayOccupied,animateDoors} from './doors3d.js?v=20261029m';
+import {nearbyObjects} from './spatial3d.js?v=20261029m';
+import {MAX_PARTS} from './limits3d.js?v=20261029m';
+import {worldSize,worldHalf,coordinateLimit,WORLD_SIZES} from './world3d.js?v=20261029m';
+import {settleLoot} from './loot3d.js?v=20261029m';
+import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261029m';
+import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261029m';
+import {shootVolley,updateCombat,resolveShotOrigin} from './combat3d.js?v=20261029m';
+import {BUILD_TYPES,constructionPart,topAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261029m';
 export const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export const PARTS={weapon:'銃アイテム',ramp:'スロープ',wall:'壁',floor:'床',roof:'屋根',box:'ブロック',platform:'足場',moving:'動く足場',bounce:'ジャンプ台',enemy:'敵ロボット',star:'星',key:'カギ',door:'ドア',heal:'回復',checkpoint:'セーブポイント',hazard:'ダメージ床',goal:'ゴール'};
-export const BEHAVIORS={chase:'プレイヤーを追いかける',patrol:'左右に動く',shoot:'近づいたら弾を撃つ'};
-export const ENEMY_PRESETS={chase:{name:'追いかける敵',program:[{action:'chase',speed:2}]},patrol:{name:'見はりの敵',program:[{action:'patrol',speed:2}]},guard:{name:'弾を撃つ敵',program:[{action:'shoot',speed:3}]},still:{name:'動かない的',program:[]}};
+export const BEHAVIORS={chase:'プレイヤーを追いかける',patrol:'左右に動く'};
+export const ENEMY_PRESETS={chase:{name:'追いかける敵',program:[{action:'chase',speed:2}]},patrol:{name:'見はりの敵',program:[{action:'patrol',speed:2}]},still:{name:'動かない',program:[]}};
 export const WEAPON_PRESETS={standard:{name:'ふつうのブラスター',speed:24,interval:.25,damage:1,spread:1,projectile:'ball',impact:'damage',size:.2,spreadAngle:20,blastRadius:3,range:60,recoil:0,aimJitter:0,pattern:'fan'},rapid:{name:'マシンガンのヒント',speed:40,interval:.08,damage:2,spread:1,projectile:'ball',impact:'damage',size:.15,spreadAngle:10,blastRadius:3,range:30,recoil:4,aimJitter:5,pattern:'fan'},spread:{name:'ひろがる弾のヒント',speed:22,interval:.5,damage:2,spread:5,projectile:'ball',impact:'damage',size:.2,spreadAngle:35,blastRadius:3,range:15,recoil:.6,aimJitter:.7,pattern:'cone'},power:{name:'パワーブラスター',speed:18,interval:.8,damage:10,spread:1,projectile:'ball',impact:'damage',size:.5,spreadAngle:20,blastRadius:3,range:40,recoil:.2,aimJitter:.3,pattern:'fan'},rocket:{name:'ロケットランチャーのヒント',speed:18,interval:.8,damage:20,spread:1,projectile:'rocket',impact:'explode',size:.5,spreadAngle:0,blastRadius:4,range:45,recoil:.2,aimJitter:.3,pattern:'fan'}};
 export const CONDITION_NAMES={unset:'クリア条件をえらぶ',touch:'そのまま',stars:'星を集めたら',keys:'カギを集めたら',enemies:'敵を全員たおしたら'};
 const solidTypes=new Set(['box','platform','moving','door','wall','floor','roof','ramp']);
 export function settingsFor(type){return {axis:'x',distance:3,speed:2,value:type==='bounce'?11:type==='star'?5:1,condition:type==='goal'?'unset':type==='door'?'keys':'touch',required:1};}
-export function part(type,x=0,z=-5){if(Object.hasOwn(BUILD_TYPES,type))return constructionPart(type,x,z);return {id:crypto.randomUUID(),type,x,y:['platform','moving'].includes(type)?1:0,z,w:['box','platform','moving'].includes(type)?4:type==='door'?3:2,h:type==='box'?3:['platform','moving'].includes(type)?.5:['bounce','hazard'].includes(type)?.2:type==='door'?3:2,d:type==='door'?.6:['box','platform','moving'].includes(type)?4:2,hp:DESTRUCTIBLE_TYPES.has(type)?20:3,...(DESTRUCTIBLE_TYPES.has(type)?{destructible:true}:{}),program:[],settings:settingsFor(type),...(type==='weapon'?{weaponId:''}:{})};}
+export function part(type,x=0,z=-5){if(Object.hasOwn(BUILD_TYPES,type))return constructionPart(type,x,z);return {id:crypto.randomUUID(),type,x,y:['platform','moving'].includes(type)?1:0,z,w:['box','platform','moving'].includes(type)?4:type==='door'?3:2,h:type==='box'?3:['platform','moving'].includes(type)?.5:['bounce','hazard'].includes(type)?.2:type==='door'?3:2,d:type==='door'?.6:['box','platform','moving'].includes(type)?4:2,hp:DESTRUCTIBLE_TYPES.has(type)?20:3,...(DESTRUCTIBLE_TYPES.has(type)?{destructible:true}:{}),program:[],settings:settingsFor(type),...(type==='weapon'?{weaponId:''}:{}),...(type==='enemy'?{attackEnabled:true,attackSpeed:3,attackRange:makeAttackRange()}:{})};}
 export function fresh3D(){const weapon={speed:24,interval:.25,damage:1,spread:1};return {version:1,kind:'game-lab-3d',worldSize:60,title:'わたしの3Dワールド',spawn:{x:0,y:0,z:8},weapon,loadout:defaultLoadout(weapon),objects:[]};}
 export function validate3D(data){
   const p=structuredClone(data),number=(v,a,b)=>Number.isFinite(v)&&v>=a&&v<=b;
@@ -35,7 +35,8 @@ export function validate3D(data){
     const sizes=['w','h','d'].every(k=>number(o[k],['wall','floor','roof','ramp','bounce','hazard'].includes(o.type)?.2:.5,10));
     if(o.rotation!==undefined&&!(o.type==='ramp'?[0,90,180,270]:[0,90]).includes(o.rotation))throw Error('部品の向きを確認してください');
     if(!Object.hasOwn(PARTS,o.type)||typeof o.id!=='string'||ids.has(o.id)||!['x','z'].every(k=>number(o[k],-limit,limit))||!number(o.y,0,12)||!sizes||!Number.isInteger(o.hp)||!number(o.hp,1,DESTRUCTIBLE_TYPES.has(o.type)?200:20)||!Array.isArray(o.program)||o.program.length>8)throw Error('パーツの設定を確認してください');ids.add(o.id);if(DESTRUCTIBLE_TYPES.has(o.type)){if(o.destructible===undefined)o.destructible=true;if(typeof o.destructible!=='boolean')throw Error('ブロックの体力設定を確認してください');}
-    for(const b of o.program)if(!Object.hasOwn(BEHAVIORS,b.action)||!number(b.speed,.5,8))throw Error('うごきの設定を確認してください');
+    for(const b of o.program)if((!Object.hasOwn(BEHAVIORS,b.action)&&b.action!=='shoot')||!number(b.speed,.5,8))throw Error('うごきの設定を確認してください');
+    if(o.type==='enemy'){if(o.attackEnabled!==undefined&&typeof o.attackEnabled!=='boolean'||o.attackSpeed!==undefined&&!number(o.attackSpeed,.5,8))throw Error('敵の攻撃設定を確認してください');upgradeEnemy(o);}
     if(o.settings===undefined)o.settings=settingsFor(o.type);
     const s=o.settings;if(!s||!['x','y','z'].includes(s.axis)||!number(s.distance,.5,8)||!number(s.speed,.5,5)||!Number.isInteger(s.value)||!number(s.value,1,20)||!Object.hasOwn(CONDITION_NAMES,s.condition)||!Number.isInteger(s.required)||!number(s.required,1,20))throw Error('しかけの設定を確認してください');
   }return p;
@@ -75,7 +76,9 @@ export function movePlayer(p,objects,dx,dz,dt,jump,world=60){
  if(p.y<=0){p.y=0;p.vy=0;p.grounded=true;p.supportId=null;}
 }
 
-export function create3D(p){const inventory=(p.loadout||[]).filter(t=>!t.pickupOnly).map(t=>t.id);return {inventoryCounts:Object.fromEntries(inventory.map(id=>[id,1])),buildSelection:{},worldSize:worldSize(p),inventory,toolCatalog:structuredClone(p.loadout||[]),drops:[],blockInventory:[],blockEquipped:null,player:{...p.spawn,vy:0,grounded:true,hp:5,invincible:0},objects:structuredClone(p.objects).map(o=>({...o,maxHp:o.hp,settings:o.settings||settingsFor(o.type),origin:{x:o.x,y:o.y,z:o.z},hidden:o.type==='enemy'&&o.startsHidden===true})),bullets:[],effects:[],hitInfo:null,buildings:[],recoilPitch:0,equipped:p.loadout?p.loadout.findIndex(t=>inventory.includes(t.id)):0,time:0,cooldown:0,score:0,stars:0,keys:0,checkpoint:null,message:'',messageId:0,state:'playing'};}
+// Convert the former shooting behavior without changing saved movement or range.
+export function upgradeEnemy(o){if(o.type!=='enemy')return o;const shot=o.program.find(b=>b.action==='shoot');o.attackEnabled??=!!shot;o.attackSpeed??=shot?.speed??3;o.program=o.program.filter(b=>b.action!=='shoot');return o;}
+export function create3D(p){const inventory=(p.loadout||[]).filter(t=>!t.pickupOnly).map(t=>t.id);return {inventoryCounts:Object.fromEntries(inventory.map(id=>[id,1])),buildSelection:{},worldSize:worldSize(p),inventory,toolCatalog:structuredClone(p.loadout||[]),drops:[],blockInventory:[],blockEquipped:null,player:{...p.spawn,vy:0,grounded:true,hp:5,invincible:0},objects:structuredClone(p.objects).map(upgradeEnemy).map(o=>({...o,maxHp:o.hp,settings:o.settings||settingsFor(o.type),origin:{x:o.x,y:o.y,z:o.z},hidden:o.type==='enemy'&&o.startsHidden===true})),bullets:[],effects:[],hitInfo:null,buildings:[],recoilPitch:0,equipped:p.loadout?p.loadout.findIndex(t=>inventory.includes(t.id)):0,time:0,cooldown:0,score:0,stars:0,keys:0,checkpoint:null,message:'',messageId:0,state:'playing'};}
 export function conditionMet(o,g){const s=o.settings||settingsFor(o.type);return s.condition==='touch'||(s.condition==='stars'&&g.stars>=s.required)||(s.condition==='keys'&&g.keys>=s.required)||(s.condition==='enemies'&&!g.objects.some(x=>x.type==='enemy'&&x.hp>0));}
 export function conditionHint(o,g){const s=o.settings||settingsFor(o.type);if(s.condition==='unset')return 'クリア条件が未設定';if(s.condition==='touch')return o.type==='door'?'いつでも':'ふれるだけ';if(s.condition==='enemies')return `のこりの敵 ${g.objects.filter(x=>x.type==='enemy'&&x.hp>0).length} 体`;return `${s.condition==='stars'?'星':'カギ'} ${s.condition==='stars'?g.stars:g.keys} / ${s.required}`;}
 function inside(b,o,r=0){return Math.abs(b.x-o.x)<o.w/2+r&&Math.abs(b.z-o.z)<o.d/2+r&&b.y>o.y-r&&b.y<topAt(o,b.x,b.z)+r;}
@@ -97,8 +100,11 @@ export function step3D(g,p,input,dt){
     o.cooldown=Math.max(0,(o.cooldown||0)-dt);for(const b of o.program){const dx=player.x-o.x,dz=player.z-o.z,d=Math.hypot(dx,dz)||1;let mx=0,mz=0;
       if(b.action==='chase'){mx=dx/d*b.speed*dt;mz=dz/d*b.speed*dt;}if(b.action==='patrol')mx=Math.cos(g.time)*b.speed*dt;
       if(mx||mz){const body={x:o.x+mx,y:o.y,z:o.z};if(!walls.some(w=>inside({...body,y:o.y+.9},w,.55)))o.x=clamp(body.x,-limit,limit);body.x=o.x;body.z+=mz;if(!walls.some(w=>inside({...body,y:o.y+.9},w,.55)))o.z=clamp(body.z,-limit,limit);}
-      if(b.action==='shoot'&&inAttackRange(o,player)&&o.cooldown<=0){shootVolley(g,{x:o.x,y:o.y+1.1,z:o.z},{x:dx,y:player.y+.9-(o.y+1.1),z:dz},{speed:b.speed+5,damage:1,spread:1},true);o.cooldown=1.4;}}
-    if(Math.hypot(o.x-player.x,o.z-player.z)<1&&Math.abs(o.y-player.y)<1.7&&player.invincible<=0){player.hp--;player.invincible=1;}}
+    }
+    if(o.attackEnabled&&inAttackRange(o,player)){
+      if(o.cooldown<=0){shootVolley(g,{x:o.x,y:o.y+1.1,z:o.z},{x:player.x-o.x,y:player.y+.9-(o.y+1.1),z:player.z-o.z},{speed:o.attackSpeed+5,damage:1,spread:1},true);o.cooldown=1.4;}
+      if(Math.hypot(o.x-player.x,o.z-player.z)<1&&Math.abs(o.y-player.y)<1.7&&player.invincible<=0){player.hp--;player.invincible=1;}
+    }}
   updateCombat(g,dt);settleLoot(g,dt);
   // Collect before evaluating goals, independent of editor placement order.
   const nearby=o=>(['bounce','hazard'].includes(o.type)?Math.abs(o.x-player.x)<o.w/2+.25&&Math.abs(o.z-player.z)<o.d/2+.25:Math.hypot(o.x-player.x,o.z-player.z)<1.15)&&player.y<o.y+1.8&&player.y+1.7>o.y;

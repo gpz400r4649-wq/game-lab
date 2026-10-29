@@ -1,5 +1,5 @@
-import {RANGE_MAX,makeAttackRange,rangeCells} from './enemy-range3d.js?v=20261029l';
-import {setReadingText,kanaText} from './readings3d.js?v=20261029l';
+import {RANGE_MAX,makeAttackRange,rangeCells} from './enemy-range3d.js?v=20261029m';
+import {setReadingText,kanaText} from './readings3d.js?v=20261029m';
 export function renderAttackRange(parent,o,{save,rebuild}){
  const summary=document.createElement('p'),edit=document.createElement('button');summary.className='component-description';
  const names={cross:'十字',circle:'円',mixed:'十字＋円',custom:'自分でつくった形'};
