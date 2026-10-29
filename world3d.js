@@ -14,3 +14,13 @@ export function spawnReason(project,x,z){
  if(project.objects.some(o=>['box','wall','floor','roof','ramp','door','platform','moving','hazard'].includes(o.type)&&Math.abs(x-o.x)<o.w/2+.35&&Math.abs(z-o.z)<o.d/2+.35&&o.y<1.7))return '部品に重ならない地面をえらぼう';
  return '';
 }
+// Keep every displayed movement cell inside the map, including edge pages.
+export function moveGridWindow(world,x=0,z=0){
+ const limit=Math.floor(worldHalf(world)/4),count=Math.min(17,limit*2+1),half=Math.floor(count/2),low=-limit+half,high=limit-half;
+ const centerX=Math.max(low,Math.min(high,Math.round(x))),centerZ=Math.max(low,Math.min(high,Math.round(z)));
+ return {limit,count,centerX,centerZ,minX:centerX-half,maxX:centerX+half,minZ:centerZ-half,maxZ:centerZ+half};
+}
+export function moveGridPages(world){
+ const {limit,count}=moveGridWindow(world),half=Math.floor(count/2),first=-limit+half,last=limit-half,centers=[];
+ for(let center=first;center<=last;center+=count)centers.push(center);if(centers.at(-1)!==last)centers.push(last);return centers;
+}

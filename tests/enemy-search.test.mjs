@@ -30,7 +30,7 @@ test('空の移動範囲では動けず、壁もすり抜けない',()=>{
 });
 test('新しい設定を保存でき、不正な範囲や追跡方法を拒否する',()=>{
  const {p}=setup('search','remember');p.objects[0].moveRange=worldMoveRange(makeAttackRange('mixed',4,2),p.objects[0]);assert.deepEqual(validate3D(JSON.parse(JSON.stringify(p))),p);
- for(const key of ['moveRange','searchRange']){const bad=structuredClone(p);bad.objects[0][key].cells=[[key==='moveRange'?120:9,0]];assert.throws(()=>validate3D(bad));}
+ for(const key of ['moveRange','searchRange']){const bad=structuredClone(p);bad.objects[0][key].cells=[[key==='moveRange'?121:9,0]];assert.throws(()=>validate3D(bad));}
  const bad=structuredClone(p);bad.objects[0].chaseMode='bad';assert.throws(()=>validate3D(bad));
 });
 test('以前の左右移動と追跡は保存後も動き、発見の記憶はプレイごとに消える',()=>{

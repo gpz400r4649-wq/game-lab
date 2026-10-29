@@ -1,4 +1,4 @@
-import {GRID} from './building3d.js?v=20261029s';
+import {GRID} from './building3d.js?v=20261029t';
 export const RANGE_MAX=8;
 export const rangeCell=value=>Math.floor((value+GRID.cell/2)/GRID.cell);
 export function rangeCells(shape,cross=4,circle=2){
@@ -23,7 +23,7 @@ export function inGridRange(r,center,point){
 }
 export function inAttackRange(enemy,player){return enemy.attackRange?inGridRange(enemy.attackRange,enemy,player):Math.hypot(player.x-enemy.x,player.z-enemy.z)<18;}
 
-export const MOVE_MAX_CELLS=1024,WORLD_CELL_MAX=119;
+export const MOVE_MAX_CELLS=1024,WORLD_CELL_MAX=120;
 export function validMoveRange(r){
  if(r===undefined)return true;if(r?.space!=='world')return validAttackRange(r);
  if(!Array.isArray(r.cells)||r.cells.length>MOVE_MAX_CELLS)return false;const seen=new Set();

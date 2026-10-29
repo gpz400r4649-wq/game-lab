@@ -14,7 +14,7 @@ test('範囲素材と敵素材は深いコピーで使え、作品保存と一�
  applyEnemyAsset(copy,enemy);assert.deepEqual(copy.moveRange,e.moveRange);copy.moveRange.cells.pop();assert.notDeepEqual(copy.moveRange,enemy.config.moveRange);assert.deepEqual(e.moveRange,move.range);const q=validate3D(JSON.parse(JSON.stringify(p)));assert.deepEqual(q,p);assert.equal(q.library.enemies[0].config.chaseMode,'remember');p.library.enemies=[];assert.ok(copy.moveRange.cells.length);assert.equal(fresh3D().library,undefined);
 });
 test('移動範囲はマップ全域の座標を扱い、重複・小数・上限越えを拒否する',()=>{
- assert.ok(validMoveRange({space:'world',cells:[[-119,119],[0,0]]}));for(const cells of [[[120,0]],[[.1,0]],[[0,0],[0,0]],Array(MOVE_MAX_CELLS+1).fill([0,0])])assert.equal(validMoveRange({space:'world',cells}),false);
+ assert.ok(validMoveRange({space:'world',cells:[[-120,120],[0,0]]}));for(const cells of [[[121,0]],[[.1,0]],[[0,0],[0,0]],Array(MOVE_MAX_CELLS+1).fill([0,0])])assert.equal(validMoveRange({space:'world',cells}),false);
 });
 test('素材の種類・名前・不正な設定・保存数の上限を検証する',()=>{
  const p=fresh3D(),e=part('enemy');assert.throws(()=>saveRangeAsset(p,e,'bad','x'));assert.throws(()=>saveEnemyAsset(p,e,' '));for(let i=0;i<64;i++)saveRangeAsset(p,e,'attackRange',`範囲${i}`);assert.throws(()=>saveRangeAsset(p,e,'attackRange','65'));for(let i=0;i<32;i++)saveEnemyAsset(p,e,`敵${i}`);assert.throws(()=>saveEnemyAsset(p,e,'33'));assert.ok(validLibrary(p.library));

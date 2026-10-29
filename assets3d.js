@@ -1,4 +1,4 @@
-import {validAttackRange,validMoveRange,worldMoveRange} from './enemy-range3d.js?v=20261029s';
+import {validAttackRange,validMoveRange,worldMoveRange} from './enemy-range3d.js?v=20261029t';
 export const ASSET_LIMITS={ranges:64,enemies:32};
 const keys=['hp','program','attackEnabled','attackSpeed','attackRange','searchRange','moveRange','chaseMode'];
 const named=a=>a&&typeof a.id==='string'&&a.id.length>0&&a.id.length<=80&&typeof a.name==='string'&&a.name.trim().length>0&&a.name.length<=32;
