@@ -1,4 +1,4 @@
-import {GRID} from './building3d.js?v=20261029m';
+import {GRID} from './building3d.js?v=20261029n';
 export const RANGE_MAX=8;
 export const rangeCell=value=>Math.floor((value+GRID.cell/2)/GRID.cell);
 export function rangeCells(shape,cross=4,circle=2){
@@ -17,9 +17,8 @@ export function validAttackRange(r){
  return r.shape==='custom'||JSON.stringify([...seen].sort())===JSON.stringify(rangeCells(r.shape,r.cross,r.circle).map(c=>c.join(',')).sort());
 }
 const caches=new WeakMap();
-export function inAttackRange(enemy,player){
- const r=enemy.attackRange;
- if(!r)return Math.hypot(player.x-enemy.x,player.z-enemy.z)<18;
+export function inGridRange(r,center,point){
  let cache=caches.get(r);if(!cache||cache.cells!==r.cells){cache={cells:r.cells,set:new Set(r.cells.map(c=>c.join(',')))};caches.set(r,cache);}
- return cache.set.has(`${rangeCell(player.x)-rangeCell(enemy.x)},${rangeCell(player.z)-rangeCell(enemy.z)}`);
+ return cache.set.has(`${rangeCell(point.x)-rangeCell(center.x)},${rangeCell(point.z)-rangeCell(center.z)}`);
 }
+export function inAttackRange(enemy,player){return enemy.attackRange?inGridRange(enemy.attackRange,enemy,player):Math.hypot(player.x-enemy.x,player.z-enemy.z)<18;}

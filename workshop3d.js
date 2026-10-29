@@ -1,14 +1,16 @@
-import {renderAttackRange} from './enemy-range-ui3d.js?v=20261029m';
-import {gunPreviewSVG} from './appearance3d.js?v=20261029m';
-import {DOOR_PRESETS} from './doors3d.js?v=20261029m';
-import {MAX_PARTS} from './limits3d.js?v=20261029m';
-import {coordinateLimit} from './world3d.js?v=20261029m';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261029m';
-import {actionsFor} from './events3d.js?v=20261029m';
-import {renderEventEditor} from './event-editor3d.js?v=20261029m';
-import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261029m';
-import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261029m';
-import {PARTS,ENEMY_PRESETS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261029m';
+import {CHASE_MODES} from './enemy-ai3d.js?v=20261029n';
+import {makeAttackRange} from './enemy-range3d.js?v=20261029n';
+import {renderAttackRange,renderEnemyRange} from './enemy-range-ui3d.js?v=20261029n';
+import {gunPreviewSVG} from './appearance3d.js?v=20261029n';
+import {DOOR_PRESETS} from './doors3d.js?v=20261029n';
+import {MAX_PARTS} from './limits3d.js?v=20261029n';
+import {coordinateLimit} from './world3d.js?v=20261029n';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261029n';
+import {actionsFor} from './events3d.js?v=20261029n';
+import {renderEventEditor} from './event-editor3d.js?v=20261029n';
+import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261029n';
+import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261029n';
+import {PARTS,ENEMY_PRESETS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261029n';
 
 const ICONS={weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
 const DESCRIPTIONS={weapon:'地面に置いて、ふれると拾える銃。持ちもの・銃づくりで用意した銃をえらぼう。',ramp:'低いほうから歩くと、そのまま登れるスロープ。回して好きな向きにつなげよう。',wall:'家を囲う壁。向きを変えてつなげよう。',floor:'家の床と天井に使える板。壁の内側にぴったり合うよ。',roof:'壁の上にのせる三角屋根。向きを変えて家を仕上げよう。',
@@ -54,11 +56,19 @@ export function createWorkshop(api){
     if(o.type==='enemy'){
       selectField(el,'いつ出現する？',[['start','最初からいる'],['event','イベントで出現を待つ']],o.startsHidden?'event':'start',v=>{o.startsHidden=v==='event';inspect();});
       const preset=Object.keys(ENEMY_PRESETS).find(k=>JSON.stringify(ENEMY_PRESETS[k].program)===JSON.stringify(o.program))||'custom';
-      selectField(el,'行動タイプ',[...Object.entries(ENEMY_PRESETS).map(([k,v])=>[k,v.name]),['custom','自分で工夫した動き']],preset,k=>{if(k!=='custom')o.program=structuredClone(ENEMY_PRESETS[k].program);inspect();});
+      selectField(el,'行動タイプ',[...Object.entries(ENEMY_PRESETS).map(([k,v])=>[k,v.name]),['custom','自分で工夫した動き']],preset,k=>{if(k!=='custom'){o.program=structuredClone(ENEMY_PRESETS[k].program);if(k==='search'){o.chaseMode='inside';o.moveRange??=makeAttackRange('circle',3,3);o.searchRange??=makeAttackRange();}}inspect();});
       field(el,'体力',o.hp,1,20,1,n=>o.hp=Math.round(n));
       if(o.program.length)field(el,'動きの速さ',o.program[0].speed,.5,8,.5,n=>{o.program.forEach(b=>b.speed=n);});
+      const rangeApi={save,rebuild:api.refreshRange||rebuild,showRange:key=>{api.showRange?.(key);rangePreview.value=key;}};
+      const rangePreview=selectField(el,'ステージに表示するはんい',[['moveRange','青：動ける場所'],['searchRange','黄色：探す場所'],['attackRange','ピンク：攻撃する場所']],api.getRangeView?.()||'attackRange',key=>api.showRange?.(key));
+      renderEnemyRange(el,o,rangeApi,'moveRange');
+      if(o.program.some(b=>['chase','search'].includes(b.action))){
+        selectField(el,'追いかけ方',Object.entries(CHASE_MODES),o.chaseMode||'always',v=>{o.chaseMode=v;inspect();});
+        renderEnemyRange(el,o,rangeApi,'searchRange');
+        const hint=document.createElement('p');hint.className='component-description';setReadingText(hint,((o.chaseMode||'always')==='always'?'はじめからプレイヤーを追いかけるよ。':o.chaseMode==='remember'?'探す → 見つける → ずっと追いかける。':'探すはんいから出ると追うのをやめるよ。')+'追いかけるときも「動けるマス」の外には出ないよ。');el.append(hint);
+      }
       const attackLabel=document.createElement('label'),attack=document.createElement('input'),attackText=document.createElement('span');attackLabel.className='enemy-attack-toggle';attack.type='checkbox';attack.checked=o.attackEnabled;attack.setAttribute('aria-label','攻撃してくる');setReadingText(attackText,'攻撃してくる');attack.onchange=()=>{o.attackEnabled=attack.checked;save();rebuild();inspect();};attackLabel.append(attack,attackText);el.append(attackLabel);
-      renderAttackRange(el,o,{save,rebuild:api.refreshRange||rebuild});
+      renderAttackRange(el,o,rangeApi);
       if(!o.attackEnabled){const note=document.createElement('p');note.className='component-description';setReadingText(note,'チェックがオフのあいだは、はんいに入っても攻撃しないよ。設定したはんいは残るよ。');el.append(note);}
       if(loop){const d=details('さらに工夫する：うごきを組む',[loop],wasOpen);d.className='advanced-program';el.append(d);}
     }

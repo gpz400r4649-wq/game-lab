@@ -47,3 +47,5 @@ ruby{ruby-position:over}rt{font-size:max(9px,.62em);font-weight:500;letter-spaci
 .enemy-range-dialog>button:not(.primary){margin-bottom:8px}.enemy-range-dialog>.primary{position:sticky;bottom:0;box-shadow:0 -5px 12px #fff}
 
 .enemy-attack-toggle{display:flex;align-items:center;gap:10px;padding:12px 0;cursor:pointer}.enemy-attack-toggle input{width:22px;height:22px;accent-color:#805cdb;flex:none}
+
+.enemy-range-grid button.active{background:var(--range-color,#ef9aae);border-color:#6a7b96}

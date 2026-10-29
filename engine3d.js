@@ -1,18 +1,19 @@
-import {makeAttackRange,validAttackRange,inAttackRange} from './enemy-range3d.js?v=20261029m';
-import {playerGunMuzzle,finitePoint} from './muzzle3d.js?v=20261029m';
-import {validDoor,nearbyDoor,doorwayOccupied,animateDoors} from './doors3d.js?v=20261029m';
-import {nearbyObjects} from './spatial3d.js?v=20261029m';
-import {MAX_PARTS} from './limits3d.js?v=20261029m';
-import {worldSize,worldHalf,coordinateLimit,WORLD_SIZES} from './world3d.js?v=20261029m';
-import {settleLoot} from './loot3d.js?v=20261029m';
-import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261029m';
-import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261029m';
-import {shootVolley,updateCombat,resolveShotOrigin} from './combat3d.js?v=20261029m';
-import {BUILD_TYPES,constructionPart,topAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261029m';
+import {moveEnemy,canEnemyEnter,validEnemyMovement} from './enemy-ai3d.js?v=20261029n';
+import {makeAttackRange,validAttackRange,inAttackRange} from './enemy-range3d.js?v=20261029n';
+import {playerGunMuzzle,finitePoint} from './muzzle3d.js?v=20261029n';
+import {validDoor,nearbyDoor,doorwayOccupied,animateDoors} from './doors3d.js?v=20261029n';
+import {nearbyObjects} from './spatial3d.js?v=20261029n';
+import {MAX_PARTS} from './limits3d.js?v=20261029n';
+import {worldSize,worldHalf,coordinateLimit,WORLD_SIZES} from './world3d.js?v=20261029n';
+import {settleLoot} from './loot3d.js?v=20261029n';
+import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261029n';
+import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261029n';
+import {shootVolley,updateCombat,resolveShotOrigin} from './combat3d.js?v=20261029n';
+import {BUILD_TYPES,constructionPart,topAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261029n';
 export const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export const PARTS={weapon:'銃アイテム',ramp:'スロープ',wall:'壁',floor:'床',roof:'屋根',box:'ブロック',platform:'足場',moving:'動く足場',bounce:'ジャンプ台',enemy:'敵ロボット',star:'星',key:'カギ',door:'ドア',heal:'回復',checkpoint:'セーブポイント',hazard:'ダメージ床',goal:'ゴール'};
-export const BEHAVIORS={chase:'プレイヤーを追いかける',patrol:'左右に動く'};
-export const ENEMY_PRESETS={chase:{name:'追いかける敵',program:[{action:'chase',speed:2}]},patrol:{name:'見はりの敵',program:[{action:'patrol',speed:2}]},still:{name:'動かない',program:[]}};
+export const BEHAVIORS={chase:'プレイヤーを追いかける',patrol:'左右に動く',search:'歩き回って探す'};
+export const ENEMY_PRESETS={chase:{name:'追いかける敵',program:[{action:'chase',speed:2}]},patrol:{name:'左右に歩く',program:[{action:'patrol',speed:2}]},search:{name:'歩き回って探す',program:[{action:'search',speed:2}]},still:{name:'動かない',program:[]}};
 export const WEAPON_PRESETS={standard:{name:'ふつうのブラスター',speed:24,interval:.25,damage:1,spread:1,projectile:'ball',impact:'damage',size:.2,spreadAngle:20,blastRadius:3,range:60,recoil:0,aimJitter:0,pattern:'fan'},rapid:{name:'マシンガンのヒント',speed:40,interval:.08,damage:2,spread:1,projectile:'ball',impact:'damage',size:.15,spreadAngle:10,blastRadius:3,range:30,recoil:4,aimJitter:5,pattern:'fan'},spread:{name:'ひろがる弾のヒント',speed:22,interval:.5,damage:2,spread:5,projectile:'ball',impact:'damage',size:.2,spreadAngle:35,blastRadius:3,range:15,recoil:.6,aimJitter:.7,pattern:'cone'},power:{name:'パワーブラスター',speed:18,interval:.8,damage:10,spread:1,projectile:'ball',impact:'damage',size:.5,spreadAngle:20,blastRadius:3,range:40,recoil:.2,aimJitter:.3,pattern:'fan'},rocket:{name:'ロケットランチャーのヒント',speed:18,interval:.8,damage:20,spread:1,projectile:'rocket',impact:'explode',size:.5,spreadAngle:0,blastRadius:4,range:45,recoil:.2,aimJitter:.3,pattern:'fan'}};
 export const CONDITION_NAMES={unset:'クリア条件をえらぶ',touch:'そのまま',stars:'星を集めたら',keys:'カギを集めたら',enemies:'敵を全員たおしたら'};
 const solidTypes=new Set(['box','platform','moving','door','wall','floor','roof','ramp']);
@@ -29,6 +30,7 @@ export function validate3D(data){
   if(Array.isArray(p.loadout))p.loadout.forEach(upgradeTool);
   if(!Array.isArray(p.loadout)||!p.loadout.length||p.loadout.length>8||!p.loadout.every(validTool)||new Set(p.loadout.map(t=>t.id)).size!==p.loadout.length)throw Error('持ちものの設定を確認してください');
   const ids=new Set();for(const o of p.objects){
+    if(!validEnemyMovement(o)||!validAttackRange(o.moveRange)||!validAttackRange(o.searchRange))throw Error('敵の移動・探すはんいを確認してください');
     if(o.attackRange!==undefined&&(o.type!=='enemy'||!validAttackRange(o.attackRange)))throw Error('敵の射撃はんいを確認してください');
     if(!validDoor(o))throw Error('ドアの設定を確認してください');
     if(!validEvents(o))throw Error('イベントの設定を確認してください');
@@ -78,7 +80,7 @@ export function movePlayer(p,objects,dx,dz,dt,jump,world=60){
 
 // Convert the former shooting behavior without changing saved movement or range.
 export function upgradeEnemy(o){if(o.type!=='enemy')return o;const shot=o.program.find(b=>b.action==='shoot');o.attackEnabled??=!!shot;o.attackSpeed??=shot?.speed??3;o.program=o.program.filter(b=>b.action!=='shoot');return o;}
-export function create3D(p){const inventory=(p.loadout||[]).filter(t=>!t.pickupOnly).map(t=>t.id);return {inventoryCounts:Object.fromEntries(inventory.map(id=>[id,1])),buildSelection:{},worldSize:worldSize(p),inventory,toolCatalog:structuredClone(p.loadout||[]),drops:[],blockInventory:[],blockEquipped:null,player:{...p.spawn,vy:0,grounded:true,hp:5,invincible:0},objects:structuredClone(p.objects).map(upgradeEnemy).map(o=>({...o,maxHp:o.hp,settings:o.settings||settingsFor(o.type),origin:{x:o.x,y:o.y,z:o.z},hidden:o.type==='enemy'&&o.startsHidden===true})),bullets:[],effects:[],hitInfo:null,buildings:[],recoilPitch:0,equipped:p.loadout?p.loadout.findIndex(t=>inventory.includes(t.id)):0,time:0,cooldown:0,score:0,stars:0,keys:0,checkpoint:null,message:'',messageId:0,state:'playing'};}
+export function create3D(p){const inventory=(p.loadout||[]).filter(t=>!t.pickupOnly).map(t=>t.id);return {inventoryCounts:Object.fromEntries(inventory.map(id=>[id,1])),buildSelection:{},worldSize:worldSize(p),inventory,toolCatalog:structuredClone(p.loadout||[]),drops:[],blockInventory:[],blockEquipped:null,player:{...p.spawn,vy:0,grounded:true,hp:5,invincible:0},objects:structuredClone(p.objects).map(upgradeEnemy).map(o=>({...o,foundPlayer:false,navigation:null,roamTarget:null,previousRoamCell:null,roamStep:0,maxHp:o.hp,settings:o.settings||settingsFor(o.type),origin:{x:o.x,y:o.y,z:o.z},hidden:o.type==='enemy'&&o.startsHidden===true})),bullets:[],effects:[],hitInfo:null,buildings:[],recoilPitch:0,equipped:p.loadout?p.loadout.findIndex(t=>inventory.includes(t.id)):0,time:0,cooldown:0,score:0,stars:0,keys:0,checkpoint:null,message:'',messageId:0,state:'playing'};}
 export function conditionMet(o,g){const s=o.settings||settingsFor(o.type);return s.condition==='touch'||(s.condition==='stars'&&g.stars>=s.required)||(s.condition==='keys'&&g.keys>=s.required)||(s.condition==='enemies'&&!g.objects.some(x=>x.type==='enemy'&&x.hp>0));}
 export function conditionHint(o,g){const s=o.settings||settingsFor(o.type);if(s.condition==='unset')return 'クリア条件が未設定';if(s.condition==='touch')return o.type==='door'?'いつでも':'ふれるだけ';if(s.condition==='enemies')return `のこりの敵 ${g.objects.filter(x=>x.type==='enemy'&&x.hp>0).length} 体`;return `${s.condition==='stars'?'星':'カギ'} ${s.condition==='stars'?g.stars:g.keys} / ${s.required}`;}
 function inside(b,o,r=0){return Math.abs(b.x-o.x)<o.w/2+r&&Math.abs(b.z-o.z)<o.d/2+r&&b.y>o.y-r&&b.y<topAt(o,b.x,b.z)+r;}
@@ -97,10 +99,9 @@ export function step3D(g,p,input,dt){
     else {const shot=safeShot(tool),eye={x:player.x,y:player.y+1.35,z:player.z},candidate=typeof input.getShotOrigin==='function'?input.getShotOrigin(player):null,muzzle=finitePoint(candidate)&&Math.hypot(candidate.x-eye.x,candidate.y-eye.y,candidate.z-eye.z)<=3?candidate:playerGunMuzzle(player,tool,yaw),origin=resolveShotOrigin(g,eye,muzzle,shot.radius),direction=finitePoint(input.aimTarget)?{x:input.aimTarget.x-origin.x,y:input.aimTarget.y-origin.y,z:input.aimTarget.z-origin.z}:input.aim||{x:-Math.sin(yaw)*Math.cos(g.recoilPitch),y:Math.sin(g.recoilPitch),z:-Math.cos(yaw)*Math.cos(g.recoilPitch)},count=shootVolley(g,origin,direction,tool);if(count)g.recoilPitch=Math.min(12*Math.PI/180,g.recoilPitch+shot.recoil*Math.PI/180);g.cooldown=shot.interval;}
   }
   for(const o of g.objects)if(o.type==='enemy'&&!o.hidden){const walls=solids(nearbyObjects(g,o.x-1,o.z-1,o.x+1,o.z+1));
-    o.cooldown=Math.max(0,(o.cooldown||0)-dt);for(const b of o.program){const dx=player.x-o.x,dz=player.z-o.z,d=Math.hypot(dx,dz)||1;let mx=0,mz=0;
-      if(b.action==='chase'){mx=dx/d*b.speed*dt;mz=dz/d*b.speed*dt;}if(b.action==='patrol')mx=Math.cos(g.time)*b.speed*dt;
-      if(mx||mz){const body={x:o.x+mx,y:o.y,z:o.z};if(!walls.some(w=>inside({...body,y:o.y+.9},w,.55)))o.x=clamp(body.x,-limit,limit);body.x=o.x;body.z+=mz;if(!walls.some(w=>inside({...body,y:o.y+.9},w,.55)))o.z=clamp(body.z,-limit,limit);}
-    }
+    o.cooldown=Math.max(0,(o.cooldown||0)-dt);
+    const tryMove=(mx,mz)=>{const body={x:o.x+mx,y:o.y,z:o.z};if(canEnemyEnter(o,body)&&!walls.some(w=>inside({...body,y:o.y+.9},w,.55)))o.x=clamp(body.x,-limit,limit);body.x=o.x;body.z+=mz;if(canEnemyEnter(o,body)&&!walls.some(w=>inside({...body,y:o.y+.9},w,.55)))o.z=clamp(body.z,-limit,limit);};
+    for(const b of o.program)moveEnemy(o,b,player,dt,g.time,tryMove);
     if(o.attackEnabled&&inAttackRange(o,player)){
       if(o.cooldown<=0){shootVolley(g,{x:o.x,y:o.y+1.1,z:o.z},{x:player.x-o.x,y:player.y+.9-(o.y+1.1),z:player.z-o.z},{speed:o.attackSpeed+5,damage:1,spread:1},true);o.cooldown=1.4;}
       if(Math.hypot(o.x-player.x,o.z-player.z)<1&&Math.abs(o.y-player.y)<1.7&&player.invincible<=0){player.hp--;player.invincible=1;}

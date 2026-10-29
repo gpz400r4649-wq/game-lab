@@ -1,6 +1,6 @@
-import {DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261029m';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261029m';
-import {EVENT_TYPES,EVENT_LIMIT,ACTION_NAMES,AMOUNT_ACTIONS,TARGET_ACTIONS,actionsFor,newAction} from './events3d.js?v=20261029m';
+import {DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261029n';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261029n';
+import {EVENT_TYPES,EVENT_LIMIT,ACTION_NAMES,AMOUNT_ACTIONS,TARGET_ACTIONS,actionsFor,newAction} from './events3d.js?v=20261029n';
 
 export function renderEventEditor(parent,o,p,{selectField,field,save,rebuild,inspect,partNames}){
   const destroying=DESTRUCTIBLE_TYPES.has(o.type);if(o.type==='weapon'||(!destroying&&!EVENT_TYPES.has(o.type)))return;
