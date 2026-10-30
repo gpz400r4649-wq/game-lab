@@ -1,16 +1,16 @@
-import {validLibrary} from './assets3d.js?v=20261030i';
-import {moveEnemy,canEnemyEnter,validEnemyMovement} from './enemy-ai3d.js?v=20261030i';
-import {worldMoveRange,validMoveRange,makeAttackRange,validAttackRange,inAttackRange} from './enemy-range3d.js?v=20261030i';
-import {playerGunMuzzle,finitePoint} from './muzzle3d.js?v=20261030i';
-import {validDoor,nearbyDoor,doorwayOccupied,animateDoors} from './doors3d.js?v=20261030i';
-import {nearbyObjects} from './spatial3d.js?v=20261030i';
-import {MAX_PARTS} from './limits3d.js?v=20261030i';
-import {worldSize,worldHalf,coordinateLimit,WORLD_SIZES} from './world3d.js?v=20261030i';
-import {settleLoot} from './loot3d.js?v=20261030i';
-import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261030i';
-import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261030i';
-import {shootVolley,updateCombat,resolveShotOrigin} from './combat3d.js?v=20261030i';
-import {BUILD_TYPES,constructionPart,topAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261030i';
+import {validLibrary} from './assets3d.js?v=20261030j';
+import {moveEnemy,canEnemyEnter,validEnemyMovement} from './enemy-ai3d.js?v=20261030j';
+import {worldMoveRange,validMoveRange,makeAttackRange,validAttackRange,inAttackRange,enemyYaw} from './enemy-range3d.js?v=20261030j';
+import {playerGunMuzzle,finitePoint} from './muzzle3d.js?v=20261030j';
+import {validDoor,nearbyDoor,doorwayOccupied,animateDoors} from './doors3d.js?v=20261030j';
+import {nearbyObjects} from './spatial3d.js?v=20261030j';
+import {MAX_PARTS} from './limits3d.js?v=20261030j';
+import {worldSize,worldHalf,coordinateLimit,WORLD_SIZES} from './world3d.js?v=20261030j';
+import {settleLoot} from './loot3d.js?v=20261030j';
+import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261030j';
+import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261030j';
+import {shootVolley,updateCombat,resolveShotOrigin} from './combat3d.js?v=20261030j';
+import {BUILD_TYPES,constructionPart,topAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261030j';
 export const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export const PARTS={weapon:'銃アイテム',ramp:'スロープ',wall:'壁',floor:'床',roof:'屋根',box:'ブロック',platform:'足場',moving:'動く足場',bounce:'ジャンプ台',enemy:'敵ロボット',star:'星',key:'カギ',door:'ドア',heal:'回復',checkpoint:'セーブポイント',hazard:'ダメージ床',goal:'ゴール'};
 export const BEHAVIORS={chase:'プレイヤーを追いかける',patrol:'左右に動く',search:'歩き回って探す'};
@@ -40,7 +40,7 @@ export function validate3D(data){
     if(o.rotation!==undefined&&!(o.type==='ramp'?[0,90,180,270]:[0,90]).includes(o.rotation))throw Error('部品の向きを確認してください');
     if(!Object.hasOwn(PARTS,o.type)||typeof o.id!=='string'||ids.has(o.id)||!['x','z'].every(k=>number(o[k],-limit,limit))||!number(o.y,0,12)||!sizes||!Number.isInteger(o.hp)||!number(o.hp,1,DESTRUCTIBLE_TYPES.has(o.type)?200:20)||!Array.isArray(o.program)||o.program.length>8)throw Error('パーツの設定を確認してください');ids.add(o.id);if(DESTRUCTIBLE_TYPES.has(o.type)){if(o.destructible===undefined)o.destructible=true;if(typeof o.destructible!=='boolean')throw Error('ブロックの体力設定を確認してください');}
     for(const b of o.program)if((!Object.hasOwn(BEHAVIORS,b.action)&&b.action!=='shoot')||!number(b.speed,.5,8))throw Error('うごきの設定を確認してください');
-    if(o.type==='enemy'){if(o.attackEnabled!==undefined&&typeof o.attackEnabled!=='boolean'||o.attackSpeed!==undefined&&!number(o.attackSpeed,.5,8)||o.enemyWeaponId!==undefined&&typeof o.enemyWeaponId!=='string')throw Error('敵の攻撃設定を確認してください');upgradeEnemy(o);}
+    if(o.type==='enemy'){if(o.facing!==undefined&&![0,90,180,270].includes(o.facing))throw Error('敵の向きを確認してください');if(o.attackEnabled!==undefined&&typeof o.attackEnabled!=='boolean'||o.attackSpeed!==undefined&&!number(o.attackSpeed,.5,8)||o.enemyWeaponId!==undefined&&typeof o.enemyWeaponId!=='string')throw Error('敵の攻撃設定を確認してください');upgradeEnemy(o);}
     if(o.settings===undefined)o.settings=settingsFor(o.type);
     const s=o.settings;if(!s||!['x','y','z'].includes(s.axis)||!number(s.distance,.5,8)||!number(s.speed,.5,5)||!Number.isInteger(s.value)||!number(s.value,1,20)||!Object.hasOwn(CONDITION_NAMES,s.condition)||!Number.isInteger(s.required)||!number(s.required,1,20))throw Error('しかけの設定を確認してください');
   }return p;
@@ -83,7 +83,7 @@ export function movePlayer(p,objects,dx,dz,dt,jump,world=60){
 // Convert the former shooting behavior without changing saved movement or range.
 export function upgradeEnemy(o){if(o.type!=='enemy')return o;if(o.moveRange)o.moveRange=worldMoveRange(o.moveRange,o);const shot=o.program.find(b=>b.action==='shoot');o.attackEnabled??=!!shot;o.attackSpeed??=shot?.speed??3;o.program=o.program.filter(b=>b.action!=='shoot');return o;}
 export function enemyWeapon(o,catalog=[]){return catalog.find(t=>t.id===o.enemyWeaponId&&t.effect==='shoot')||null;}
-export function create3D(p){const inventory=(p.loadout||[]).filter(t=>!t.pickupOnly).map(t=>t.id);return {inventoryCounts:Object.fromEntries(inventory.map(id=>[id,1])),buildSelection:{},worldSize:worldSize(p),inventory,toolCatalog:structuredClone(p.loadout||[]),drops:[],blockInventory:[],blockEquipped:null,player:{...p.spawn,vy:0,grounded:true,hp:5,invincible:0},objects:structuredClone(p.objects).map(upgradeEnemy).map(o=>({...o,foundPlayer:false,navigation:null,roamTarget:null,previousRoamCell:null,roamStep:0,maxHp:o.hp,settings:o.settings||settingsFor(o.type),origin:{x:o.x,y:o.y,z:o.z},hidden:o.type==='enemy'&&o.startsHidden===true})),bullets:[],effects:[],hitInfo:null,buildings:[],recoilPitch:0,equipped:p.loadout?p.loadout.findIndex(t=>inventory.includes(t.id)):0,time:0,cooldown:0,score:0,stars:0,keys:0,checkpoint:null,message:'',messageId:0,state:'playing'};}
+export function create3D(p){const inventory=(p.loadout||[]).filter(t=>!t.pickupOnly).map(t=>t.id);return {inventoryCounts:Object.fromEntries(inventory.map(id=>[id,1])),buildSelection:{},worldSize:worldSize(p),inventory,toolCatalog:structuredClone(p.loadout||[]),drops:[],blockInventory:[],blockEquipped:null,player:{...p.spawn,vy:0,grounded:true,hp:5,invincible:0},objects:structuredClone(p.objects).map(upgradeEnemy).map(o=>({...o,heading:(o.facing||0)*Math.PI/180,foundPlayer:false,navigation:null,roamTarget:null,previousRoamCell:null,roamStep:0,maxHp:o.hp,settings:o.settings||settingsFor(o.type),origin:{x:o.x,y:o.y,z:o.z},hidden:o.type==='enemy'&&o.startsHidden===true})),bullets:[],effects:[],hitInfo:null,buildings:[],recoilPitch:0,equipped:p.loadout?p.loadout.findIndex(t=>inventory.includes(t.id)):0,time:0,cooldown:0,score:0,stars:0,keys:0,checkpoint:null,message:'',messageId:0,state:'playing'};}
 export function conditionMet(o,g){const s=o.settings||settingsFor(o.type);return s.condition==='touch'||(s.condition==='stars'&&g.stars>=s.required)||(s.condition==='keys'&&g.keys>=s.required)||(s.condition==='enemies'&&!g.objects.some(x=>x.type==='enemy'&&x.hp>0));}
 export function conditionHint(o,g){const s=o.settings||settingsFor(o.type);if(s.condition==='unset')return 'クリア条件が未設定';if(s.condition==='touch')return o.type==='door'?'いつでも':'ふれるだけ';if(s.condition==='enemies')return `のこりの敵 ${g.objects.filter(x=>x.type==='enemy'&&x.hp>0).length} 体`;return `${s.condition==='stars'?'星':'カギ'} ${s.condition==='stars'?g.stars:g.keys} / ${s.required}`;}
 function inside(b,o,r=0){return Math.abs(b.x-o.x)<o.w/2+r&&Math.abs(b.z-o.z)<o.d/2+r&&b.y>o.y-r&&b.y<topAt(o,b.x,b.z)+r;}
@@ -103,10 +103,10 @@ export function step3D(g,p,input,dt){
   }
   for(const o of g.objects)if(o.type==='enemy'&&!o.hidden){const walls=solids(nearbyObjects(g,o.x-1,o.z-1,o.x+1,o.z+1));
     o.cooldown=Math.max(0,(o.cooldown||0)-dt);
-    const tryMove=(mx,mz)=>{const body={x:o.x+mx,y:o.y,z:o.z};if(canEnemyEnter(o,body)&&!walls.some(w=>inside({...body,y:o.y+.9},w,.55)))o.x=clamp(body.x,-limit,limit);body.x=o.x;body.z+=mz;if(canEnemyEnter(o,body)&&!walls.some(w=>inside({...body,y:o.y+.9},w,.55)))o.z=clamp(body.z,-limit,limit);};
+    const tryMove=(mx,mz)=>{const beforeX=o.x,beforeZ=o.z,body={x:o.x+mx,y:o.y,z:o.z};if(canEnemyEnter(o,body)&&!walls.some(w=>inside({...body,y:o.y+.9},w,.55)))o.x=clamp(body.x,-limit,limit);body.x=o.x;body.z+=mz;if(canEnemyEnter(o,body)&&!walls.some(w=>inside({...body,y:o.y+.9},w,.55)))o.z=clamp(body.z,-limit,limit);if(Math.hypot(o.x-beforeX,o.z-beforeZ)>.000001)o.heading=Math.atan2(-(o.x-beforeX),-(o.z-beforeZ));};
     for(const b of o.program)moveEnemy(o,b,player,dt,g.time,tryMove);
     if(o.attackEnabled&&inAttackRange(o,player)){
-      if(o.cooldown<=0){const weapon=enemyWeapon(o,p.loadout),shot=weapon?safeShot(weapon):null,start={x:o.x,y:o.y+1.1,z:o.z},yaw=Math.atan2(player.x-o.x,player.z-o.z)+Math.PI,origin=weapon?resolveShotOrigin(g,start,playerGunMuzzle(o,weapon,yaw),shot.radius,o.id):start;shootVolley(g,origin,{x:player.x-origin.x,y:player.y+.9-origin.y,z:player.z-origin.z},weapon||{speed:o.attackSpeed+5,damage:1,spread:1},true);o.cooldown=shot?.interval??1.4;}
+      if(o.cooldown<=0){const weapon=enemyWeapon(o,p.loadout),shot=weapon?safeShot(weapon):null,start={x:o.x,y:o.y+1.1,z:o.z},yaw=enemyYaw(o,player),origin=weapon?resolveShotOrigin(g,start,playerGunMuzzle(o,weapon,yaw),shot.radius,o.id):start;shootVolley(g,origin,{x:player.x-origin.x,y:player.y+.9-origin.y,z:player.z-origin.z},weapon||{speed:o.attackSpeed+5,damage:1,spread:1},true);o.cooldown=shot?.interval??1.4;}
       if(Math.hypot(o.x-player.x,o.z-player.z)<1&&Math.abs(o.y-player.y)<1.7&&player.invincible<=0){player.hp--;player.invincible=1;}
     }}
   updateCombat(g,dt);settleLoot(g,dt);

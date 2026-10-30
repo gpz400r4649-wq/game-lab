@@ -60,3 +60,13 @@ test('広いマップの移動スティックはサイドパネル内でも動�
  const s=setup(t,'moveRange',null,960),panel=s.open(),stick=all(panel).find(n=>n.getAttribute?.('aria-label')==='マップ移動スティック'),grid=all(panel).find(n=>n.classList?.contains('move-world-grid')),first=grid.children[0].getAttribute('aria-label');
  stick.onpointerdown({pointerId:1,clientX:82,clientY:50,preventDefault(){}});for(const time of [100,132,164]){const [id,callback]=s.frames.entries().next().value;s.frames.delete(id);callback(time);}assert.notEqual(grid.children[0].getAttribute('aria-label'),first);assert.deepEqual(s.o,s.before);assert.equal(s.calls.save,0);assert.ok(s.frames.size>0);closeLiveRangeEditor();assert.equal(s.frames.size,0);assert.equal(isLiveRangeEditing(),false);
 });
+
+for(const key of ['searchRange','attackRange']){
+ test(`${key}: エリア指定と向き指定を切り替え、編集パネルと現在のマスを維持する`,t=>{
+  const range={shape:'custom',cross:4,circle:4,cells:[[0,-1],[1,-1]]},s=setup(t,key,range);s.open();let panel=s.doc.querySelector('.range-live-panel'),mode=all(panel).find(n=>n.getAttribute?.('aria-label')==='はんいの決め方');mode.value='world';mode.onchange();assert.equal(s.o[key].space,'world');assert.deepEqual(s.o[key].cells,[[2,1],[3,1]]);panel=s.doc.querySelector('.range-live-panel');assert.ok(all(panel).some(n=>n.classList?.contains('move-world-grid')));assert.equal(all(s.doc.body).filter(n=>n.classList?.contains('range-live-panel')).length,1);
+  mode=all(panel).find(n=>n.getAttribute?.('aria-label')==='はんいの決め方');mode.value='facing';mode.onchange();assert.equal(s.o[key].space,'facing');assert.deepEqual(s.o[key].cells,range.cells);panel=s.doc.querySelector('.range-live-panel');const rotate=all(panel).find(n=>n.tagName==='button'&&n.textContent.startsWith('↻'));const before=structuredClone(s.o[key]);rotate.onclick();assert.equal(s.o.facing,90);assert.deepEqual(s.o[key],before);assert.equal(s.calls.save,3);assert.ok(isLiveRangeEditing());finish(panel);assert.equal(isLiveRangeEditing(),false);
+ });
+ test(`${key}: 遠いエリアを向き指定へ変えるとき、範囲外のマスを削除しない`,t=>{
+  const range={space:'world',cells:[[30,30]]},s=setup(t,key,range,960),panel=s.open(),mode=all(panel).find(n=>n.getAttribute?.('aria-label')==='はんいの決め方');mode.value='facing';mode.onchange();assert.equal(mode.value,'world');assert.deepEqual(s.o[key],range);assert.equal(s.calls.save,0);assert.equal(s.doc.querySelector('.range-live-panel'),panel);assert.ok(all(panel).some(n=>n.tagName==='p'&&!n.hidden&&n.textContent.includes('していないよ')));
+ });
+}

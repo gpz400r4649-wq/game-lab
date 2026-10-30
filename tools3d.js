@@ -1,9 +1,9 @@
-import {appearanceFor,GUN_SHAPES,GUN_COLORS,gunPreviewSVG} from './appearance3d.js?v=20261030i';
-import {bindGameAction} from './input3d.js?v=20261030i';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261030i';
-import {LIMITS,PROJECTILES,IMPACTS,impactEffects,weaponPresetKey,SHOT_PATTERNS,cadenceHandling} from './weapons3d.js?v=20261030i';
-import {buildChoices,activeBuildTool,cycleBuildType,facingBuildRotation,makeTool,TOOL_EFFECTS,BUILD_TYPES,equipTool,keepStructures,equipBlock} from './building3d.js?v=20261030i';
-import {WEAPON_PRESETS,PARTS} from './engine3d.js?v=20261030i';
+import {appearanceFor,GUN_SHAPES,GUN_COLORS,gunPreviewSVG} from './appearance3d.js?v=20261030j';
+import {bindGameAction} from './input3d.js?v=20261030j';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261030j';
+import {LIMITS,PROJECTILES,IMPACTS,impactEffects,weaponPresetKey,SHOT_PATTERNS,cadenceHandling} from './weapons3d.js?v=20261030j';
+import {buildChoices,activeBuildTool,cycleBuildType,facingBuildRotation,makeTool,TOOL_EFFECTS,BUILD_TYPES,equipTool,keepStructures,equipBlock} from './building3d.js?v=20261030j';
+import {WEAPON_PRESETS,PARTS} from './engine3d.js?v=20261030j';
 export function createToolsUI(api){
   const {$,getProject,getGame,getMode,field,save,refresh,finishBuilding}=api;
   let editing=0,rotation=0,level=0;

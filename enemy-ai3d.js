@@ -1,9 +1,9 @@
-import {rangeCell,inGridRange,movementCenter} from './enemy-range3d.js?v=20261030i';
+import {rangeCell,inGridRange,inEnemyRange,movementCenter} from './enemy-range3d.js?v=20261030j';
 const CELL=4,neighbors=[[0,-1],[1,0],[0,1],[-1,0]];
 export const CHASE_MODES={always:'はじめから、ずっと追いかける',inside:'探すはんいにいる間だけ追いかける',remember:'見つけたら、ずっと追いかける'};
 export function validEnemyMovement(o){return (o.chaseMode===undefined||Object.hasOwn(CHASE_MODES,o.chaseMode));}
 export function canEnemyEnter(o,point){return !o.moveRange||inGridRange(o.moveRange,movementCenter(o),point);}
-export function detectsPlayer(o,player){return o.searchRange?inGridRange(o.searchRange,o,player):Math.hypot(player.x-o.x,player.z-o.z)<18;}
+export function detectsPlayer(o,player){return o.searchRange?inEnemyRange(o.searchRange,o,player):Math.hypot(player.x-o.x,player.z-o.z)<18;}
 function route(o,target,r){
  const origin=movementCenter(o),ox=rangeCell(origin.x),oz=rangeCell(origin.z),sx=rangeCell(o.x)-ox,sz=rangeCell(o.z)-oz,allowed=new Set(r.cells.map(c=>c.join(','))),start=`${sx},${sz}`;
  if(!allowed.has(start))return [];

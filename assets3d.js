@@ -1,9 +1,9 @@
-import {validAttackRange,validMoveRange,worldMoveRange} from './enemy-range3d.js?v=20261030i';
+import {validAttackRange,validMoveRange,worldMoveRange} from './enemy-range3d.js?v=20261030j';
 export const ASSET_LIMITS={ranges:64,enemies:32};
-const keys=['hp','program','attackEnabled','enemyWeaponId','attackSpeed','attackRange','searchRange','moveRange','chaseMode'];
+const keys=['hp','facing','program','attackEnabled','enemyWeaponId','attackSpeed','attackRange','searchRange','moveRange','chaseMode'];
 const named=a=>a&&typeof a.id==='string'&&a.id.length>0&&a.id.length<=80&&typeof a.name==='string'&&a.name.trim().length>0&&a.name.length<=32;
 const number=(n,min,max)=>Number.isFinite(n)&&n>=min&&n<=max;
-export function validEnemyConfig(c){return !!c&&Number.isInteger(c.hp)&&number(c.hp,1,20)&&Array.isArray(c.program)&&c.program.length<=8&&c.program.every(b=>b&&['chase','patrol','search'].includes(b.action)&&number(b.speed,.5,8))&&(c.attackEnabled===undefined||typeof c.attackEnabled==='boolean')&&(c.enemyWeaponId===undefined||typeof c.enemyWeaponId==='string')&&(c.attackSpeed===undefined||number(c.attackSpeed,.5,8))&&(c.chaseMode===undefined||['always','inside','remember'].includes(c.chaseMode))&&validAttackRange(c.attackRange)&&validAttackRange(c.searchRange)&&validMoveRange(c.moveRange);}
+export function validEnemyConfig(c){return !!c&&(c.facing===undefined||[0,90,180,270].includes(c.facing))&&Number.isInteger(c.hp)&&number(c.hp,1,20)&&Array.isArray(c.program)&&c.program.length<=8&&c.program.every(b=>b&&['chase','patrol','search'].includes(b.action)&&number(b.speed,.5,8))&&(c.attackEnabled===undefined||typeof c.attackEnabled==='boolean')&&(c.enemyWeaponId===undefined||typeof c.enemyWeaponId==='string')&&(c.attackSpeed===undefined||number(c.attackSpeed,.5,8))&&(c.chaseMode===undefined||['always','inside','remember'].includes(c.chaseMode))&&validAttackRange(c.attackRange)&&validAttackRange(c.searchRange)&&validMoveRange(c.moveRange);}
 export function validLibrary(lib){
  if(lib===undefined)return true;if(!lib||!Array.isArray(lib.ranges)||!Array.isArray(lib.enemies)||lib.ranges.length>ASSET_LIMITS.ranges||lib.enemies.length>ASSET_LIMITS.enemies)return false;
  const all=[...lib.ranges,...lib.enemies];if(!all.every(named)||new Set(all.map(a=>a.id)).size!==all.length)return false;
