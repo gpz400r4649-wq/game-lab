@@ -15,21 +15,23 @@ class Element {
  closest(query){return query.split(',').some(t=>t.trim()===this.tagName)?this:this.parentElement?.closest(query)||null;}
  querySelector(query){return all(this).find(n=>query.startsWith('.')?n.className.split(' ').includes(query.slice(1)):n.tagName===query);}
  get options(){return this.children;}add(option){this.append(option);}
+ get isConnected(){return this===this.ownerDocument.body||!!this.parentElement?.isConnected;}
+ getBoundingClientRect(){return {left:0,top:0,width:100,height:100};}setPointerCapture(){}
  focus(){this.ownerDocument.activeElement=this;}
  showModal(){this.open=true;}close(){this.open=false;}remove(){this.parentElement.children=this.parentElement.children.filter(n=>n!==this);}
 }
 function finish(root){if(root.tagName==='dialog')root.oncancel({preventDefault(){}});else all(root).find(n=>n.classList?.contains('primary')).onclick();}
 function all(root){return root.children.flatMap(n=>[n,...all(n)]);}
-function setup(t,key,range){
- const old={document:globalThis.document,Option:globalThis.Option,cancelAnimationFrame:globalThis.cancelAnimationFrame};
- const doc=new EventTarget();doc.defaultView=new EventTarget();doc.createElement=tag=>new Element(tag,doc);doc.createTextNode=value=>({textContent:String(value),children:[]});doc.body=doc.createElement('body');doc.querySelector=query=>doc.body.querySelector(query);const main=doc.createElement('main'),aside=doc.createElement('aside');aside.scrollTop=140;main.append(aside);doc.body.append(main);
- globalThis.document=doc;globalThis.Option=function(text,value){const o=doc.createElement('option');o.textContent=text;o.value=value;return o;};globalThis.cancelAnimationFrame=()=>{};
+function setup(t,key,range,worldSize=60){
+ const old={document:globalThis.document,Option:globalThis.Option,cancelAnimationFrame:globalThis.cancelAnimationFrame,requestAnimationFrame:globalThis.requestAnimationFrame};
+ const frames=new Map();let frameId=0;const doc=new EventTarget();doc.defaultView=new EventTarget();doc.createElement=tag=>new Element(tag,doc);doc.createTextNode=value=>({textContent:String(value),children:[]});doc.body=doc.createElement('body');doc.querySelector=query=>doc.body.querySelector(query);const main=doc.createElement('main'),aside=doc.createElement('aside');aside.scrollTop=140;main.append(aside);doc.body.append(main);
+ globalThis.document=doc;globalThis.Option=function(text,value){const o=doc.createElement('option');o.textContent=text;o.value=value;return o;};globalThis.cancelAnimationFrame=id=>frames.delete(id);globalThis.requestAnimationFrame=fn=>{frames.set(++frameId,fn);return frameId;};
  t.after(()=>{closeLiveRangeEditor();Object.assign(globalThis,old);});
  const o={type:'enemy',x:8,z:8,...(range?{[key]:structuredClone(range)}:{})},before=structuredClone(o),calls={save:0,rebuild:0,view:[]},parent=doc.createElement('div');
- renderEnemyRange(parent,o,{save:()=>calls.save++,rebuild:()=>calls.rebuild++,showRange:k=>calls.view.push(k),getRangeView:()=>key,getProject:()=>({worldSize:60,spawn:{x:0,z:0}})},key);
+ renderEnemyRange(parent,o,{save:()=>calls.save++,rebuild:()=>calls.rebuild++,showRange:k=>calls.view.push(k),getRangeView:()=>key,getProject:()=>({worldSize,spawn:{x:0,z:0}})},key);
  const row=parent.children[0],preview=row.children[0],edit=row.children[1];
  const open=()=>{edit.onclick();return all(doc.body).find(n=>n.tagName==='dialog'||n.classList?.contains('range-live-panel'));};
- return {o,before,calls,doc,aside,main,preview,open};
+ return {o,before,calls,doc,aside,main,preview,open,frames};
 }
 for(const key of ['moveRange','searchRange','attackRange']){
  test(`${key}: ステージ表示は編集画面を開かず、設定も保存しない`,t=>{
@@ -37,7 +39,7 @@ for(const key of ['moveRange','searchRange','attackRange']){
  });
  for(const configured of [false,true])test(`${key}: ${configured?'設定済み':'未設定'}の範囲を開いて閉じても設定が変わらず、最初のフォーカスは見出し`,t=>{
   const range=key==='moveRange'?{space:'world',cells:[[1,1],[2,1]]}:makeAttackRange('cross',3,2),s=setup(t,key,configured?range:null),dialog=s.open();
-  assert.ok(key==='moveRange'?dialog.open:isLiveRangeEditing());const shape=all(dialog).find(n=>n.getAttribute?.('aria-label')==='はんいの形');assert.equal(shape.value,configured&&key!=='moveRange'?'cross':'custom');assert.equal(shape.options.length,4);assert.ok(shape.options.every(option=>option.value!==''));const heading=all(dialog).find(n=>n.tagName==='h2');assert.equal(heading.tagName,'h2');assert.equal(heading.getAttribute('autofocus'),'');assert.equal(heading.getAttribute('tabindex'),'-1');assert.ok(!all(dialog).some(n=>n.tagName==='select'&&n.getAttribute('autofocus')!==null));assert.deepEqual(s.o,s.before);assert.equal(s.calls.save,0);assert.equal(s.calls.rebuild,0);
+  assert.ok(isLiveRangeEditing());const shape=all(dialog).find(n=>n.getAttribute?.('aria-label')==='はんいの形');assert.equal(shape.value,configured&&key!=='moveRange'?'cross':'custom');assert.equal(shape.options.length,4);assert.equal(shape.closest('details'),null);assert.ok(shape.options.every(option=>option.value!==''));const heading=all(dialog).find(n=>n.tagName==='h2');assert.equal(heading.tagName,'h2');assert.equal(heading.getAttribute('autofocus'),'');assert.equal(heading.getAttribute('tabindex'),'-1');assert.ok(!all(dialog).some(n=>n.tagName==='select'&&n.getAttribute('autofocus')!==null));assert.deepEqual(s.o,s.before);assert.equal(s.calls.save,0);assert.equal(s.calls.rebuild,0);
   finish(dialog);assert.deepEqual(s.o,s.before);assert.equal(s.calls.save,0);
  });
  test(`${key}: マスを押した時だけ設定が作られ、再編集でも保たれる`,t=>{
@@ -49,7 +51,12 @@ for(const key of ['moveRange','searchRange','attackRange']){
  });
 }
 
-for(const key of ['searchRange','attackRange'])test(`${key}: ステージを遮らないサイドパネルで即時反映し、視点を変えても開いたままになる`,t=>{
+for(const key of ['moveRange','searchRange','attackRange'])test(`${key}: ステージを遮らないサイドパネルで即時反映し、視点を変えても開いたままになる`,t=>{
  const s=setup(t,key),panel=s.open();assert.equal(panel.parentElement,s.aside);assert.equal(panel.getAttribute('role'),'region');assert.equal(all(s.doc.body).some(n=>n.tagName==='dialog'),false);assert.ok(s.main.classList.contains('range-editing'));assert.equal(s.aside.scrollTop,0);assert.equal(s.doc.activeElement.tagName,'h2');
  const view=panel.children.find(n=>n.tagName==='button');view.onclick();assert.ok(isLiveRangeEditing());const cell=all(panel).find(n=>n.tagName==='button'&&n.getAttribute('aria-pressed')==='false');cell.onclick();assert.equal(s.calls.rebuild,1);assert.equal(s.o[key].cells.length,1);closeLiveRangeEditor();assert.equal(isLiveRangeEditing(),false);assert.ok(!s.main.classList.contains('range-editing'));assert.ok(!s.aside.classList.contains('is-range-editing'));assert.equal(s.aside.scrollTop,140);closeLiveRangeEditor();assert.equal(s.calls.save,1);
+});
+
+test('広いマップの移動スティックはサイドパネル内でも動き、閉じるとアニメーションを止める',t=>{
+ const s=setup(t,'moveRange',null,960),panel=s.open(),stick=all(panel).find(n=>n.getAttribute?.('aria-label')==='マップ移動スティック'),grid=all(panel).find(n=>n.classList?.contains('move-world-grid')),first=grid.children[0].getAttribute('aria-label');
+ stick.onpointerdown({pointerId:1,clientX:82,clientY:50,preventDefault(){}});for(const time of [100,132,164]){const [id,callback]=s.frames.entries().next().value;s.frames.delete(id);callback(time);}assert.notEqual(grid.children[0].getAttribute('aria-label'),first);assert.deepEqual(s.o,s.before);assert.equal(s.calls.save,0);assert.ok(s.frames.size>0);closeLiveRangeEditor();assert.equal(s.frames.size,0);assert.equal(isLiveRangeEditing(),false);
 });

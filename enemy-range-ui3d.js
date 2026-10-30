@@ -1,15 +1,14 @@
-import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261030h';
-import {openMoveMap} from './move-map-ui3d.js?v=20261030h';
-import {RANGE_MAX,rangeCells} from './enemy-range3d.js?v=20261030h';
-import {setReadingText,kanaText} from './readings3d.js?v=20261030h';
+import {closeLiveRangeEditor,mountLiveRangeEditor} from './range-panel3d.js?v=20261030i';
+export {closeLiveRangeEditor,isLiveRangeEditing} from './range-panel3d.js?v=20261030i';
+import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261030i';
+import {openMoveMap} from './move-map-ui3d.js?v=20261030i';
+import {RANGE_MAX,rangeCells} from './enemy-range3d.js?v=20261030i';
+import {setReadingText,kanaText} from './readings3d.js?v=20261030i';
 const RANGE_UI={
  attackRange:{label:'弾を撃つ',title:'敵が弾を撃つマス',note:'色のついたマスに入ったら → 弾を撃つ。',empty:'これまでの近くに来たら撃つ設定',center:'敵のいるマスが中心。敵と一緒に動くよ。',color:'#ef9aae'},
  moveRange:{label:'動ける',title:'敵が動けるマス',note:'色のついたマスの中だけを歩けるよ。つながっていないマスには行けないよ。',empty:'制限なし',center:'敵を置いたマスが中心。ゲーム中もこの場所に固定だよ。',color:'#91c7ee'},
  searchRange:{label:'探す',title:'プレイヤーを見つけるマス',note:'色のついたマスにプレイヤーが入ると → 見つける。追いかけ方は別にえらぼう。',empty:'近くで見つける設定（18m）',center:'敵のいるマスが中心。敵と一緒に動くよ。',color:'#efcf74'}
 };
-let activeFinish=null;
-export const isLiveRangeEditing=()=>activeFinish!==null;
-export function closeLiveRangeEditor(){activeFinish?.();}
 export function renderAttackRange(parent,o,api){renderEnemyRange(parent,o,api,'attackRange');}
 export function renderEnemyRange(parent,o,{save,rebuild,showRange,getRangeView,getProject,lookFromAbove},key){
  const config=RANGE_UI[key],row=document.createElement('div'),edit=document.createElement('button'),open=document.createElement('button'),label=document.createElement('span'),summary=document.createElement('small');edit.className='enemy-range-choice';edit.dataset.range=key;edit.setAttribute('aria-pressed',String((getRangeView?.()||'attackRange')===key));edit.style.setProperty('--range-color',config.color);setReadingText(label,`▦ ${config.label}マス`);edit.setAttribute('aria-label',kanaText(`▦ ${config.label}マスをステージに表示`));
@@ -34,11 +33,9 @@ function openRangeEditor(o,{key,config,save,rebuild,lookFromAbove,onClose}){
  }
  function paint(){const active=new Set(r.cells.map(c=>c.join(',')));for(const [key,b]of buttons){const on=active.has(key);b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on));}for(const key of ['cross','circle']){sizes[key].value=String(r[key]);sizes[key].disabled=!['cross','circle','mixed'].includes(shape.value)||(shape.value==='cross'&&key==='circle')||(shape.value==='circle'&&key==='cross');}setReadingText(count,`${config.label}マス：${r.cells.length}個 ／ 中心から、たて・よこ８マスまで。顔が向きを変えても、マスは回らないよ。`);}
  function changed(){o[key]=structuredClone(r);paint();save();rebuild();}
- const aside=document.querySelector('aside'),main=aside.closest('main'),scrollTop=aside.scrollTop;
- const finish=()=>{if(activeFinish!==finish)return;activeFinish=null;onClose();d.remove();aside.classList.remove('is-range-editing');main.classList.remove('range-editing');aside.scrollTop=scrollTop;};
- setReadingText(close,'できた・とじる');close.className='primary';close.onclick=finish;d.onkeydown=e=>{if(e.key==='Escape'){e.preventDefault();finish();}};
+ setReadingText(close,'できた・とじる');close.className='primary';
  const view=document.createElement('button');setReadingText(view,'↑ マスと同じ向きで上から見る');view.onclick=()=>lookFromAbove?.();
- const presets=document.createElement('details'),presetTitle=document.createElement('summary');setReadingText(presetTitle,'形でまとめて変える');presets.append(presetTitle,controls,clear);
+ const presets=document.createElement('div');presets.className='range-preset-controls';presets.append(controls,clear);
  const heading=document.createElement('div');heading.className='range-live-heading';heading.append(h,close);
- d.append(heading,note,view,directionFrame(grid),count,presets);activeFinish=finish;aside.append(d);aside.classList.add('is-range-editing');main.classList.add('range-editing');aside.scrollTop=0;paint();h.focus({preventScroll:true});
+ d.append(heading,note,presets,view,directionFrame(grid),count);paint();close.onclick=mountLiveRangeEditor(d,onClose);h.focus({preventScroll:true});
 }

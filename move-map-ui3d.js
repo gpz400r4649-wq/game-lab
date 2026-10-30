@@ -1,15 +1,16 @@
-import {createMapStick,panMapCenter} from './map-stick3d.js?v=20261030h';
-import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261030h';
-import {MOVE_MAX_CELLS,RANGE_MAX,rangeCell,rangeCells,worldMoveRange} from './enemy-range3d.js?v=20261030h';
-import {moveGridWindow,moveGridPages} from './world3d.js?v=20261030h';
-import {setReadingText,kanaText} from './readings3d.js?v=20261030h';
+import {mountLiveRangeEditor} from './range-panel3d.js?v=20261030i';
+import {createMapStick,panMapCenter} from './map-stick3d.js?v=20261030i';
+import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261030i';
+import {MOVE_MAX_CELLS,RANGE_MAX,rangeCell,rangeCells,worldMoveRange} from './enemy-range3d.js?v=20261030i';
+import {moveGridWindow,moveGridPages} from './world3d.js?v=20261030i';
+import {setReadingText,kanaText} from './readings3d.js?v=20261030i';
 export function openMoveMap(o,{getProject,save,rebuild,lookFromAbove,onClose}){
- const p=getProject(),limit=moveGridWindow(p).limit,d=document.createElement('dialog');d.className='enemy-range-dialog';d.style.setProperty('--range-color','#91c7ee');
+ const p=getProject(),limit=moveGridWindow(p).limit,d=document.createElement('section');d.className='enemy-range-dialog range-live-panel';d.setAttribute('role','region');d.setAttribute('aria-label','敵が動けるマス');d.style.setProperty('--range-color','#91c7ee');
  const current=o.moveRange?worldMoveRange(o.moveRange,o):{space:'world',cells:[]};
  const chosen=new Set(current.cells.map(c=>c.join(','))),h=document.createElement('h2'),note=document.createElement('p'),controls=document.createElement('div'),grid=document.createElement('div'),count=document.createElement('p'),close=document.createElement('button');
  const initial=current.cells,cx=initial.length?Math.round((Math.min(...initial.map(c=>c[0]))+Math.max(...initial.map(c=>c[0])))/2):rangeCell(o.x),cz=initial.length?Math.round((Math.min(...initial.map(c=>c[1]))+Math.max(...initial.map(c=>c[1])))/2):rangeCell(o.z);
  const initialWindow=moveGridWindow(p,cx,cz);let centerX=initialWindow.centerX,centerZ=initialWindow.centerZ,cross=4,circle=3;
- h.setAttribute('tabindex','-1');h.setAttribute('autofocus','');setReadingText(h,'敵が動けるマス');setReadingText(note,'形をえらび、マスをタップして追加・削除しよう。青い場所はマップに固定。敵を動かしても変わらないよ。🤖は敵、●はスタート。「同じ向きでステージを見る」で、マップと向きをそろえられるよ。形をえらび直すと、今のはんいを置き換えるよ。');
+ h.setAttribute('tabindex','-1');h.setAttribute('autofocus','');setReadingText(h,'敵が動けるマス');setReadingText(note,'青い場所はマップに固定。マスをタップすると、ステージにもすぐ反映されるよ。🤖は敵、●はスタート。形をえらび直すと、今のはんいを置き換えるよ。');
  controls.className='range-controls';grid.className='enemy-range-grid move-world-grid';grid.style.gridTemplateColumns=`repeat(${initialWindow.count},minmax(0,1fr))`;grid.setAttribute('role','group');grid.setAttribute('aria-label','動けるはんいのマス');count.setAttribute('aria-live','polite');
  function select(parent,label,values,value,change){const row=document.createElement('label'),text=document.createElement('span'),input=document.createElement('select');setReadingText(text,label);input.setAttribute('aria-label',label);for(const [v,t]of values)input.add(new Option(kanaText(t),v));input.value=value;input.onchange=()=>change(input.value);row.append(text,input);parent.append(row);return input;}
  function preset(){if(!shape.value||shape.value==='custom')return;chosen.clear();for(const [x,z]of rangeCells(shape.value,cross,circle)){if(Math.abs(centerX+x)<=limit&&Math.abs(centerZ+z)<=limit)chosen.add(`${centerX+x},${centerZ+z}`);}changed();}
@@ -24,7 +25,7 @@ export function openMoveMap(o,{getProject,save,rebuild,lookFromAbove,onClose}){
  const xPlace=select(area,'横 X の場所',areas,String(centerX),v=>{centerX=Number(v);shape.value='custom';paint();});const zPlace=select(area,'奥行 Z の場所',areas,String(centerZ),v=>{centerZ=Number(v);shape.value='custom';paint();});
  const navigation=document.createElement('div'),stick=document.createElement('div'),caption=document.createElement('span');navigation.className='move-map-pan';navigation.hidden=places.hidden;stick.className='map-pan-stick';stick.tabIndex=0;stick.setAttribute('role','group');stick.setAttribute('aria-label','マップ移動スティック');stick.innerHTML='<span class="map-stick-up">まえ ↑</span><span class="map-stick-down">↓ うしろ</span><span class="map-stick-left">←</span><span class="map-stick-right">→</span><span class="map-stick-thumb">いどう</span>';setReadingText(caption,'マップをうごかす');navigation.append(caption,stick);
  let panInput={x:0,z:0},panPosition={x:centerX,z:centerZ},panFrameId=0,panTime=0,panCenter={x:centerX,z:centerZ};
- function panFrame(time){panFrameId=0;if(!d.open||!d.isConnected)return;if(panCenter.x!==centerX||panCenter.z!==centerZ)panPosition={x:centerX,z:centerZ};panPosition=panMapCenter(panPosition,panInput,panTime?(time-panTime)/1000:0,p);panTime=time;const w=moveGridWindow(p,panPosition.x,panPosition.z);if(w.centerX!==centerX||w.centerZ!==centerZ){centerX=w.centerX;centerZ=w.centerZ;shape.value='custom';paint();}panCenter={x:centerX,z:centerZ};if(Math.hypot(panInput.x,panInput.z)>=.15)panFrameId=requestAnimationFrame(panFrame);}
+ function panFrame(time){panFrameId=0;if(!d.isConnected)return;if(panCenter.x!==centerX||panCenter.z!==centerZ)panPosition={x:centerX,z:centerZ};panPosition=panMapCenter(panPosition,panInput,panTime?(time-panTime)/1000:0,p);panTime=time;const w=moveGridWindow(p,panPosition.x,panPosition.z);if(w.centerX!==centerX||w.centerZ!==centerZ){centerX=w.centerX;centerZ=w.centerZ;shape.value='custom';paint();}panCenter={x:centerX,z:centerZ};if(Math.hypot(panInput.x,panInput.z)>=.15)panFrameId=requestAnimationFrame(panFrame);}
  const mapStick=createMapStick(stick,input=>{panInput=input;if(Math.hypot(input.x,input.z)<.15){cancelAnimationFrame(panFrameId);panFrameId=0;panTime=0;return;}if(!panFrameId)panFrameId=requestAnimationFrame(panFrame);});
  function syncPlace(input,center){for(const option of [...input.options])if(option.dataset.live==='yes')option.remove();if(![...input.options].some(option=>option.value===String(center))){const w=moveGridWindow(p,center,center),option=new Option(`${w.minX*4}〜${w.maxX*4}`,String(center));option.dataset.live='yes';input.add(option);}input.value=String(center);}
  const buttons=[];for(let dz=-Math.floor(initialWindow.count/2);dz<=Math.floor(initialWindow.count/2);dz++)for(let dx=-Math.floor(initialWindow.count/2);dx<=Math.floor(initialWindow.count/2);dx++){
@@ -34,6 +35,8 @@ export function openMoveMap(o,{getProject,save,rebuild,lookFromAbove,onClose}){
   crossInput.value=String(cross);circleInput.value=String(circle);crossInput.disabled=!['cross','mixed'].includes(shape.value);circleInput.disabled=!['circle','mixed'].includes(shape.value);setReadingText(count,`青：${chosen.size} / ${MOVE_MAX_CELLS}マス　表示 X ${(centerX-Math.floor(initialWindow.count/2))*4}〜${(centerX+Math.floor(initialWindow.count/2))*4} / Z ${(centerZ-Math.floor(initialWindow.count/2))*4}〜${(centerZ+Math.floor(initialWindow.count/2))*4}　太いわくがマップの端だよ。`);
  }
  function changed(){o.moveRange={space:'world',cells:[...chosen].map(key=>key.split(',').map(Number))};save();rebuild();paint();}
- const finish=()=>{mapStick.destroy();cancelAnimationFrame(panFrameId);onClose();d.close();d.remove();};const unlimited=document.createElement('button');setReadingText(unlimited,'移動の制限をなくす');unlimited.onclick=()=>{delete o.moveRange;save();rebuild();finish();};
- setReadingText(close,'できた・ステージで見る');close.className='primary';close.onclick=finish;d.oncancel=e=>{e.preventDefault();finish();};const view=document.createElement('button');setReadingText(view,'↑ 同じ向きでステージを見る');view.onclick=()=>{finish();lookFromAbove?.();};d.append(h,note,controls,clear,navigation,directionFrame(grid),count,places,unlimited,view,close);document.body.append(d);paint();d.showModal();
+ const unlimited=document.createElement('button');setReadingText(unlimited,'移動の制限をなくす');unlimited.onclick=()=>{delete o.moveRange;save();rebuild();finish();};
+ setReadingText(close,'できた・とじる');close.className='primary';const view=document.createElement('button');setReadingText(view,'↑ マスと同じ向きで上から見る');view.onclick=()=>lookFromAbove?.();
+ const heading=document.createElement('div');heading.className='range-live-heading';heading.append(h,close);const presets=document.createElement('div');presets.className='range-preset-controls';presets.append(controls,clear);
+ d.append(heading,note,presets,view,navigation,directionFrame(grid),count,places,unlimited);paint();const finish=mountLiveRangeEditor(d,()=>{mapStick.destroy();cancelAnimationFrame(panFrameId);onClose();});close.onclick=finish;h.focus({preventScroll:true});
 }

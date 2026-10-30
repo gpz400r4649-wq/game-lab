@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.min.js';
-import {MAX_PARTS} from './limits3d.js?v=20261030h';
+import {MAX_PARTS} from './limits3d.js?v=20261030i';
 export const BATCH_TYPES=new Set(['wall','floor','roof','ramp','box','platform']);
 // Logical meshes remain available for precise selection and raycasts on layer 1.
 // Visible copies share six draw calls on layer 2, independent of part count.
