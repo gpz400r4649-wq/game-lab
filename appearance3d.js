@@ -1,4 +1,4 @@
-export const GUN_SHAPES={blaster:'ブラスター',pistol:'ピストル',smg:'サブマシンガン',rifle:'ライフル',sniper:'スナイパーライフル',shotgun:'ショットガン',grenade:'グレネードランチャー',launcher:'ランチャー',powerLauncher:'パワーランチャー'};
+export const GUN_SHAPES={blaster:'ブラスター',robot:'ロボットブラスター',pistol:'ピストル',smg:'サブマシンガン',rifle:'ライフル',sniper:'スナイパーライフル',shotgun:'ショットガン',grenade:'グレネードランチャー',launcher:'ランチャー',powerLauncher:'パワーランチャー'};
 export const GUN_COLORS={'#6ec3c0':'みずいろ','#7d62dd':'むらさき','#ee91a5':'ピンク','#eeb35f':'オレンジ','#6eae76':'みどり','#557ac0':'あお','#9ca3af':'グレー','#edf1f7':'しろ','#46516b':'くろ'};
 export const DEFAULT_APPEARANCE=Object.freeze({shape:'blaster',color:'#6ec3c0',accent:'#46516b',barrel:1,suppressor:false});
 export function appearanceFor(tool){const a=tool?.appearance||{};return {shape:Object.hasOwn(GUN_SHAPES,a.shape)?a.shape:'blaster',color:Object.hasOwn(GUN_COLORS,a.color)?a.color:DEFAULT_APPEARANCE.color,accent:Object.hasOwn(GUN_COLORS,a.accent)?a.accent:DEFAULT_APPEARANCE.accent,barrel:Number.isFinite(a.barrel)?Math.max(1,Math.min(1.8,a.barrel)):1,suppressor:a.suppressor===true};}
@@ -7,6 +7,16 @@ export function validAppearance(a){return a===undefined||!!a&&Object.hasOwn(GUN_
 export function gunLayout(tool){const a=appearanceFor(tool),parts=[],dark='#27334a';
  const box=(role,x,y,z,w,h,d,color=a.accent)=>parts.push({type:'box',role,x,y,z,w,h,d,color});
  const tube=(role,x,y,rear,length,radius,color=a.accent)=>{const p={type:'tube',role,x,y,z:rear-length/2,length,radius,color};parts.push(p);return {x,y,z:rear-length,radius};};
+ // The original robot gun is a single straight rectangular barrel.
+ if(a.shape==='robot'){
+  const rear=.235/.6,length=(.65/.6)*a.barrel;
+  box('body',0,0,.25,.15/.6,.17/.6,.28,a.color);
+  box('grip',0,-.1,.25,.12,.12,.12);
+  box('barrel',0,0,rear-length/2,.15/.6,.17/.6,length,a.color);
+  let muzzle={x:0,y:0,z:rear-length,radius:.075};
+  if(a.suppressor)muzzle=tube('suppressor',0,0,muzzle.z+.025,.34,.11);
+  return {parts,muzzle};
+ }
  const long=['rifle','sniper','shotgun'].includes(a.shape),bodyLength=long?.85:a.shape==='powerLauncher'?.72:a.shape==='pistol'?.42:.55;
  box('body',0,0,0,a.shape==='powerLauncher'?.42:.28,a.shape==='pistol'?.17:.24,bodyLength,a.color);
  box('grip',0,-.24,.12,.15,.31,.18);

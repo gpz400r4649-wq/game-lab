@@ -1,16 +1,16 @@
-import {CHASE_MODES} from './enemy-ai3d.js?v=20261030e';
-import {inGridRange,worldMoveRange,makeAttackRange} from './enemy-range3d.js?v=20261030e';
-import {renderEnemyRange} from './enemy-range-ui3d.js?v=20261030e';
-import {gunPreviewSVG} from './appearance3d.js?v=20261030e';
-import {DOOR_PRESETS} from './doors3d.js?v=20261030e';
-import {MAX_PARTS} from './limits3d.js?v=20261030e';
-import {coordinateLimit} from './world3d.js?v=20261030e';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261030e';
-import {actionsFor} from './events3d.js?v=20261030e';
-import {renderEventEditor} from './event-editor3d.js?v=20261030e';
-import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261030e';
-import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261030e';
-import {PARTS,ENEMY_PRESETS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261030e';
+import {CHASE_MODES} from './enemy-ai3d.js?v=20261030f';
+import {inGridRange,worldMoveRange,makeAttackRange} from './enemy-range3d.js?v=20261030f';
+import {renderEnemyRange} from './enemy-range-ui3d.js?v=20261030f';
+import {gunPreviewSVG} from './appearance3d.js?v=20261030f';
+import {DOOR_PRESETS} from './doors3d.js?v=20261030f';
+import {MAX_PARTS} from './limits3d.js?v=20261030f';
+import {coordinateLimit} from './world3d.js?v=20261030f';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261030f';
+import {actionsFor} from './events3d.js?v=20261030f';
+import {renderEventEditor} from './event-editor3d.js?v=20261030f';
+import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261030f';
+import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261030f';
+import {PARTS,ENEMY_PRESETS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261030f';
 
 const ICONS={weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
 const DESCRIPTIONS={weapon:'地面に置いて、ふれると拾える銃。持ちもの・銃づくりで用意した銃をえらぼう。',ramp:'低いほうから歩くと、そのまま登れるスロープ。回して好きな向きにつなげよう。',wall:'家を囲う壁。向きを変えてつなげよう。',floor:'家の床と天井に使える板。壁の内側にぴったり合うよ。',roof:'壁の上にのせる三角屋根。向きを変えて家を仕上げよう。',
@@ -75,7 +75,7 @@ export function createWorkshop(api){
       const combat=document.createElement('section');combat.className='enemy-settings-group';combat.setAttribute('aria-label','攻撃');const combatTitle=document.createElement('h3');setReadingText(combatTitle,'攻撃');combat.append(combatTitle);el.append(combat);
       const attackLabel=document.createElement('label'),attack=document.createElement('input'),attackText=document.createElement('span');attackLabel.className='enemy-attack-toggle';attack.type='checkbox';attack.checked=o.attackEnabled;attack.setAttribute('aria-label','攻撃してくる');setReadingText(attackText,'攻撃してくる');attack.onchange=()=>{o.attackEnabled=attack.checked;save();rebuild();inspect();};attackLabel.append(attack,attackText);combat.append(attackLabel);
       const guns=p.loadout.filter(t=>t.effect==='shoot'),missing=o.enemyWeaponId&&!guns.some(t=>t.id===o.enemyWeaponId);
-      selectField(combat,'敵に持たせる銃',[['','これまでの銃'],...(missing?[[o.enemyWeaponId,'この銃は使えません']]:[]),...guns.map(t=>[t.id,t.name])],o.enemyWeaponId||'',id=>{if(id)o.enemyWeaponId=id;else delete o.enemyWeaponId;inspect();});
+      selectField(combat,'敵に持たせる銃',[['','ロボットブラスター（これまでの銃）'],...(missing?[[o.enemyWeaponId,'この銃は使えません']]:[]),...guns.map(t=>[t.id,t.name])],o.enemyWeaponId||'',id=>{if(id)o.enemyWeaponId=id;else delete o.enemyWeaponId;inspect();});
       renderEnemyRange(combat,o,rangeApi,'attackRange');
       if(missing){const note=document.createElement('p');note.className='recipe-hint';setReadingText(note,'選んだ銃は削除されたか、建築銃に変わっています。別の銃をえらぶまでは、これまでの銃で攻撃するよ。');combat.append(note);}
       const gunHint=document.createElement('p');gunHint.className='component-description';setReadingText(gunHint,'銃づくりと共通の銃だよ。見た目や弾を変えると、この敵の銃にも反映されるよ。');combat.append(gunHint);
