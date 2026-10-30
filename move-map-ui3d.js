@@ -1,8 +1,8 @@
-import {createMapStick,panMapCenter} from './map-stick3d.js?v=20261030g';
-import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261030g';
-import {MOVE_MAX_CELLS,RANGE_MAX,rangeCell,rangeCells,worldMoveRange} from './enemy-range3d.js?v=20261030g';
-import {moveGridWindow,moveGridPages} from './world3d.js?v=20261030g';
-import {setReadingText,kanaText} from './readings3d.js?v=20261030g';
+import {createMapStick,panMapCenter} from './map-stick3d.js?v=20261030h';
+import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261030h';
+import {MOVE_MAX_CELLS,RANGE_MAX,rangeCell,rangeCells,worldMoveRange} from './enemy-range3d.js?v=20261030h';
+import {moveGridWindow,moveGridPages} from './world3d.js?v=20261030h';
+import {setReadingText,kanaText} from './readings3d.js?v=20261030h';
 export function openMoveMap(o,{getProject,save,rebuild,lookFromAbove,onClose}){
  const p=getProject(),limit=moveGridWindow(p).limit,d=document.createElement('dialog');d.className='enemy-range-dialog';d.style.setProperty('--range-color','#91c7ee');
  const current=o.moveRange?worldMoveRange(o.moveRange,o):{space:'world',cells:[]};

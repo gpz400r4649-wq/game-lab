@@ -1,4 +1,4 @@
-import {rangeCell,inGridRange,movementCenter} from './enemy-range3d.js?v=20261030g';
+import {rangeCell,inGridRange,movementCenter} from './enemy-range3d.js?v=20261030h';
 const CELL=4,neighbors=[[0,-1],[1,0],[0,1],[-1,0]];
 export const CHASE_MODES={always:'はじめから、ずっと追いかける',inside:'探すはんいにいる間だけ追いかける',remember:'見つけたら、ずっと追いかける'};
 export function validEnemyMovement(o){return (o.chaseMode===undefined||Object.hasOwn(CHASE_MODES,o.chaseMode));}

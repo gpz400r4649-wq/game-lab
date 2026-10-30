@@ -1,7 +1,7 @@
-import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261030g';
-import {openMoveMap} from './move-map-ui3d.js?v=20261030g';
-import {RANGE_MAX,rangeCells} from './enemy-range3d.js?v=20261030g';
-import {setReadingText,kanaText} from './readings3d.js?v=20261030g';
+import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261030h';
+import {openMoveMap} from './move-map-ui3d.js?v=20261030h';
+import {RANGE_MAX,rangeCells} from './enemy-range3d.js?v=20261030h';
+import {setReadingText,kanaText} from './readings3d.js?v=20261030h';
 const RANGE_UI={
  attackRange:{label:'弾を撃つ',title:'敵が弾を撃つマス',note:'色のついたマスに入ったら → 弾を撃つ。',empty:'これまでの近くに来たら撃つ設定',center:'敵のいるマスが中心。敵と一緒に動くよ。',color:'#ef9aae'},
  moveRange:{label:'動ける',title:'敵が動けるマス',note:'色のついたマスの中だけを歩けるよ。つながっていないマスには行けないよ。',empty:'制限なし',center:'敵を置いたマスが中心。ゲーム中もこの場所に固定だよ。',color:'#91c7ee'},
