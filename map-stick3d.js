@@ -1,4 +1,4 @@
-import {moveGridWindow} from './world3d.js?v=20261030c';
+import {moveGridWindow} from './world3d.js?v=20261030d';
 export function panMapCenter(position,input,dt,world){
  const x=input.x||0,z=input.z||0,length=Math.hypot(x,z);if(!Number.isFinite(length)||length<.15)return {...position};
  const {limit,count}=moveGridWindow(world),half=Math.floor(count/2),lo=-limit+half,hi=limit-half,scale=28*Math.max(0,Math.min(.05,dt))/Math.max(1,length);
