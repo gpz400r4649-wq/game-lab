@@ -1,19 +1,19 @@
-import {createMapStick,panMapCenter} from './map-stick3d.js?v=20261030a';
-import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261030a';
-import {MOVE_MAX_CELLS,RANGE_MAX,rangeCell,rangeCells,worldMoveRange} from './enemy-range3d.js?v=20261030a';
-import {moveGridWindow,moveGridPages} from './world3d.js?v=20261030a';
-import {setReadingText,kanaText} from './readings3d.js?v=20261030a';
+import {createMapStick,panMapCenter} from './map-stick3d.js?v=20261030b';
+import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261030b';
+import {MOVE_MAX_CELLS,RANGE_MAX,rangeCell,rangeCells,worldMoveRange} from './enemy-range3d.js?v=20261030b';
+import {moveGridWindow,moveGridPages} from './world3d.js?v=20261030b';
+import {setReadingText,kanaText} from './readings3d.js?v=20261030b';
 export function openMoveMap(o,{getProject,save,rebuild,lookFromAbove,onClose}){
  const p=getProject(),limit=moveGridWindow(p).limit,d=document.createElement('dialog');d.className='enemy-range-dialog';d.style.setProperty('--range-color','#91c7ee');
- o.moveRange=o.moveRange?worldMoveRange(o.moveRange,o):{space:'world',cells:[]};save();rebuild();
- const chosen=new Set(o.moveRange.cells.map(c=>c.join(','))),h=document.createElement('h2'),note=document.createElement('p'),controls=document.createElement('div'),grid=document.createElement('div'),count=document.createElement('p'),close=document.createElement('button');
- const initial=o.moveRange.cells,cx=initial.length?Math.round((Math.min(...initial.map(c=>c[0]))+Math.max(...initial.map(c=>c[0])))/2):rangeCell(o.x),cz=initial.length?Math.round((Math.min(...initial.map(c=>c[1]))+Math.max(...initial.map(c=>c[1])))/2):rangeCell(o.z);
+ const current=o.moveRange?worldMoveRange(o.moveRange,o):{space:'world',cells:[]};
+ const chosen=new Set(current.cells.map(c=>c.join(','))),h=document.createElement('h2'),note=document.createElement('p'),controls=document.createElement('div'),grid=document.createElement('div'),count=document.createElement('p'),close=document.createElement('button');
+ const initial=current.cells,cx=initial.length?Math.round((Math.min(...initial.map(c=>c[0]))+Math.max(...initial.map(c=>c[0])))/2):rangeCell(o.x),cz=initial.length?Math.round((Math.min(...initial.map(c=>c[1]))+Math.max(...initial.map(c=>c[1])))/2):rangeCell(o.z);
  const initialWindow=moveGridWindow(p,cx,cz);let centerX=initialWindow.centerX,centerZ=initialWindow.centerZ,cross=4,circle=3;
  setReadingText(h,'敵が動けるマス');setReadingText(note,'形をえらび、マスをタップして追加・削除しよう。青い場所はマップに固定。敵を動かしても変わらないよ。🤖は敵、●はスタート。「同じ向きでステージを見る」で、マップと向きをそろえられるよ。形をえらび直すと、今のはんいを置き換えるよ。');
  controls.className='range-controls';grid.className='enemy-range-grid move-world-grid';grid.style.gridTemplateColumns=`repeat(${initialWindow.count},minmax(0,1fr))`;grid.setAttribute('role','group');grid.setAttribute('aria-label','動けるはんいのマス');count.setAttribute('aria-live','polite');
  function select(parent,label,values,value,change){const row=document.createElement('label'),text=document.createElement('span'),input=document.createElement('select');setReadingText(text,label);input.setAttribute('aria-label',label);for(const [v,t]of values)input.add(new Option(kanaText(t),v));input.value=value;input.onchange=()=>change(input.value);row.append(text,input);parent.append(row);return input;}
- function preset(){if(shape.value==='custom')return;chosen.clear();for(const [x,z]of rangeCells(shape.value,cross,circle)){if(Math.abs(centerX+x)<=limit&&Math.abs(centerZ+z)<=limit)chosen.add(`${centerX+x},${centerZ+z}`);}changed();}
- const shape=select(controls,'はんいの形',[['custom','自分でマスをえらぶ'],['cross','十字'],['circle','円'],['mixed','十字＋円']],'custom',v=>{if(v==='mixed'&&cross<=circle){circle=Math.min(circle,6);cross=circle+2;}preset();paint();});
+ function preset(){if(!shape.value||shape.value==='custom')return;chosen.clear();for(const [x,z]of rangeCells(shape.value,cross,circle)){if(Math.abs(centerX+x)<=limit&&Math.abs(centerZ+z)<=limit)chosen.add(`${centerX+x},${centerZ+z}`);}changed();}
+ const shape=select(controls,'はんいの形',[['','形をえらぶ（置きかえる）'],['custom','自分でマスをえらぶ'],['cross','十字'],['circle','円'],['mixed','十字＋円']],'',v=>{if(v==='mixed'&&cross<=circle){circle=Math.min(circle,6);cross=circle+2;}preset();paint();});
  const lengths=Array.from({length:RANGE_MAX},(_,i)=>[String(i+1),`${i+1}マス`]);
  const crossInput=select(controls,'十字の長さ',lengths,String(cross),v=>{cross=Number(v);preset();}),circleInput=select(controls,'円の広さ',lengths,String(circle),v=>{circle=Number(v);preset();});
  const clear=document.createElement('button');setReadingText(clear,'全部のマスをけす');clear.onclick=()=>{chosen.clear();shape.value='custom';changed();};
@@ -31,7 +31,7 @@ export function openMoveMap(o,{getProject,save,rebuild,lookFromAbove,onClose}){
   const b=document.createElement('button');b.type='button';b.onclick=()=>{const key=`${centerX+dx},${centerZ+dz}`;if(chosen.has(key))chosen.delete(key);else if(chosen.size<MOVE_MAX_CELLS)chosen.add(key);shape.value='custom';changed();};buttons.push({b,dx,dz});grid.append(b);
  }
  function paint(){syncPlace(xPlace,centerX);syncPlace(zPlace,centerZ);for(const {b,dx,dz}of buttons){const x=centerX+dx,z=centerZ+dz,key=`${x},${z}`,active=chosen.has(key);b.disabled=false;b.classList.toggle('range-world-edge',Math.abs(x)===limit||Math.abs(z)===limit);b.setAttribute('aria-label',`X ${x*4} Z ${z*4} のマス`);b.setAttribute('aria-pressed',String(active));b.classList.toggle('active',active);markRobotCell(b,x===rangeCell(o.x)&&z===rangeCell(o.z));b.textContent=x===rangeCell(o.x)&&z===rangeCell(o.z)?'🤖':x===rangeCell(p.spawn.x)&&z===rangeCell(p.spawn.z)?'●':'';}
-  crossInput.value=String(cross);circleInput.value=String(circle);crossInput.disabled=shape.value==='custom'||shape.value==='circle';circleInput.disabled=shape.value==='custom'||shape.value==='cross';setReadingText(count,`青：${chosen.size} / ${MOVE_MAX_CELLS}マス　表示 X ${(centerX-Math.floor(initialWindow.count/2))*4}〜${(centerX+Math.floor(initialWindow.count/2))*4} / Z ${(centerZ-Math.floor(initialWindow.count/2))*4}〜${(centerZ+Math.floor(initialWindow.count/2))*4}　太いわくがマップの端だよ。`);
+  crossInput.value=String(cross);circleInput.value=String(circle);crossInput.disabled=!['cross','mixed'].includes(shape.value);circleInput.disabled=!['circle','mixed'].includes(shape.value);setReadingText(count,`青：${chosen.size} / ${MOVE_MAX_CELLS}マス　表示 X ${(centerX-Math.floor(initialWindow.count/2))*4}〜${(centerX+Math.floor(initialWindow.count/2))*4} / Z ${(centerZ-Math.floor(initialWindow.count/2))*4}〜${(centerZ+Math.floor(initialWindow.count/2))*4}　太いわくがマップの端だよ。`);
  }
  function changed(){o.moveRange={space:'world',cells:[...chosen].map(key=>key.split(',').map(Number))};save();rebuild();paint();}
  const finish=()=>{mapStick.destroy();cancelAnimationFrame(panFrameId);onClose();d.close();d.remove();};const unlimited=document.createElement('button');setReadingText(unlimited,'移動の制限をなくす');unlimited.onclick=()=>{delete o.moveRange;save();rebuild();finish();};
