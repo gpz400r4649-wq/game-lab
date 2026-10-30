@@ -1,10 +1,10 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {renderEnemyRange} from '../enemy-range-ui3d.js';
+import {renderEnemyRange,closeLiveRangeEditor,isLiveRangeEditing} from '../enemy-range-ui3d.js';
 import {makeAttackRange,validAttackRange,validMoveRange} from '../enemy-range3d.js';
 
 // Small DOM stand-in for testing button flows and project writes without a GPU.
 class Element {
- constructor(tag,doc){this.tagName=tag;this.ownerDocument=doc;this.children=[];this.dataset={};this.attributes={};this.style={setProperty(){}};this.className='';this.value='';this.classList={toggle:()=>{}};}
+ constructor(tag,doc){this.tagName=tag;this.ownerDocument=doc;this.children=[];this.dataset={};this.attributes={};this.style={setProperty(){}};this.className='';this.value='';this.classList={toggle:(name,on)=>{const set=new Set(this.className.split(' ').filter(Boolean));if(on)set.add(name);else set.delete(name);this.className=[...set].join(' ');},add:name=>this.classList.toggle(name,true),remove:name=>this.classList.toggle(name,false),contains:name=>this.className.split(' ').includes(name)};}
  append(...nodes){for(const n of nodes){n.parentElement=this;this.children.push(n);}}
  replaceChildren(...nodes){this.children=[];this.append(...nodes);}
  get firstChild(){return this.children[0];}
@@ -15,34 +15,41 @@ class Element {
  closest(query){return query.split(',').some(t=>t.trim()===this.tagName)?this:this.parentElement?.closest(query)||null;}
  querySelector(query){return all(this).find(n=>query.startsWith('.')?n.className.split(' ').includes(query.slice(1)):n.tagName===query);}
  get options(){return this.children;}add(option){this.append(option);}
+ focus(){this.ownerDocument.activeElement=this;}
  showModal(){this.open=true;}close(){this.open=false;}remove(){this.parentElement.children=this.parentElement.children.filter(n=>n!==this);}
 }
+function finish(root){if(root.tagName==='dialog')root.oncancel({preventDefault(){}});else all(root).find(n=>n.classList?.contains('primary')).onclick();}
 function all(root){return root.children.flatMap(n=>[n,...all(n)]);}
 function setup(t,key,range){
  const old={document:globalThis.document,Option:globalThis.Option,cancelAnimationFrame:globalThis.cancelAnimationFrame};
- const doc=new EventTarget();doc.defaultView=new EventTarget();doc.createElement=tag=>new Element(tag,doc);doc.createTextNode=value=>({textContent:String(value),children:[]});doc.body=doc.createElement('body');
+ const doc=new EventTarget();doc.defaultView=new EventTarget();doc.createElement=tag=>new Element(tag,doc);doc.createTextNode=value=>({textContent:String(value),children:[]});doc.body=doc.createElement('body');doc.querySelector=query=>doc.body.querySelector(query);const main=doc.createElement('main'),aside=doc.createElement('aside');aside.scrollTop=140;main.append(aside);doc.body.append(main);
  globalThis.document=doc;globalThis.Option=function(text,value){const o=doc.createElement('option');o.textContent=text;o.value=value;return o;};globalThis.cancelAnimationFrame=()=>{};
- t.after(()=>Object.assign(globalThis,old));
+ t.after(()=>{closeLiveRangeEditor();Object.assign(globalThis,old);});
  const o={type:'enemy',x:8,z:8,...(range?{[key]:structuredClone(range)}:{})},before=structuredClone(o),calls={save:0,rebuild:0,view:[]},parent=doc.createElement('div');
  renderEnemyRange(parent,o,{save:()=>calls.save++,rebuild:()=>calls.rebuild++,showRange:k=>calls.view.push(k),getRangeView:()=>key,getProject:()=>({worldSize:60,spawn:{x:0,z:0}})},key);
  const row=parent.children[0],preview=row.children[0],edit=row.children[1];
- const open=()=>{edit.onclick();return doc.body.children.find(n=>n.tagName==='dialog');};
- return {o,before,calls,doc,preview,open};
+ const open=()=>{edit.onclick();return all(doc.body).find(n=>n.tagName==='dialog'||n.classList?.contains('range-live-panel'));};
+ return {o,before,calls,doc,aside,main,preview,open};
 }
 for(const key of ['moveRange','searchRange','attackRange']){
  test(`${key}: ステージ表示は編集画面を開かず、設定も保存しない`,t=>{
-  const s=setup(t,key);s.preview.onclick();assert.deepEqual(s.calls.view,[key]);assert.equal(s.doc.body.children.length,0);assert.deepEqual(s.o,s.before);assert.equal(s.calls.save,0);
+  const s=setup(t,key);s.preview.onclick();assert.deepEqual(s.calls.view,[key]);assert.ok(!all(s.doc.body).some(n=>n.tagName==='dialog'||n.classList?.contains('range-live-panel')));assert.deepEqual(s.o,s.before);assert.equal(s.calls.save,0);
  });
  for(const configured of [false,true])test(`${key}: ${configured?'設定済み':'未設定'}の範囲を開いて閉じても設定が変わらず、最初のフォーカスは見出し`,t=>{
   const range=key==='moveRange'?{space:'world',cells:[[1,1],[2,1]]}:makeAttackRange('cross',3,2),s=setup(t,key,configured?range:null),dialog=s.open();
-  assert.ok(dialog.open);const shape=all(dialog).find(n=>n.getAttribute?.('aria-label')==='はんいの形');assert.equal(shape.value,configured&&key!=='moveRange'?'cross':'custom');assert.equal(shape.options.length,4);assert.ok(shape.options.every(option=>option.value!==''));const heading=dialog.children[0];assert.equal(heading.tagName,'h2');assert.equal(heading.getAttribute('autofocus'),'');assert.equal(heading.getAttribute('tabindex'),'-1');assert.ok(!all(dialog).some(n=>n.tagName==='select'&&n.getAttribute('autofocus')!==null));assert.deepEqual(s.o,s.before);assert.equal(s.calls.save,0);assert.equal(s.calls.rebuild,0);
-  dialog.oncancel({preventDefault(){}});assert.deepEqual(s.o,s.before);assert.equal(s.calls.save,0);
+  assert.ok(key==='moveRange'?dialog.open:isLiveRangeEditing());const shape=all(dialog).find(n=>n.getAttribute?.('aria-label')==='はんいの形');assert.equal(shape.value,configured&&key!=='moveRange'?'cross':'custom');assert.equal(shape.options.length,4);assert.ok(shape.options.every(option=>option.value!==''));const heading=all(dialog).find(n=>n.tagName==='h2');assert.equal(heading.tagName,'h2');assert.equal(heading.getAttribute('autofocus'),'');assert.equal(heading.getAttribute('tabindex'),'-1');assert.ok(!all(dialog).some(n=>n.tagName==='select'&&n.getAttribute('autofocus')!==null));assert.deepEqual(s.o,s.before);assert.equal(s.calls.save,0);assert.equal(s.calls.rebuild,0);
+  finish(dialog);assert.deepEqual(s.o,s.before);assert.equal(s.calls.save,0);
  });
  test(`${key}: マスを押した時だけ設定が作られ、再編集でも保たれる`,t=>{
   const s=setup(t,key),dialog=s.open(),cell=all(dialog).find(n=>n.tagName==='button'&&n.getAttribute('aria-pressed')==='false');cell.onclick();assert.equal(s.calls.save,1);assert.equal(s.o[key].cells.length,1);assert.ok(key==='moveRange'?validMoveRange(s.o[key]):validAttackRange(s.o[key]));
-  dialog.oncancel({preventDefault(){}});const edited=structuredClone(s.o);s.open();assert.deepEqual(s.o,edited);assert.equal(s.calls.save,1);
+  finish(dialog);const edited=structuredClone(s.o);s.open();assert.deepEqual(s.o,edited);assert.equal(s.calls.save,1);
  });
  test(`${key}: 形を明示的に選んだ時にだけマスを置き換える`,t=>{
   const s=setup(t,key),dialog=s.open(),shape=all(dialog).find(n=>n.getAttribute?.('aria-label')==='はんいの形');shape.value='cross';shape.onchange();assert.equal(s.calls.save,1);assert.ok(s.o[key].cells.length>1);assert.ok(key==='moveRange'?validMoveRange(s.o[key]):validAttackRange(s.o[key]));
  });
 }
+
+for(const key of ['searchRange','attackRange'])test(`${key}: ステージを遮らないサイドパネルで即時反映し、視点を変えても開いたままになる`,t=>{
+ const s=setup(t,key),panel=s.open();assert.equal(panel.parentElement,s.aside);assert.equal(panel.getAttribute('role'),'region');assert.equal(all(s.doc.body).some(n=>n.tagName==='dialog'),false);assert.ok(s.main.classList.contains('range-editing'));assert.equal(s.aside.scrollTop,0);assert.equal(s.doc.activeElement.tagName,'h2');
+ const view=panel.children.find(n=>n.tagName==='button');view.onclick();assert.ok(isLiveRangeEditing());const cell=all(panel).find(n=>n.tagName==='button'&&n.getAttribute('aria-pressed')==='false');cell.onclick();assert.equal(s.calls.rebuild,1);assert.equal(s.o[key].cells.length,1);closeLiveRangeEditor();assert.equal(isLiveRangeEditing(),false);assert.ok(!s.main.classList.contains('range-editing'));assert.ok(!s.aside.classList.contains('is-range-editing'));assert.equal(s.aside.scrollTop,140);closeLiveRangeEditor();assert.equal(s.calls.save,1);
+});
