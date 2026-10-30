@@ -1,8 +1,9 @@
-import {nearbyObjects} from './spatial3d.js?v=20261030k';
-import {worldHalf} from './world3d.js?v=20261030k';
-import {fireDestructionEvents} from './events3d.js?v=20261030k';
-import {topAt} from './building3d.js?v=20261030k';
-import {LIMITS,safeShot,DESTRUCTIBLE_TYPES,impactEffects} from './weapons3d.js?v=20261030k';
+import {MAX_BUILD_Y} from './limits3d.js?v=20261030l';
+import {nearbyObjects} from './spatial3d.js?v=20261030l';
+import {worldHalf} from './world3d.js?v=20261030l';
+import {fireDestructionEvents} from './events3d.js?v=20261030l';
+import {topAt} from './building3d.js?v=20261030l';
+import {LIMITS,safeShot,DESTRUCTIBLE_TYPES,impactEffects} from './weapons3d.js?v=20261030l';
 const solidType=o=>DESTRUCTIBLE_TYPES.has(o.type)||o.type==='door';
 const alive=o=>(o.type!=='enemy'&&!DESTRUCTIBLE_TYPES.has(o.type))||o.hp>0||(DESTRUCTIBLE_TYPES.has(o.type)&&o.destructible===false);
 function axes(f){const length=Math.hypot(f.x,f.z),right=length>.00001?{x:-f.z/length,y:0,z:f.x/length}:{x:1,y:0,z:0};return {right,up:{x:right.y*f.z-right.z*f.y,y:right.z*f.x-right.x*f.z,z:right.x*f.y-right.y*f.x}};}
@@ -50,7 +51,7 @@ export function updateCombat(g,dt){
     const steps=Math.min(24,Math.max(1,Math.ceil(Math.hypot(b.vx,b.vy,b.vz)*dt/.15)));
     for(let i=0;i<steps&&b.life>0;i++){
       const speed=Math.hypot(b.vx,b.vy,b.vz),travel=Math.min(speed*dt/steps,b.remaining);if(travel<=.000001){b.life=0;break;}const fraction=travel/(speed||1);b.x+=b.vx*fraction;b.y+=b.vy*fraction;b.z+=b.vz*fraction;b.remaining-=travel;
-      if(Math.abs(b.x)>worldHalf(g)||Math.abs(b.z)>worldHalf(g)||b.y>40){b.life=0;break;}
+      if(Math.abs(b.x)>worldHalf(g)||Math.abs(b.z)>worldHalf(g)||b.y>MAX_BUILD_Y+10+LIMITS.maxRange){b.life=0;break;}
       const ground=b.y-b.radius<=0,hit=targets.find(o=>alive(o)&&!(o.id===b.lastHit&&g.time<b.ignoreUntil)&&contains(b,o));
       const playerHit=b.enemy&&Math.hypot(b.x-g.player.x,b.z-g.player.z)<.35+b.radius&&b.y>g.player.y-b.radius&&b.y<g.player.y+1.7+b.radius;
       if(playerHit){b.life=0;if(impacts.includes('explode'))explode(g,b);else{if(impacts.includes('damage')&&g.player.invincible<=0){g.player.hp-=b.damage;g.player.invincible=1;}effect(g,b,.35,'hit');}break;}

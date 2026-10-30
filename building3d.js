@@ -1,7 +1,7 @@
-import {validAppearance} from './appearance3d.js?v=20261030k';
-import {MAX_PARTS} from './limits3d.js?v=20261030k';
-import {worldHalf,coordinateLimit} from './world3d.js?v=20261030k';
-import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261030k';
+import {validAppearance} from './appearance3d.js?v=20261030l';
+import {MAX_PARTS,MAX_BUILD_Y,MAX_BUILD_LEVEL} from './limits3d.js?v=20261030l';
+import {worldHalf,coordinateLimit} from './world3d.js?v=20261030l';
+import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261030l';
 // Shared by editor, gameplay and placement preview. No browser dependency.
 export const BUILD_TYPES={wall:'壁',floor:'床',roof:'屋根',ramp:'スロープ'};
 export const GRID={cell:4,layer:3,size:60};
@@ -18,7 +18,7 @@ function rampFloorAnchor(ramp,normal,floor){
 export function snapEditorPiece(o,point,target=null,normal=null,world=60){
   o.x=point.x;o.z=point.z;
   if(o.type==='floor'&&target?.type==='ramp'){Object.assign(o,rampFloorAnchor(target,normal,o));return alignPiece(o,world);}
-  if(!GRID_PARTS.has(o.type)){o.x=Math.max(-coordinateLimit(world),Math.min(coordinateLimit(world),Math.round(o.x)));o.z=Math.max(-coordinateLimit(world),Math.min(coordinateLimit(world),Math.round(o.z)));if(target&&normal?.y>.5)o.y=Math.max(0,Math.min(12,topAt(target,point.x,point.z)));return o;}
+  if(!GRID_PARTS.has(o.type)){o.x=Math.max(-coordinateLimit(world),Math.min(coordinateLimit(world),Math.round(o.x)));o.z=Math.max(-coordinateLimit(world),Math.min(coordinateLimit(world),Math.round(o.z)));if(target&&normal?.y>.5)o.y=Math.max(0,Math.min(MAX_BUILD_Y,topAt(target,point.x,point.z)));return o;}
   const side=target&&normal&&Math.abs(normal.y)<.5;
   if(o.type==='wall'){
     o.rotation=side?(Math.abs(normal.x)>.5?90:0):Math.abs(point.x-snap(point.x,4,2))<Math.abs(point.z-snap(point.z,4,2))?90:0;
@@ -35,7 +35,7 @@ export function snapEditorPiece(o,point,target=null,normal=null,world=60){
   }else if(target&&normal?.y<-.5)o.y=Math.max(0,target.y-o.h);
   else if(side)o.y=target.y;
   else o.y=o.type==='roof'?3:['wall','floor','box'].includes(o.type)?0:o.y;
-  o.y=Math.max(0,Math.min(12,o.y));return alignPiece(o,world);
+  o.y=Math.max(0,Math.min(MAX_BUILD_Y,o.y));return alignPiece(o,world);
 }
 function joins(a,b){
   if(!intersects(a,b))return true;
@@ -55,6 +55,7 @@ function joins(a,b){
 }
 export function editorPlacementReason(piece,objects,spawn,world=60){
   if(objects.length>=MAX_PARTS)return '部品は2000個まで置けます';
+  if(!Number.isFinite(piece.y)||piece.y<0||piece.y>MAX_BUILD_Y)return `高さは0〜${MAX_BUILD_Y}mの中に置こう`;
   if(!GRID_PARTS.has(piece.type))return '';
   if(Math.abs(piece.x)>coordinateLimit(world)||Math.abs(piece.z)>coordinateLimit(world)||Math.abs(piece.x)+piece.w/2>worldHalf(world)||Math.abs(piece.z)+piece.d/2>worldHalf(world))return 'ステージの中に置こう';
   if(spawn&&Math.abs(piece.x-spawn.x)<piece.w/2+.35&&Math.abs(piece.z-spawn.z)<piece.d/2+.35&&piece.y<spawn.y+1.7&&piece.y+piece.h>spawn.y)return 'スタートに重ならない場所に置こう';
@@ -89,7 +90,7 @@ export function facingBuildRotation(yaw,offset=0){
 }
 export function placement(g,tool,point,rotation=0,level=0){
   tool=activeBuildTool(g,tool);
-  if(!tool||!Object.hasOwn(BUILD_TYPES,tool.effect)||!point||!['x','y','z'].every(k=>Number.isFinite(point[k]))||![0,90,180,270].includes(rotation)||!Number.isInteger(level)||Math.abs(level)>4)return {piece:null,valid:false,reason:'建築する場所をえらぼう'};
+  if(!tool||!Object.hasOwn(BUILD_TYPES,tool.effect)||!point||!['x','y','z'].every(k=>Number.isFinite(point[k]))||![0,90,180,270].includes(rotation)||!Number.isInteger(level)||Math.abs(level)>MAX_BUILD_LEVEL)return {piece:null,valid:false,reason:'建築する場所をえらぼう'};
   const rotated=rotation%180!==0;
   let x=Math.round(point.x/4)*4,z=Math.round(point.z/4)*4;
   if(point.surface?.type==='wall'&&point.normal?.y>.5&&['floor','roof'].includes(tool.effect)){x=point.surface.x-(point.surface.rotation===90?2:0);z=point.surface.z-(point.surface.rotation!==90?2:0);}
@@ -103,7 +104,7 @@ export function placement(g,tool,point,rotation=0,level=0){
   const piece=constructionPart(tool.effect,x,z,y,tool.effect==='ramp'?rotation:rotated?90:0);
   const no=reason=>({piece,valid:false,reason});
   if(g.objects.length>=MAX_PARTS)return no('部品は全部で2000個まで置けます');
-  if(Math.abs(x)>coordinateLimit(g)||Math.abs(z)>coordinateLimit(g)||Math.abs(x)+piece.w/2>worldHalf(g)||Math.abs(z)+piece.d/2>worldHalf(g)||y<0||y>12)return no('ステージの中に置こう');
+  if(Math.abs(x)>coordinateLimit(g)||Math.abs(z)>coordinateLimit(g)||Math.abs(x)+piece.w/2>worldHalf(g)||Math.abs(z)+piece.d/2>worldHalf(g)||y<0||y>MAX_BUILD_Y)return no('ステージの中に置こう');
   if(Math.hypot(x-g.player.x,y-g.player.y,z-g.player.z)>12)return no('もう少し近づこう');
   const p=g.player;if(Math.abs(x-p.x)<piece.w/2+.35&&Math.abs(z-p.z)<piece.d/2+.35&&p.y<y+piece.h&&p.y+1.7>y)return no('自分に重ならない場所に置こう');
   for(const o of g.objects){
@@ -144,7 +145,7 @@ export function equipBlock(g,id){const stack=g.blockInventory?.find(s=>s.id===id
 export function blockPlacement(g,point,rotation=0,level=0){
  const stack=g.blockInventory?.find(s=>s.id===g.blockEquipped),no=reason=>({piece:null,valid:false,reason});
  if(!stack||stack.count<=0)return no('拾ったブロックがありません');
- if(!point||!['x','y','z'].every(k=>Number.isFinite(point[k]))||![0,90,180,270].includes(rotation)||!Number.isInteger(level)||Math.abs(level)>4)return no('置く場所をえらぼう');
+ if(!point||!['x','y','z'].every(k=>Number.isFinite(point[k]))||![0,90,180,270].includes(rotation)||!Number.isInteger(level)||Math.abs(level)>MAX_BUILD_LEVEL)return no('置く場所をえらぼう');
  const t=stack.template;let piece;
  if(Object.hasOwn(BUILD_TYPES,t.type)){
   const result=placement(g,{effect:t.type},point,rotation,level);if(!result.piece)return result;
@@ -154,7 +155,7 @@ export function blockPlacement(g,point,rotation=0,level=0){
   if(rotation%180!==0)[piece.w,piece.d]=[piece.d,piece.w];piece.rotation=rotation%180;
  }
  let reason=editorPlacementReason(piece,g.objects,g.player,g);
- if(piece.y<0||piece.y>12)reason='ステージの中に置こう';
+ if(piece.y<0||piece.y>MAX_BUILD_Y)reason='ステージの中に置こう';
  if(Math.hypot(piece.x-g.player.x,piece.y-g.player.y,piece.z-g.player.z)>12)reason='もう少し近づこう';
  return {piece,valid:!reason,reason:reason||'発射ボタンで拾ったブロックを置く'};
 }

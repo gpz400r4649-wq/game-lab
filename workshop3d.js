@@ -1,16 +1,16 @@
-import {CHASE_MODES} from './enemy-ai3d.js?v=20261030k';
-import {inGridRange,defaultEnemyRanges} from './enemy-range3d.js?v=20261030k';
-import {renderEnemyRange} from './enemy-range-ui3d.js?v=20261030k';
-import {gunPreviewSVG} from './appearance3d.js?v=20261030k';
-import {DOOR_PRESETS} from './doors3d.js?v=20261030k';
-import {MAX_PARTS} from './limits3d.js?v=20261030k';
-import {coordinateLimit} from './world3d.js?v=20261030k';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261030k';
-import {actionsFor} from './events3d.js?v=20261030k';
-import {renderEventEditor} from './event-editor3d.js?v=20261030k';
-import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261030k';
-import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261030k';
-import {PARTS,ENEMY_PRESETS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261030k';
+import {CHASE_MODES} from './enemy-ai3d.js?v=20261030l';
+import {inGridRange,defaultEnemyRanges} from './enemy-range3d.js?v=20261030l';
+import {renderEnemyRange} from './enemy-range-ui3d.js?v=20261030l';
+import {gunPreviewSVG} from './appearance3d.js?v=20261030l';
+import {DOOR_PRESETS} from './doors3d.js?v=20261030l';
+import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261030l';
+import {coordinateLimit} from './world3d.js?v=20261030l';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261030l';
+import {actionsFor} from './events3d.js?v=20261030l';
+import {renderEventEditor} from './event-editor3d.js?v=20261030l';
+import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261030l';
+import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261030l';
+import {PARTS,ENEMY_PRESETS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261030l';
 
 const ICONS={weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
 const DESCRIPTIONS={weapon:'地面に置いて、ふれると拾える銃。持ちもの・銃づくりで用意した銃をえらぼう。',ramp:'低いほうから歩くと、そのまま登れるスロープ。回して好きな向きにつなげよう。',wall:'家を囲う壁。向きを変えてつなげよう。',floor:'家の床と天井に使える板。壁の内側にぴったり合うよ。',roof:'壁の上にのせる三角屋根。向きを変えて家を仕上げよう。',
@@ -109,10 +109,10 @@ export function createWorkshop(api){
     const label=document.createElement('div');label.className='small-heading';setReadingText(label,'置く場所をちょうせい');el.append(label);
     const nudges=document.createElement('div');nudges.className='nudge-grid';
     for(const [name,key,amount] of [['← 左','x',-1],['奥へ ↑','z',-1],['右 →','x',1],['下げる','y',-.5],['手前 ↓','z',1],['上げる','y',.5]]){
-      const button=document.createElement('button');setReadingText(button,name);button.onclick=()=>{const before={x:o.x,y:o.y,z:o.z};o[key]=clamp(o[key]+Math.sign(amount)*gridStep(o,key),key==='y'?0:-coordinateLimit(p),key==='y'?12:coordinateLimit(p));alignPiece(o,p);const reason=editorPlacementReason(o,p.objects.filter(x=>x.id!==o.id),p.spawn,p);if(reason){Object.assign(o,before);api.toast(reason);return;}save();rebuild();inspect();};nudges.append(button);
+      const button=document.createElement('button');setReadingText(button,name);button.onclick=()=>{const before={x:o.x,y:o.y,z:o.z};o[key]=clamp(o[key]+Math.sign(amount)*gridStep(o,key),key==='y'?0:-coordinateLimit(p),key==='y'?MAX_BUILD_Y:coordinateLimit(p));alignPiece(o,p);const reason=editorPlacementReason(o,p.objects.filter(x=>x.id!==o.id),p.spawn,p);if(reason){Object.assign(o,before);api.toast(reason);return;}save();rebuild();inspect();};nudges.append(button);
     }el.append(nudges);
     const fine=document.createElement('div'),positions=document.createElement('div');positions.className='position-fields';
-    for(const [key,name,min,max] of [['x','横 X',-coordinateLimit(p),coordinateLimit(p)],['y','高さ Y',0,12],['z','奥行 Z',-coordinateLimit(p),coordinateLimit(p)]])field(positions,name,o[key],min,max,gridStep(o,key),n=>{o[key]=n;alignPiece(o,p);return o[key];});fine.append(positions);
+    for(const [key,name,min,max] of [['x','横 X',-coordinateLimit(p),coordinateLimit(p)],['y','高さ Y',0,MAX_BUILD_Y],['z','奥行 Z',-coordinateLimit(p),coordinateLimit(p)]])field(positions,name,o[key],min,max,gridStep(o,key),n=>{o[key]=n;alignPiece(o,p);return o[key];});fine.append(positions);
     if(['box','platform','moving','door','bounce','hazard','wall','floor','roof','ramp'].includes(o.type))for(const [key,name] of [['w','はば'],['h','たかさ'],['d','おくゆき']])field(fine,name,o[key],['wall','floor','roof','bounce','hazard'].includes(o.type)?.2:.5,10,.5,n=>o[key]=n);
     el.append(details('位置・大きさを数字でちょうせい',[fine]));
     if(['wall','floor','roof','ramp'].includes(o.type)){const rotate=document.createElement('button');setReadingText(rotate,'↻ 90° 回す');rotate.onclick=()=>{rotatePiece(o,p);save();rebuild();inspect();};el.append(rotate);}

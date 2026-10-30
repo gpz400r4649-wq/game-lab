@@ -1,9 +1,10 @@
-import {appearanceFor,GUN_SHAPES,GUN_COLORS,gunPreviewSVG} from './appearance3d.js?v=20261030k';
-import {bindGameAction} from './input3d.js?v=20261030k';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261030k';
-import {LIMITS,PROJECTILES,IMPACTS,impactEffects,weaponPresetKey,SHOT_PATTERNS,cadenceHandling} from './weapons3d.js?v=20261030k';
-import {buildChoices,activeBuildTool,cycleBuildType,facingBuildRotation,makeTool,TOOL_EFFECTS,BUILD_TYPES,equipTool,keepStructures,equipBlock} from './building3d.js?v=20261030k';
-import {WEAPON_PRESETS,PARTS} from './engine3d.js?v=20261030k';
+import {MAX_BUILD_LEVEL} from './limits3d.js?v=20261030l';
+import {appearanceFor,GUN_SHAPES,GUN_COLORS,gunPreviewSVG} from './appearance3d.js?v=20261030l';
+import {bindGameAction} from './input3d.js?v=20261030l';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261030l';
+import {LIMITS,PROJECTILES,IMPACTS,impactEffects,weaponPresetKey,SHOT_PATTERNS,cadenceHandling} from './weapons3d.js?v=20261030l';
+import {buildChoices,activeBuildTool,cycleBuildType,facingBuildRotation,makeTool,TOOL_EFFECTS,BUILD_TYPES,equipTool,keepStructures,equipBlock} from './building3d.js?v=20261030l';
+import {WEAPON_PRESETS,PARTS} from './engine3d.js?v=20261030l';
 export function createToolsUI(api){
   const {$,getProject,getGame,getMode,field,save,refresh,finishBuilding}=api;
   let editing=0,rotation=0,level=0;
@@ -83,7 +84,7 @@ export function createToolsUI(api){
   function setRotation(value){rotation=value;setReadingText($('#rotate-build3'),'↻ 90° 回す');$('#rotate-build3').setAttribute('aria-label',`90度回す（見る向きから ${rotation}度）`);}
   bindGameAction($('#switch-build3'),()=>{if(cycleBuildType(getGame(),getProject()))renderHotbar();});
   bindGameAction($('#rotate-build3'),()=>setRotation((rotation+90)%360));
-  $('#lower-build3').onclick=()=>{level=Math.max(-4,level-1);renderHotbar();};$('#raise-build3').onclick=()=>{level=Math.min(4,level+1);renderHotbar();};
+  $('#lower-build3').onclick=()=>{level=Math.max(-MAX_BUILD_LEVEL,level-1);renderHotbar();};$('#raise-build3').onclick=()=>{level=Math.min(MAX_BUILD_LEVEL,level+1);renderHotbar();};
   $('#keep-build3').onclick=()=>{const g=getGame();if(!g)return;const count=keepStructures(getProject(),g);save();finishBuilding(count);};
   window.addEventListener('keydown',e=>{if(getMode()!=='play'||e.target.matches('input,select,textarea')||document.querySelector('dialog[open]'))return;
     if(/^[1-8]$/.test(e.key)){equipTool(getGame(),getProject(),Number(e.key)-1);renderHotbar();}

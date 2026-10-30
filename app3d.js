@@ -1,25 +1,25 @@
-import {closeLiveRangeEditor,isLiveRangeEditing} from './enemy-range-ui3d.js?v=20261030k';
-import {dragCandidate} from './editor-drag3d.js?v=20261030k';
-import {rangeWorldCells,enemyYaw,defaultEnemyRanges,MOVE_MAX_CELLS} from './enemy-range3d.js?v=20261030k';
-import {TPS_GUN_MOUNT} from './muzzle3d.js?v=20261030k';
-import {configureDoor,nearbyDoor} from './doors3d.js?v=20261030k';
-import {appearanceFor} from './appearance3d.js?v=20261030k';
-import {makeGunModel,applyFPSGunPose,worldGunMuzzle} from './gun-model3d.js?v=20261030k';
-import {moveEditorCamera,createEditorNavigation} from './editor-camera3d.js?v=20261030k';
-import {createStructureRenderer,BATCH_TYPES} from './structure-render3d.js?v=20261030k';
-import {MAX_PROJECT_BYTES} from './limits3d.js?v=20261030k';
-import {worldSize,coordinateLimit} from './world3d.js?v=20261030k';
-import {createWorldUI} from './world-ui3d.js?v=20261030k';
-import {configureNumericInput} from './numeric3d.js?v=20261030k';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261030k';
-import {installGameTouchGuard,bindHeldButton,bindGameAction,createGamePageMode} from './input3d.js?v=20261030k';
-import {actionsFor,ACTION_NAMES} from './events3d.js?v=20261030k';
-import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261030k';
-import {BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,editorPlacementReason,blockPlacement} from './building3d.js?v=20261030k';
-import {createToolsUI} from './tools3d.js?v=20261030k';
+import {closeLiveRangeEditor,isLiveRangeEditing} from './enemy-range-ui3d.js?v=20261030l';
+import {dragCandidate} from './editor-drag3d.js?v=20261030l';
+import {rangeWorldCells,enemyYaw,defaultEnemyRanges,MOVE_MAX_CELLS} from './enemy-range3d.js?v=20261030l';
+import {TPS_GUN_MOUNT} from './muzzle3d.js?v=20261030l';
+import {configureDoor,nearbyDoor} from './doors3d.js?v=20261030l';
+import {appearanceFor} from './appearance3d.js?v=20261030l';
+import {makeGunModel,applyFPSGunPose,worldGunMuzzle} from './gun-model3d.js?v=20261030l';
+import {moveEditorCamera,createEditorNavigation} from './editor-camera3d.js?v=20261030l';
+import {createStructureRenderer,BATCH_TYPES} from './structure-render3d.js?v=20261030l';
+import {MAX_PROJECT_BYTES,MAX_BUILD_Y} from './limits3d.js?v=20261030l';
+import {worldSize,coordinateLimit} from './world3d.js?v=20261030l';
+import {createWorldUI} from './world-ui3d.js?v=20261030l';
+import {configureNumericInput} from './numeric3d.js?v=20261030l';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261030l';
+import {installGameTouchGuard,bindHeldButton,bindGameAction,createGamePageMode} from './input3d.js?v=20261030l';
+import {actionsFor,ACTION_NAMES} from './events3d.js?v=20261030l';
+import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261030l';
+import {BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,editorPlacementReason,blockPlacement} from './building3d.js?v=20261030l';
+import {createToolsUI} from './tools3d.js?v=20261030l';
 import * as T from './vendor/three.module.min.js';
-import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,conditionHint} from './engine3d.js?v=20261030k';
-import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261030k';
+import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,conditionHint} from './engine3d.js?v=20261030l';
+import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261030l';
 const $=s=>document.querySelector(s),view=$('#viewport'),KEY='tsukuru-lab-3d-v1';
 let enemyRangeView='attackRange';
 let project=fresh3D(),selected=null,tool='select',doorPreset='key',weaponPresetId='',mode='edit',perspective='tps',game=null,yaw=0,pitch=-.05,editYaw=.55,editPitch=.7,editDistance=30,editTarget=new T.Vector3(0,0,0),stick={x:0,z:0},keys=new Set(),fireHeld=false,firePressed=false,jumpPressed=false,doorPressed=false,look=null,saveTimer,toastTimer,lastTime=0;
@@ -91,7 +91,7 @@ function field(parent,name,value,min,max,step,fn){
  l.append(s);if(min<0){const entry=document.createElement('span'),sign=document.createElement('button');entry.className='number-entry';sign.type='button';sign.textContent='＋/−';sign.setAttribute('aria-label',name+'のプラスとマイナスを切り替える');sign.onclick=toggleSign;entry.append(input,sign);l.append(entry);}else l.append(input);parent.append(l);return l;
 }
 function objectList(){const select=$('#object-list');select.replaceChildren(new Option('パーツをタップして選択',''));project.objects.forEach((o,i)=>select.add(new Option(`${i+1}. ${PARTS[o.type]}`,o.id)));select.value=selected||'';applyReadings(select);}
-function advancedInspector(){const el=$('#inspector3');el.replaceChildren();const o=project.objects.find(o=>o.id===selected);if(!o){el.innerHTML='<p class="empty">何もない場所から、はじめよう。<br>敵も足場も、自分でついかできるよ。</p>';return;}const title=document.createElement('div');title.className='inspector-heading';setReadingText(title,PARTS[o.type]);el.append(title);const pos=document.createElement('div');pos.className='position-fields';for(const [k,label,min,max] of [['x','横 X',-coordinateLimit(project),coordinateLimit(project)],['y','高さ Y',0,12],['z','奥行 Z',-coordinateLimit(project),coordinateLimit(project)]])field(pos,label,o[k],min,max,.5,n=>o[k]=n);el.append(pos);if(o.type==='box'||o.type==='platform'){for(const [k,label] of [['w','はば'],['h','たかさ'],['d','おくゆき']])field(el,label,o[k],.5,10,.5,n=>o[k]=n);}
+function advancedInspector(){const el=$('#inspector3');el.replaceChildren();const o=project.objects.find(o=>o.id===selected);if(!o){el.innerHTML='<p class="empty">何もない場所から、はじめよう。<br>敵も足場も、自分でついかできるよ。</p>';return;}const title=document.createElement('div');title.className='inspector-heading';setReadingText(title,PARTS[o.type]);el.append(title);const pos=document.createElement('div');pos.className='position-fields';for(const [k,label,min,max] of [['x','横 X',-coordinateLimit(project),coordinateLimit(project)],['y','高さ Y',0,MAX_BUILD_Y],['z','奥行 Z',-coordinateLimit(project),coordinateLimit(project)]])field(pos,label,o[k],min,max,.5,n=>o[k]=n);el.append(pos);if(o.type==='box'||o.type==='platform'){for(const [k,label] of [['w','はば'],['h','たかさ'],['d','おくゆき']])field(el,label,o[k],.5,10,.5,n=>o[k]=n);}
 if(o.type==='enemy'){field(el,'体力',o.hp,1,20,1,n=>o.hp=Math.round(n));const loop=document.createElement('div');loop.className='loop';setReadingText(loop,'⚑ ゲーム開始 → ずっとくり返す');o.program.forEach((b,i)=>{const block=document.createElement('div');block.className='block';const select=document.createElement('select');select.setAttribute('aria-label',`3Dの${i+1}番目のうごき`);Object.entries(BEHAVIORS).forEach(([k,v])=>select.add(new Option(kanaText(v),k)));select.value=b.action;select.onchange=()=>{b.action=select.value;save();rebuild();inspector();};block.append(select);field(block,'速さ',b.speed,.5,8,.5,n=>b.speed=n);const row=document.createElement('div');row.className='block-controls';for(const [name,disabled,fn] of [['↑',i===0,()=>[o.program[i-1],o.program[i]]=[o.program[i],o.program[i-1]]],['↓',i===o.program.length-1,()=>[o.program[i+1],o.program[i]]=[o.program[i],o.program[i+1]]],['×',false,()=>o.program.splice(i,1)]]){const btn=document.createElement('button');setReadingText(btn,name);btn.disabled=disabled;btn.setAttribute('aria-label',name==='×'?'3Dブロックを削除':name==='↑'?'3Dブロックを上へ':'3Dブロックを下へ');btn.onclick=()=>{fn();save();inspector();};row.append(btn);}block.append(row);loop.append(block);});const add=document.createElement('button');setReadingText(add,'＋ うごきを追加');add.disabled=o.program.length>=8;add.onclick=()=>{o.program.push({action:'patrol',speed:2});save();inspector();};loop.append(add);el.append(loop);}
 const del=document.createElement('button');del.className='danger';setReadingText(del,'このパーツを消す');del.onclick=()=>{project.objects=project.objects.filter(x=>x.id!==o.id);selected=null;save();rebuild();objectList();inspector();};el.append(del);}
 function advancedWeaponFields(){const el=$('#weapon3');el.replaceChildren();field(el,'弾の速さ',project.weapon.speed,5,60,1,n=>project.weapon.speed=n);field(el,'発射の間かく（秒）',project.weapon.interval,.1,2,.05,n=>project.weapon.interval=n);field(el,'弾のつよさ',project.weapon.damage,1,10,1,n=>project.weapon.damage=Math.round(n));const l=document.createElement('label');l.className='field';setReadingText(l,'同時に出る弾');const s=document.createElement('select');[1,3,5].forEach(n=>s.add(new Option(n+' 発',n)));s.value=project.weapon.spread;s.onchange=()=>{project.weapon.spread=Number(s.value);save();};l.append(s);el.append(l);}

@@ -1,16 +1,16 @@
-import {validLibrary} from './assets3d.js?v=20261030k';
-import {moveEnemy,canEnemyEnter,validEnemyMovement} from './enemy-ai3d.js?v=20261030k';
-import {worldMoveRange,validMoveRange,validAttackRange,inAttackRange,enemyYaw,defaultEnemyRanges} from './enemy-range3d.js?v=20261030k';
-import {playerGunMuzzle,finitePoint} from './muzzle3d.js?v=20261030k';
-import {validDoor,nearbyDoor,doorwayOccupied,animateDoors} from './doors3d.js?v=20261030k';
-import {nearbyObjects} from './spatial3d.js?v=20261030k';
-import {MAX_PARTS} from './limits3d.js?v=20261030k';
-import {worldSize,worldHalf,coordinateLimit,WORLD_SIZES} from './world3d.js?v=20261030k';
-import {settleLoot} from './loot3d.js?v=20261030k';
-import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261030k';
-import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261030k';
-import {shootVolley,updateCombat,resolveShotOrigin} from './combat3d.js?v=20261030k';
-import {BUILD_TYPES,constructionPart,topAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261030k';
+import {validLibrary} from './assets3d.js?v=20261030l';
+import {moveEnemy,canEnemyEnter,validEnemyMovement} from './enemy-ai3d.js?v=20261030l';
+import {worldMoveRange,validMoveRange,validAttackRange,inAttackRange,enemyYaw,defaultEnemyRanges} from './enemy-range3d.js?v=20261030l';
+import {playerGunMuzzle,finitePoint} from './muzzle3d.js?v=20261030l';
+import {validDoor,nearbyDoor,doorwayOccupied,animateDoors} from './doors3d.js?v=20261030l';
+import {nearbyObjects} from './spatial3d.js?v=20261030l';
+import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261030l';
+import {worldSize,worldHalf,coordinateLimit,WORLD_SIZES} from './world3d.js?v=20261030l';
+import {settleLoot} from './loot3d.js?v=20261030l';
+import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261030l';
+import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261030l';
+import {shootVolley,updateCombat,resolveShotOrigin} from './combat3d.js?v=20261030l';
+import {BUILD_TYPES,constructionPart,topAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261030l';
 export const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export const PARTS={weapon:'銃アイテム',ramp:'スロープ',wall:'壁',floor:'床',roof:'屋根',box:'ブロック',platform:'足場',moving:'動く足場',bounce:'ジャンプ台',enemy:'敵ロボット',star:'星',key:'カギ',door:'ドア',heal:'回復',checkpoint:'セーブポイント',hazard:'ダメージ床',goal:'ゴール'};
 export const BEHAVIORS={chase:'プレイヤーを追いかける',patrol:'左右に動く',search:'歩き回って探す'};
@@ -38,7 +38,7 @@ export function validate3D(data){
     if(!validEvents(o))throw Error('イベントの設定を確認してください');
     const sizes=['w','h','d'].every(k=>number(o[k],['wall','floor','roof','ramp','bounce','hazard'].includes(o.type)?.2:.5,10));
     if(o.rotation!==undefined&&!(o.type==='ramp'?[0,90,180,270]:[0,90]).includes(o.rotation))throw Error('部品の向きを確認してください');
-    if(!Object.hasOwn(PARTS,o.type)||typeof o.id!=='string'||ids.has(o.id)||!['x','z'].every(k=>number(o[k],-limit,limit))||!number(o.y,0,12)||!sizes||!Number.isInteger(o.hp)||!number(o.hp,1,DESTRUCTIBLE_TYPES.has(o.type)?200:20)||!Array.isArray(o.program)||o.program.length>8)throw Error('パーツの設定を確認してください');ids.add(o.id);if(DESTRUCTIBLE_TYPES.has(o.type)){if(o.destructible===undefined)o.destructible=true;if(typeof o.destructible!=='boolean')throw Error('ブロックの体力設定を確認してください');}
+    if(!Object.hasOwn(PARTS,o.type)||typeof o.id!=='string'||ids.has(o.id)||!['x','z'].every(k=>number(o[k],-limit,limit))||!number(o.y,0,MAX_BUILD_Y)||!sizes||!Number.isInteger(o.hp)||!number(o.hp,1,DESTRUCTIBLE_TYPES.has(o.type)?200:20)||!Array.isArray(o.program)||o.program.length>8)throw Error('パーツの設定を確認してください');ids.add(o.id);if(DESTRUCTIBLE_TYPES.has(o.type)){if(o.destructible===undefined)o.destructible=true;if(typeof o.destructible!=='boolean')throw Error('ブロックの体力設定を確認してください');}
     for(const b of o.program)if((!Object.hasOwn(BEHAVIORS,b.action)&&b.action!=='shoot')||!number(b.speed,.5,8))throw Error('うごきの設定を確認してください');
     if(o.type==='enemy'){if(o.facing!==undefined&&![0,90,180,270].includes(o.facing))throw Error('敵の向きを確認してください');if(o.attackEnabled!==undefined&&typeof o.attackEnabled!=='boolean'||o.attackSpeed!==undefined&&!number(o.attackSpeed,.5,8)||o.enemyWeaponId!==undefined&&typeof o.enemyWeaponId!=='string')throw Error('敵の攻撃設定を確認してください');upgradeEnemy(o);}
     if(o.settings===undefined)o.settings=settingsFor(o.type);
@@ -90,7 +90,7 @@ function inside(b,o,r=0){return Math.abs(b.x-o.x)<o.w/2+r&&Math.abs(b.z-o.z)<o.d
 export function step3D(g,p,input,dt){
   if(g.state!=='playing')return;const limit=coordinateLimit(g);dt=clamp(dt,0,.033);g.time+=dt;g.cooldown-=dt;g.recoilPitch=Math.max(0,(g.recoilPitch||0)-8*Math.PI/180*dt);const player=g.player,tell=s=>{g.message=s;g.messageId++;};player.invincible=Math.max(0,player.invincible-dt);
   for(const o of g.objects){if(o.type==='moving'){
-    const s=o.settings,before={x:o.x,y:o.y,z:o.z},axis=s.axis;o[axis]=clamp(o.origin[axis]+Math.sin(g.time*s.speed/s.distance)*s.distance,axis==='y'?0:-limit,axis==='y'?12:limit);
+    const s=o.settings,before={x:o.x,y:o.y,z:o.z},axis=s.axis;o[axis]=clamp(o.origin[axis]+Math.sin(g.time*s.speed/s.distance)*s.distance,axis==='y'?0:-limit,axis==='y'?MAX_BUILD_Y:limit);
     if(player.grounded&&player.supportId===o.id){player.x+=o.x-before.x;player.y+=o.y-before.y;player.z+=o.z-before.z;}}}
   let x=input.x||0,z=input.z||0,len=Math.hypot(x,z);if(len>1){x/=len;z/=len;}const yaw=input.yaw||0;movePlayer(player,nearbyObjects(g,player.x-1,player.z-1,player.x+1,player.z+1),(x*Math.cos(yaw)+z*Math.sin(yaw))*5*dt,(-x*Math.sin(yaw)+z*Math.cos(yaw))*5*dt,dt,input.jump,g);
   if(input.useDoor){const door=nearbyDoor(g,input.yaw||0);if(door){if(door.open){if(doorwayOccupied(door,player))tell('ドアから少しはなれよう');else{door.open=false;tell('ドアをしめた');}}else if(!conditionMet(door,g))tell('まだあけられません。'+conditionHint(door,g));else if(!door.triggered)fireEvents(g,p,door,tell);else if(actionsFor(door).some(a=>a.type==='openDoor'&&a.target===door.id)){door.open=true;tell('ドアをあけた');}}}

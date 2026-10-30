@@ -1,5 +1,6 @@
-import {worldHalf} from './world3d.js?v=20261030k';
-import {bindHeldButton} from './input3d.js?v=20261030k';
+import {MAX_BUILD_Y} from './limits3d.js?v=20261030l';
+import {worldHalf} from './world3d.js?v=20261030l';
+import {bindHeldButton} from './input3d.js?v=20261030l';
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 // Move the camera and its orbit target together in camera-relative directions.
 export function moveEditorCamera(target,input,yaw,distance,dt,world,pitch=.7){
@@ -7,7 +8,7 @@ export function moveEditorCamera(target,input,yaw,distance,dt,world,pitch=.7){
  const speed=clamp(distance*.55,6,28)*(input.fast?2.5:1),step=speed*clamp(dt,0,.05),half=worldHalf(world);
  target.x=clamp(target.x+(x*Math.cos(yaw)+z*Math.sin(yaw))*step,-half,half);
  target.z=clamp(target.z+(-x*Math.sin(yaw)+z*Math.cos(yaw))*step,-half,half);
- target.y=clamp(target.y+y*step,.5-Math.sin(pitch)*distance,40);return true;
+ target.y=clamp(target.y+y*step,.5-Math.sin(pitch)*distance,MAX_BUILD_Y+10);return true;
 }
 export function createEditorNavigation(root,focus=()=>{}){
  const stick=root.querySelector('#edit-stick3'),thumb=stick.querySelector('.edit-stick-thumb');let pointer=null,position={x:0,z:0},up=false,down=false;
