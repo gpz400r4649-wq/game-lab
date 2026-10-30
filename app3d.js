@@ -1,25 +1,25 @@
-import {closeLiveRangeEditor,isLiveRangeEditing} from './enemy-range-ui3d.js?v=20261030j';
-import {dragCandidate} from './editor-drag3d.js?v=20261030j';
-import {rangeWorldCells,enemyYaw,MOVE_MAX_CELLS} from './enemy-range3d.js?v=20261030j';
-import {TPS_GUN_MOUNT} from './muzzle3d.js?v=20261030j';
-import {configureDoor,nearbyDoor} from './doors3d.js?v=20261030j';
-import {appearanceFor} from './appearance3d.js?v=20261030j';
-import {makeGunModel,applyFPSGunPose,worldGunMuzzle} from './gun-model3d.js?v=20261030j';
-import {moveEditorCamera,createEditorNavigation} from './editor-camera3d.js?v=20261030j';
-import {createStructureRenderer,BATCH_TYPES} from './structure-render3d.js?v=20261030j';
-import {MAX_PROJECT_BYTES} from './limits3d.js?v=20261030j';
-import {worldSize,coordinateLimit} from './world3d.js?v=20261030j';
-import {createWorldUI} from './world-ui3d.js?v=20261030j';
-import {configureNumericInput} from './numeric3d.js?v=20261030j';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261030j';
-import {installGameTouchGuard,bindHeldButton,bindGameAction,createGamePageMode} from './input3d.js?v=20261030j';
-import {actionsFor,ACTION_NAMES} from './events3d.js?v=20261030j';
-import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261030j';
-import {BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,editorPlacementReason,blockPlacement} from './building3d.js?v=20261030j';
-import {createToolsUI} from './tools3d.js?v=20261030j';
+import {closeLiveRangeEditor,isLiveRangeEditing} from './enemy-range-ui3d.js?v=20261030k';
+import {dragCandidate} from './editor-drag3d.js?v=20261030k';
+import {rangeWorldCells,enemyYaw,defaultEnemyRanges,MOVE_MAX_CELLS} from './enemy-range3d.js?v=20261030k';
+import {TPS_GUN_MOUNT} from './muzzle3d.js?v=20261030k';
+import {configureDoor,nearbyDoor} from './doors3d.js?v=20261030k';
+import {appearanceFor} from './appearance3d.js?v=20261030k';
+import {makeGunModel,applyFPSGunPose,worldGunMuzzle} from './gun-model3d.js?v=20261030k';
+import {moveEditorCamera,createEditorNavigation} from './editor-camera3d.js?v=20261030k';
+import {createStructureRenderer,BATCH_TYPES} from './structure-render3d.js?v=20261030k';
+import {MAX_PROJECT_BYTES} from './limits3d.js?v=20261030k';
+import {worldSize,coordinateLimit} from './world3d.js?v=20261030k';
+import {createWorldUI} from './world-ui3d.js?v=20261030k';
+import {configureNumericInput} from './numeric3d.js?v=20261030k';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261030k';
+import {installGameTouchGuard,bindHeldButton,bindGameAction,createGamePageMode} from './input3d.js?v=20261030k';
+import {actionsFor,ACTION_NAMES} from './events3d.js?v=20261030k';
+import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261030k';
+import {BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,editorPlacementReason,blockPlacement} from './building3d.js?v=20261030k';
+import {createToolsUI} from './tools3d.js?v=20261030k';
 import * as T from './vendor/three.module.min.js';
-import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,conditionHint} from './engine3d.js?v=20261030j';
-import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261030j';
+import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,conditionHint} from './engine3d.js?v=20261030k';
+import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261030k';
 const $=s=>document.querySelector(s),view=$('#viewport'),KEY='tsukuru-lab-3d-v1';
 let enemyRangeView='attackRange';
 let project=fresh3D(),selected=null,tool='select',doorPreset='key',weaponPresetId='',mode='edit',perspective='tps',game=null,yaw=0,pitch=-.05,editYaw=.55,editPitch=.7,editDistance=30,editTarget=new T.Vector3(0,0,0),stick={x:0,z:0},keys=new Set(),fireHeld=false,firePressed=false,jumpPressed=false,doorPressed=false,look=null,saveTimer,toastTimer,lastTime=0;
@@ -146,7 +146,7 @@ const effectPool=[],bulletPool=[];function syncGameMeshes(){
  const goals=game.objects.filter(o=>o.type==='goal'),rule=goals.length?'ゴール：'+goals.map(o=>conditionHint(o,game)+' → '+(actionsFor(o).map(a=>ACTION_NAMES[a.type]).join('・')||'効果なし')).join(' / '):'';
  if(currentRules!==rule){currentRules=rule;$('#mission3').hidden=!rule;setReadingText($('#mission3'),rule);}
 }
-function editorCandidate(event){if(tool==='select'||tool==='erase')return null;const hit=hits(event,[objectsGroup,ground]).find(visibleHit);if(!hit)return null;const target=project.objects.find(o=>o.id===objectId(hit.object))||null,normal=hit.face?hit.face.normal.clone().transformDirection(hit.object.matrixWorld):null,piece=snapEditorPiece(tool==='door'?configureDoor(part(tool),doorPreset):tool==='weapon'?{...part(tool),weaponId:weaponPresetId}:part(tool),hit.point,target,normal,project);return {piece,reason:editorPlacementReason(piece,project.objects,project.spawn,project)};}
+function editorCandidate(event){if(tool==='select'||tool==='erase')return null;const hit=hits(event,[objectsGroup,ground]).find(visibleHit);if(!hit)return null;const target=project.objects.find(o=>o.id===objectId(hit.object))||null,normal=hit.face?hit.face.normal.clone().transformDirection(hit.object.matrixWorld):null,piece=snapEditorPiece(tool==='door'?configureDoor(part(tool),doorPreset):tool==='weapon'?{...part(tool),weaponId:weaponPresetId}:part(tool),hit.point,target,normal,project);if(piece.type==='enemy')Object.assign(piece,defaultEnemyRanges(piece));return {piece,reason:editorPlacementReason(piece,project.objects,project.spawn,project)};}
 function showGhost(o,valid){const shape=[o.type,o.rotation||0,o.w,o.h,o.d].join(':');if(shape!==ghostShape){ghost.clear();if(Object.hasOwn(BUILD_TYPES,o.type))ghost.add(structureModel(o,ghostMaterial));else box(ghost,ghostMaterial,0,o.h/2,0,o.w,o.h,o.d);ghostShape=shape;}ghost.position.set(o.x,o.y,o.z);ghostMaterial.color.set(valid?0x53d9b4:0xee8592);ghost.visible=true;}
 function updateEditorGhost(){if(isLiveRangeEditing()||look?.drag){ghost.visible=false;return;}if(!editorPointer||!GRID_PARTS.has(tool)){ghost.visible=false;return;}const candidate=editorCandidate(editorPointer);if(!candidate){ghost.visible=false;return;}showGhost(candidate.piece,!candidate.reason);}
 function visibleHit(hit){let o=hit.object;while(o){if(!o.visible)return false;o=o.parent;}return true;}

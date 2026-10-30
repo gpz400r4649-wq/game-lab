@@ -1,7 +1,7 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {fresh3D,part,create3D,step3D,validate3D} from '../engine3d.js';
 import {worldMoveRange,makeAttackRange,inGridRange,rangeCell} from '../enemy-range3d.js';
-function setup(action='chase',mode='inside'){const p=fresh3D(),e=part('enemy',0,0);p.spawn={x:8,y:0,z:0};e.attackEnabled=false;e.program=[{action,speed:2}];e.chaseMode=mode;e.searchRange=makeAttackRange('circle',1,1);p.objects=[e];return {p,g:create3D(p)};}
+function setup(action='chase',mode='inside'){const p=fresh3D(),e=part('enemy',0,0);p.spawn={x:8,y:0,z:0};delete e.moveRange;e.attackEnabled=false;e.program=[{action,speed:2}];e.chaseMode=mode;e.searchRange=makeAttackRange('circle',1,1);p.objects=[e];return {p,g:create3D(p)};}
 const tick=(g,p,n=1)=>{for(let i=0;i<n;i++)step3D(g,p,{},.02);};
 test('範囲内だけ追う設定は外で止まり、見つけたらずっと追う設定は追跡を続ける',()=>{
  for(const mode of ['inside','remember']){const {p,g}=setup('chase',mode),e=g.objects[0];tick(g,p,20);assert.equal(e.x,0);g.player.x=4;tick(g,p);assert.ok(e.x>0);g.player.x=20;const before=e.x;tick(g,p,10);assert.equal(e.x>before,mode==='remember');}

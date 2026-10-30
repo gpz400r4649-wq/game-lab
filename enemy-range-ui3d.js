@@ -1,9 +1,9 @@
-import {closeLiveRangeEditor,mountLiveRangeEditor} from './range-panel3d.js?v=20261030j';
-export {closeLiveRangeEditor,isLiveRangeEditing} from './range-panel3d.js?v=20261030j';
-import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261030j';
-import {openMoveMap} from './move-map-ui3d.js?v=20261030j';
-import {RANGE_MAX,rangeCells,convertRangeSpace} from './enemy-range3d.js?v=20261030j';
-import {setReadingText,kanaText} from './readings3d.js?v=20261030j';
+import {closeLiveRangeEditor,mountLiveRangeEditor} from './range-panel3d.js?v=20261030k';
+export {closeLiveRangeEditor,isLiveRangeEditing} from './range-panel3d.js?v=20261030k';
+import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261030k';
+import {openMoveMap} from './move-map-ui3d.js?v=20261030k';
+import {RANGE_MAX,rangeCells,convertRangeSpace} from './enemy-range3d.js?v=20261030k';
+import {setReadingText,kanaText} from './readings3d.js?v=20261030k';
 const RANGE_UI={
  attackRange:{label:'弾を撃つ',title:'敵が弾を撃つマス',note:'色のついたマスに入ったら → 弾を撃つ。',empty:'これまでの近くに来たら撃つ設定',center:'敵のいるマスが中心。敵と一緒に動くよ。',color:'#ef9aae'},
  moveRange:{label:'動ける',title:'敵が動けるマス',note:'色のついたマスの中だけを歩けるよ。つながっていないマスには行けないよ。',empty:'制限なし',center:'敵を置いたマスが中心。ゲーム中もこの場所に固定だよ。',color:'#91c7ee'},
@@ -30,7 +30,7 @@ function renderRangeMode(parent,o,api){
  }
 }
 function openRangeEditor(o,{key,config,save,rebuild,lookFromAbove,onClose,renderMode}){
- const r=o[key]?structuredClone(o[key]):{shape:'custom',cross:4,circle:4,cells:[]},d=document.createElement('section');d.className='enemy-range-dialog range-live-panel';d.setAttribute('role','region');d.setAttribute('aria-label',config.title);d.style.setProperty('--range-color',config.color);
+ const r=o[key]?structuredClone(o[key]):{shape:'custom',cross:2,circle:2,cells:[]},d=document.createElement('section');d.className='enemy-range-dialog range-live-panel';d.setAttribute('role','region');d.setAttribute('aria-label',config.title);d.style.setProperty('--range-color',config.color);
  const h=document.createElement('h2'),note=document.createElement('p'),controls=document.createElement('div'),grid=document.createElement('div'),count=document.createElement('p'),close=document.createElement('button');
  h.setAttribute('tabindex','-1');h.setAttribute('autofocus','');setReadingText(h,config.title);setReadingText(note,config.note+' マスをタップすると、ステージにもすぐ反映されるよ。');
  controls.className='range-controls';grid.className='enemy-range-grid';grid.setAttribute('role','group');grid.setAttribute('aria-label',config.label+'はんいのマス');count.setAttribute('aria-live','polite');

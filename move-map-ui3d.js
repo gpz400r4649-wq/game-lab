@@ -1,20 +1,21 @@
-import {mountLiveRangeEditor} from './range-panel3d.js?v=20261030j';
-import {createMapStick,panMapCenter} from './map-stick3d.js?v=20261030j';
-import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261030j';
-import {MOVE_MAX_CELLS,RANGE_MAX,rangeCell,rangeCells,worldMoveRange} from './enemy-range3d.js?v=20261030j';
-import {moveGridWindow,moveGridPages} from './world3d.js?v=20261030j';
-import {setReadingText,kanaText} from './readings3d.js?v=20261030j';
+import {mountLiveRangeEditor} from './range-panel3d.js?v=20261030k';
+import {createMapStick,panMapCenter} from './map-stick3d.js?v=20261030k';
+import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261030k';
+import {MOVE_MAX_CELLS,RANGE_MAX,rangeCell,rangeCells,worldMoveRange} from './enemy-range3d.js?v=20261030k';
+import {moveGridWindow,moveGridPages} from './world3d.js?v=20261030k';
+import {setReadingText,kanaText} from './readings3d.js?v=20261030k';
 export function openMoveMap(o,{getProject,save,rebuild,lookFromAbove,onClose,key='moveRange',config,renderMode}){
  const p=getProject(),limit=moveGridWindow(p).limit,d=document.createElement('section');d.className='enemy-range-dialog range-live-panel';d.setAttribute('role','region');d.setAttribute('aria-label',config?.title||'敵が動けるマス');d.style.setProperty('--range-color',config?.color||'#91c7ee');
  const current=o[key]?worldMoveRange(o[key],o):{space:'world',cells:[]};
  const chosen=new Set(current.cells.map(c=>c.join(','))),h=document.createElement('h2'),note=document.createElement('p'),controls=document.createElement('div'),grid=document.createElement('div'),count=document.createElement('p'),close=document.createElement('button');
  const initial=current.cells,cx=initial.length?Math.round((Math.min(...initial.map(c=>c[0]))+Math.max(...initial.map(c=>c[0])))/2):rangeCell(o.x),cz=initial.length?Math.round((Math.min(...initial.map(c=>c[1]))+Math.max(...initial.map(c=>c[1])))/2):rangeCell(o.z);
- const initialWindow=moveGridWindow(p,cx,cz);let centerX=initialWindow.centerX,centerZ=initialWindow.centerZ,cross=4,circle=3;
+ const initialWindow=moveGridWindow(p,cx,cz);let centerX=initialWindow.centerX,centerZ=initialWindow.centerZ,cross=2,circle=2,presetX=cx,presetZ=cz;
  h.setAttribute('tabindex','-1');h.setAttribute('autofocus','');setReadingText(h,config?.title||'敵が動けるマス');setReadingText(note,'色のついた場所はマップに固定。敵が動いても変わらないよ。マスをタップすると、ステージにもすぐ反映されるよ。🤖は敵、●はスタート。形をえらび直すと、今のはんいを置き換えるよ。');
  controls.className='range-controls';grid.className='enemy-range-grid move-world-grid';grid.style.gridTemplateColumns=`repeat(${initialWindow.count},minmax(0,1fr))`;grid.setAttribute('role','group');grid.setAttribute('aria-label',config?config.label+'はんいのマス':'動けるはんいのマス');count.setAttribute('aria-live','polite');
  function select(parent,label,values,value,change){const row=document.createElement('label'),text=document.createElement('span'),input=document.createElement('select');setReadingText(text,label);input.setAttribute('aria-label',label);for(const [v,t]of values)input.add(new Option(kanaText(t),v));input.value=value;input.onchange=()=>change(input.value);row.append(text,input);parent.append(row);return input;}
- function preset(){if(!shape.value||shape.value==='custom')return;chosen.clear();for(const [x,z]of rangeCells(shape.value,cross,circle)){if(Math.abs(centerX+x)<=limit&&Math.abs(centerZ+z)<=limit)chosen.add(`${centerX+x},${centerZ+z}`);}changed();}
- const shape=select(controls,'はんいの形',[['custom','自分でマスをえらぶ'],['cross','十字'],['circle','円'],['mixed','十字＋円']],'custom',v=>{if(v==='mixed'&&cross<=circle){circle=Math.min(circle,6);cross=circle+2;}preset();paint();});
+ function preset(){if(!shape.value||shape.value==='custom')return;chosen.clear();for(const [x,z]of rangeCells(shape.value,cross,circle)){if(Math.abs(presetX+x)<=limit&&Math.abs(presetZ+z)<=limit)chosen.add(`${presetX+x},${presetZ+z}`);}changed();}
+ const defaultCircle=rangeCells('circle',2,2).map(([x,z])=>`${cx+x},${cz+z}`),initialShape=chosen.size===defaultCircle.length&&defaultCircle.every(cell=>chosen.has(cell))?'circle':'custom';
+ const shape=select(controls,'はんいの形',[['custom','自分でマスをえらぶ'],['cross','十字'],['circle','円'],['mixed','十字＋円']],initialShape,v=>{if(v==='mixed'&&cross<=circle){circle=Math.min(circle,6);cross=circle+2;}preset();paint();});
  const lengths=Array.from({length:RANGE_MAX},(_,i)=>[String(i+1),`${i+1}マス`]);
  const crossInput=select(controls,'十字の長さ',lengths,String(cross),v=>{cross=Number(v);preset();}),circleInput=select(controls,'円の広さ',lengths,String(circle),v=>{circle=Number(v);preset();});
  const clear=document.createElement('button');setReadingText(clear,'全部のマスをけす');clear.onclick=()=>{chosen.clear();shape.value='custom';changed();};
@@ -22,10 +23,10 @@ export function openMoveMap(o,{getProject,save,rebuild,lookFromAbove,onClose,key
  const pageCenters=moveGridPages(p);for(const center of [centerX,centerZ])if(!pageCenters.includes(center))pageCenters.push(center);pageCenters.sort((a,b)=>a-b);
  const areas=pageCenters.map(n=>{const w=moveGridWindow(p,n,n);return [String(n),`${w.minX*4}〜${w.maxX*4}`];});
  places.hidden=moveGridPages(p).length===1;
- const xPlace=select(area,'横 X の場所',areas,String(centerX),v=>{centerX=Number(v);shape.value='custom';paint();});const zPlace=select(area,'奥行 Z の場所',areas,String(centerZ),v=>{centerZ=Number(v);shape.value='custom';paint();});
+ const xPlace=select(area,'横 X の場所',areas,String(centerX),v=>{centerX=Number(v);shape.value='custom';presetX=centerX;presetZ=centerZ;paint();});const zPlace=select(area,'奥行 Z の場所',areas,String(centerZ),v=>{centerZ=Number(v);shape.value='custom';presetX=centerX;presetZ=centerZ;paint();});
  const navigation=document.createElement('div'),stick=document.createElement('div'),caption=document.createElement('span');navigation.className='move-map-pan';navigation.hidden=places.hidden;stick.className='map-pan-stick';stick.tabIndex=0;stick.setAttribute('role','group');stick.setAttribute('aria-label','マップ移動スティック');stick.innerHTML='<span class="map-stick-up">まえ ↑</span><span class="map-stick-down">↓ うしろ</span><span class="map-stick-left">←</span><span class="map-stick-right">→</span><span class="map-stick-thumb">いどう</span>';setReadingText(caption,'マップをうごかす');navigation.append(caption,stick);
  let panInput={x:0,z:0},panPosition={x:centerX,z:centerZ},panFrameId=0,panTime=0,panCenter={x:centerX,z:centerZ};
- function panFrame(time){panFrameId=0;if(!d.isConnected)return;if(panCenter.x!==centerX||panCenter.z!==centerZ)panPosition={x:centerX,z:centerZ};panPosition=panMapCenter(panPosition,panInput,panTime?(time-panTime)/1000:0,p);panTime=time;const w=moveGridWindow(p,panPosition.x,panPosition.z);if(w.centerX!==centerX||w.centerZ!==centerZ){centerX=w.centerX;centerZ=w.centerZ;shape.value='custom';paint();}panCenter={x:centerX,z:centerZ};if(Math.hypot(panInput.x,panInput.z)>=.15)panFrameId=requestAnimationFrame(panFrame);}
+ function panFrame(time){panFrameId=0;if(!d.isConnected)return;if(panCenter.x!==centerX||panCenter.z!==centerZ)panPosition={x:centerX,z:centerZ};panPosition=panMapCenter(panPosition,panInput,panTime?(time-panTime)/1000:0,p);panTime=time;const w=moveGridWindow(p,panPosition.x,panPosition.z);if(w.centerX!==centerX||w.centerZ!==centerZ){centerX=w.centerX;centerZ=w.centerZ;shape.value='custom';presetX=centerX;presetZ=centerZ;paint();}panCenter={x:centerX,z:centerZ};if(Math.hypot(panInput.x,panInput.z)>=.15)panFrameId=requestAnimationFrame(panFrame);}
  const mapStick=createMapStick(stick,input=>{panInput=input;if(Math.hypot(input.x,input.z)<.15){cancelAnimationFrame(panFrameId);panFrameId=0;panTime=0;return;}if(!panFrameId)panFrameId=requestAnimationFrame(panFrame);});
  function syncPlace(input,center){for(const option of [...input.options])if(option.dataset.live==='yes')option.remove();if(![...input.options].some(option=>option.value===String(center))){const w=moveGridWindow(p,center,center),option=new Option(`${w.minX*4}〜${w.maxX*4}`,String(center));option.dataset.live='yes';input.add(option);}input.value=String(center);}
  const buttons=[];for(let dz=-Math.floor(initialWindow.count/2);dz<=Math.floor(initialWindow.count/2);dz++)for(let dx=-Math.floor(initialWindow.count/2);dx<=Math.floor(initialWindow.count/2);dx++){

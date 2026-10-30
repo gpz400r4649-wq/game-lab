@@ -1,16 +1,16 @@
-import {validLibrary} from './assets3d.js?v=20261030j';
-import {moveEnemy,canEnemyEnter,validEnemyMovement} from './enemy-ai3d.js?v=20261030j';
-import {worldMoveRange,validMoveRange,makeAttackRange,validAttackRange,inAttackRange,enemyYaw} from './enemy-range3d.js?v=20261030j';
-import {playerGunMuzzle,finitePoint} from './muzzle3d.js?v=20261030j';
-import {validDoor,nearbyDoor,doorwayOccupied,animateDoors} from './doors3d.js?v=20261030j';
-import {nearbyObjects} from './spatial3d.js?v=20261030j';
-import {MAX_PARTS} from './limits3d.js?v=20261030j';
-import {worldSize,worldHalf,coordinateLimit,WORLD_SIZES} from './world3d.js?v=20261030j';
-import {settleLoot} from './loot3d.js?v=20261030j';
-import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261030j';
-import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261030j';
-import {shootVolley,updateCombat,resolveShotOrigin} from './combat3d.js?v=20261030j';
-import {BUILD_TYPES,constructionPart,topAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261030j';
+import {validLibrary} from './assets3d.js?v=20261030k';
+import {moveEnemy,canEnemyEnter,validEnemyMovement} from './enemy-ai3d.js?v=20261030k';
+import {worldMoveRange,validMoveRange,validAttackRange,inAttackRange,enemyYaw,defaultEnemyRanges} from './enemy-range3d.js?v=20261030k';
+import {playerGunMuzzle,finitePoint} from './muzzle3d.js?v=20261030k';
+import {validDoor,nearbyDoor,doorwayOccupied,animateDoors} from './doors3d.js?v=20261030k';
+import {nearbyObjects} from './spatial3d.js?v=20261030k';
+import {MAX_PARTS} from './limits3d.js?v=20261030k';
+import {worldSize,worldHalf,coordinateLimit,WORLD_SIZES} from './world3d.js?v=20261030k';
+import {settleLoot} from './loot3d.js?v=20261030k';
+import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261030k';
+import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261030k';
+import {shootVolley,updateCombat,resolveShotOrigin} from './combat3d.js?v=20261030k';
+import {BUILD_TYPES,constructionPart,topAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261030k';
 export const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export const PARTS={weapon:'銃アイテム',ramp:'スロープ',wall:'壁',floor:'床',roof:'屋根',box:'ブロック',platform:'足場',moving:'動く足場',bounce:'ジャンプ台',enemy:'敵ロボット',star:'星',key:'カギ',door:'ドア',heal:'回復',checkpoint:'セーブポイント',hazard:'ダメージ床',goal:'ゴール'};
 export const BEHAVIORS={chase:'プレイヤーを追いかける',patrol:'左右に動く',search:'歩き回って探す'};
@@ -19,7 +19,7 @@ export const WEAPON_PRESETS={standard:{name:'ふつうのブラスター',speed:
 export const CONDITION_NAMES={unset:'クリア条件をえらぶ',touch:'そのまま',stars:'星を集めたら',keys:'カギを集めたら',enemies:'敵を全員たおしたら'};
 const solidTypes=new Set(['box','platform','moving','door','wall','floor','roof','ramp']);
 export function settingsFor(type){return {axis:'x',distance:3,speed:2,value:type==='bounce'?11:type==='star'?5:1,condition:type==='goal'?'unset':type==='door'?'keys':'touch',required:1};}
-export function part(type,x=0,z=-5){if(Object.hasOwn(BUILD_TYPES,type))return constructionPart(type,x,z);return {id:crypto.randomUUID(),type,x,y:['platform','moving'].includes(type)?1:0,z,w:['box','platform','moving'].includes(type)?4:type==='door'?3:2,h:type==='box'?3:['platform','moving'].includes(type)?.5:['bounce','hazard'].includes(type)?.2:type==='door'?3:2,d:type==='door'?.6:['box','platform','moving'].includes(type)?4:2,hp:DESTRUCTIBLE_TYPES.has(type)?20:3,...(DESTRUCTIBLE_TYPES.has(type)?{destructible:true}:{}),program:[],settings:settingsFor(type),...(type==='weapon'?{weaponId:''}:{}),...(type==='enemy'?{attackEnabled:true,attackSpeed:3,attackRange:makeAttackRange()}:{})};}
+export function part(type,x=0,z=-5){if(Object.hasOwn(BUILD_TYPES,type))return constructionPart(type,x,z);return {id:crypto.randomUUID(),type,x,y:['platform','moving'].includes(type)?1:0,z,w:['box','platform','moving'].includes(type)?4:type==='door'?3:2,h:type==='box'?3:['platform','moving'].includes(type)?.5:['bounce','hazard'].includes(type)?.2:type==='door'?3:2,d:type==='door'?.6:['box','platform','moving'].includes(type)?4:2,hp:DESTRUCTIBLE_TYPES.has(type)?20:3,...(DESTRUCTIBLE_TYPES.has(type)?{destructible:true}:{}),program:[],settings:settingsFor(type),...(type==='weapon'?{weaponId:''}:{}),...(type==='enemy'?{attackEnabled:true,attackSpeed:3,...defaultEnemyRanges({x,z})}:{})};}
 export function fresh3D(){const weapon={speed:24,interval:.25,damage:1,spread:1};return {version:1,kind:'game-lab-3d',worldSize:60,title:'わたしの3Dワールド',spawn:{x:0,y:0,z:8},weapon,loadout:defaultLoadout(weapon),objects:[]};}
 export function validate3D(data){
   const p=structuredClone(data),number=(v,a,b)=>Number.isFinite(v)&&v>=a&&v<=b;

@@ -1,4 +1,4 @@
-import {GRID} from './building3d.js?v=20261030j';
+import {GRID} from './building3d.js?v=20261030k';
 export const RANGE_MAX=8;
 export const rangeCell=value=>Math.floor((value+GRID.cell/2)/GRID.cell);
 export function rangeCells(shape,cross=4,circle=2){
@@ -60,3 +60,5 @@ export function convertRangeSpace(range,space,enemy){
 }
 
 export function enemyYaw(enemy,player){return enemy.searchRange?.space==='facing'||enemy.attackRange?.space==='facing'?(Number.isFinite(enemy.heading)?enemy.heading:(enemy.facing||0)*Math.PI/180):Math.atan2(player.x-enemy.x,player.z-enemy.z)+Math.PI;}
+
+export function defaultEnemyRanges(enemy){const circle=()=>makeAttackRange('circle',2,2);return {moveRange:worldMoveRange(circle(),enemy),searchRange:{...circle(),space:'facing'},attackRange:{...circle(),space:'facing'}};}

@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {renderEnemyRange,closeLiveRangeEditor,isLiveRangeEditing} from '../enemy-range-ui3d.js';
-import {makeAttackRange,validAttackRange,validMoveRange} from '../enemy-range3d.js';
+import {makeAttackRange,validAttackRange,validMoveRange,defaultEnemyRanges} from '../enemy-range3d.js';
 
 // Small DOM stand-in for testing button flows and project writes without a GPU.
 class Element {
@@ -70,3 +70,7 @@ for(const key of ['searchRange','attackRange']){
   const range={space:'world',cells:[[30,30]]},s=setup(t,key,range,960),panel=s.open(),mode=all(panel).find(n=>n.getAttribute?.('aria-label')==='はんいの決め方');mode.value='facing';mode.onchange();assert.equal(mode.value,'world');assert.deepEqual(s.o[key],range);assert.equal(s.calls.save,0);assert.equal(s.doc.querySelector('.range-live-panel'),panel);assert.ok(all(panel).some(n=>n.tagName==='p'&&!n.hidden&&n.textContent.includes('していないよ')));
  });
 }
+
+test('移動の円２マスを初期表示し、広さを変えても敵を置いた中心を維持する',t=>{
+ const range=defaultEnemyRanges({x:8,z:8}).moveRange,s=setup(t,'moveRange',range),panel=s.open(),shape=all(panel).find(n=>n.getAttribute?.('aria-label')==='はんいの形'),circle=all(panel).find(n=>n.getAttribute?.('aria-label')==='円の広さ');assert.equal(shape.value,'circle');assert.equal(circle.value,'2');assert.equal(circle.disabled,false);assert.deepEqual(s.o.moveRange,range);assert.equal(s.calls.save,0);circle.value='3';circle.onchange();const cells=s.o.moveRange.cells;assert.equal(cells.length,29);assert.equal((Math.min(...cells.map(c=>c[0]))+Math.max(...cells.map(c=>c[0])))/2,2);assert.equal((Math.min(...cells.map(c=>c[1]))+Math.max(...cells.map(c=>c[1])))/2,2);
+});
