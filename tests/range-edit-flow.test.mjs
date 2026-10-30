@@ -33,9 +33,9 @@ for(const key of ['moveRange','searchRange','attackRange']){
  test(`${key}: ステージ表示は編集画面を開かず、設定も保存しない`,t=>{
   const s=setup(t,key);s.preview.onclick();assert.deepEqual(s.calls.view,[key]);assert.equal(s.doc.body.children.length,0);assert.deepEqual(s.o,s.before);assert.equal(s.calls.save,0);
  });
- for(const configured of [false,true])test(`${key}: ${configured?'設定済み':'未設定'}の範囲を開いて閉じても設定が変わらず、形は未選択`,t=>{
+ for(const configured of [false,true])test(`${key}: ${configured?'設定済み':'未設定'}の範囲を開いて閉じても設定が変わらず、最初のフォーカスは見出し`,t=>{
   const range=key==='moveRange'?{space:'world',cells:[[1,1],[2,1]]}:makeAttackRange('cross',3,2),s=setup(t,key,configured?range:null),dialog=s.open();
-  assert.ok(dialog.open);const shape=all(dialog).find(n=>n.getAttribute?.('aria-label')==='はんいの形');assert.equal(shape.value,'');assert.deepEqual(s.o,s.before);assert.equal(s.calls.save,0);assert.equal(s.calls.rebuild,0);
+  assert.ok(dialog.open);const shape=all(dialog).find(n=>n.getAttribute?.('aria-label')==='はんいの形');assert.equal(shape.value,configured&&key!=='moveRange'?'cross':'custom');assert.equal(shape.options.length,4);assert.ok(shape.options.every(option=>option.value!==''));const heading=dialog.children[0];assert.equal(heading.tagName,'h2');assert.equal(heading.getAttribute('autofocus'),'');assert.equal(heading.getAttribute('tabindex'),'-1');assert.ok(!all(dialog).some(n=>n.tagName==='select'&&n.getAttribute('autofocus')!==null));assert.deepEqual(s.o,s.before);assert.equal(s.calls.save,0);assert.equal(s.calls.rebuild,0);
   dialog.oncancel({preventDefault(){}});assert.deepEqual(s.o,s.before);assert.equal(s.calls.save,0);
  });
  test(`${key}: マスを押した時だけ設定が作られ、再編集でも保たれる`,t=>{
