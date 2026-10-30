@@ -1,4 +1,4 @@
-import {setReadingText} from './readings3d.js?v=20261030d';
+import {setReadingText} from './readings3d.js?v=20261030e';
 export function directionFrame(grid){
  const frame=document.createElement('div');frame.className='range-direction-frame';
  for(const [key,text]of [['front','↑ まえ（マップのおく）'],['left','← ひだり'],['right','みぎ →'],['back','↓ うしろ（マップのてまえ）']]){const badge=document.createElement('span');badge.className='range-direction-'+key;setReadingText(badge,text);frame.append(badge);}

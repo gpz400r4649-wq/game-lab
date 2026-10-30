@@ -1,13 +1,13 @@
-import {appearanceFor,GUN_SHAPES,GUN_COLORS,gunPreviewSVG} from './appearance3d.js?v=20261030d';
-import {bindGameAction} from './input3d.js?v=20261030d';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261030d';
-import {LIMITS,PROJECTILES,IMPACTS,impactEffects,weaponPresetKey,SHOT_PATTERNS,cadenceHandling} from './weapons3d.js?v=20261030d';
-import {buildChoices,activeBuildTool,cycleBuildType,facingBuildRotation,makeTool,TOOL_EFFECTS,BUILD_TYPES,equipTool,keepStructures,equipBlock} from './building3d.js?v=20261030d';
-import {WEAPON_PRESETS,PARTS} from './engine3d.js?v=20261030d';
+import {appearanceFor,GUN_SHAPES,GUN_COLORS,gunPreviewSVG} from './appearance3d.js?v=20261030e';
+import {bindGameAction} from './input3d.js?v=20261030e';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261030e';
+import {LIMITS,PROJECTILES,IMPACTS,impactEffects,weaponPresetKey,SHOT_PATTERNS,cadenceHandling} from './weapons3d.js?v=20261030e';
+import {buildChoices,activeBuildTool,cycleBuildType,facingBuildRotation,makeTool,TOOL_EFFECTS,BUILD_TYPES,equipTool,keepStructures,equipBlock} from './building3d.js?v=20261030e';
+import {WEAPON_PRESETS,PARTS} from './engine3d.js?v=20261030e';
 export function createToolsUI(api){
   const {$,getProject,getGame,getMode,field,save,refresh,finishBuilding}=api;
   let editing=0,rotation=0,level=0;
-  const dialog=document.createElement('dialog');dialog.className='tools-dialog';dialog.id='tools-dialog3';document.body.append(dialog);
+  const dialog=document.createElement('dialog');dialog.className='tools-dialog';dialog.id='tools-dialog3';dialog.addEventListener('close',()=>api.onCatalogChange?.());document.body.append(dialog);
   function selectField(parent,label,values,current,change){const l=document.createElement('label');l.className='field choice-field';const caption=document.createElement('span');setReadingText(caption,label);l.append(caption);const s=document.createElement('select');s.setAttribute('aria-label',label);values.forEach(([k,v])=>s.add(new Option(kanaText(v),k)));s.value=current;s.onchange=()=>change(s.value);l.append(s);parent.append(l);return s;}
   function changed(){save();renderHotbar();}
   function renderEditor(){

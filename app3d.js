@@ -1,24 +1,24 @@
-import {dragCandidate} from './editor-drag3d.js?v=20261030d';
-import {rangeCell,MOVE_MAX_CELLS} from './enemy-range3d.js?v=20261030d';
-import {TPS_GUN_MOUNT} from './muzzle3d.js?v=20261030d';
-import {configureDoor,nearbyDoor} from './doors3d.js?v=20261030d';
-import {appearanceFor} from './appearance3d.js?v=20261030d';
-import {makeGunModel,applyFPSGunPose,worldGunMuzzle} from './gun-model3d.js?v=20261030d';
-import {moveEditorCamera,createEditorNavigation} from './editor-camera3d.js?v=20261030d';
-import {createStructureRenderer,BATCH_TYPES} from './structure-render3d.js?v=20261030d';
-import {MAX_PROJECT_BYTES} from './limits3d.js?v=20261030d';
-import {worldSize,coordinateLimit} from './world3d.js?v=20261030d';
-import {createWorldUI} from './world-ui3d.js?v=20261030d';
-import {configureNumericInput} from './numeric3d.js?v=20261030d';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261030d';
-import {installGameTouchGuard,bindHeldButton,bindGameAction,createGamePageMode} from './input3d.js?v=20261030d';
-import {actionsFor,ACTION_NAMES} from './events3d.js?v=20261030d';
-import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261030d';
-import {BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,editorPlacementReason,blockPlacement} from './building3d.js?v=20261030d';
-import {createToolsUI} from './tools3d.js?v=20261030d';
+import {dragCandidate} from './editor-drag3d.js?v=20261030e';
+import {rangeCell,MOVE_MAX_CELLS} from './enemy-range3d.js?v=20261030e';
+import {TPS_GUN_MOUNT} from './muzzle3d.js?v=20261030e';
+import {configureDoor,nearbyDoor} from './doors3d.js?v=20261030e';
+import {appearanceFor} from './appearance3d.js?v=20261030e';
+import {makeGunModel,applyFPSGunPose,worldGunMuzzle} from './gun-model3d.js?v=20261030e';
+import {moveEditorCamera,createEditorNavigation} from './editor-camera3d.js?v=20261030e';
+import {createStructureRenderer,BATCH_TYPES} from './structure-render3d.js?v=20261030e';
+import {MAX_PROJECT_BYTES} from './limits3d.js?v=20261030e';
+import {worldSize,coordinateLimit} from './world3d.js?v=20261030e';
+import {createWorldUI} from './world-ui3d.js?v=20261030e';
+import {configureNumericInput} from './numeric3d.js?v=20261030e';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261030e';
+import {installGameTouchGuard,bindHeldButton,bindGameAction,createGamePageMode} from './input3d.js?v=20261030e';
+import {actionsFor,ACTION_NAMES} from './events3d.js?v=20261030e';
+import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261030e';
+import {BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,editorPlacementReason,blockPlacement} from './building3d.js?v=20261030e';
+import {createToolsUI} from './tools3d.js?v=20261030e';
 import * as T from './vendor/three.module.min.js';
-import {PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,conditionHint} from './engine3d.js?v=20261030d';
-import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261030d';
+import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,conditionHint} from './engine3d.js?v=20261030e';
+import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261030e';
 const $=s=>document.querySelector(s),view=$('#viewport'),KEY='tsukuru-lab-3d-v1';
 let enemyRangeView='attackRange';
 let project=fresh3D(),selected=null,tool='select',doorPreset='key',weaponPresetId='',mode='edit',perspective='tps',game=null,yaw=0,pitch=-.05,editYaw=.55,editPitch=.7,editDistance=30,editTarget=new T.Vector3(0,0,0),stick={x:0,z:0},keys=new Set(),fireHeld=false,firePressed=false,jumpPressed=false,doorPressed=false,look=null,saveTimer,toastTimer,lastTime=0;
@@ -57,7 +57,7 @@ function partModel(o){let mesh=new T.Group();
   }else if(o.type==='weapon'){const model=makeGunModel(project.loadout.find(t=>t.id===o.weaponId));model.position.y=.65;model.scale.setScalar(.9);mesh.add(model);const ring=new T.Mesh(portalGeometry,materials.star);ring.rotation.x=Math.PI/2;ring.scale.setScalar(.55);ring.position.y=.08;mesh.add(ring);
   }else if(o.type==='blockItem'){
    const t=o.blockTemplate,mini=Object.hasOwn(BUILD_TYPES,t.type)?structureModel(t):new T.Group();if(!Object.hasOwn(BUILD_TYPES,t.type))box(mini,materials[t.type]||materials.box,0,t.h/2,0,t.w,t.h,t.d);mini.scale.setScalar(.2);mini.position.y=.12;mesh.add(mini);const ring=new T.Mesh(portalGeometry,materials.star);ring.rotation.x=Math.PI/2;ring.scale.setScalar(.5);ring.position.y=.06;mesh.add(ring);
-  }else if(o.type==='enemy')mesh=robot(materials.enemy);
+  }else if(o.type==='enemy'){const weapon=enemyWeapon(o,project.loadout);mesh=robot(materials.enemy,!weapon);if(weapon){const held=makeGunModel(weapon);held.position.set(TPS_GUN_MOUNT.x,TPS_GUN_MOUNT.y,TPS_GUN_MOUNT.z);held.scale.setScalar(TPS_GUN_MOUNT.scale);mesh.add(held);}}
   else if(o.type==='star'){const m=new T.Mesh(starGeometry,materials.star);m.position.y=.85;mesh.add(m);}
   else if(o.type==='door'){
    const turned=o.rotation===90,w=turned?o.d:o.w,d=turned?o.w:o.d;mesh.rotation.y=(o.rotation||0)*Math.PI/180;
@@ -152,7 +152,7 @@ function buildTarget(){ray.setFromCamera(new T.Vector2(0,0),camera);const hit=ra
 function updateGhost(point){const tool=project.loadout[game.equipped],building=!!game.blockEquipped||(tool&&tool.effect!=='shoot');ghost.visible=!!building;if(!building)return;const result=game.blockEquipped?blockPlacement(game,point,toolsUI.getRotation(yaw),toolsUI.getLevel()):placement(game,tool,point,toolsUI.getRotation(yaw),toolsUI.getLevel()),o=result.piece;setReadingText($('#build-status3'),result.reason);$('#build-status3').classList.toggle('blocked',!result.valid);if(!o){ghost.visible=false;return;}showGhost(o,result.valid);}
 
 function frame(time){const dt=lastTime?Math.min((time-lastTime)/1000,.033):0;lastTime=time;const w=view.clientWidth,h=view.clientHeight;const size=renderer.getSize(new T.Vector2());if(size.x!==w||size.y!==h){renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}if(mode==='play'){positionCamera();ray.setFromCamera(new T.Vector2(0,0),camera);const hit=ray.intersectObjects(objectsGroup.children,true).find(visibleHit),target=hit?hit.point:ray.ray.at(80,new T.Vector3()),origin=new T.Vector3(game.player.x,game.player.y+1.35,game.player.z),aim=target.clone().sub(origin).normalize(),buildPoint=buildTarget();step3D(game,project,{x:stick.x+(keys.has('d')||keys.has('arrowright')?1:0)-(keys.has('a')||keys.has('arrowleft')?1:0),z:stick.z+(keys.has('s')||keys.has('arrowdown')?1:0)-(keys.has('w')||keys.has('arrowup')?1:0),yaw,aim,aimTarget:target,getShotOrigin:()=>{positionCamera();return worldGunMuzzle((perspective==='fps'?gun:carriedGun).children[0]);},buildPoint,buildRotation:toolsUI.getRotation(yaw),buildLevel:toolsUI.getLevel(),jump:jumpPressed,useDoor:doorPressed,fire:fireHeld||firePressed||keys.has('f')},dt);jumpPressed=false;doorPressed=false;firePressed=false;syncGameMeshes();const door=game.state==='playing'?nearbyDoor(game,yaw):null;$('#use-door3').hidden=!door;if(door)setReadingText($('#use-door3'),door.open?'ドアをしめる':'ドアをあける');updateGhost(buildPoint);setReadingText($('#hp3'),'♥'.repeat(Math.max(0,game.player.hp))+'♡'.repeat(5-Math.max(0,game.player.hp)));setReadingText($('#score3'),`✦ ${game.stars}　⚿ ${game.keys}　得点 ${game.score}`);$('#lost3').hidden=game.state==='playing';setReadingText($('#result-title3'),game.state==='won'?'ステージクリア！':'もう一度チャレンジ！');setReadingText($('#result-note3'),game.state==='won'?'自分のルールで、ちゃんとゲームになったね！':'セーブポイントを置くと、途中からやり直せるよ。');}else{const typing=document.activeElement?.matches('input,select,textarea'),dialogOpen=!!document.querySelector('dialog[open]');if(!typing&&!dialogOpen&&!look?.drag){const nav=editorNavigation.read();moveEditorCamera(editTarget,{x:nav.x+Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft')),z:nav.z+Number(keys.has('s')||keys.has('arrowdown'))-Number(keys.has('w')||keys.has('arrowup')),y:nav.y+Number(keys.has('e'))-Number(keys.has('q')),fast:keys.has('shift')},editYaw,editDistance,dt,project,editPitch);}else editorNavigation.reset();$('#hit-info3').hidden=true;positionCamera();updateEditorGhost();effectPool.forEach(m=>m.visible=false);bulletPool.forEach(m=>m.visible=false);setReadingText($('#stats3'),`${worldSize(project)}m × ${worldSize(project)}m · ${project.objects.length} パーツ`);}positionCamera();renderer.render(scene,camera);requestAnimationFrame(frame);}
-renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();$('#loading').hidden=false;setReadingText($('#loading'),'3Dの表示が中断されました。ページを再読み込みしてください。作品は自動保存されています。');});const toolsUI=createToolsUI({onAppearanceChange:()=>rebuild(),$,getProject:()=>project,getGame:()=>game,getMode:()=>mode,field,save,refresh:()=>syncGameMeshes(),finishBuilding:count=>{selected=null;setMode('edit');objectList();inspector();toast(count+'個の建築を作品に残しました');}});
+renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();$('#loading').hidden=false;setReadingText($('#loading'),'3Dの表示が中断されました。ページを再読み込みしてください。作品は自動保存されています。');});const toolsUI=createToolsUI({onCatalogChange:()=>{rebuild();inspector();},onAppearanceChange:()=>rebuild(),$,getProject:()=>project,getGame:()=>game,getMode:()=>mode,field,save,refresh:()=>syncGameMeshes(),finishBuilding:count=>{selected=null;setMode('edit');objectList();inspector();toast(count+'個の建築を作品に残しました');}});
 const workshop=createWorkshop({lookFromAbove:()=>{const o=project.objects.find(o=>o.id===selected);if(o){editTarget.set(o.x,0,o.z);editYaw=0;editPitch=1.4;editDistance=38;}},getToolSelection:()=>({type:tool}),getRangeView:()=>enemyRangeView,showRange:key=>{enemyRangeView=key;updateSelection();},refreshRange:updateSelection,renderLoadout:()=>toolsUI.renderLauncher(),$,getProject:()=>project,getSelected:()=>selected,select:id=>selected=id,save,rebuild,field,advancedInspector,advancedWeaponFields,loadProject,toast,objectList,setTool:(id,preset)=>{if(preset&&id==='door')doorPreset=preset;if(preset&&id==='weapon')weaponPresetId=preset;if(mode==='play')setMode('edit');tool=id;document.querySelectorAll('[data-part]').forEach(x=>x.classList.toggle('active',x.dataset.part===id));}});
 function inspector(){workshop.inspect();}
 function weaponFields(){workshop.weapons();}

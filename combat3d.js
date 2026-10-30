@@ -1,8 +1,8 @@
-import {nearbyObjects} from './spatial3d.js?v=20261030d';
-import {worldHalf} from './world3d.js?v=20261030d';
-import {fireDestructionEvents} from './events3d.js?v=20261030d';
-import {topAt} from './building3d.js?v=20261030d';
-import {LIMITS,safeShot,DESTRUCTIBLE_TYPES,impactEffects} from './weapons3d.js?v=20261030d';
+import {nearbyObjects} from './spatial3d.js?v=20261030e';
+import {worldHalf} from './world3d.js?v=20261030e';
+import {fireDestructionEvents} from './events3d.js?v=20261030e';
+import {topAt} from './building3d.js?v=20261030e';
+import {LIMITS,safeShot,DESTRUCTIBLE_TYPES,impactEffects} from './weapons3d.js?v=20261030e';
 const solidType=o=>DESTRUCTIBLE_TYPES.has(o.type)||o.type==='door';
 const alive=o=>(o.type!=='enemy'&&!DESTRUCTIBLE_TYPES.has(o.type))||o.hp>0||(DESTRUCTIBLE_TYPES.has(o.type)&&o.destructible===false);
 function axes(f){const length=Math.hypot(f.x,f.z),right=length>.00001?{x:-f.z/length,y:0,z:f.x/length}:{x:1,y:0,z:0};return {right,up:{x:right.y*f.z-right.z*f.y,y:right.z*f.x-right.x*f.z,z:right.x*f.y-right.y*f.x}};}
@@ -31,12 +31,12 @@ function damageObject(g,o,damage){
   if(o.hp===0){if(o.type==='enemy')g.score+=10;g.message=o.type==='enemy'?'敵をたおした！':'ブロックをこわした！';g.messageId++;}
 }
 function boxDistance(point,o){const w=o.type==='enemy'?1.3:o.w,d=o.type==='enemy'?1.3:o.d,h=o.type==='enemy'?1.8:o.h;return Math.hypot(Math.max(0,Math.abs(point.x-o.x)-w/2),Math.max(o.y-point.y,point.y-o.y-h,0),Math.max(0,Math.abs(point.z-o.z)-d/2));}
-function explode(g,b){effect(g,b,b.blastRadius,'blast');for(const o of g.objects)if(!o.hidden&&alive(o)&&(o.type==='enemy'||DESTRUCTIBLE_TYPES.has(o.type))&&boxDistance(b,o)<=b.blastRadius)damageObject(g,o,b.damage);}
+function explode(g,b){effect(g,b,b.blastRadius,'blast');for(const o of g.objects)if(!o.hidden&&alive(o)&&(!b.enemy&&o.type==='enemy'||DESTRUCTIBLE_TYPES.has(o.type))&&boxDistance(b,o)<=b.blastRadius)damageObject(g,o,b.damage);if(b.enemy&&g.player.invincible<=0&&boxDistance(b,{...g.player,type:'player',w:.7,d:.7,h:1.7})<=b.blastRadius){g.player.hp-=b.damage;g.player.invincible=1;}}
 function contains(b,o){const r=b.radius||.1;if(o.type==='enemy')return Math.hypot(b.x-o.x,b.z-o.z)<.65+r&&b.y>o.y-r&&b.y<o.y+1.8+r;return Math.abs(b.x-o.x)<o.w/2+r&&Math.abs(b.z-o.z)<o.d/2+r&&b.y>o.y-r&&b.y<topAt(o,b.x,b.z)+r;}
 // Stop the firing origin at the first obstruction between the player and muzzle.
 // This prevents a long barrel from starting a bullet on the far side of a wall.
-export function resolveShotOrigin(g,start,muzzle,radius=.1){
- const distance=Math.hypot(muzzle.x-start.x,muzzle.y-start.y,muzzle.z-start.z),steps=Math.max(1,Math.min(96,Math.ceil(distance/.04))),targets=nearbyObjects(g,Math.min(start.x,muzzle.x)-radius,Math.min(start.z,muzzle.z)-radius,Math.max(start.x,muzzle.x)+radius,Math.max(start.z,muzzle.z)+radius).filter(o=>!o.hidden&&alive(o)&&(solidType(o)&&!o.open||o.type==='enemy'));
+export function resolveShotOrigin(g,start,muzzle,radius=.1,ignoreId=null){
+ const distance=Math.hypot(muzzle.x-start.x,muzzle.y-start.y,muzzle.z-start.z),steps=Math.max(1,Math.min(96,Math.ceil(distance/.04))),targets=nearbyObjects(g,Math.min(start.x,muzzle.x)-radius,Math.min(start.z,muzzle.z)-radius,Math.max(start.x,muzzle.x)+radius,Math.max(start.z,muzzle.z)+radius).filter(o=>o.id!==ignoreId&&!o.hidden&&alive(o)&&(solidType(o)&&!o.open||o.type==='enemy'));
  for(let i=0;i<=steps;i++){const t=i/steps,p={x:start.x+(muzzle.x-start.x)*t,y:start.y+(muzzle.y-start.y)*t,z:start.z+(muzzle.z-start.z)*t,radius};if(targets.some(o=>contains(p,o)))return {x:p.x,y:p.y,z:p.z};}return {x:muzzle.x,y:muzzle.y,z:muzzle.z};
 }
 function nearbySweep(b,end,o){const r=b.radius||.1,w=o.type==='enemy'?1.3:o.w,h=o.type==='enemy'?1.8:o.h,d=o.type==='enemy'?1.3:o.d;return Math.min(b.x,end.x)-r<=o.x+w/2&&Math.max(b.x,end.x)+r>=o.x-w/2&&Math.min(b.z,end.z)-r<=o.z+d/2&&Math.max(b.z,end.z)+r>=o.z-d/2&&Math.min(b.y,end.y)-r<=o.y+h&&Math.max(b.y,end.y)+r>=o.y;}
@@ -53,7 +53,7 @@ export function updateCombat(g,dt){
       if(Math.abs(b.x)>worldHalf(g)||Math.abs(b.z)>worldHalf(g)||b.y>40){b.life=0;break;}
       const ground=b.y-b.radius<=0,hit=targets.find(o=>alive(o)&&!(o.id===b.lastHit&&g.time<b.ignoreUntil)&&contains(b,o));
       const playerHit=b.enemy&&Math.hypot(b.x-g.player.x,b.z-g.player.z)<.35+b.radius&&b.y>g.player.y-b.radius&&b.y<g.player.y+1.7+b.radius;
-      if(playerHit){b.life=0;if(g.player.invincible<=0){g.player.hp-=b.damage;g.player.invincible=1;}effect(g,b,.35,'hit');break;}
+      if(playerHit){b.life=0;if(impacts.includes('explode'))explode(g,b);else{if(impacts.includes('damage')&&g.player.invincible<=0){g.player.hp-=b.damage;g.player.invincible=1;}effect(g,b,.35,'hit');}break;}
       if(!ground&&!hit)continue;
       if(impacts.includes('explode'))explode(g,b);
       else {if(hit&&impacts.includes('damage'))damageObject(g,hit,b.damage||1);effect(g,b,.3,'hit');}

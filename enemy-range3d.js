@@ -1,4 +1,4 @@
-import {GRID} from './building3d.js?v=20261030d';
+import {GRID} from './building3d.js?v=20261030e';
 export const RANGE_MAX=8;
 export const rangeCell=value=>Math.floor((value+GRID.cell/2)/GRID.cell);
 export function rangeCells(shape,cross=4,circle=2){
