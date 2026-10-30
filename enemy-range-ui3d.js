@@ -1,15 +1,15 @@
-import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261029v';
-import {openMoveMap} from './move-map-ui3d.js?v=20261029v';
-import {RANGE_MAX,makeAttackRange,rangeCells} from './enemy-range3d.js?v=20261029v';
-import {setReadingText,kanaText} from './readings3d.js?v=20261029v';
+import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261030a';
+import {openMoveMap} from './move-map-ui3d.js?v=20261030a';
+import {RANGE_MAX,makeAttackRange,rangeCells} from './enemy-range3d.js?v=20261030a';
+import {setReadingText,kanaText} from './readings3d.js?v=20261030a';
 const RANGE_UI={
  attackRange:{label:'弾を撃つ',title:'敵が弾を撃つマス',note:'色のついたマスに入ったら → 弾を撃つ。',empty:'これまでの近くに来たら撃つ設定',center:'敵のいるマスが中心。敵と一緒に動くよ。',color:'#ef9aae'},
  moveRange:{label:'動ける',title:'敵が動けるマス',note:'色のついたマスの中だけを歩けるよ。つながっていないマスには行けないよ。',empty:'制限なし',center:'敵を置いたマスが中心。ゲーム中もこの場所に固定だよ。',color:'#91c7ee'},
  searchRange:{label:'探す',title:'プレイヤーを見つけるマス',note:'色のついたマスにプレイヤーが入ると → 見つける。追いかけ方は別にえらぼう。',empty:'近くで見つける設定（18m）',center:'敵のいるマスが中心。敵と一緒に動くよ。',color:'#efcf74'}
 };
 export function renderAttackRange(parent,o,api){renderEnemyRange(parent,o,api,'attackRange');}
-export function renderEnemyRange(parent,o,{save,rebuild,showRange,getProject,lookFromAbove},key){
- const config=RANGE_UI[key],edit=document.createElement('button'),label=document.createElement('span'),summary=document.createElement('small');edit.className='enemy-range-choice';setReadingText(label,`▦ ${config.label}マスをえらぶ`);edit.setAttribute('aria-label',kanaText(`▦ ${config.label}マスをえらぶ`));
+export function renderEnemyRange(parent,o,{save,rebuild,showRange,getRangeView,getProject,lookFromAbove},key){
+ const config=RANGE_UI[key],edit=document.createElement('button'),label=document.createElement('span'),summary=document.createElement('small');edit.className='enemy-range-choice';edit.dataset.range=key;edit.setAttribute('aria-pressed',String((getRangeView?.()||'attackRange')===key));edit.style.setProperty('--range-color',config.color);setReadingText(label,`▦ ${config.label}マスをえらぶ`);edit.setAttribute('aria-label',kanaText(`▦ ${config.label}マスをえらぶ`));
  const names={cross:'十字',circle:'円',mixed:'十字＋円',custom:'自分でつくった形'};
  const update=()=>setReadingText(summary,o[key]?`${o[key].space==='world'?'マップ上':names[o[key].shape]}・${o[key].cells.length}マス`:config.empty);update();
  edit.onclick=()=>{showRange?.(key);if(key==='moveRange')openMoveMap(o,{getProject,save,rebuild,lookFromAbove,onClose:update});else openRangeEditor(o,{key,config,save,rebuild,lookFromAbove,onClose:update});};edit.append(label,summary);parent.append(edit);

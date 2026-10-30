@@ -1,16 +1,16 @@
-import {CHASE_MODES} from './enemy-ai3d.js?v=20261029v';
-import {inGridRange,worldMoveRange,makeAttackRange} from './enemy-range3d.js?v=20261029v';
-import {renderEnemyRange} from './enemy-range-ui3d.js?v=20261029v';
-import {gunPreviewSVG} from './appearance3d.js?v=20261029v';
-import {DOOR_PRESETS} from './doors3d.js?v=20261029v';
-import {MAX_PARTS} from './limits3d.js?v=20261029v';
-import {coordinateLimit} from './world3d.js?v=20261029v';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261029v';
-import {actionsFor} from './events3d.js?v=20261029v';
-import {renderEventEditor} from './event-editor3d.js?v=20261029v';
-import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261029v';
-import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261029v';
-import {PARTS,ENEMY_PRESETS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261029v';
+import {CHASE_MODES} from './enemy-ai3d.js?v=20261030a';
+import {inGridRange,worldMoveRange,makeAttackRange} from './enemy-range3d.js?v=20261030a';
+import {renderEnemyRange} from './enemy-range-ui3d.js?v=20261030a';
+import {gunPreviewSVG} from './appearance3d.js?v=20261030a';
+import {DOOR_PRESETS} from './doors3d.js?v=20261030a';
+import {MAX_PARTS} from './limits3d.js?v=20261030a';
+import {coordinateLimit} from './world3d.js?v=20261030a';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261030a';
+import {actionsFor} from './events3d.js?v=20261030a';
+import {renderEventEditor} from './event-editor3d.js?v=20261030a';
+import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261030a';
+import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261030a';
+import {PARTS,ENEMY_PRESETS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261030a';
 
 const ICONS={weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
 const DESCRIPTIONS={weapon:'地面に置いて、ふれると拾える銃。持ちもの・銃づくりで用意した銃をえらぼう。',ramp:'低いほうから歩くと、そのまま登れるスロープ。回して好きな向きにつなげよう。',wall:'家を囲う壁。向きを変えてつなげよう。',floor:'家の床と天井に使える板。壁の内側にぴったり合うよ。',roof:'壁の上にのせる三角屋根。向きを変えて家を仕上げよう。',
@@ -60,21 +60,22 @@ export function createWorkshop(api){
     if(DESTRUCTIBLE_TYPES.has(o.type)){field(el,'ブロックの体力',o.hp,1,LIMITS.maxBlockHp,1,n=>o.hp=Math.round(n));selectField(el,'弾が当たったら',[['yes','体力がなくなると壊れる'],['no','こわれない']],o.destructible===false?'no':'yes',v=>o.destructible=v==='yes');}
     if(o.type==='enemy'){
       selectField(el,'いつ出現する？',[['start','最初からいる'],['event','イベントで出現を待つ']],o.startsHidden?'event':'start',v=>{o.startsHidden=v==='event';inspect();});
-      const preset=Object.keys(ENEMY_PRESETS).find(k=>JSON.stringify(ENEMY_PRESETS[k].program)===JSON.stringify(o.program))||'custom';
-      selectField(el,'行動タイプ',[...Object.entries(ENEMY_PRESETS).map(([k,v])=>[k,v.name]),['custom','自分で工夫した動き']],preset,k=>{if(k!=='custom'){o.program=structuredClone(ENEMY_PRESETS[k].program);if(k==='search'){o.chaseMode='inside';o.moveRange??=worldMoveRange(makeAttackRange('circle',3,3),o);o.searchRange??=makeAttackRange();}}inspect();});
       field(el,'体力',o.hp,1,20,1,n=>o.hp=Math.round(n));
-      if(o.program.length)field(el,'動きの速さ',o.program[0].speed,.5,8,.5,n=>{o.program.forEach(b=>b.speed=n);});
-      const rangeApi={getProject,lookFromAbove:api.lookFromAbove,save,rebuild:api.refreshRange||rebuild,showRange:key=>{api.showRange?.(key);rangePreview.value=key;}};
-      const rangePreview=selectField(el,'ステージに表示するはんい',[['moveRange','青：動ける場所'],['searchRange','黄色：探す場所'],['attackRange','ピンク：攻撃する場所']],api.getRangeView?.()||'attackRange',key=>api.showRange?.(key));
-      const directionView=document.createElement('button');setReadingText(directionView,'↑ 上から向きを見る');directionView.onclick=()=>api.lookFromAbove?.();el.append(directionView);
-      const rangeStack=document.createElement('div');rangeStack.className='enemy-range-stack';el.append(rangeStack);for(const key of ['moveRange','searchRange','attackRange'])renderEnemyRange(rangeStack,o,rangeApi,key);
-      if(o.moveRange?.space==='world'&&!inGridRange(o.moveRange,{x:0,z:0},o)){const note=document.createElement('p');note.className='recipe-hint';setReadingText(note,'この敵は移動できるマスの外にいます。青いマスの中に置こう。');el.append(note);}
+      const movement=document.createElement('section');movement.className='enemy-settings-group';movement.setAttribute('aria-label','動きかた');const movementTitle=document.createElement('h3');setReadingText(movementTitle,'動きかた');movement.append(movementTitle);el.append(movement);
+      const preset=Object.keys(ENEMY_PRESETS).find(k=>JSON.stringify(ENEMY_PRESETS[k].program)===JSON.stringify(o.program))||'custom';
+      selectField(movement,'行動タイプ',[...Object.entries(ENEMY_PRESETS).map(([k,v])=>[k,v.name]),['custom','自分で工夫した動き']],preset,k=>{if(k!=='custom'){o.program=structuredClone(ENEMY_PRESETS[k].program);if(k==='search'){o.chaseMode='inside';o.moveRange??=worldMoveRange(makeAttackRange('circle',3,3),o);o.searchRange??=makeAttackRange();}}inspect();});
+      if(o.program.length)field(movement,'動きの速さ',o.program[0].speed,.5,8,.5,n=>{o.program.forEach(b=>b.speed=n);});
+      const rangeApi={getProject,lookFromAbove:api.lookFromAbove,save,rebuild:api.refreshRange||rebuild,getRangeView:api.getRangeView,showRange:key=>{api.showRange?.(key);for(const button of el.querySelectorAll('.enemy-range-choice'))button.setAttribute('aria-pressed',String(button.dataset.range===key));}};
       if(o.program.some(b=>['chase','search'].includes(b.action))){
-        selectField(el,'追いかけ方',Object.entries(CHASE_MODES),o.chaseMode||'always',v=>{o.chaseMode=v;inspect();});
-        const hint=document.createElement('p');hint.className='component-description';setReadingText(hint,((o.chaseMode||'always')==='always'?'はじめからプレイヤーを追いかけるよ。':o.chaseMode==='remember'?'探す → 見つける → ずっと追いかける。':'探すはんいから出ると追うのをやめるよ。')+'追いかけるときも「動けるマス」の外には出ないよ。');el.append(hint);
+        selectField(movement,'追いかけ方',Object.entries(CHASE_MODES),o.chaseMode||'always',v=>{o.chaseMode=v;inspect();});
+        const hint=document.createElement('p');hint.className='component-description';setReadingText(hint,((o.chaseMode||'always')==='always'?'はじめからプレイヤーを追いかけるよ。':o.chaseMode==='remember'?'探す → 見つける → ずっと追いかける。':'探すはんいから出ると追うのをやめるよ。')+'追いかけるときも「動けるマス」の外には出ないよ。');movement.append(hint);
       }
-      const attackLabel=document.createElement('label'),attack=document.createElement('input'),attackText=document.createElement('span');attackLabel.className='enemy-attack-toggle';attack.type='checkbox';attack.checked=o.attackEnabled;attack.setAttribute('aria-label','攻撃してくる');setReadingText(attackText,'攻撃してくる');attack.onchange=()=>{o.attackEnabled=attack.checked;save();rebuild();inspect();};attackLabel.append(attack,attackText);el.append(attackLabel);
-      if(!o.attackEnabled){const note=document.createElement('p');note.className='component-description';setReadingText(note,'チェックがオフのあいだは、はんいに入っても攻撃しないよ。設定したはんいは残るよ。');el.append(note);}
+      const rangeStack=document.createElement('div');rangeStack.className='enemy-range-stack';movement.append(rangeStack);for(const key of ['moveRange','searchRange'])renderEnemyRange(rangeStack,o,rangeApi,key);
+      if(o.moveRange?.space==='world'&&!inGridRange(o.moveRange,{x:0,z:0},o)){const note=document.createElement('p');note.className='recipe-hint';setReadingText(note,'この敵は移動できるマスの外にいます。青いマスの中に置こう。');movement.append(note);}
+      const combat=document.createElement('section');combat.className='enemy-settings-group';combat.setAttribute('aria-label','攻撃');const combatTitle=document.createElement('h3');setReadingText(combatTitle,'攻撃');combat.append(combatTitle);el.append(combat);
+      const attackLabel=document.createElement('label'),attack=document.createElement('input'),attackText=document.createElement('span');attackLabel.className='enemy-attack-toggle';attack.type='checkbox';attack.checked=o.attackEnabled;attack.setAttribute('aria-label','攻撃してくる');setReadingText(attackText,'攻撃してくる');attack.onchange=()=>{o.attackEnabled=attack.checked;save();rebuild();inspect();};attackLabel.append(attack,attackText);combat.append(attackLabel);renderEnemyRange(combat,o,rangeApi,'attackRange');
+      if(!o.attackEnabled){const note=document.createElement('p');note.className='component-description';setReadingText(note,'チェックがオフのあいだは、はんいに入っても攻撃しないよ。設定したはんいは残るよ。');combat.append(note);}
+      const directionView=document.createElement('button');setReadingText(directionView,'↑ 上から向きを見る');directionView.onclick=()=>api.lookFromAbove?.();el.append(directionView);
       if(loop){const d=details('さらに工夫する：うごきを組む',[loop],wasOpen);d.className='advanced-program';el.append(d);}
     }
     if(o.type==='moving'){
