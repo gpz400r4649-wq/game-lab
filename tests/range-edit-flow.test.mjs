@@ -78,7 +78,7 @@ test('移動の円２マスを初期表示し、広さを変えても敵を置�
 
 test('扇形の広さ・遠さは明示的な操作で変わり、開くだけではマスを置き換えない',t=>{
  const s=setup(t,'searchRange',defaultEnemyRanges({x:8,z:8}).searchRange),panel=s.open();assert.equal(s.calls.save,0);
- const angle=all(panel).find(n=>n.tagName==='input'&&n.getAttribute('aria-label')==='視野の広さ（度）を数字で設定');assert.equal(Number(angle.value),120);angle.value='360';angle.oninput();assert.equal(s.o.searchRange.fanAngle,360);assert.ok(s.o.searchRange.cells.some(([x,z])=>z>0));
+ assert.ok(!all(panel).some(n=>n.tagName==='input'&&n.getAttribute('aria-label')==='視野の広さ（度）を数字で設定'));const angle=all(panel).find(n=>n.tagName==='button'&&n.textContent==='90°');angle.onclick();assert.equal(s.o.searchRange.fanAngle,90);assert.ok(s.o.searchRange.cells.every(([x,z])=>z<=0));
  const distance=all(panel).find(n=>n.tagName==='input'&&n.getAttribute('aria-label')==='何マス先まで気づく？を数字で設定');distance.value='6';distance.oninput();assert.ok(s.o.searchRange.cells.some(([x,z])=>z===-6));assert.ok(validAttackRange(s.o.searchRange));
 });
 
@@ -93,4 +93,14 @@ test('ステージを直接ぬる：即時反映し、指を離した時だけ�
 });
 test('ステージ編集を途中で閉じても変更を保存し、開くだけでは保存しない',t=>{
  const s=setup(t,'moveRange');const open=()=>openStageMoveRange(s.o,{getProject:()=>({worldSize:60}),save:()=>s.calls.save++,rebuild:()=>{},onClose:()=>{}});open();closeLiveRangeEditor();assert.equal(s.calls.save,0);open();stageRangePointer('start',1,{x:0,z:0});closeLiveRangeEditor();assert.equal(s.calls.save,1);
+});
+
+for(const key of ['searchRange','attackRange'])test(`${key}: ステージにぬった場所を敵の向きのマスへ変換して保存する`,t=>{
+ const s=setup(t,key,{space:'facing',shape:'custom',cross:2,circle:2,cells:[]});s.o.facing=90;
+ openStageMoveRange(s.o,{key,getProject:()=>({worldSize:240}),save:()=>s.calls.save++,rebuild:()=>{},onClose:()=>{}});
+ stageRangePointer('start',1,{x:4,z:8});stageRangePointer('end',1,null);assert.equal(s.o[key].space,'facing');assert.deepEqual(s.o[key].cells.map(c=>c.map(n=>n+0)),[[0,-1]]);assert.ok(validAttackRange(s.o[key]));
+ stageRangePointer('start',2,{x:100,z:100});stageRangePointer('end',2,null);assert.deepEqual(s.o[key].cells.map(c=>c.map(n=>n+0)),[[0,-1]]);assert.equal(s.calls.save,1);
+});
+test('気づく範囲の広さは２種類とステージ直接編集に絞る',t=>{
+ const s=setup(t,'searchRange',defaultEnemyRanges({x:8,z:8}).searchRange),panel=s.open(),choices=all(panel).find(n=>n.className==='fan-choices');assert.equal(choices.children.length,3);assert.equal(choices.children[1].textContent,'90°');assert.ok(choices.children[2].textContent.includes('ステージ'));choices.children[2].onclick();assert.ok(isLiveRangeEditing());assert.equal(s.calls.save,0);
 });
