@@ -1,7 +1,7 @@
-import {rangeCell,inGridRange,inEnemyRange,movementCenter} from './enemy-range3d.js?v=20261103a';
+import {rangeCell,inGridRange,inEnemyRange,movementCenter} from './enemy-range3d.js?v=20261103b';
 const CELL=4,neighbors=[[0,-1],[1,0],[0,1],[-1,0]];
 export const CHASE_MODES={always:'はじめから、ずっと追いかける',inside:'探すはんいにいる間だけ追いかける',remember:'見つけたら、ずっと追いかける'};
-export function validEnemyMovement(o){return (o.chaseMode===undefined||Object.hasOwn(CHASE_MODES,o.chaseMode));}
+export function validEnemyMovement(o){return (o.chaseMode===undefined||Object.hasOwn(CHASE_MODES,o.chaseMode))&&(o.routine===undefined||(o.routine&&['wait','patrol','roam'].includes(o.routine.idle)&&['none','near','always'].includes(o.routine.notice)&&['resume','continue','return'].includes(o.routine.lost)));}
 export function canEnemyEnter(o,point){return !o.moveRange||inGridRange(o.moveRange,movementCenter(o),point);}
 export function detectsPlayer(o,player){return o.searchRange?inEnemyRange(o.searchRange,o,player):Math.hypot(player.x-o.x,player.z-o.z)<18;}
 function route(o,target,r){
@@ -16,11 +16,20 @@ function route(o,target,r){
 }
 export function moveEnemy(o,b,player,dt,time,tryMove){
  const detected=detectsPlayer(o,player);if(detected)o.foundPlayer=true;
- const mode=o.chaseMode||'always',chase=mode==='always'||(mode==='inside'?detected:!!o.foundPlayer);
+ const mode=o.chaseMode||'always';let chase=mode==='always'||(mode==='inside'?detected:!!o.foundPlayer);
+ let returning=false;
+ if(o.routine){
+  const r=o.routine;chase=r.notice==='always'||(r.notice==='near'&&(detected||(r.lost==='continue'&&o.foundPlayer)));
+  if(chase)o.wasChasing=true;
+  returning=!chase&&r.lost==='return'&&o.wasChasing;
+  if(returning&&Math.hypot(o.x-o.origin.x,o.z-o.origin.z)<.08){o.wasChasing=false;returning=false;o.navigation=null;}
+  b={...b,action:chase||returning?'chase':r.idle==='roam'?'search':r.idle==='patrol'?'patrol':'wait'};
+  if(b.action==='wait'){o.navigation=null;return;}
+ }
  if(b.action==='patrol'){const point={x:o.x+Math.cos(time)*b.speed*dt,z:o.z};if(canEnemyEnter(o,point))tryMove(point.x-o.x,0);return;}
  if(b.action!=='chase'&&b.action!=='search')return;
- if(b.action==='chase'&&!chase){o.navigation=null;return;}
- let target=player,r=o.moveRange;
+ if(b.action==='chase'&&!chase&&!returning){o.navigation=null;return;}
+ let target=returning?o.origin:player,r=o.moveRange;
  if(b.action==='search'&&!chase){
   const origin=movementCenter(o),cx=rangeCell(o.x)-rangeCell(origin.x),cz=rangeCell(o.z)-rangeCell(origin.z);
   if(!o.roamTarget||Math.hypot(o.x-o.roamTarget.x,o.z-o.roamTarget.z)<.12||o.roamStuck){
@@ -33,7 +42,7 @@ export function moveEnemy(o,b,player,dt,time,tryMove){
  const step=b.speed*dt;
  let point=target;
  if(r){
-  const stamp=`${b.action}:${chase}:${rangeCell(target.x)},${rangeCell(target.z)}`;
+  const stamp=`${b.action}:${chase}:${returning}:${rangeCell(target.x)},${rangeCell(target.z)}`;
   if(!o.navigation||o.navigation.stamp!==stamp||o.navigation.range!==r)o.navigation={stamp,range:r,path:route(o,target,r)};
   const path=o.navigation.path;while(path.length&&Math.hypot(path[0].x-o.x,path[0].z-o.z)<.08)path.shift();
   if(path.length)point=path[0];else if(inGridRange(r,movementCenter(o),target)&&rangeCell(o.x)===rangeCell(target.x)&&rangeCell(o.z)===rangeCell(target.z))point=target;else return;

@@ -1,13 +1,13 @@
-import {closeLiveRangeEditor,mountLiveRangeEditor} from './range-panel3d.js?v=20261103a';
-export {closeLiveRangeEditor,isLiveRangeEditing} from './range-panel3d.js?v=20261103a';
-import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261103a';
-import {openMoveMap} from './move-map-ui3d.js?v=20261103a';
-import {RANGE_MAX,rangeCells,convertRangeSpace} from './enemy-range3d.js?v=20261103a';
-import {setReadingText,kanaText} from './readings3d.js?v=20261103a';
+import {closeLiveRangeEditor,mountLiveRangeEditor} from './range-panel3d.js?v=20261103b';
+export {closeLiveRangeEditor,isLiveRangeEditing} from './range-panel3d.js?v=20261103b';
+import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261103b';
+import {openMoveMap} from './move-map-ui3d.js?v=20261103b';
+import {RANGE_MAX,rangeCells,convertRangeSpace} from './enemy-range3d.js?v=20261103b';
+import {setReadingText,kanaText} from './readings3d.js?v=20261103b';
 const RANGE_UI={
  attackRange:{label:'弾を撃つ',title:'敵が弾を撃つマス',note:'色のついたマスに入ったら → 弾を撃つ。',empty:'これまでの近くに来たら撃つ設定',center:'敵のいるマスが中心。敵と一緒に動くよ。',color:'#ef9aae'},
  moveRange:{label:'動ける',title:'敵が動けるマス',note:'色のついたマスの中だけを歩けるよ。つながっていないマスには行けないよ。',empty:'制限なし',center:'敵を置いたマスが中心。ゲーム中もこの場所に固定だよ。',color:'#91c7ee'},
- searchRange:{label:'探す',title:'プレイヤーを見つけるマス',note:'色のついたマスにプレイヤーが入ると → 見つける。追いかけ方は別にえらぼう。',empty:'近くで見つける設定（18m）',center:'敵のいるマスが中心。敵と一緒に動くよ。',color:'#efcf74'}
+ searchRange:{label:'気づく',title:'プレイヤーを見つけるマス',note:'色のついたマスにプレイヤーが入ると → 見つける。見つけた後の動きは、敵の設定でえらぼう。',empty:'近くで見つける設定（18m）',center:'敵のいるマスが中心。敵と一緒に動くよ。',color:'#efcf74'}
 };
 export function renderAttackRange(parent,o,api){renderEnemyRange(parent,o,api,'attackRange');}
 export function renderEnemyRange(parent,o,{save,rebuild,showRange,getRangeView,getProject,lookFromAbove},key){
