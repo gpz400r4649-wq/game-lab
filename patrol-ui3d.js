@@ -1,9 +1,9 @@
 import * as T from './vendor/three.module.min.js';
-import {mountLiveRangeEditor} from './range-panel3d.js?v=20261104e';
-import {setStageRangePainter} from './stage-range3d.js?v=20261104e';
-import {worldSize,coordinateLimit} from './world3d.js?v=20261104e';
-import {validPatrolRoute} from './patrol-route3d.js?v=20261104e';
-import {setReadingText} from './readings3d.js?v=20261104e';
+import {mountLiveRangeEditor} from './range-panel3d.js?v=20261104f';
+import {setStageRangePainter} from './stage-range3d.js?v=20261104f';
+import {worldSize,coordinateLimit} from './world3d.js?v=20261104f';
+import {validPatrolRoute,placeAtRouteStart} from './patrol-route3d.js?v=20261104f';
+import {setReadingText} from './readings3d.js?v=20261104f';
 export function createPatrolOverlay(scene){
  const group=new T.Group(),material=new T.MeshBasicMaterial({color:0x399cda,depthWrite:false}),lineGeometry=new T.CylinderGeometry(.07,.07,1,8),pointGeometry=new T.SphereGeometry(.3,12,8),direction=new T.Vector3(),up=new T.Vector3(0,1,0),lines=[],points=[],labels=[];group.visible=false;scene.add(group);
  for(let i=0;i<16;i++){const line=new T.Mesh(lineGeometry,material),point=new T.Mesh(pointGeometry,new T.MeshBasicMaterial({color:i===0?0x399cda:0xf0a23a,depthWrite:false}));line.layers.set(2);point.layers.set(2);group.add(line,point);lines.push(line);points.push(point);}
@@ -25,6 +25,6 @@ export function openPatrolEditor(o,{getProject,save,rebuild,lookFromAbove,previe
   if(next===0){draft=[selected];next=1;refresh();return true;}
   if(!draft[0]){setReadingText(summary,'先に「はじめ」の場所をえらぼう。');return true;}
   const candidate=[draft[0],selected];if(!validPatrolRoute(candidate,limit)){setReadingText(summary,'はじめと違う場所をえらぼう。');return true;}
-  draft=candidate;o.patrolRoute=structuredClone(candidate);save();rebuild();next=0;refresh();return true;
+  draft=candidate;o.patrolRoute=structuredClone(candidate);placeAtRouteStart(o,o.patrolRoute);save();rebuild();next=0;refresh();return true;
  });lookFromAbove?.();refresh();title.focus({preventScroll:true});
 }

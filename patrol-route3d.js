@@ -29,3 +29,8 @@ export function walkWaypoints(o,speed,dt,tryMove){
  const target=Math.hypot(near.x-o.x,near.z-o.z)>.08?near:b;if(target===near)o.debugAction='return';
  const mx=target.x-o.x,mz=target.z-o.z,d=Math.hypot(mx,mz);if(d<.001)return;const scale=Math.min(speed*dt,d)/d;tryMove(mx*scale,mz*scale);
 }
+
+export function placeAtRouteStart(o,route){
+ if(!route||route.length<2||!Number.isFinite(route[0].x)||!Number.isFinite(route[0].z))return false;
+ o.x=route[0].x;o.z=route[0].z;return true;
+}

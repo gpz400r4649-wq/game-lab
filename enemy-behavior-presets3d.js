@@ -1,5 +1,5 @@
-import {defaultPatrolRoute} from './patrol-route3d.js?v=20261104e';
-import {defaultEnemyRanges} from './enemy-range3d.js?v=20261104e';
+import {defaultPatrolRoute,placeAtRouteStart} from './patrol-route3d.js?v=20261104f';
+import {defaultEnemyRanges} from './enemy-range3d.js?v=20261104f';
 // Examples combine existing actions, pursuit rules and speed. No runtime preset IDs are saved.
 export const ENEMY_BEHAVIOR_EXAMPLES={
  still:{name:'その場で待つ',icon:'●',program:[],flow:'置いた場所で待つ。自分からは動かないよ。'},
@@ -16,7 +16,7 @@ export function basicEnemyBehavior(o){if(!o.program.length)return 'still';return
 export function enemyBehaviorExampleKey(o){if(o.routine)return 'custom';return Object.keys(ENEMY_BEHAVIOR_EXAMPLES).find(key=>{const example=ENEMY_BEHAVIOR_EXAMPLES[key];return o.program.length===example.program.length&&o.program.every((block,i)=>block.action===example.program[i].action&&block.speed===example.program[i].speed)&&(example.chaseMode===undefined||(o.chaseMode||'always')===example.chaseMode);})||'custom';}
 export function applyEnemyBehaviorExample(o,key){
  const example=ENEMY_BEHAVIOR_EXAMPLES[key];if(!Object.hasOwn(ENEMY_BEHAVIOR_EXAMPLES,key))return false;
- if(example.program[0]?.action==='patrol')o.patrolRoute??=defaultPatrolRoute(o);
+ if(example.program[0]?.action==='patrol'){o.patrolRoute??=defaultPatrolRoute(o);placeAtRouteStart(o,o.patrolRoute);}
  delete o.routine;o.program=structuredClone(example.program);if(example.chaseMode!==undefined)o.chaseMode=example.chaseMode;
  if(o.program.length){const defaults=defaultEnemyRanges(o);o.moveRange??=defaults.moveRange;if(example.chaseMode!==undefined)o.searchRange??=defaults.searchRange;}
  return true;
@@ -52,6 +52,7 @@ export function enemyRoutineChoices(o){
 }
 export function setEnemyRoutineChoice(o,changes){
  const current=enemyRoutine(o);if(changes.idle==='patrol')o.patrolRoute??=defaultPatrolRoute(o);if(changes.idle==='path'){o.waypoints??=structuredClone(o.patrolRoute||defaultPatrolRoute(o));o.routeEnd??='loop';}
+ if(changes.idle==='patrol')placeAtRouteStart(o,o.patrolRoute);if(changes.idle==='path')placeAtRouteStart(o,o.waypoints);
  if(changes.idle==='chase')setEnemyRoutine(o,{notice:'always'});
  else setEnemyRoutine(o,{...(changes.idle&&current?.notice==='always'?{notice:'none'}:{}),...changes});
 }
