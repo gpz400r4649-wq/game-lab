@@ -39,11 +39,11 @@ for(const key of ['moveRange','searchRange','attackRange']){
  });
  for(const configured of [false,true])test(`${key}: ${configured?'設定済み':'未設定'}の範囲を開いて閉じても設定が変わらず、最初のフォーカスは見出し`,t=>{
   const range=key==='moveRange'?{space:'world',cells:[[1,1],[2,1]]}:makeAttackRange('cross',3,2),s=setup(t,key,configured?range:null),dialog=s.open();
-  assert.ok(isLiveRangeEditing());const shape=all(dialog).find(n=>n.getAttribute?.('aria-label')==='はんいの形');assert.equal(shape.value,configured&&key!=='moveRange'?'cross':'custom');assert.equal(shape.options.length,4);assert.equal(shape.closest('details'),null);assert.ok(shape.options.every(option=>option.value!==''));const heading=all(dialog).find(n=>n.tagName==='h2');assert.equal(heading.tagName,'h2');assert.equal(heading.getAttribute('autofocus'),'');assert.equal(heading.getAttribute('tabindex'),'-1');assert.ok(!all(dialog).some(n=>n.tagName==='select'&&n.getAttribute('autofocus')!==null));assert.deepEqual(s.o,s.before);assert.equal(s.calls.save,0);assert.equal(s.calls.rebuild,0);
+  assert.ok(isLiveRangeEditing());const shape=all(dialog).find(n=>n.getAttribute?.('aria-label')==='はんいの形');assert.equal(shape.value,configured&&key!=='moveRange'?'cross':'custom');assert.equal(shape.options.length,4);assert.equal(!!shape.closest('details'),key!=='moveRange');assert.ok(shape.options.every(option=>option.value!==''));const heading=all(dialog).find(n=>n.tagName==='h2');assert.equal(heading.tagName,'h2');assert.equal(heading.getAttribute('autofocus'),'');assert.equal(heading.getAttribute('tabindex'),'-1');assert.ok(!all(dialog).some(n=>n.tagName==='select'&&n.getAttribute('autofocus')!==null));assert.deepEqual(s.o,s.before);assert.equal(s.calls.save,0);assert.equal(s.calls.rebuild,0);
   finish(dialog);assert.deepEqual(s.o,s.before);assert.equal(s.calls.save,0);
  });
  test(`${key}: マスを押した時だけ設定が作られ、再編集でも保たれる`,t=>{
-  const s=setup(t,key),dialog=s.open(),cell=all(dialog).find(n=>n.tagName==='button'&&n.getAttribute('aria-pressed')==='false');cell.onclick();assert.equal(s.calls.save,1);assert.equal(s.o[key].cells.length,1);assert.ok(key==='moveRange'?validMoveRange(s.o[key]):validAttackRange(s.o[key]));
+  const s=setup(t,key),dialog=s.open(),cell=all(dialog).find(n=>n.tagName==='button'&&n.parentElement?.classList.contains('enemy-range-grid')&&n.getAttribute('aria-pressed')==='false');cell.onclick();assert.equal(s.calls.save,1);assert.equal(s.o[key].cells.length,1);assert.ok(key==='moveRange'?validMoveRange(s.o[key]):validAttackRange(s.o[key]));
   finish(dialog);const edited=structuredClone(s.o);s.open();assert.deepEqual(s.o,edited);assert.equal(s.calls.save,1);
  });
  test(`${key}: 形を明示的に選んだ時にだけマスを置き換える`,t=>{
@@ -53,7 +53,7 @@ for(const key of ['moveRange','searchRange','attackRange']){
 
 for(const key of ['moveRange','searchRange','attackRange'])test(`${key}: ステージを遮らないサイドパネルで即時反映し、視点を変えても開いたままになる`,t=>{
  const s=setup(t,key),panel=s.open();assert.equal(panel.parentElement,s.aside);assert.equal(panel.getAttribute('role'),'region');assert.equal(all(s.doc.body).some(n=>n.tagName==='dialog'),false);assert.ok(s.main.classList.contains('range-editing'));assert.equal(s.aside.scrollTop,0);assert.equal(s.doc.activeElement.tagName,'h2');
- const view=panel.children.find(n=>n.tagName==='button');view.onclick();assert.ok(isLiveRangeEditing());const cell=all(panel).find(n=>n.tagName==='button'&&n.getAttribute('aria-pressed')==='false');cell.onclick();assert.equal(s.calls.rebuild,1);assert.equal(s.o[key].cells.length,1);closeLiveRangeEditor();assert.equal(isLiveRangeEditing(),false);assert.ok(!s.main.classList.contains('range-editing'));assert.ok(!s.aside.classList.contains('is-range-editing'));assert.equal(s.aside.scrollTop,140);closeLiveRangeEditor();assert.equal(s.calls.save,1);
+ const view=panel.children.find(n=>n.tagName==='button');view.onclick();assert.ok(isLiveRangeEditing());const cell=all(panel).find(n=>n.tagName==='button'&&n.parentElement?.classList.contains('enemy-range-grid')&&n.getAttribute('aria-pressed')==='false');cell.onclick();assert.equal(s.calls.rebuild,1);assert.equal(s.o[key].cells.length,1);closeLiveRangeEditor();assert.equal(isLiveRangeEditing(),false);assert.ok(!s.main.classList.contains('range-editing'));assert.ok(!s.aside.classList.contains('is-range-editing'));assert.equal(s.aside.scrollTop,140);closeLiveRangeEditor();assert.equal(s.calls.save,1);
 });
 
 test('広いマップの移動スティックはサイドパネル内でも動き、閉じるとアニメーションを止める',t=>{
@@ -73,4 +73,24 @@ for(const key of ['searchRange','attackRange']){
 
 test('移動の円２マスを初期表示し、広さを変えても敵を置いた中心を維持する',t=>{
  const range=defaultEnemyRanges({x:8,z:8}).moveRange,s=setup(t,'moveRange',range),panel=s.open(),shape=all(panel).find(n=>n.getAttribute?.('aria-label')==='はんいの形'),circle=all(panel).find(n=>n.getAttribute?.('aria-label')==='円の広さ');assert.equal(shape.value,'circle');assert.equal(circle.value,'2');assert.equal(circle.disabled,false);assert.deepEqual(s.o.moveRange,range);assert.equal(s.calls.save,0);circle.value='3';circle.onchange();const cells=s.o.moveRange.cells;assert.equal(cells.length,29);assert.equal((Math.min(...cells.map(c=>c[0]))+Math.max(...cells.map(c=>c[0])))/2,2);assert.equal((Math.min(...cells.map(c=>c[1]))+Math.max(...cells.map(c=>c[1])))/2,2);
+});
+
+
+test('扇形の広さ・遠さは明示的な操作で変わり、開くだけではマスを置き換えない',t=>{
+ const s=setup(t,'searchRange',defaultEnemyRanges({x:8,z:8}).searchRange),panel=s.open();assert.equal(s.calls.save,0);
+ const angle=all(panel).find(n=>n.tagName==='input'&&n.getAttribute('aria-label')==='視野の広さ（度）を数字で設定');assert.equal(Number(angle.value),120);angle.value='360';angle.oninput();assert.equal(s.o.searchRange.fanAngle,360);assert.ok(s.o.searchRange.cells.some(([x,z])=>z>0));
+ const distance=all(panel).find(n=>n.tagName==='input'&&n.getAttribute('aria-label')==='何マス先まで気づく？を数字で設定');distance.value='6';distance.oninput();assert.ok(s.o.searchRange.cells.some(([x,z])=>z===-6));assert.ok(validAttackRange(s.o.searchRange));
+});
+
+
+import {openStageMoveRange,stageRangePointer} from '../stage-range3d.js';
+test('ステージを直接ぬる：即時反映し、指を離した時だけ保存する',t=>{
+ const s=setup(t,'moveRange');openStageMoveRange(s.o,{getProject:()=>({worldSize:960}),save:()=>s.calls.save++,rebuild:()=>s.calls.rebuild++,onClose:()=>{}});
+ assert.deepEqual(s.o,s.before);assert.equal(stageRangePointer('start',1,{x:0,z:0}),true);stageRangePointer('move',1,{x:16,z:0});assert.equal(s.o.moveRange.cells.length,5);assert.equal(s.calls.save,0);assert.equal(s.calls.rebuild,2);
+ stageRangePointer('move',2,{x:40,z:0});assert.equal(s.o.moveRange.cells.length,5);stageRangePointer('end',1,null);assert.equal(s.calls.save,1);
+ const panel=all(s.doc.body).find(n=>n.classList?.contains('range-live-panel')),erase=all(panel).find(n=>n.tagName==='button'&&n.textContent==='けす');erase.onclick();stageRangePointer('start',3,{x:8,z:0});stageRangePointer('end',3,null);assert.equal(s.o.moveRange.cells.length,4);
+ const camera=all(panel).find(n=>n.tagName==='button'&&n.textContent.startsWith('カメラ'));camera.onclick();assert.equal(stageRangePointer('start',4,{x:0,z:0}),false);closeLiveRangeEditor();assert.equal(stageRangePointer('start',5,{x:0,z:0}),false);
+});
+test('ステージ編集を途中で閉じても変更を保存し、開くだけでは保存しない',t=>{
+ const s=setup(t,'moveRange');const open=()=>openStageMoveRange(s.o,{getProject:()=>({worldSize:60}),save:()=>s.calls.save++,rebuild:()=>{},onClose:()=>{}});open();closeLiveRangeEditor();assert.equal(s.calls.save,0);open();stageRangePointer('start',1,{x:0,z:0});closeLiveRangeEditor();assert.equal(s.calls.save,1);
 });

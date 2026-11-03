@@ -1,17 +1,17 @@
-import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261103f';
-import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261103f';
-import {inGridRange} from './enemy-range3d.js?v=20261103f';
-import {renderEnemyRange} from './enemy-range-ui3d.js?v=20261103f';
-import {gunPreviewSVG} from './appearance3d.js?v=20261103f';
-import {DOOR_PRESETS} from './doors3d.js?v=20261103f';
-import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261103f';
-import {coordinateLimit} from './world3d.js?v=20261103f';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261103f';
-import {actionsFor} from './events3d.js?v=20261103f';
-import {renderEventEditor} from './event-editor3d.js?v=20261103f';
-import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261103f';
-import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261103f';
-import {PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261103f';
+import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261103g';
+import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261103g';
+import {inGridRange} from './enemy-range3d.js?v=20261103g';
+import {renderEnemyRange} from './enemy-range-ui3d.js?v=20261103g';
+import {gunPreviewSVG} from './appearance3d.js?v=20261103g';
+import {DOOR_PRESETS} from './doors3d.js?v=20261103g';
+import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261103g';
+import {coordinateLimit} from './world3d.js?v=20261103g';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261103g';
+import {actionsFor} from './events3d.js?v=20261103g';
+import {renderEventEditor} from './event-editor3d.js?v=20261103g';
+import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261103g';
+import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261103g';
+import {PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261103g';
 
 const ICONS={weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
 const DESCRIPTIONS={weapon:'地面に置いて、ふれると拾える銃。持ちもの・銃づくりで用意した銃をえらぼう。',ramp:'低いほうから歩くと、そのまま登れるスロープ。回して好きな向きにつなげよう。',wall:'家を囲う壁。向きを変えてつなげよう。',floor:'家の床と天井に使える板。壁の内側にぴったり合うよ。',roof:'壁の上にのせる三角屋根。向きを変えて家を仕上げよう。',
@@ -65,7 +65,7 @@ export function createWorkshop(api){
       const movement=document.createElement('section');movement.className='enemy-settings-group';movement.setAttribute('aria-label','動きかた');const movementTitle=document.createElement('h3');setReadingText(movementTitle,'動きかた');movement.append(movementTitle);el.append(movement);
       if(o.program.length&&o.moveRange?.space==='world'&&!inGridRange(o.moveRange,{x:0,z:0},o)){const note=document.createElement('p');note.className='recipe-hint';setReadingText(note,'この敵は移動できるマスの外にいます。青いマスの中に置こう。');movement.append(note);}
       const syncBehavior=renderBehaviorExamples(movement,o,{save,rebuild,inspect});
-      const rangeApi={getProject,lookFromAbove:api.lookFromAbove,save,rebuild:api.refreshRange||rebuild,getRangeView:api.getRangeView,showRange:key=>{api.showRange?.(key);for(const button of el.querySelectorAll('.enemy-range-choice'))button.setAttribute('aria-pressed',String(button.dataset.range===key));}};
+      const rangeApi={directMove:true,getProject,lookFromAbove:api.lookFromAbove,save,rebuild:api.refreshRange||rebuild,getRangeView:api.getRangeView,showRange:key=>{api.showRange?.(key);for(const button of el.querySelectorAll('.enemy-range-choice'))button.setAttribute('aria-pressed',String(button.dataset.range===key));}};
       const routine=enemyRoutineChoices(o),flow=document.createElement('p');flow.className='enemy-behavior-flow';flow.setAttribute('aria-live','polite');setReadingText(flow,routineFlow(o));movement.append(flow);
       const change=patch=>{setEnemyRoutineChoice(o,patch);inspect();};
       if(routine){
