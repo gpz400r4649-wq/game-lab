@@ -1,6 +1,6 @@
 import * as T from './vendor/three.module.min.js';
-import {rangeWorldCells,MOVE_MAX_CELLS} from './enemy-range3d.js?v=20261103h';
-import {setReadingText} from './readings3d.js?v=20261103h';
+import {rangeWorldCells,MOVE_MAX_CELLS} from './enemy-range3d.js?v=20261103i';
+import {setReadingText} from './readings3d.js?v=20261103i';
 export function playRangeCells(enemy,key){
  if(!enemy||enemy.hp<=0||enemy.hidden||!enemy[key])return [];
  return rangeWorldCells(enemy[key],key==='moveRange'?(enemy.origin||enemy):enemy).slice(0,MOVE_MAX_CELLS);

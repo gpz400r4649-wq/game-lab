@@ -1,9 +1,9 @@
-import {defaultEnemyRanges} from './enemy-range3d.js?v=20261103h';
+import {defaultEnemyRanges} from './enemy-range3d.js?v=20261103i';
 // Examples combine existing actions, pursuit rules and speed. No runtime preset IDs are saved.
 export const ENEMY_BEHAVIOR_EXAMPLES={
  still:{name:'その場で待つ',icon:'●',program:[],flow:'置いた場所で待つ。自分からは動かないよ。'},
- patrol:{name:'左右を行ったり来たり',icon:'↔',program:[{action:'patrol',speed:2}],flow:'右へ歩く → 折り返す → 左へ歩く。プレイヤーは追いかけないよ。'},
- slowPatrol:{name:'のんびり左右に歩く',icon:'🐢',program:[{action:'patrol',speed:1}],flow:'左右の移動を、ゆっくりにした見本だよ。'},
+ patrol:{name:'よこに行ったり来たり',icon:'↔',program:[{action:'patrol',speed:2}],flow:'右へ歩く → 折り返す → 左へ歩く。プレイヤーは追いかけないよ。'},
+ slowPatrol:{name:'ゆっくり、よこに行ったり来たり',icon:'🐢',program:[{action:'patrol',speed:1}],flow:'よこに行ったり来たりする速さを、ゆっくりにした見本だよ。'},
  chaseAlways:{name:'はじめから追いかける',icon:'👣',program:[{action:'chase',speed:2}],chaseMode:'always',flow:'はじめから追いかける。気づくマスに入らなくても追うよ。'},
  chaseInside:{name:'近づいた間だけ追いかける',icon:'◎',program:[{action:'chase',speed:2}],chaseMode:'inside',flow:'待つ → 気づくマスで見つける → 追う。はんいを出ると止まるよ。'},
  chaseRemember:{name:'見つけたら追い続ける',icon:'！',program:[{action:'chase',speed:2}],chaseMode:'remember',flow:'待つ → 見つける → 追い続ける。気づくマスを出ても追うよ。'},
@@ -39,7 +39,7 @@ export function setEnemyRoutine(o,changes){
 }
 export function routineFlow(o){
  const r=enemyRoutine(o);if(!r)return enemyBehaviorFlow(o);
- const idle={wait:'その場で待つ',patrol:'左右を行ったり来たり',roam:'歩き回る'}[r.idle];
+ const idle={wait:'その場で待つ',patrol:'よこに行ったり来たり',roam:'歩き回る'}[r.idle];
  return (r.notice==='always'?'はじめから追いかける':idle+(r.notice==='near'?' → 気づくマスに入ったら追いかける → 見失ったら'+Object.fromEntries(lostChoiceLabels(r.idle))[r.lost]:''))+(o.attackEnabled?'。攻撃するマスに入ったら撃つ。':'。攻撃しない。');
 }
 
@@ -54,7 +54,7 @@ export function setEnemyRoutineChoice(o,changes){
  else setEnemyRoutine(o,{...(changes.idle&&current?.notice==='always'?{notice:'none'}:{}),...changes});
 }
 export function lostChoiceLabels(idle){return [
- ['resume',idle==='wait'?'その場で止まる':idle==='patrol'?'その場所で左右の移動にもどる':'その場所から歩き回る'],
+ ['resume',idle==='wait'?'その場で止まる':idle==='patrol'?'その場で、行ったり来たりを続ける':'その場所から歩き回る'],
  ['continue','追い続ける'],
- ['return',idle==='wait'?'置いた場所にもどって待つ':idle==='patrol'?'置いた場所にもどって左右に動く':'置いた場所にもどって歩き回る']
+ ['return',idle==='wait'?'元の場所にもどって待つ':idle==='patrol'?'元の場所にもどって、行ったり来たり':'元の場所にもどって歩き回る']
 ];}
