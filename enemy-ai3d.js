@@ -1,8 +1,9 @@
-import {rangeCell,inGridRange,inEnemyRange,movementCenter} from './enemy-range3d.js?v=20261103i';
+import {walkPatrol} from './patrol-route3d.js?v=20261104a';
+import {rangeCell,inGridRange,inEnemyRange,movementCenter} from './enemy-range3d.js?v=20261104a';
 const CELL=4,neighbors=[[0,-1],[1,0],[0,1],[-1,0]];
 export const CHASE_MODES={always:'はじめから、ずっと追いかける',inside:'探すはんいにいる間だけ追いかける',remember:'見つけたら、ずっと追いかける'};
 export function validEnemyMovement(o){return (o.chaseMode===undefined||Object.hasOwn(CHASE_MODES,o.chaseMode))&&(o.routine===undefined||(o.routine&&['wait','patrol','roam'].includes(o.routine.idle)&&['none','near','always'].includes(o.routine.notice)&&['resume','continue','return'].includes(o.routine.lost)));}
-export function canEnemyEnter(o,point){return !o.moveRange||inGridRange(o.moveRange,movementCenter(o),point);}
+export function canEnemyEnter(o,point){return o.routeTravel===true||!o.moveRange||inGridRange(o.moveRange,movementCenter(o),point);}
 export function detectsPlayer(o,player){return o.searchRange?inEnemyRange(o.searchRange,o,player):Math.hypot(player.x-o.x,player.z-o.z)<18;}
 function route(o,target,r){
  const origin=movementCenter(o),ox=rangeCell(origin.x),oz=rangeCell(origin.z),sx=rangeCell(o.x)-ox,sz=rangeCell(o.z)-oz,allowed=new Set(r.cells.map(c=>c.join(','))),start=`${sx},${sz}`;
@@ -15,22 +16,25 @@ function route(o,target,r){
  const path=[];for(let key=best;key!==null;key=parents.get(key)){const [x,z]=key.split(',').map(Number);path.push({x:(ox+x)*CELL,z:(oz+z)*CELL});}return path.reverse();
 }
 export function moveEnemy(o,b,player,dt,time,tryMove){
+ o.routeTravel=false;
  const detected=detectsPlayer(o,player);if(detected)o.foundPlayer=true;
  const mode=o.chaseMode||'always';let chase=mode==='always'||(mode==='inside'?detected:!!o.foundPlayer);
- let returning=false;
+ let returning=false;const returnPoint=o.routine?.idle==='patrol'&&o.patrolRoute?o.patrolRoute[0]:o.origin;
  if(o.routine){
   const r=o.routine;chase=r.notice==='always'||(r.notice==='near'&&(detected||(r.lost==='continue'&&o.foundPlayer)));
   if(chase)o.wasChasing=true;
   returning=!chase&&r.lost==='return'&&o.wasChasing;
-  if(returning&&Math.hypot(o.x-o.origin.x,o.z-o.origin.z)<.08){o.wasChasing=false;returning=false;o.navigation=null;}
+  if(returning&&Math.hypot(o.x-returnPoint.x,o.z-returnPoint.z)<.08){o.wasChasing=false;returning=false;o.navigation=null;}
   b={...b,action:chase||returning?'chase':r.idle==='roam'?'search':r.idle==='patrol'?'patrol':'wait'};
   if(b.action==='wait'){o.debugAction='wait';o.navigation=null;return;}
  }
  o.debugAction=returning?'return':b.action==='patrol'?'patrol':chase?'chase':b.action==='search'?'roam':'wait';
+ if(b.action==='patrol'&&o.patrolRoute){walkPatrol(o,b.speed,dt,tryMove);return;}
  if(b.action==='patrol'){const point={x:o.x+Math.cos(time)*b.speed*dt,z:o.z};if(canEnemyEnter(o,point))tryMove(point.x-o.x,0);return;}
  if(b.action!=='chase'&&b.action!=='search')return;
  if(b.action==='chase'&&!chase&&!returning){o.navigation=null;return;}
- let target=returning?o.origin:player,r=o.moveRange;
+ o.routeTravel=returning&&!!o.patrolRoute&&o.routine?.idle==='patrol';
+ let target=returning?returnPoint:player,r=o.routeTravel?null:o.moveRange;
  if(b.action==='search'&&!chase){
   const origin=movementCenter(o),cx=rangeCell(o.x)-rangeCell(origin.x),cz=rangeCell(o.z)-rangeCell(origin.z);
   if(!o.roamTarget||Math.hypot(o.x-o.roamTarget.x,o.z-o.roamTarget.z)<.12||o.roamStuck){

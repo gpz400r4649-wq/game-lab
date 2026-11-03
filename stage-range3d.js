@@ -1,8 +1,9 @@
-import {mountLiveRangeEditor} from './range-panel3d.js?v=20261103i';
-import {worldMoveRange,rangeCell,MOVE_MAX_CELLS,convertRangeSpace} from './enemy-range3d.js?v=20261103i';
-import {worldSize} from './world3d.js?v=20261103i';
-import {setReadingText} from './readings3d.js?v=20261103i';
+import {mountLiveRangeEditor} from './range-panel3d.js?v=20261104a';
+import {worldMoveRange,rangeCell,MOVE_MAX_CELLS,convertRangeSpace} from './enemy-range3d.js?v=20261104a';
+import {worldSize} from './world3d.js?v=20261104a';
+import {setReadingText} from './readings3d.js?v=20261104a';
 let painter=null;
+export function setStageRangePainter(next){painter=next;}
 export function stageRangePointer(kind,id,point){return painter?.(kind,id,point)||false;}
 export function paintMoveCells(range,from,to,erase,half,accept=()=>true){
  if(!to||Math.abs(to.x)>half||Math.abs(to.z)>half)return false;

@@ -1,5 +1,5 @@
-import {ENEMY_BEHAVIOR_EXAMPLES,enemyBehaviorExampleKey,applyEnemyBehaviorExample,enemyBehaviorFlow} from './enemy-behavior-presets3d.js?v=20261103i';
-import {setReadingText} from './readings3d.js?v=20261103i';
+import {ENEMY_BEHAVIOR_EXAMPLES,enemyBehaviorExampleKey,applyEnemyBehaviorExample,enemyBehaviorFlow} from './enemy-behavior-presets3d.js?v=20261104a';
+import {setReadingText} from './readings3d.js?v=20261104a';
 export function renderBehaviorExamples(parent,o,{save,rebuild,inspect}){
  const box=document.createElement('div'),button=document.createElement('button'),summary=document.createElement('p');box.className='enemy-behavior-launcher';button.className='enemy-behavior-open';setReadingText(button,`▦ 動きの見本をえらぶ（${Object.keys(ENEMY_BEHAVIOR_EXAMPLES).length}種類）`);summary.className='enemy-behavior-summary';summary.setAttribute('aria-live','polite');box.append(button,summary);parent.append(box);
  const sync=()=>{const key=enemyBehaviorExampleKey(o),name=key==='custom'?'自分でちょうせいした動き':ENEMY_BEHAVIOR_EXAMPLES[key].name;setReadingText(summary,'今の動き：'+name);};sync();
@@ -9,7 +9,7 @@ export function renderBehaviorExamples(parent,o,{save,rebuild,inspect}){
    const card=document.createElement('button'),name=document.createElement('b'),flow=document.createElement('span'),speed=document.createElement('small');card.className='enemy-behavior-example';card.setAttribute('aria-pressed',String(current===key));setReadingText(name,example.icon+' '+example.name);setReadingText(flow,example.flow);setReadingText(speed,example.program.length?'動きの速さ：'+example.program[0].speed:'移動しない');card.append(name,flow,speed);
    card.onclick=()=>{applyEnemyBehaviorExample(o,key);dialog.close();dialog.remove();save();rebuild();inspect();};grid.append(card);
   }
-  setReadingText(hint,'どの見本も「動けるマス」の中で動くよ。「気づくマス」で気づく場所を変えよう。攻撃してくるか・どんな銃を持つかは、攻撃の設定でえらべるよ。');hint.className='component-description';setReadingText(close,'えらばずにもどる');close.onclick=()=>{dialog.close();dialog.remove();};dialog.oncancel=e=>{e.preventDefault();close.onclick();};dialog.append(title,note,grid,hint,close);document.body.append(dialog);dialog.showModal();
+  setReadingText(hint,'「行ったり来たり」は２か所の往復ルートを歩くよ。歩き回る・追いかける動きは「動けるマス」の中で動くよ。「気づくマス」で気づく場所を変えよう。攻撃してくるか・どんな銃を持つかは、攻撃の設定でえらべるよ。');hint.className='component-description';setReadingText(close,'えらばずにもどる');close.onclick=()=>{dialog.close();dialog.remove();};dialog.oncancel=e=>{e.preventDefault();close.onclick();};dialog.append(title,note,grid,hint,close);document.body.append(dialog);dialog.showModal();
  };
  return sync;
 }

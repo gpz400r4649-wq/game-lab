@@ -1,9 +1,10 @@
-import {defaultEnemyRanges} from './enemy-range3d.js?v=20261103i';
+import {defaultPatrolRoute} from './patrol-route3d.js?v=20261104a';
+import {defaultEnemyRanges} from './enemy-range3d.js?v=20261104a';
 // Examples combine existing actions, pursuit rules and speed. No runtime preset IDs are saved.
 export const ENEMY_BEHAVIOR_EXAMPLES={
  still:{name:'その場で待つ',icon:'●',program:[],flow:'置いた場所で待つ。自分からは動かないよ。'},
- patrol:{name:'よこに行ったり来たり',icon:'↔',program:[{action:'patrol',speed:2}],flow:'右へ歩く → 折り返す → 左へ歩く。プレイヤーは追いかけないよ。'},
- slowPatrol:{name:'ゆっくり、よこに行ったり来たり',icon:'🐢',program:[{action:'patrol',speed:1}],flow:'よこに行ったり来たりする速さを、ゆっくりにした見本だよ。'},
+ patrol:{name:'行ったり来たり',icon:'↔',program:[{action:'patrol',speed:2}],flow:'ルートのはじめへ → おわりへ → はじめへ。プレイヤーは追いかけないよ。'},
+ slowPatrol:{name:'ゆっくり、行ったり来たり',icon:'🐢',program:[{action:'patrol',speed:1}],flow:'行ったり来たりする速さを、ゆっくりにした見本だよ。'},
  chaseAlways:{name:'はじめから追いかける',icon:'👣',program:[{action:'chase',speed:2}],chaseMode:'always',flow:'はじめから追いかける。気づくマスに入らなくても追うよ。'},
  chaseInside:{name:'近づいた間だけ追いかける',icon:'◎',program:[{action:'chase',speed:2}],chaseMode:'inside',flow:'待つ → 気づくマスで見つける → 追う。はんいを出ると止まるよ。'},
  chaseRemember:{name:'見つけたら追い続ける',icon:'！',program:[{action:'chase',speed:2}],chaseMode:'remember',flow:'待つ → 見つける → 追い続ける。気づくマスを出ても追うよ。'},
@@ -15,6 +16,7 @@ export function basicEnemyBehavior(o){if(!o.program.length)return 'still';return
 export function enemyBehaviorExampleKey(o){if(o.routine)return 'custom';return Object.keys(ENEMY_BEHAVIOR_EXAMPLES).find(key=>{const example=ENEMY_BEHAVIOR_EXAMPLES[key];return o.program.length===example.program.length&&o.program.every((block,i)=>block.action===example.program[i].action&&block.speed===example.program[i].speed)&&(example.chaseMode===undefined||(o.chaseMode||'always')===example.chaseMode);})||'custom';}
 export function applyEnemyBehaviorExample(o,key){
  const example=ENEMY_BEHAVIOR_EXAMPLES[key];if(!Object.hasOwn(ENEMY_BEHAVIOR_EXAMPLES,key))return false;
+ if(example.program[0]?.action==='patrol')o.patrolRoute??=defaultPatrolRoute(o);
  delete o.routine;o.program=structuredClone(example.program);if(example.chaseMode!==undefined)o.chaseMode=example.chaseMode;
  if(o.program.length){const defaults=defaultEnemyRanges(o);o.moveRange??=defaults.moveRange;if(example.chaseMode!==undefined)o.searchRange??=defaults.searchRange;}
  return true;
@@ -39,8 +41,8 @@ export function setEnemyRoutine(o,changes){
 }
 export function routineFlow(o){
  const r=enemyRoutine(o);if(!r)return enemyBehaviorFlow(o);
- const idle={wait:'その場で待つ',patrol:'よこに行ったり来たり',roam:'歩き回る'}[r.idle];
- return (r.notice==='always'?'はじめから追いかける':idle+(r.notice==='near'?' → 気づくマスに入ったら追いかける → 見失ったら'+Object.fromEntries(lostChoiceLabels(r.idle))[r.lost]:''))+(o.attackEnabled?'。攻撃するマスに入ったら撃つ。':'。攻撃しない。');
+ const idle={wait:'その場で待つ',patrol:'行ったり来たり',roam:'歩き回る'}[r.idle];
+ return (r.notice==='always'?'はじめから追いかける':idle+(r.notice==='near'?' → 気づくマスに入ったら追いかける → 見失ったら'+Object.fromEntries(lostChoiceLabels(r.idle,!!o.patrolRoute))[r.lost]:''))+(o.attackEnabled?'。攻撃するマスに入ったら撃つ。':'。攻撃しない。');
 }
 
 // Display always-chasing as the normal action; keep saved runtime rules compatible.
@@ -49,12 +51,12 @@ export function enemyRoutineChoices(o){
  return {...r,idle:r.notice==='always'?'chase':r.idle};
 }
 export function setEnemyRoutineChoice(o,changes){
- const current=enemyRoutine(o);
+ const current=enemyRoutine(o);if(changes.idle==='patrol')o.patrolRoute??=defaultPatrolRoute(o);
  if(changes.idle==='chase')setEnemyRoutine(o,{notice:'always'});
  else setEnemyRoutine(o,{...(changes.idle&&current?.notice==='always'?{notice:'none'}:{}),...changes});
 }
-export function lostChoiceLabels(idle){return [
- ['resume',idle==='wait'?'その場で止まる':idle==='patrol'?'その場で、行ったり来たりを続ける':'その場所から歩き回る'],
+export function lostChoiceLabels(idle,route=false){return [
+ ['resume',idle==='wait'?'その場で止まる':idle==='patrol'?(route?'往復ルートにもどって続ける':'その場で、行ったり来たりを続ける'):'その場所から歩き回る'],
  ['continue','追い続ける'],
- ['return',idle==='wait'?'元の場所にもどって待つ':idle==='patrol'?'元の場所にもどって、行ったり来たり':'元の場所にもどって歩き回る']
+ ['return',idle==='wait'?'元の場所にもどって待つ':idle==='patrol'?(route?'ルートのはじめにもどって、行ったり来たり':'元の場所にもどって、行ったり来たり'):'元の場所にもどって歩き回る']
 ];}

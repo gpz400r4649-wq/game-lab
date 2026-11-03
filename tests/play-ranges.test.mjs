@@ -17,8 +17,8 @@ test('オン・オフと編集モードで表示を切り替え、倒れたら�
  note.ownerDocument=globalThis.document;
  try{const scene=new Scene(),ui=createPlayRanges(scene),e={...enemy(),id:'e'},game={objects:[e],worldSize:60};
  // Set the target through the same selection callback as the menu.
- select.value='e';select.onchange();ui.update(game,true,100);assert.deepEqual(scene.children.map(m=>m.visible),[true,false,true]);assert.equal(panel.hidden,false);
- checks[0].checked=false;checks[0].onchange();ui.update(game,true,160);assert.deepEqual(scene.children.map(m=>m.visible),[false,false,true]);
+ select.value='e';select.onchange();ui.update(game,true,100);assert.deepEqual(scene.children.filter(m=>m.isInstancedMesh).map(m=>m.visible),[true,false,true]);assert.equal(panel.hidden,false);
+ checks[0].checked=false;checks[0].onchange();ui.update(game,true,160);assert.deepEqual(scene.children.filter(m=>m.isInstancedMesh).map(m=>m.visible),[false,false,true]);
  ui.update(game,false,170);assert.ok(scene.children.every(m=>!m.visible));assert.equal(panel.hidden,true);
  e.hp=0;ui.update(game,true,230);assert.ok(scene.children.every(m=>!m.visible));
  }finally{globalThis.document=previous;}

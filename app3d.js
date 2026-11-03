@@ -1,28 +1,29 @@
-import {stageRangePointer} from './stage-range3d.js?v=20261103i';
-import {createEnemyMessages} from './enemy-messages3d.js?v=20261103i';
-import {createPlayRanges} from './play-ranges3d.js?v=20261103i';
-import {closeLiveRangeEditor,isLiveRangeEditing} from './enemy-range-ui3d.js?v=20261103i';
-import {dragCandidate} from './editor-drag3d.js?v=20261103i';
-import {rangeWorldCells,enemyYaw,defaultEnemyRanges,MOVE_MAX_CELLS} from './enemy-range3d.js?v=20261103i';
-import {TPS_GUN_MOUNT} from './muzzle3d.js?v=20261103i';
-import {configureDoor,nearbyDoor} from './doors3d.js?v=20261103i';
-import {appearanceFor} from './appearance3d.js?v=20261103i';
-import {makeGunModel,applyFPSGunPose,worldGunMuzzle} from './gun-model3d.js?v=20261103i';
-import {moveEditorCamera,createEditorNavigation} from './editor-camera3d.js?v=20261103i';
-import {createStructureRenderer,BATCH_TYPES} from './structure-render3d.js?v=20261103i';
-import {MAX_PROJECT_BYTES,MAX_BUILD_Y} from './limits3d.js?v=20261103i';
-import {worldSize,coordinateLimit} from './world3d.js?v=20261103i';
-import {createWorldUI} from './world-ui3d.js?v=20261103i';
-import {configureNumericInput} from './numeric3d.js?v=20261103i';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261103i';
-import {installGameTouchGuard,bindHeldButton,bindGameAction,createGamePageMode} from './input3d.js?v=20261103i';
-import {actionsFor,ACTION_NAMES} from './events3d.js?v=20261103i';
-import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261103i';
-import {BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,editorPlacementReason,blockPlacement} from './building3d.js?v=20261103i';
-import {createToolsUI} from './tools3d.js?v=20261103i';
+import {createPatrolOverlay} from './patrol-ui3d.js?v=20261104a';
+import {stageRangePointer} from './stage-range3d.js?v=20261104a';
+import {createEnemyMessages} from './enemy-messages3d.js?v=20261104a';
+import {createPlayRanges} from './play-ranges3d.js?v=20261104a';
+import {closeLiveRangeEditor,isLiveRangeEditing} from './enemy-range-ui3d.js?v=20261104a';
+import {dragCandidate} from './editor-drag3d.js?v=20261104a';
+import {rangeWorldCells,enemyYaw,defaultEnemyRanges,MOVE_MAX_CELLS} from './enemy-range3d.js?v=20261104a';
+import {TPS_GUN_MOUNT} from './muzzle3d.js?v=20261104a';
+import {configureDoor,nearbyDoor} from './doors3d.js?v=20261104a';
+import {appearanceFor} from './appearance3d.js?v=20261104a';
+import {makeGunModel,applyFPSGunPose,worldGunMuzzle} from './gun-model3d.js?v=20261104a';
+import {moveEditorCamera,createEditorNavigation} from './editor-camera3d.js?v=20261104a';
+import {createStructureRenderer,BATCH_TYPES} from './structure-render3d.js?v=20261104a';
+import {MAX_PROJECT_BYTES,MAX_BUILD_Y} from './limits3d.js?v=20261104a';
+import {worldSize,coordinateLimit} from './world3d.js?v=20261104a';
+import {createWorldUI} from './world-ui3d.js?v=20261104a';
+import {configureNumericInput} from './numeric3d.js?v=20261104a';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261104a';
+import {installGameTouchGuard,bindHeldButton,bindGameAction,createGamePageMode} from './input3d.js?v=20261104a';
+import {actionsFor,ACTION_NAMES} from './events3d.js?v=20261104a';
+import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261104a';
+import {BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,editorPlacementReason,blockPlacement} from './building3d.js?v=20261104a';
+import {createToolsUI} from './tools3d.js?v=20261104a';
 import * as T from './vendor/three.module.min.js';
-import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,conditionHint} from './engine3d.js?v=20261103i';
-import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261103i';
+import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,conditionHint} from './engine3d.js?v=20261104a';
+import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261104a';
 const $=s=>document.querySelector(s),view=$('#viewport'),KEY='tsukuru-lab-3d-v1';
 let enemyRangeView='attackRange';
 let project=fresh3D(),selected=null,tool='select',doorPreset='key',weaponPresetId='',mode='edit',perspective='tps',game=null,yaw=0,pitch=-.05,editYaw=.55,editPitch=.7,editDistance=30,editTarget=new T.Vector3(0,0,0),stick={x:0,z:0},keys=new Set(),fireHeld=false,firePressed=false,jumpPressed=false,doorPressed=false,look=null,saveTimer,toastTimer,lastTime=0;
@@ -86,8 +87,9 @@ function rebuild(){updateWorld();
  for(const o of objects){const mesh=partModel(o);mesh.position.set(o.x,o.y,o.z);mesh.visible=mode!=='play'||(!o.hidden&&!o.collected);mesh.userData.id=o.id;objectsGroup.add(mesh);meshes.set(o.id,mesh);}
  structureRenderer.sync(objects,meshes);solidMeshes=solids(objects).map(o=>meshes.get(o.id));updateSelection();
 }
+const patrolOverlay=createPatrolOverlay(scene);
 const playRanges=createPlayRanges(scene),enemyMessages=createEnemyMessages();
-function updateSelection(){const mesh=meshes.get(selected),o=project.objects.find(o=>o.id===selected);if(mode==='edit'&&o?.type==='enemy'&&mesh)mesh.rotation.y=(o.facing||0)*Math.PI/180;selectionBox.visible=!!mesh&&mode==='edit';if(mesh)selectionBox.setFromObject(mesh);rangeOverlay.visible=mode==='edit'&&o?.type==='enemy'&&!!o[enemyRangeView];if(rangeOverlay.visible){const m=new T.Matrix4(),range=o[enemyRangeView];rangeOverlay.material.color.set({attackRange:0xed7890,moveRange:0x469edf,searchRange:0xdcb52b}[enemyRangeView]);rangeOverlay.count=range.cells.length;const half=worldSize(project)/2;rangeWorldCells(range,o).forEach(([x,z],i)=>{const wx=x*4,wz=z*4,left=Math.max(-half,wx-1.925),right=Math.min(half,wx+1.925),front=Math.max(-half,wz-1.925),back=Math.min(half,wz+1.925);m.makeScale(Math.max(0,right-left)/3.85,1,Math.max(0,back-front)/3.85).setPosition((left+right)/2,.025,(front+back)/2);rangeOverlay.setMatrixAt(i,m);});rangeOverlay.instanceMatrix.needsUpdate=true;}}
+function updateSelection(){const mesh=meshes.get(selected),o=project.objects.find(o=>o.id===selected);if(mode==='edit'&&o?.type==='enemy'&&mesh)mesh.rotation.y=(o.facing||0)*Math.PI/180;selectionBox.visible=!!mesh&&mode==='edit';if(mesh)selectionBox.setFromObject(mesh);patrolOverlay.show(mode==='edit'&&o?.type==='enemy'&&enemyRangeView==='patrolRoute'?o.patrolRoute:null,o?.y||0);rangeOverlay.visible=mode==='edit'&&o?.type==='enemy'&&!!o[enemyRangeView]?.cells;if(rangeOverlay.visible){const m=new T.Matrix4(),range=o[enemyRangeView];rangeOverlay.material.color.set({attackRange:0xed7890,moveRange:0x469edf,searchRange:0xdcb52b}[enemyRangeView]);rangeOverlay.count=range.cells.length;const half=worldSize(project)/2;rangeWorldCells(range,o).forEach(([x,z],i)=>{const wx=x*4,wz=z*4,left=Math.max(-half,wx-1.925),right=Math.min(half,wx+1.925),front=Math.max(-half,wz-1.925),back=Math.min(half,wz+1.925);m.makeScale(Math.max(0,right-left)/3.85,1,Math.max(0,back-front)/3.85).setPosition((left+right)/2,.025,(front+back)/2);rangeOverlay.setMatrixAt(i,m);});rangeOverlay.instanceMatrix.needsUpdate=true;}}
 function save(){clearTimeout(saveTimer);setReadingText($('#saved3'),'保存中…');saveTimer=setTimeout(()=>{try{localStorage.setItem(KEY,JSON.stringify(project));setReadingText($('#saved3'),'✓ このブラウザに保存しました');}catch{setReadingText($('#saved3'),'保存できません。ファイルに保存してください');}},250);}
 function field(parent,name,value,min,max,step,fn){
  const l=document.createElement('label');l.className='field';const s=document.createElement('span');setReadingText(s,name);const input=document.createElement('input');input.setAttribute('aria-label',name);
@@ -159,7 +161,7 @@ function updateGhost(point){const tool=project.loadout[game.equipped],building=!
 
 function frame(time){const dt=lastTime?Math.min((time-lastTime)/1000,.033):0;lastTime=time;const w=view.clientWidth,h=view.clientHeight;const size=renderer.getSize(new T.Vector2());if(size.x!==w||size.y!==h){renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}if(mode==='play'){positionCamera();ray.setFromCamera(new T.Vector2(0,0),camera);const hit=ray.intersectObjects(objectsGroup.children,true).find(visibleHit),target=hit?hit.point:ray.ray.at(80,new T.Vector3()),origin=new T.Vector3(game.player.x,game.player.y+1.35,game.player.z),aim=target.clone().sub(origin).normalize(),buildPoint=buildTarget();step3D(game,project,{x:stick.x+(keys.has('d')||keys.has('arrowright')?1:0)-(keys.has('a')||keys.has('arrowleft')?1:0),z:stick.z+(keys.has('s')||keys.has('arrowdown')?1:0)-(keys.has('w')||keys.has('arrowup')?1:0),yaw,aim,aimTarget:target,getShotOrigin:()=>{positionCamera();return worldGunMuzzle((perspective==='fps'?gun:carriedGun).children[0]);},buildPoint,buildRotation:toolsUI.getRotation(yaw),buildLevel:toolsUI.getLevel(),jump:jumpPressed,useDoor:doorPressed,fire:fireHeld||firePressed||keys.has('f')},dt);jumpPressed=false;doorPressed=false;firePressed=false;syncGameMeshes();const door=game.state==='playing'?nearbyDoor(game,yaw):null;$('#use-door3').hidden=!door;if(door)setReadingText($('#use-door3'),door.open?'ドアをしめる':'ドアをあける');updateGhost(buildPoint);setReadingText($('#hp3'),'♥'.repeat(Math.max(0,game.player.hp))+'♡'.repeat(5-Math.max(0,game.player.hp)));setReadingText($('#score3'),`✦ ${game.stars}　⚿ ${game.keys}　得点 ${game.score}`);$('#lost3').hidden=game.state==='playing';setReadingText($('#result-title3'),game.state==='won'?'ステージクリア！':'もう一度チャレンジ！');setReadingText($('#result-note3'),game.state==='won'?'自分のルールで、ちゃんとゲームになったね！':'セーブポイントを置くと、途中からやり直せるよ。');}else{const typing=document.activeElement?.matches('input,select,textarea'),dialogOpen=!!document.querySelector('dialog[open]');if(!typing&&!dialogOpen&&!look?.drag){const nav=editorNavigation.read();moveEditorCamera(editTarget,{x:nav.x+Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft')),z:nav.z+Number(keys.has('s')||keys.has('arrowdown'))-Number(keys.has('w')||keys.has('arrowup')),y:nav.y+Number(keys.has('e'))-Number(keys.has('q')),fast:keys.has('shift')},editYaw,editDistance,dt,project,editPitch);}else editorNavigation.reset();$('#hit-info3').hidden=true;positionCamera();updateEditorGhost();effectPool.forEach(m=>m.visible=false);bulletPool.forEach(m=>m.visible=false);setReadingText($('#stats3'),`${worldSize(project)}m × ${worldSize(project)}m · ${project.objects.length} パーツ`);}playRanges.update(game,mode==='play',time);positionCamera();enemyMessages.update(game,mode==='play',playRanges.getTarget(),camera,time);renderer.render(scene,camera);requestAnimationFrame(frame);}
 renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();$('#loading').hidden=false;setReadingText($('#loading'),'3Dの表示が中断されました。ページを再読み込みしてください。作品は自動保存されています。');});const toolsUI=createToolsUI({onCatalogChange:()=>{rebuild();inspector();},onAppearanceChange:()=>rebuild(),$,getProject:()=>project,getGame:()=>game,getMode:()=>mode,field,save,refresh:()=>syncGameMeshes(),finishBuilding:count=>{selected=null;setMode('edit');objectList();inspector();toast(count+'個の建築を作品に残しました');}});
-const workshop=createWorkshop({lookFromAbove:({facing=false}={})=>{const o=project.objects.find(o=>o.id===selected);if(o){editTarget.set(o.x,0,o.z);editYaw=facing?(o.facing||0)*Math.PI/180:0;editPitch=1.4;editDistance=38;}},getToolSelection:()=>({type:tool}),getRangeView:()=>enemyRangeView,showRange:key=>{enemyRangeView=key;updateSelection();},refreshRange:updateSelection,renderLoadout:()=>toolsUI.renderLauncher(),$,getProject:()=>project,getSelected:()=>selected,select:id=>selected=id,save,rebuild,field,advancedInspector,advancedWeaponFields,loadProject,toast,objectList,setTool:(id,preset)=>{if(preset&&id==='door')doorPreset=preset;if(preset&&id==='weapon')weaponPresetId=preset;if(mode==='play')setMode('edit');tool=id;document.querySelectorAll('[data-part]').forEach(x=>x.classList.toggle('active',x.dataset.part===id));}});
+const workshop=createWorkshop({previewPatrol:route=>patrolOverlay.show(route,project.objects.find(o=>o.id===selected)?.y||0),lookFromAbove:({facing=false}={})=>{const o=project.objects.find(o=>o.id===selected);if(o){editTarget.set(o.x,0,o.z);editYaw=facing?(o.facing||0)*Math.PI/180:0;editPitch=1.4;editDistance=38;}},getToolSelection:()=>({type:tool}),getRangeView:()=>enemyRangeView,showRange:key=>{enemyRangeView=key;updateSelection();},refreshRange:updateSelection,renderLoadout:()=>toolsUI.renderLauncher(),$,getProject:()=>project,getSelected:()=>selected,select:id=>selected=id,save,rebuild,field,advancedInspector,advancedWeaponFields,loadProject,toast,objectList,setTool:(id,preset)=>{if(preset&&id==='door')doorPreset=preset;if(preset&&id==='weapon')weaponPresetId=preset;if(mode==='play')setMode('edit');tool=id;document.querySelectorAll('[data-part]').forEach(x=>x.classList.toggle('active',x.dataset.part===id));}});
 function inspector(){closeLiveRangeEditor();workshop.inspect();}
 function weaponFields(){workshop.weapons();}
 createWorldUI({getProject:()=>project,beforeOpen:()=>{if(mode==='play')setMode('edit');},center:()=>editTarget,resize:size=>{project.worldSize=size;updateWorld();save();inspector();},focus:point=>{editTarget.set(point.x,0,point.z);editDistance=30;},spawn:point=>{project.spawn={...point,y:0};spawnMark.position.set(point.x,.015,point.z);save();toast('スタートを動かしました');}});
