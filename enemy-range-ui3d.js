@@ -1,9 +1,9 @@
-import {closeLiveRangeEditor,mountLiveRangeEditor} from './range-panel3d.js?v=20261103e';
-export {closeLiveRangeEditor,isLiveRangeEditing} from './range-panel3d.js?v=20261103e';
-import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261103e';
-import {openMoveMap} from './move-map-ui3d.js?v=20261103e';
-import {RANGE_MAX,rangeCells,convertRangeSpace} from './enemy-range3d.js?v=20261103e';
-import {setReadingText,kanaText} from './readings3d.js?v=20261103e';
+import {closeLiveRangeEditor,mountLiveRangeEditor} from './range-panel3d.js?v=20261103f';
+export {closeLiveRangeEditor,isLiveRangeEditing} from './range-panel3d.js?v=20261103f';
+import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261103f';
+import {openMoveMap} from './move-map-ui3d.js?v=20261103f';
+import {RANGE_MAX,rangeCells,convertRangeSpace} from './enemy-range3d.js?v=20261103f';
+import {setReadingText,kanaText} from './readings3d.js?v=20261103f';
 const RANGE_UI={
  attackRange:{label:'弾を撃つ',title:'敵が弾を撃つマス',note:'色のついたマスに入ったら → 弾を撃つ。',empty:'これまでの近くに来たら撃つ設定',center:'敵のいるマスが中心。敵と一緒に動くよ。',color:'#ef9aae'},
  moveRange:{label:'動ける',title:'敵が動けるマス',note:'色のついたマスの中だけを歩けるよ。つながっていないマスには行けないよ。',empty:'制限なし',center:'敵を置いたマスが中心。ゲーム中もこの場所に固定だよ。',color:'#91c7ee'},
@@ -12,7 +12,7 @@ const RANGE_UI={
 export function renderAttackRange(parent,o,api){renderEnemyRange(parent,o,api,'attackRange');}
 export function renderEnemyRange(parent,o,{save,rebuild,showRange,getRangeView,getProject,lookFromAbove},key){
  const config=RANGE_UI[key],row=document.createElement('div'),edit=document.createElement('button'),open=document.createElement('button'),label=document.createElement('span'),summary=document.createElement('small');edit.className='enemy-range-choice';edit.dataset.range=key;edit.setAttribute('aria-pressed',String((getRangeView?.()||'attackRange')===key));edit.style.setProperty('--range-color',config.color);setReadingText(label,`▦ ${config.label}マス`);edit.setAttribute('aria-label',kanaText(`▦ ${config.label}マスをステージに表示`));
- const names={cross:'十字',circle:'円',mixed:'十字＋円',custom:'自分でつくった形'};
+ const names={cross:'十字',circle:'円',mixed:'十字＋円',custom:'マスで決めた形'};
  const update=()=>setReadingText(summary,o[key]?`${o[key].space==='world'?'マップ上':(o[key].space==='facing'?'敵の向き・':'')+names[o[key].shape]}・${o[key].cells.length}マス`:config.empty);update();
  row.className='enemy-range-row';setReadingText(open,'へんしゅう');open.className='enemy-range-edit';open.setAttribute('aria-label',kanaText(`${config.label}マスをへんしゅう`));edit.onclick=()=>showRange?.(key);
  open.onclick=()=>{closeLiveRangeEditor();showRange?.(key);if(key==='moveRange')openMoveMap(o,{getProject,save,rebuild,lookFromAbove,onClose:update});else openConfiguredRange(o,{key,config,getProject,save,rebuild,lookFromAbove,onClose:update});};edit.append(label,summary);row.append(edit,open);parent.append(row);

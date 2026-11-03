@@ -1,4 +1,4 @@
-import {GRID} from './building3d.js?v=20261103e';
+import {GRID} from './building3d.js?v=20261103f';
 export const RANGE_MAX=8;
 export const rangeCell=value=>Math.floor((value+GRID.cell/2)/GRID.cell);
 export function rangeCells(shape,cross=4,circle=2){
@@ -61,4 +61,12 @@ export function convertRangeSpace(range,space,enemy){
 
 export function enemyYaw(enemy,player){return enemy.searchRange?.space==='facing'||enemy.attackRange?.space==='facing'?(Number.isFinite(enemy.heading)?enemy.heading:(enemy.facing||0)*Math.PI/180):Math.atan2(player.x-enemy.x,player.z-enemy.z)+Math.PI;}
 
-export function defaultEnemyRanges(enemy){const circle=()=>makeAttackRange('circle',2,2);return {moveRange:worldMoveRange(circle(),enemy),searchRange:{...circle(),space:'facing'},attackRange:{...circle(),space:'facing'}};}
+// Rasterize a forward cone onto cell centers, including the enemy's own cell.
+export function makeFacingFan(radius,angle){
+ const cells=[];
+ for(let z=-radius;z<=0;z++)for(let x=-radius;x<=radius;x++){
+  if(x*x+z*z<=radius*radius&&((x===0&&z===0)||Math.atan2(Math.abs(x),-z)<=angle*Math.PI/360+1e-9))cells.push([x,z]);
+ }
+ return {shape:'custom',cross:radius,circle:radius,cells,space:'facing'};
+}
+export function defaultEnemyRanges(enemy){return {moveRange:worldMoveRange(makeAttackRange('circle',2,2),enemy),searchRange:makeFacingFan(3,120),attackRange:makeFacingFan(2,90)};}

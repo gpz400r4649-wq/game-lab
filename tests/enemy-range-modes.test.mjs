@@ -34,9 +34,18 @@ test('マップ上の同じエリアで離れた敵も探索・攻撃を共有�
  const r={space:'world',cells:[[0,1]]};for(const x of [-12,12]){const e={x,z:0,attackRange:r,searchRange:r};assert.ok(detectsPlayer(e,{x:0,z:4}));assert.ok(inAttackRange(e,{x:0,z:4}));assert.equal(inAttackRange(e,{x:0,z:8}),false);}
 });
 
-test('新しい敵の３範囲は円２マスで、探す・攻撃は向きに合わせる',()=>{
- const e=part('enemy',20,-12),expected=makeAttackRange('circle',2,2);assert.equal(e.moveRange.space,'world');assert.deepEqual(e.moveRange.cells,rangeWorldCells(expected,e));for(const key of ['searchRange','attackRange']){assert.equal(e[key].space,'facing');assert.equal(e[key].shape,'circle');assert.equal(e[key].circle,2);assert.equal(e[key].cross,2);assert.deepEqual(e[key].cells,expected.cells);}const p=fresh3D();p.objects=[e];assert.deepEqual(validate3D(p),p);e.searchRange.cells.pop();assert.equal(e.attackRange.cells.length,13);assert.equal(e.moveRange.cells.length,13);
+test('新しい敵は円２マスを移動し、前方の広い気づく扇形と近い攻撃扇形を持つ',()=>{
+ const e=part('enemy',20,-12),expected=makeAttackRange('circle',2,2);assert.equal(e.moveRange.space,'world');assert.deepEqual(e.moveRange.cells,rangeWorldCells(expected,e));
+ for(const key of ['searchRange','attackRange']){assert.equal(e[key].space,'facing');assert.ok(validAttackRange(e[key]));assert.ok(e[key].cells.every(([x,z])=>z<=0));assert.ok(e[key].cells.some(([x,z])=>x===0&&z===0));}
+ assert.equal(e.searchRange.circle,3);assert.equal(e.attackRange.circle,2);
+ assert.ok(e.searchRange.cells.some(([x,z])=>x===2&&z===-2));assert.ok(e.searchRange.cells.some(([x,z])=>x===0&&z===-3));
+ assert.ok(e.attackRange.cells.some(([x,z])=>x===1&&z===-1));assert.ok(e.attackRange.cells.every(c=>e.searchRange.cells.some(d=>d.join(',')===c.join(','))));
+ const p=fresh3D();p.objects=[e];assert.deepEqual(validate3D(p),p);const before=structuredClone(e.attackRange);e.searchRange.cells.pop();assert.deepEqual(e.attackRange,before);assert.equal(e.moveRange.cells.length,13);
 });
+test('初期の扇形は前を検知し背後を検知せず、配置した向きにも追従する',()=>{
+ const e=part('enemy',0,0);assert.ok(inEnemyRange(e.searchRange,e,{x:0,z:-12}));assert.ok(!inEnemyRange(e.searchRange,e,{x:0,z:4}));assert.ok(inAttackRange(e,{x:0,z:-8}));assert.ok(!inAttackRange(e,{x:0,z:-12}));e.facing=90;assert.ok(inEnemyRange(e.searchRange,e,{x:-12,z:0}));assert.ok(!inEnemyRange(e.searchRange,e,{x:12,z:0}));
+});
+
 test('既存の敵の範囲を読み込み時に初期値で置き換えない',()=>{
  const p=fresh3D(),e=part('enemy');delete e.moveRange;delete e.searchRange;e.attackRange=makeAttackRange('cross',5,3);p.objects=[e];const restored=validate3D(p).objects[0];assert.equal(restored.moveRange,undefined);assert.equal(restored.searchRange,undefined);assert.deepEqual(restored.attackRange,e.attackRange);const defaults=defaultEnemyRanges({x:40,z:-20});assert.ok(defaults.moveRange.cells.some(([x,z])=>x===10&&z===-5));
 });
