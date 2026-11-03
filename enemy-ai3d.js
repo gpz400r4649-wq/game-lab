@@ -1,4 +1,4 @@
-import {rangeCell,inGridRange,inEnemyRange,movementCenter} from './enemy-range3d.js?v=20261103d';
+import {rangeCell,inGridRange,inEnemyRange,movementCenter} from './enemy-range3d.js?v=20261103e';
 const CELL=4,neighbors=[[0,-1],[1,0],[0,1],[-1,0]];
 export const CHASE_MODES={always:'はじめから、ずっと追いかける',inside:'探すはんいにいる間だけ追いかける',remember:'見つけたら、ずっと追いかける'};
 export function validEnemyMovement(o){return (o.chaseMode===undefined||Object.hasOwn(CHASE_MODES,o.chaseMode))&&(o.routine===undefined||(o.routine&&['wait','patrol','roam'].includes(o.routine.idle)&&['none','near','always'].includes(o.routine.notice)&&['resume','continue','return'].includes(o.routine.lost)));}
@@ -24,8 +24,9 @@ export function moveEnemy(o,b,player,dt,time,tryMove){
   returning=!chase&&r.lost==='return'&&o.wasChasing;
   if(returning&&Math.hypot(o.x-o.origin.x,o.z-o.origin.z)<.08){o.wasChasing=false;returning=false;o.navigation=null;}
   b={...b,action:chase||returning?'chase':r.idle==='roam'?'search':r.idle==='patrol'?'patrol':'wait'};
-  if(b.action==='wait'){o.navigation=null;return;}
+  if(b.action==='wait'){o.debugAction='wait';o.navigation=null;return;}
  }
+ o.debugAction=returning?'return':b.action==='patrol'?'patrol':chase?'chase':b.action==='search'?'roam':'wait';
  if(b.action==='patrol'){const point={x:o.x+Math.cos(time)*b.speed*dt,z:o.z};if(canEnemyEnter(o,point))tryMove(point.x-o.x,0);return;}
  if(b.action!=='chase'&&b.action!=='search')return;
  if(b.action==='chase'&&!chase&&!returning){o.navigation=null;return;}

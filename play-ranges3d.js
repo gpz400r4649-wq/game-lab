@@ -1,6 +1,6 @@
 import * as T from './vendor/three.module.min.js';
-import {rangeWorldCells,MOVE_MAX_CELLS} from './enemy-range3d.js?v=20261103d';
-import {setReadingText} from './readings3d.js?v=20261103d';
+import {rangeWorldCells,MOVE_MAX_CELLS} from './enemy-range3d.js?v=20261103e';
+import {setReadingText} from './readings3d.js?v=20261103e';
 export function playRangeCells(enemy,key){
  if(!enemy||enemy.hp<=0||enemy.hidden||!enemy[key])return [];
  return rangeWorldCells(enemy[key],key==='moveRange'?(enemy.origin||enemy):enemy).slice(0,MOVE_MAX_CELLS);
@@ -24,5 +24,5 @@ export function createPlayRanges(scene){
   const text=!enemy?'敵を置くと、はんいを見られるよ。':enemy.hidden||enemy.hp<=0?'この敵は、今はステージにいないよ。':missing.length?missing.join('・')+'マスは未設定。つくる画面でマスを設定してね。':'選んだ敵の設定したマスを表示するよ。色は、青＝移動・黄＝気づく・赤＝攻撃。';
   if(text!==stamp){setReadingText(note,text);stamp=text;}
  }
- return {start,update};
+ return {start,update,getTarget:()=>target};
 }
