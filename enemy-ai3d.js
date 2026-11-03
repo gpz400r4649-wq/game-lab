@@ -1,5 +1,5 @@
-import {walkPatrol,walkWaypoints,activeRoute} from './patrol-route3d.js?v=20261104d';
-import {rangeCell,inGridRange,inEnemyRange,movementCenter} from './enemy-range3d.js?v=20261104d';
+import {walkPatrol,walkWaypoints,activeRoute} from './patrol-route3d.js?v=20261104e';
+import {rangeCell,inGridRange,inEnemyRange,movementCenter} from './enemy-range3d.js?v=20261104e';
 const CELL=4,neighbors=[[0,-1],[1,0],[0,1],[-1,0]];
 export const CHASE_MODES={always:'はじめから、ずっと追いかける',inside:'探すはんいにいる間だけ追いかける',remember:'見つけたら、ずっと追いかける'};
 export function validEnemyMovement(o){return (o.chaseMode===undefined||Object.hasOwn(CHASE_MODES,o.chaseMode))&&(o.routine===undefined||(o.routine&&['wait','patrol','roam','path'].includes(o.routine.idle)&&['none','near','always'].includes(o.routine.notice)&&['resume','continue','return'].includes(o.routine.lost)));}
@@ -8,15 +8,16 @@ export function detectsPlayer(o,player){return o.searchRange?inEnemyRange(o.sear
 function route(o,target,r){
  const origin=movementCenter(o),ox=rangeCell(origin.x),oz=rangeCell(origin.z),sx=rangeCell(o.x)-ox,sz=rangeCell(o.z)-oz,allowed=new Set(r.cells.map(c=>c.join(','))),start=`${sx},${sz}`;
  if(!allowed.has(start))return [];
+ const goal=`${rangeCell(target.x)-ox},${rangeCell(target.z)-oz}`;
  const queue=[[sx,sz]],parents=new Map([[start,null]]);let best=start,dist=Infinity;
  for(let i=0;i<queue.length;i++){
-  const [x,z]=queue[i],key=`${x},${z}`,d=(target.x-(ox+x)*CELL)**2+(target.z-(oz+z)*CELL)**2;if(d<dist){dist=d;best=key;}
+  const [x,z]=queue[i],key=`${x},${z}`,d=(target.x-(ox+x)*CELL)**2+(target.z-(oz+z)*CELL)**2;if(d<dist){dist=d;best=key;}if(key===goal){best=key;break;}
   for(const [dx,dz]of neighbors){const nx=x+dx,nz=z+dz,nkey=`${nx},${nz}`;if(allowed.has(nkey)&&!parents.has(nkey)){parents.set(nkey,key);queue.push([nx,nz]);}}
  }
  const path=[];for(let key=best;key!==null;key=parents.get(key)){const [x,z]=key.split(',').map(Number);path.push({x:(ox+x)*CELL,z:(oz+z)*CELL});}path.reverse();path.shift();return path;
 }
 export function moveEnemy(o,b,player,dt,time,tryMove){
- o.routeTravel=false;
+ o.routeTravel=false;o.debugBlocked='';
  const detected=detectsPlayer(o,player);if(detected)o.foundPlayer=true;
  const mode=o.chaseMode||'always';let chase=mode==='always'||(mode==='inside'?detected:!!o.foundPlayer);
  let returning=false;const routePoints=['patrol','path'].includes(o.routine?.idle)?activeRoute(o):null,returnPoint=routePoints?routePoints[0]:o.origin;
@@ -55,14 +56,15 @@ export function moveEnemy(o,b,player,dt,time,tryMove){
  const step=b.speed*dt;
  let point=target;
  if(r){
+  if(!inGridRange(r,movementCenter(o),o)){o.debugBlocked='outside';return;}
   const stamp=`${b.action}:${chase}:${returning}:${rangeCell(target.x)},${rangeCell(target.z)}`;
   if(!o.navigation||o.navigation.stamp!==stamp||o.navigation.range!==r)o.navigation={stamp,range:r,path:route(o,target,r)};
   const path=o.navigation.path;while(path.length&&Math.hypot(path[0].x-o.x,path[0].z-o.z)<.08)path.shift();
-  if(path.length)point=path[0];else if(inGridRange(r,movementCenter(o),target)&&rangeCell(o.x)===rangeCell(target.x)&&rangeCell(o.z)===rangeCell(target.z))point=target;else return;
+  if(inGridRange(r,movementCenter(o),target)&&rangeCell(o.x)===rangeCell(target.x)&&rangeCell(o.z)===rangeCell(target.z)){point=target;o.navigation.path=[];}else if(path.length)point=path[0];else{o.debugBlocked=inGridRange(r,movementCenter(o),target)?'disconnected':'edge';return;}
  }
  const dx=point.x-o.x,dz=point.z-o.z,d=Math.hypot(dx,dz);if(d<.001)return;
  const scale=Math.min(step,d)/d,nx=o.x+dx*scale,nz=o.z+dz*scale;
- if(!canEnemyEnter(o,{x:nx,z:nz}))return;
+ if(!canEnemyEnter(o,{x:nx,z:nz})){o.debugBlocked='edge';return;}
  const beforeX=o.x,beforeZ=o.z;tryMove(nx-o.x,nz-o.z);
  if(b.action==='search'&&!chase&&Math.hypot(o.x-beforeX,o.z-beforeZ)<step*.1)o.roamStuck=true;
 }

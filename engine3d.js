@@ -1,17 +1,17 @@
-import {validPatrolRoute,validWaypoints} from './patrol-route3d.js?v=20261104d';
-import {validLibrary} from './assets3d.js?v=20261104d';
-import {moveEnemy,canEnemyEnter,validEnemyMovement} from './enemy-ai3d.js?v=20261104d';
-import {worldMoveRange,validMoveRange,validAttackRange,inAttackRange,enemyYaw,defaultEnemyRanges} from './enemy-range3d.js?v=20261104d';
-import {playerGunMuzzle,finitePoint} from './muzzle3d.js?v=20261104d';
-import {validDoor,nearbyDoor,doorwayOccupied,animateDoors} from './doors3d.js?v=20261104d';
-import {nearbyObjects} from './spatial3d.js?v=20261104d';
-import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261104d';
-import {worldSize,worldHalf,coordinateLimit,WORLD_SIZES} from './world3d.js?v=20261104d';
-import {settleLoot} from './loot3d.js?v=20261104d';
-import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261104d';
-import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261104d';
-import {shootVolley,updateCombat,resolveShotOrigin} from './combat3d.js?v=20261104d';
-import {BUILD_TYPES,constructionPart,topAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261104d';
+import {validPatrolRoute,validWaypoints} from './patrol-route3d.js?v=20261104e';
+import {validLibrary} from './assets3d.js?v=20261104e';
+import {moveEnemy,canEnemyEnter,validEnemyMovement} from './enemy-ai3d.js?v=20261104e';
+import {worldMoveRange,validMoveRange,validAttackRange,inAttackRange,enemyYaw,defaultEnemyRanges} from './enemy-range3d.js?v=20261104e';
+import {playerGunMuzzle,finitePoint} from './muzzle3d.js?v=20261104e';
+import {validDoor,nearbyDoor,doorwayOccupied,animateDoors} from './doors3d.js?v=20261104e';
+import {nearbyObjects} from './spatial3d.js?v=20261104e';
+import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261104e';
+import {worldSize,worldHalf,coordinateLimit,WORLD_SIZES} from './world3d.js?v=20261104e';
+import {settleLoot} from './loot3d.js?v=20261104e';
+import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261104e';
+import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261104e';
+import {shootVolley,updateCombat,resolveShotOrigin} from './combat3d.js?v=20261104e';
+import {BUILD_TYPES,constructionPart,topAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261104e';
 export const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export const PARTS={weapon:'銃アイテム',ramp:'スロープ',wall:'壁',floor:'床',roof:'屋根',box:'ブロック',platform:'足場',moving:'動く足場',bounce:'ジャンプ台',enemy:'敵ロボット',star:'星',key:'カギ',door:'ドア',heal:'回復',checkpoint:'セーブポイント',hazard:'ダメージ床',goal:'ゴール'};
 export const BEHAVIORS={chase:'プレイヤーを追いかける',patrol:'行ったり来たり',search:'歩き回って探す'};
@@ -102,9 +102,9 @@ export function step3D(g,p,input,dt){
     if(tool.effect&&tool.effect!=='shoot'){placeStructure(g,p,input);g.cooldown=.35;}
     else {const shot=safeShot(tool),eye={x:player.x,y:player.y+1.35,z:player.z},candidate=typeof input.getShotOrigin==='function'?input.getShotOrigin(player):null,muzzle=finitePoint(candidate)&&Math.hypot(candidate.x-eye.x,candidate.y-eye.y,candidate.z-eye.z)<=3?candidate:playerGunMuzzle(player,tool,yaw),origin=resolveShotOrigin(g,eye,muzzle,shot.radius),direction=finitePoint(input.aimTarget)?{x:input.aimTarget.x-origin.x,y:input.aimTarget.y-origin.y,z:input.aimTarget.z-origin.z}:input.aim||{x:-Math.sin(yaw)*Math.cos(g.recoilPitch),y:Math.sin(g.recoilPitch),z:-Math.cos(yaw)*Math.cos(g.recoilPitch)},count=shootVolley(g,origin,direction,tool);if(count)g.recoilPitch=Math.min(12*Math.PI/180,g.recoilPitch+shot.recoil*Math.PI/180);g.cooldown=shot.interval;}
   }
-  for(const o of g.objects)if(o.type==='enemy'&&!o.hidden){const walls=solids(nearbyObjects(g,o.x-1,o.z-1,o.x+1,o.z+1));
+  for(const o of g.objects)if(o.type==='enemy'&&!o.hidden){o.debugBlocked='';const walls=solids(nearbyObjects(g,o.x-1,o.z-1,o.x+1,o.z+1));
     o.cooldown=Math.max(0,(o.cooldown||0)-dt);
-    const tryMove=(mx,mz)=>{const beforeX=o.x,beforeZ=o.z,body={x:o.x+mx,y:o.y,z:o.z};if(canEnemyEnter(o,body)&&!walls.some(w=>inside({...body,y:o.y+.9},w,.55)))o.x=clamp(body.x,-limit,limit);body.x=o.x;body.z+=mz;if(canEnemyEnter(o,body)&&!walls.some(w=>inside({...body,y:o.y+.9},w,.55)))o.z=clamp(body.z,-limit,limit);if(Math.hypot(o.x-beforeX,o.z-beforeZ)>.000001)o.heading=Math.atan2(-(o.x-beforeX),-(o.z-beforeZ));};
+    const tryMove=(mx,mz)=>{const beforeX=o.x,beforeZ=o.z,body={x:o.x+mx,y:o.y,z:o.z};if(canEnemyEnter(o,body)&&!walls.some(w=>inside({...body,y:o.y+.9},w,.55)))o.x=clamp(body.x,-limit,limit);body.x=o.x;body.z+=mz;if(canEnemyEnter(o,body)&&!walls.some(w=>inside({...body,y:o.y+.9},w,.55)))o.z=clamp(body.z,-limit,limit);if(Math.hypot(o.x-beforeX,o.z-beforeZ)>.000001)o.heading=Math.atan2(-(o.x-beforeX),-(o.z-beforeZ));else if(Math.hypot(mx,mz)>.000001)o.debugBlocked=Math.abs(body.x)>limit||Math.abs(body.z)>limit?'edge':'obstacle';};
     for(const b of o.program)moveEnemy(o,b,player,dt,g.time,tryMove);
     if(o.attackEnabled&&inAttackRange(o,player)){
       if(o.cooldown<=0){const weapon=enemyWeapon(o,p.loadout),shot=weapon?safeShot(weapon):null,start={x:o.x,y:o.y+1.1,z:o.z},yaw=enemyYaw(o,player),origin=weapon?resolveShotOrigin(g,start,playerGunMuzzle(o,weapon,yaw),shot.radius,o.id):start;shootVolley(g,origin,{x:player.x-origin.x,y:player.y+.9-origin.y,z:player.z-origin.z},weapon||{speed:o.attackSpeed+5,damage:1,spread:1},true);o.cooldown=shot?.interval??1.4;}
