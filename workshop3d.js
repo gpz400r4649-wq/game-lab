@@ -1,19 +1,19 @@
-import {openWaypointEditor} from './waypoint-ui3d.js?v=20261104c';
-import {openPatrolEditor} from './patrol-ui3d.js?v=20261104c';
-import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261104c';
-import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261104c';
-import {inGridRange} from './enemy-range3d.js?v=20261104c';
-import {renderEnemyRange} from './enemy-range-ui3d.js?v=20261104c';
-import {gunPreviewSVG} from './appearance3d.js?v=20261104c';
-import {DOOR_PRESETS} from './doors3d.js?v=20261104c';
-import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261104c';
-import {coordinateLimit} from './world3d.js?v=20261104c';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261104c';
-import {actionsFor} from './events3d.js?v=20261104c';
-import {renderEventEditor} from './event-editor3d.js?v=20261104c';
-import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261104c';
-import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261104c';
-import {PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261104c';
+import {openWaypointEditor} from './waypoint-ui3d.js?v=20261104d';
+import {openPatrolEditor} from './patrol-ui3d.js?v=20261104d';
+import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261104d';
+import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261104d';
+import {inGridRange} from './enemy-range3d.js?v=20261104d';
+import {renderEnemyRange} from './enemy-range-ui3d.js?v=20261104d';
+import {gunPreviewSVG} from './appearance3d.js?v=20261104d';
+import {DOOR_PRESETS} from './doors3d.js?v=20261104d';
+import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261104d';
+import {coordinateLimit} from './world3d.js?v=20261104d';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261104d';
+import {actionsFor} from './events3d.js?v=20261104d';
+import {renderEventEditor} from './event-editor3d.js?v=20261104d';
+import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261104d';
+import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261104d';
+import {PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261104d';
 
 const ICONS={weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
 const DESCRIPTIONS={weapon:'地面に置いて、ふれると拾える銃。持ちもの・銃づくりで用意した銃をえらぼう。',ramp:'低いほうから歩くと、そのまま登れるスロープ。回して好きな向きにつなげよう。',wall:'家を囲う壁。向きを変えてつなげよう。',floor:'家の床と天井に使える板。壁の内側にぴったり合うよ。',roof:'壁の上にのせる三角屋根。向きを変えて家を仕上げよう。',
@@ -73,14 +73,14 @@ export function createWorkshop(api){
       if(routine){
         const stage=(label)=>{const section=document.createElement('section');section.className='enemy-routine-step';const h=document.createElement('h4');setReadingText(h,label);section.append(h);movement.append(section);return section;};
         const idle=stage('① ふだんは何をする？');
-        selectField(idle,'ふだんの動き',[['wait','その場で待つ'],['patrol','行ったり来たり'],['path','順路にそって歩く'],['roam','歩き回る'],['chase','はじめから追いかける']],routine.idle,v=>change({idle:v}));
+        selectField(idle,'ふだんの動き',[['wait','その場で待つ'],['patrol','行ったり来たり'],['path','コースにそってあるく'],['roam','歩き回る'],['chase','はじめから追いかける']],routine.idle,v=>change({idle:v}));
         if(routine.idle!=='wait'||routine.notice!=='none'){
           field(idle,'動きの速さ',o.program[0]?.speed||2,.5,8,.5,n=>{o.program.forEach(b=>b.speed=n);syncBehavior();});
           if(routine.idle==='patrol'){
             const preview=document.createElement('button'),edit=document.createElement('button');setReadingText(preview,'↔ 往復ルートを見る');preview.onclick=()=>api.showRange?.('patrolRoute');setReadingText(edit,'２か所をえらぶ');edit.onclick=()=>{api.showRange?.('patrolRoute');openPatrolEditor(o,{getProject,save,rebuild:api.refreshRange||rebuild,lookFromAbove:api.lookFromAbove,preview:api.previewPatrol,onClose:inspect});};idle.append(preview,edit);
             if(!o.patrolRoute){const legacy=document.createElement('p');legacy.className='component-description';setReadingText(legacy,'今は以前のよこ移動だよ。２か所をえらぶと往復ルートに切り替わるよ。');idle.append(legacy);}
           }else if(routine.idle==='path'){
-            const preview=document.createElement('button'),edit=document.createElement('button');setReadingText(preview,'順路を見る');preview.onclick=()=>api.showRange?.('waypoints');setReadingText(edit,'通る場所を順番にえらぶ');edit.onclick=()=>{api.showRange?.('waypoints');openWaypointEditor(o,{getProject,save,rebuild:api.refreshRange||rebuild,lookFromAbove:api.lookFromAbove,preview:api.previewPatrol,onClose:inspect});};idle.append(preview,edit);
+            const preview=document.createElement('button'),edit=document.createElement('button');setReadingText(preview,'コースを見る');preview.onclick=()=>api.showRange?.('waypoints');setReadingText(edit,'通る場所を順番にえらぶ');edit.onclick=()=>{api.showRange?.('waypoints');openWaypointEditor(o,{getProject,save,rebuild:api.refreshRange||rebuild,lookFromAbove:api.lookFromAbove,preview:api.previewPatrol,onClose:inspect});};idle.append(preview,edit);
             selectField(idle,'最後の場所についたら？',[['loop','最初へ進んで、くり返す'],['reverse','来た道をもどる'],['stop','最後の場所で止まる']],o.routeEnd||'loop',v=>{o.routeEnd=v;inspect();});
           }else renderEnemyRange(idle,o,rangeApi,'moveRange');
           const limitNote=document.createElement('p');limitNote.className='component-description';setReadingText(limitNote,['patrol','path'].includes(routine.idle)?'ふだんは決めたルートを歩くよ。追いかける場所は別に決められるよ。':'追うときも、もどるときも、動けるマスの外には出ないよ。');idle.append(limitNote);
