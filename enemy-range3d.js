@@ -1,4 +1,5 @@
-import {GRID} from './building3d.js?v=20261104f';
+import {coordinateLimit} from './world3d.js?v=20261104g';
+import {GRID} from './building3d.js?v=20261104g';
 export const RANGE_MAX=8;
 export const rangeCell=value=>Math.floor((value+GRID.cell/2)/GRID.cell);
 export function rangeCells(shape,cross=4,circle=2){
@@ -70,3 +71,12 @@ export function makeFacingFan(radius,angle){
  return {shape:'custom',cross:radius,circle:radius,cells,space:'facing',fanAngle:angle};
 }
 export function defaultEnemyRanges(enemy){return {moveRange:worldMoveRange(makeAttackRange('circle',2,2),enemy),searchRange:makeFacingFan(3,120),attackRange:makeFacingFan(2,90)};}
+
+export function fitRoamingEnemy(o,project){
+ const roaming=o.routine?o.routine.idle==='roam'&&o.routine.notice!=='always':o.program?.length===1&&o.program[0].action==='search'&&(o.chaseMode||'always')!=='always';
+ if(!roaming||!o.moveRange?.cells.length)return false;
+ const range=worldMoveRange(o.moveRange,o);if(inGridRange(range,{x:0,z:0},o))return false;
+ const limit=coordinateLimit(project);let best=null,distance=Infinity;
+ for(const [x,z]of range.cells){const point={x:Math.max(-limit,Math.min(limit,x*4)),z:Math.max(-limit,Math.min(limit,z*4))};if(!inGridRange(range,{x:0,z:0},point))continue;const d=(point.x-o.x)**2+(point.z-o.z)**2;if(d<distance){distance=d;best=point;}}
+ if(!best)return false;o.moveRange=range;o.x=best.x;o.z=best.z;return true;
+}

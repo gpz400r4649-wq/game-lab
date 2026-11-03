@@ -1,19 +1,19 @@
-import {openWaypointEditor} from './waypoint-ui3d.js?v=20261104f';
-import {openPatrolEditor} from './patrol-ui3d.js?v=20261104f';
-import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261104f';
-import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261104f';
-import {inGridRange} from './enemy-range3d.js?v=20261104f';
-import {renderEnemyRange} from './enemy-range-ui3d.js?v=20261104f';
-import {gunPreviewSVG} from './appearance3d.js?v=20261104f';
-import {DOOR_PRESETS} from './doors3d.js?v=20261104f';
-import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261104f';
-import {coordinateLimit} from './world3d.js?v=20261104f';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261104f';
-import {actionsFor} from './events3d.js?v=20261104f';
-import {renderEventEditor} from './event-editor3d.js?v=20261104f';
-import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261104f';
-import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261104f';
-import {PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261104f';
+import {openWaypointEditor} from './waypoint-ui3d.js?v=20261104g';
+import {openPatrolEditor} from './patrol-ui3d.js?v=20261104g';
+import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261104g';
+import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261104g';
+import {inGridRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261104g';
+import {renderEnemyRange} from './enemy-range-ui3d.js?v=20261104g';
+import {gunPreviewSVG} from './appearance3d.js?v=20261104g';
+import {DOOR_PRESETS} from './doors3d.js?v=20261104g';
+import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261104g';
+import {coordinateLimit} from './world3d.js?v=20261104g';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261104g';
+import {actionsFor} from './events3d.js?v=20261104g';
+import {renderEventEditor} from './event-editor3d.js?v=20261104g';
+import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261104g';
+import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261104g';
+import {PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261104g';
 
 const ICONS={weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
 const DESCRIPTIONS={weapon:'地面に置いて、ふれると拾える銃。持ちもの・銃づくりで用意した銃をえらぼう。',ramp:'低いほうから歩くと、そのまま登れるスロープ。回して好きな向きにつなげよう。',wall:'家を囲う壁。向きを変えてつなげよう。',floor:'家の床と天井に使える板。壁の内側にぴったり合うよ。',roof:'壁の上にのせる三角屋根。向きを変えて家を仕上げよう。',
@@ -66,10 +66,10 @@ export function createWorkshop(api){
       field(el,'体力',o.hp,1,20,1,n=>o.hp=Math.round(n));
       const movement=document.createElement('section');movement.className='enemy-settings-group';movement.setAttribute('aria-label','動きかた');const movementTitle=document.createElement('h3');setReadingText(movementTitle,'動きかた');movement.append(movementTitle);el.append(movement);
       if(o.program.length&&!o.patrolRoute&&!o.waypoints&&o.moveRange?.space==='world'&&!inGridRange(o.moveRange,{x:0,z:0},o)){const note=document.createElement('p');note.className='recipe-hint';setReadingText(note,'この敵は移動できるマスの外にいます。青いマスの中に置こう。');movement.append(note);}
-      const syncBehavior=renderBehaviorExamples(movement,o,{save,rebuild,inspect});
+      const syncBehavior=renderBehaviorExamples(movement,o,{save,rebuild,inspect,getProject});
       const rangeApi={directMove:true,getProject,lookFromAbove:api.lookFromAbove,save,rebuild:api.refreshRange||rebuild,getRangeView:api.getRangeView,showRange:key=>{api.showRange?.(key);for(const button of el.querySelectorAll('.enemy-range-choice'))button.setAttribute('aria-pressed',String(button.dataset.range===key));}};
       const routine=enemyRoutineChoices(o),flow=document.createElement('p');flow.className='enemy-behavior-flow';flow.setAttribute('aria-live','polite');setReadingText(flow,routineFlow(o));movement.append(flow);
-      const change=patch=>{setEnemyRoutineChoice(o,patch);inspect();};
+      const change=patch=>{setEnemyRoutineChoice(o,patch);fitRoamingEnemy(o,p);inspect();};
       if(routine){
         const stage=(label)=>{const section=document.createElement('section');section.className='enemy-routine-step';const h=document.createElement('h4');setReadingText(h,label);section.append(h);movement.append(section);return section;};
         const idle=stage('① ふだんは何をする？');

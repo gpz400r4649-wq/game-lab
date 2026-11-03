@@ -1,7 +1,7 @@
-import {mountLiveRangeEditor} from './range-panel3d.js?v=20261104f';
-import {worldMoveRange,rangeCell,MOVE_MAX_CELLS,convertRangeSpace} from './enemy-range3d.js?v=20261104f';
-import {worldSize} from './world3d.js?v=20261104f';
-import {setReadingText} from './readings3d.js?v=20261104f';
+import {mountLiveRangeEditor} from './range-panel3d.js?v=20261104g';
+import {worldMoveRange,rangeCell,MOVE_MAX_CELLS,convertRangeSpace,fitRoamingEnemy} from './enemy-range3d.js?v=20261104g';
+import {worldSize} from './world3d.js?v=20261104g';
+import {setReadingText} from './readings3d.js?v=20261104g';
 let painter=null;
 export function setStageRangePainter(next){painter=next;}
 export function stageRangePointer(kind,id,point){return painter?.(kind,id,point)||false;}
@@ -24,7 +24,7 @@ export function openStageMoveRange(o,{getProject,save,rebuild,lookFromAbove,onCl
  const store=()=>{o[key]=movement||space==='world'?structuredClone(current):convertRangeSpace(current,space,o);};
  const accepts=(x,z)=>movement||space==='world'||!!convertRangeSpace({space:'world',cells:[[x,z]]},space,o);
  const refresh=()=>setReadingText(count,`${current.cells.length} / ${MOVE_MAX_CELLS}マス`);
- function commit(){if(dirty){save();dirty=false;}pointer=null;previous=null;}
+ function commit(){if(dirty){if(movement&&fitRoamingEnemy(o,getProject()))rebuild();save();dirty=false;}pointer=null;previous=null;}
  for(const [value,label]of [['paint','ぬる'],['erase','けす'],['camera','カメラを回す']]){const button=document.createElement('button');setReadingText(button,label);button.onclick=()=>{commit();mode=value;buttons.forEach(([v,b])=>b.setAttribute('aria-pressed',String(v===mode)));};button.setAttribute('aria-pressed',String(value===mode));buttons.push([value,button]);toolbar.append(button);}
  const top=document.createElement('button');setReadingText(top,'↑ 上から見る');top.onclick=()=>lookFromAbove?.();
  const clear=document.createElement('button');setReadingText(clear,'全部のマスをけす');clear.onclick=()=>{commit();current.cells=[];store();save();rebuild();refresh();};
