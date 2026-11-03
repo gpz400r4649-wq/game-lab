@@ -1,9 +1,9 @@
 import * as T from './vendor/three.module.min.js';
-import {mountLiveRangeEditor} from './range-panel3d.js?v=20261104a';
-import {setStageRangePainter} from './stage-range3d.js?v=20261104a';
-import {worldSize,coordinateLimit} from './world3d.js?v=20261104a';
-import {validPatrolRoute} from './patrol-route3d.js?v=20261104a';
-import {setReadingText} from './readings3d.js?v=20261104a';
+import {mountLiveRangeEditor} from './range-panel3d.js?v=20261104b';
+import {setStageRangePainter} from './stage-range3d.js?v=20261104b';
+import {worldSize,coordinateLimit} from './world3d.js?v=20261104b';
+import {validPatrolRoute} from './patrol-route3d.js?v=20261104b';
+import {setReadingText} from './readings3d.js?v=20261104b';
 export function createPatrolOverlay(scene){
  const group=new T.Group(),material=new T.MeshBasicMaterial({color:0x399cda,depthWrite:false}),line=new T.Mesh(new T.CylinderGeometry(.07,.07,1,8),material),points=[0x399cda,0xf0a23a].map(color=>new T.Mesh(new T.SphereGeometry(.3,12,8),new T.MeshBasicMaterial({color,depthWrite:false}))),direction=new T.Vector3();group.add(line,...points);group.traverse(o=>o.layers.set(2));group.visible=false;scene.add(group);
  return {show(route,y=0){group.visible=!!route?.length;if(!group.visible)return;points.forEach((mesh,i)=>{mesh.visible=!!route[i];if(route[i])mesh.position.set(route[i].x,y+.15,route[i].z);});line.visible=route.length===2;if(line.visible){const [a,b]=route;direction.set(b.x-a.x,0,b.z-a.z);line.position.set((a.x+b.x)/2,y+.15,(a.z+b.z)/2);line.scale.set(1,direction.length(),1);line.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),direction.normalize());}}};

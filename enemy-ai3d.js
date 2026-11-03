@@ -1,5 +1,5 @@
-import {walkPatrol} from './patrol-route3d.js?v=20261104a';
-import {rangeCell,inGridRange,inEnemyRange,movementCenter} from './enemy-range3d.js?v=20261104a';
+import {walkPatrol} from './patrol-route3d.js?v=20261104b';
+import {rangeCell,inGridRange,inEnemyRange,movementCenter} from './enemy-range3d.js?v=20261104b';
 const CELL=4,neighbors=[[0,-1],[1,0],[0,1],[-1,0]];
 export const CHASE_MODES={always:'はじめから、ずっと追いかける',inside:'探すはんいにいる間だけ追いかける',remember:'見つけたら、ずっと追いかける'};
 export function validEnemyMovement(o){return (o.chaseMode===undefined||Object.hasOwn(CHASE_MODES,o.chaseMode))&&(o.routine===undefined||(o.routine&&['wait','patrol','roam'].includes(o.routine.idle)&&['none','near','always'].includes(o.routine.notice)&&['resume','continue','return'].includes(o.routine.lost)));}
@@ -13,7 +13,7 @@ function route(o,target,r){
   const [x,z]=queue[i],key=`${x},${z}`,d=(target.x-(ox+x)*CELL)**2+(target.z-(oz+z)*CELL)**2;if(d<dist){dist=d;best=key;}
   for(const [dx,dz]of neighbors){const nx=x+dx,nz=z+dz,nkey=`${nx},${nz}`;if(allowed.has(nkey)&&!parents.has(nkey)){parents.set(nkey,key);queue.push([nx,nz]);}}
  }
- const path=[];for(let key=best;key!==null;key=parents.get(key)){const [x,z]=key.split(',').map(Number);path.push({x:(ox+x)*CELL,z:(oz+z)*CELL});}return path.reverse();
+ const path=[];for(let key=best;key!==null;key=parents.get(key)){const [x,z]=key.split(',').map(Number);path.push({x:(ox+x)*CELL,z:(oz+z)*CELL});}path.reverse();path.shift();return path;
 }
 export function moveEnemy(o,b,player,dt,time,tryMove){
  o.routeTravel=false;
@@ -28,7 +28,14 @@ export function moveEnemy(o,b,player,dt,time,tryMove){
   b={...b,action:chase||returning?'chase':r.idle==='roam'?'search':r.idle==='patrol'?'patrol':'wait'};
   if(b.action==='wait'){o.debugAction='wait';o.navigation=null;return;}
  }
+ // Follow the player with the face while navigating between allowed cells.
+ // A sideways/backward navigation step must not rotate the vision away and cancel pursuit.
+ if(chase&&['chase','search'].includes(b.action)){
+  const facePlayer=()=>{if(Math.hypot(player.x-o.x,player.z-o.z)>.001)o.heading=Math.atan2(-(player.x-o.x),-(player.z-o.z));};
+  const move=tryMove;tryMove=(x,z)=>{move(x,z);facePlayer();};facePlayer();
+ }
  o.debugAction=returning?'return':b.action==='patrol'?'patrol':chase?'chase':b.action==='search'?'roam':'wait';
+ if(b.action==='patrol')o.navigation=null;
  if(b.action==='patrol'&&o.patrolRoute){walkPatrol(o,b.speed,dt,tryMove);return;}
  if(b.action==='patrol'){const point={x:o.x+Math.cos(time)*b.speed*dt,z:o.z};if(canEnemyEnter(o,point))tryMove(point.x-o.x,0);return;}
  if(b.action!=='chase'&&b.action!=='search')return;

@@ -10,3 +10,12 @@ test('ルート上の壁はすり抜けず、その手前で止まる',()=>{cons
 for(const lost of ['resume','return'])test('追跡から離れた後に往復ルートへ戻る：'+lost,()=>{const {p}=setup([{x:0,z:0},{x:8,z:0}]),e=p.objects[0];setEnemyRoutineChoice(e,{notice:'near',lost});e.searchRange={space:'world',cells:[[1,1]]};const g=create3D(p),robot=g.objects[0];tick(g,p,80);g.player.x=4;g.player.z=4;tick(g,p,100);assert.ok(robot.z>1);g.player.x=20;g.player.z=20;let returned=false;for(let i=0;i<400;i++){tick(g,p,1);if(lost==='return'&&Math.hypot(robot.x,robot.z)<.1)returned=true;}assert.ok(Math.abs(robot.z)<.1);assert.ok(robot.x>=0&&robot.x<=8);if(lost==='return')assert.ok(returned);});
 test('追跡中は往復ルートの特例を使わず追跡範囲にとどまる',()=>{const {p}=setup();setEnemyRoutineChoice(p.objects[0],{notice:'always'});const g=create3D(p);g.player.x=20;g.player.z=0;tick(g,p,500);assert.ok(g.objects[0].x<10);assert.equal(g.objects[0].routeTravel,false);});
 test('不正なルートとマップ縮小による範囲外を防ぎ、旧作品はそのまま',()=>{const {p}=setup();for(const route of [[],[{x:0,z:0},{x:0,z:0}],[{x:0,z:0},{x:40,z:0}],[{x:NaN,z:0},{x:2,z:0}]]){p.objects[0].patrolRoute=route;assert.throws(()=>validate3D(p));}p.worldSize=240;p.objects[0].patrolRoute=[{x:0,z:0},{x:40,z:0}];assert.ok(resizeReason(p,60));delete p.objects[0].patrolRoute;const copy=validate3D(p);assert.equal(copy.objects[0].patrolRoute,undefined);});
+
+for(const lost of ['resume','return'])for(let quarter=0;quarter<4;quarter++)test(`往復から向き連動の扇形で気づくと回転ループせず追跡する：${lost}・${quarter}`,()=>{
+ const rotate=({x,z})=>{for(let i=0;i<quarter;i++)[x,z]=[z,-x];return {x,z};};
+ const {p}=setup([{x:0,z:0},rotate({x:8,z:0})]),e=p.objects[0];setEnemyRoutineChoice(e,{notice:'near',lost});const g=create3D(p),robot=g.objects[0];tick(g,p,40);
+ const target=rotate({x:4,z:-4});Object.assign(g.player,target);let turns=0,heading=robot.heading;
+ for(let i=0;i<300;i++){tick(g,p,1);const difference=Math.atan2(Math.sin(robot.heading-heading),Math.cos(robot.heading-heading));if(Math.abs(difference)>1)turns++;heading=robot.heading;}
+ assert.ok(Math.hypot(robot.x-target.x,robot.z-target.z)<.15);assert.ok(turns<10,`急な方向転換：${turns}`);assert.equal(robot.debugAction,'chase');assert.equal(robot.routeTravel,false);
+ Object.assign(g.player,rotate({x:20,z:-20}));tick(g,p,400);const local=rotate({x:1,z:0});assert.ok(Math.abs(robot.x*local.z-robot.z*local.x)<.1);assert.ok(robot.debugAction==='patrol'||robot.debugAction==='return');
+});

@@ -108,7 +108,7 @@ test('気づく範囲の広さは２種類とステージ直接編集に絞る',
 
 import {openPatrolEditor} from '../patrol-ui3d.js';
 test('往復ルートは２か所選んでから保存し、途中で閉じても前のルートを保つ',async t=>{
- const {stageRangePointer:routePointer}=await import('../stage-range3d.js?v=20261104a');
+ const {stageRangePointer:routePointer}=await import('../stage-range3d.js?v=20261104b');
  const s=setup(t,'moveRange');s.o.patrolRoute=[{x:0,z:0},{x:4,z:0}];const before=structuredClone(s.o.patrolRoute),previews=[];
  const open=()=>openPatrolEditor(s.o,{getProject:()=>({worldSize:60}),save:()=>s.calls.save++,rebuild:()=>s.calls.rebuild++,preview:p=>previews.push(structuredClone(p)),onClose:()=>{}});
  open();routePointer('start',1,{x:8,z:0});routePointer('end',1,null);assert.deepEqual(s.o.patrolRoute,before);assert.equal(s.calls.save,0);closeLiveRangeEditor();assert.deepEqual(s.o.patrolRoute,before);

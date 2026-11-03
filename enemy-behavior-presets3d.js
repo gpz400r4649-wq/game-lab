@@ -1,5 +1,5 @@
-import {defaultPatrolRoute} from './patrol-route3d.js?v=20261104a';
-import {defaultEnemyRanges} from './enemy-range3d.js?v=20261104a';
+import {defaultPatrolRoute} from './patrol-route3d.js?v=20261104b';
+import {defaultEnemyRanges} from './enemy-range3d.js?v=20261104b';
 // Examples combine existing actions, pursuit rules and speed. No runtime preset IDs are saved.
 export const ENEMY_BEHAVIOR_EXAMPLES={
  still:{name:'その場で待つ',icon:'●',program:[],flow:'置いた場所で待つ。自分からは動かないよ。'},
