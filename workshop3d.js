@@ -1,16 +1,18 @@
-import {CHASE_MODES} from './enemy-ai3d.js?v=20261030l';
-import {inGridRange,defaultEnemyRanges} from './enemy-range3d.js?v=20261030l';
-import {renderEnemyRange} from './enemy-range-ui3d.js?v=20261030l';
-import {gunPreviewSVG} from './appearance3d.js?v=20261030l';
-import {DOOR_PRESETS} from './doors3d.js?v=20261030l';
-import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261030l';
-import {coordinateLimit} from './world3d.js?v=20261030l';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261030l';
-import {actionsFor} from './events3d.js?v=20261030l';
-import {renderEventEditor} from './event-editor3d.js?v=20261030l';
-import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261030l';
-import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261030l';
-import {PARTS,ENEMY_PRESETS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261030l';
+import {basicEnemyBehavior,enemyBehaviorFlow} from './enemy-behavior-presets3d.js?v=20261103a';
+import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261103a';
+import {CHASE_MODES} from './enemy-ai3d.js?v=20261103a';
+import {inGridRange,defaultEnemyRanges} from './enemy-range3d.js?v=20261103a';
+import {renderEnemyRange} from './enemy-range-ui3d.js?v=20261103a';
+import {gunPreviewSVG} from './appearance3d.js?v=20261103a';
+import {DOOR_PRESETS} from './doors3d.js?v=20261103a';
+import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261103a';
+import {coordinateLimit} from './world3d.js?v=20261103a';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261103a';
+import {actionsFor} from './events3d.js?v=20261103a';
+import {renderEventEditor} from './event-editor3d.js?v=20261103a';
+import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261103a';
+import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261103a';
+import {PARTS,ENEMY_PRESETS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261103a';
 
 const ICONS={weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
 const DESCRIPTIONS={weapon:'地面に置いて、ふれると拾える銃。持ちもの・銃づくりで用意した銃をえらぼう。',ramp:'低いほうから歩くと、そのまま登れるスロープ。回して好きな向きにつなげよう。',wall:'家を囲う壁。向きを変えてつなげよう。',floor:'家の床と天井に使える板。壁の内側にぴったり合うよ。',roof:'壁の上にのせる三角屋根。向きを変えて家を仕上げよう。',
@@ -63,13 +65,14 @@ export function createWorkshop(api){
       field(el,'体力',o.hp,1,20,1,n=>o.hp=Math.round(n));
       const movement=document.createElement('section');movement.className='enemy-settings-group';movement.setAttribute('aria-label','動きかた');const movementTitle=document.createElement('h3');setReadingText(movementTitle,'動きかた');movement.append(movementTitle);el.append(movement);
       if(o.program.length&&o.moveRange?.space==='world'&&!inGridRange(o.moveRange,{x:0,z:0},o)){const note=document.createElement('p');note.className='recipe-hint';setReadingText(note,'この敵は移動できるマスの外にいます。青いマスの中に置こう。');movement.append(note);}
-      const preset=Object.keys(ENEMY_PRESETS).find(k=>JSON.stringify(ENEMY_PRESETS[k].program)===JSON.stringify(o.program))||'custom';
+      const syncBehavior=renderBehaviorExamples(movement,o,{save,rebuild,inspect});
+      const preset=basicEnemyBehavior(o);
       selectField(movement,'行動タイプ',[...Object.entries(ENEMY_PRESETS).map(([k,v])=>[k,v.name]),['custom','自分で工夫した動き']],preset,k=>{if(k!=='custom'){o.program=structuredClone(ENEMY_PRESETS[k].program);if(k==='search'){o.chaseMode='inside';const defaults=defaultEnemyRanges(o);o.moveRange??=defaults.moveRange;o.searchRange??=defaults.searchRange;}}inspect();});
-      if(o.program.length)field(movement,'動きの速さ',o.program[0].speed,.5,8,.5,n=>{o.program.forEach(b=>b.speed=n);});
+      if(o.program.length)field(movement,'動きの速さ',o.program[0].speed,.5,8,.5,n=>{o.program.forEach(b=>b.speed=n);syncBehavior();});
       const rangeApi={getProject,lookFromAbove:api.lookFromAbove,save,rebuild:api.refreshRange||rebuild,getRangeView:api.getRangeView,showRange:key=>{api.showRange?.(key);for(const button of el.querySelectorAll('.enemy-range-choice'))button.setAttribute('aria-pressed',String(button.dataset.range===key));}};
       if(o.program.some(b=>['chase','search'].includes(b.action))){
         selectField(movement,'追いかけ方',Object.entries(CHASE_MODES),o.chaseMode||'always',v=>{o.chaseMode=v;inspect();});
-        const hint=document.createElement('p');hint.className='component-description';setReadingText(hint,((o.chaseMode||'always')==='always'?'はじめからプレイヤーを追いかけるよ。':o.chaseMode==='remember'?'探す → 見つける → ずっと追いかける。':'探すはんいから出ると追うのをやめるよ。')+'追いかけるときも「動けるマス」の外には出ないよ。');movement.append(hint);
+        const hint=document.createElement('p');hint.className='component-description';setReadingText(hint,enemyBehaviorFlow(o)+' 動けるマスの外には出ないよ。');movement.append(hint);
       }
       const rangeStack=document.createElement('div');rangeStack.className='enemy-range-stack';movement.append(rangeStack);for(const key of ['moveRange','searchRange'])renderEnemyRange(rangeStack,o,rangeApi,key);
       const combat=document.createElement('section');combat.className='enemy-settings-group';combat.setAttribute('aria-label','攻撃');const combatTitle=document.createElement('h3');setReadingText(combatTitle,'攻撃');combat.append(combatTitle);el.append(combat);

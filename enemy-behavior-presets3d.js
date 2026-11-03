@@ -1,0 +1,27 @@
+import {defaultEnemyRanges} from './enemy-range3d.js?v=20261103a';
+// Examples combine existing actions, pursuit rules and speed. No runtime preset IDs are saved.
+export const ENEMY_BEHAVIOR_EXAMPLES={
+ still:{name:'その場で待つ',icon:'●',program:[],flow:'置いた場所で待つ。自分からは動かないよ。'},
+ patrol:{name:'左右を行ったり来たり',icon:'↔',program:[{action:'patrol',speed:2}],flow:'右へ歩く → 折り返す → 左へ歩く。プレイヤーは追いかけないよ。'},
+ slowPatrol:{name:'のんびり左右に歩く',icon:'🐢',program:[{action:'patrol',speed:1}],flow:'左右の移動を、ゆっくりにした見本だよ。'},
+ chaseAlways:{name:'はじめから追いかける',icon:'👣',program:[{action:'chase',speed:2}],chaseMode:'always',flow:'はじめから追いかける。探すマスに入らなくても追うよ。'},
+ chaseInside:{name:'近づいた間だけ追いかける',icon:'◎',program:[{action:'chase',speed:2}],chaseMode:'inside',flow:'待つ → 探すマスで見つける → 追う。はんいを出ると止まるよ。'},
+ chaseRemember:{name:'見つけたら追い続ける',icon:'！',program:[{action:'chase',speed:2}],chaseMode:'remember',flow:'待つ → 見つける → 追い続ける。探すマスを出ても追うよ。'},
+ searchInside:{name:'歩いて探し、探し直す',icon:'🔎',program:[{action:'search',speed:2}],chaseMode:'inside',flow:'歩き回る → 見つける → 追う。探すマスを出ると、また歩いて探すよ。'},
+ searchRemember:{name:'歩いて探し、追い続ける',icon:'🔍',program:[{action:'search',speed:2}],chaseMode:'remember',flow:'歩き回る → 見つける → その後は追い続けるよ。'},
+ fastChase:{name:'すばやく追いかける',icon:'⚡',program:[{action:'chase',speed:4}],chaseMode:'inside',flow:'探すマスに入ったら、速く追いかける。はんいを出ると止まるよ。'}
+};
+export function basicEnemyBehavior(o){if(!o.program.length)return 'still';return o.program.length===1&&['chase','patrol','search'].includes(o.program[0].action)?o.program[0].action:'custom';}
+export function enemyBehaviorExampleKey(o){return Object.keys(ENEMY_BEHAVIOR_EXAMPLES).find(key=>{const example=ENEMY_BEHAVIOR_EXAMPLES[key];return o.program.length===example.program.length&&o.program.every((block,i)=>block.action===example.program[i].action&&block.speed===example.program[i].speed)&&(example.chaseMode===undefined||(o.chaseMode||'always')===example.chaseMode);})||'custom';}
+export function applyEnemyBehaviorExample(o,key){
+ const example=ENEMY_BEHAVIOR_EXAMPLES[key];if(!Object.hasOwn(ENEMY_BEHAVIOR_EXAMPLES,key))return false;
+ o.program=structuredClone(example.program);if(example.chaseMode!==undefined)o.chaseMode=example.chaseMode;
+ if(o.program.length){const defaults=defaultEnemyRanges(o);o.moveRange??=defaults.moveRange;if(example.chaseMode!==undefined)o.searchRange??=defaults.searchRange;}
+ return true;
+}
+export function enemyBehaviorFlow(o){
+ const action=basicEnemyBehavior(o),mode=o.chaseMode||'always';if(action==='still')return ENEMY_BEHAVIOR_EXAMPLES.still.flow;if(action==='patrol')return ENEMY_BEHAVIOR_EXAMPLES.patrol.flow;
+ if(action==='chase')return ENEMY_BEHAVIOR_EXAMPLES[{always:'chaseAlways',inside:'chaseInside',remember:'chaseRemember'}[mode]||'chaseAlways'].flow;
+ if(action==='search')return ENEMY_BEHAVIOR_EXAMPLES[{always:'chaseAlways',inside:'searchInside',remember:'searchRemember'}[mode]||'searchInside'].flow;
+ return '動きを組み合わせた設定だよ。「さらに工夫する」で、動きのブロックを確認しよう。';
+}
