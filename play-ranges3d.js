@@ -1,8 +1,8 @@
-import {createPatrolOverlay} from './patrol-ui3d.js?v=20261104b';
-import {usesPatrolRoute} from './patrol-route3d.js?v=20261104b';
+import {createPatrolOverlay} from './patrol-ui3d.js?v=20261104c';
+import {usesPatrolRoute,usesWaypoints,activeRoute} from './patrol-route3d.js?v=20261104c';
 import * as T from './vendor/three.module.min.js';
-import {rangeWorldCells,MOVE_MAX_CELLS} from './enemy-range3d.js?v=20261104b';
-import {setReadingText} from './readings3d.js?v=20261104b';
+import {rangeWorldCells,MOVE_MAX_CELLS} from './enemy-range3d.js?v=20261104c';
+import {setReadingText} from './readings3d.js?v=20261104c';
 export function playRangeCells(enemy,key){
  if(!enemy||enemy.hp<=0||enemy.hidden||!enemy[key])return [];
  return rangeWorldCells(enemy[key],key==='moveRange'?(enemy.origin||enemy):enemy).slice(0,MOVE_MAX_CELLS);
@@ -17,9 +17,9 @@ export function createPlayRanges(scene){
  function update(game,playing,time){
   panel.hidden=!playing;if(!playing){patrol.show(null);meshes.forEach(m=>m.visible=false);return;}
   if(last&&time-last<50)return;last=time;
-  const enemy=game.objects.find(o=>o.id===target),missing=[];patrol.show(enemy&&!enemy.hidden&&enemy.hp>0&&checks[0].checked&&usesPatrolRoute(enemy)?enemy.patrolRoute:null,enemy?.y||0);
+  const enemy=game.objects.find(o=>o.id===target),missing=[];patrol.show(enemy&&!enemy.hidden&&enemy.hp>0&&checks[0].checked&&(usesPatrolRoute(enemy)||usesWaypoints(enemy))?activeRoute(enemy):null,enemy?.y||0,usesWaypoints(enemy||{})&&(enemy?.routeEnd||'loop')==='loop');
   for(const [i,[key,,size]]of specs.entries()){
-   const mesh=meshes[i],enabled=checks[i].checked&&!(key==='moveRange'&&enemy&&usesPatrolRoute(enemy)&&(enemy.routine?.notice==='none'||!enemy.routine)),cells=enabled?playRangeCells(enemy,key):[];mesh.visible=cells.length>0;mesh.count=cells.length;
+   const mesh=meshes[i],enabled=checks[i].checked&&!(key==='moveRange'&&enemy&&(usesPatrolRoute(enemy)||usesWaypoints(enemy))&&(enemy.routine?.notice==='none'||!enemy.routine)),cells=enabled?playRangeCells(enemy,key):[];mesh.visible=cells.length>0;mesh.count=cells.length;
    if(enabled&&enemy&&!enemy[key])missing.push(['動ける','気づく','攻撃する'][i]);
    const half=game.worldSize/2;
    cells.forEach(([x,z],n)=>{const left=Math.max(-half,x*4-size/2),right=Math.min(half,x*4+size/2),front=Math.max(-half,z*4-size/2),back=Math.min(half,z*4+size/2);matrix.makeScale(Math.max(0,right-left)/size,1,Math.max(0,back-front)/size).setPosition((left+right)/2,(enemy.y||0)+.04+i*.012,(front+back)/2);mesh.setMatrixAt(n,matrix);});if(cells.length)mesh.instanceMatrix.needsUpdate=true;

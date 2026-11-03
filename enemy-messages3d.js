@@ -1,9 +1,9 @@
 import * as T from './vendor/three.module.min.js';
-import {detectsPlayer} from './enemy-ai3d.js?v=20261104b';
+import {detectsPlayer} from './enemy-ai3d.js?v=20261104c';
 export function enemyMessageState(enemy,player){
  const observes=enemy.routine?enemy.routine.notice==='near':enemy.program.some(b=>['search','chase'].includes(b.action))&&(enemy.chaseMode||'always')!=='always';
  const action=enemy.program.length?(enemy.debugAction||'wait'):'wait';
- return {action,text:{wait:'まっている',patrol:'いったりきたりしている',roam:'あるきまわっている',chase:'おいかけている',return:'もどっている'}[action]||'まっている',detected:observes?detectsPlayer(enemy,player):null};
+ return {action,text:{wait:'まっている',patrol:'いったりきたりしている',path:'じゅんろをあるいている',roam:'あるきまわっている',chase:'おいかけている',return:'もどっている'}[action]||'まっている',detected:observes?detectsPlayer(enemy,player):null};
 }
 export function createMessageTracker(){
  let id=null,detected=null,event='',until=0;

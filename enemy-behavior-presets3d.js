@@ -1,5 +1,5 @@
-import {defaultPatrolRoute} from './patrol-route3d.js?v=20261104b';
-import {defaultEnemyRanges} from './enemy-range3d.js?v=20261104b';
+import {defaultPatrolRoute} from './patrol-route3d.js?v=20261104c';
+import {defaultEnemyRanges} from './enemy-range3d.js?v=20261104c';
 // Examples combine existing actions, pursuit rules and speed. No runtime preset IDs are saved.
 export const ENEMY_BEHAVIOR_EXAMPLES={
  still:{name:'その場で待つ',icon:'●',program:[],flow:'置いた場所で待つ。自分からは動かないよ。'},
@@ -41,7 +41,7 @@ export function setEnemyRoutine(o,changes){
 }
 export function routineFlow(o){
  const r=enemyRoutine(o);if(!r)return enemyBehaviorFlow(o);
- const idle={wait:'その場で待つ',patrol:'行ったり来たり',roam:'歩き回る'}[r.idle];
+ const idle={wait:'その場で待つ',patrol:'行ったり来たり',path:'順路にそって歩く',roam:'歩き回る'}[r.idle];
  return (r.notice==='always'?'はじめから追いかける':idle+(r.notice==='near'?' → 気づくマスに入ったら追いかける → 見失ったら'+Object.fromEntries(lostChoiceLabels(r.idle,!!o.patrolRoute))[r.lost]:''))+(o.attackEnabled?'。攻撃するマスに入ったら撃つ。':'。攻撃しない。');
 }
 
@@ -51,12 +51,12 @@ export function enemyRoutineChoices(o){
  return {...r,idle:r.notice==='always'?'chase':r.idle};
 }
 export function setEnemyRoutineChoice(o,changes){
- const current=enemyRoutine(o);if(changes.idle==='patrol')o.patrolRoute??=defaultPatrolRoute(o);
+ const current=enemyRoutine(o);if(changes.idle==='patrol')o.patrolRoute??=defaultPatrolRoute(o);if(changes.idle==='path'){o.waypoints??=structuredClone(o.patrolRoute||defaultPatrolRoute(o));o.routeEnd??='loop';}
  if(changes.idle==='chase')setEnemyRoutine(o,{notice:'always'});
  else setEnemyRoutine(o,{...(changes.idle&&current?.notice==='always'?{notice:'none'}:{}),...changes});
 }
 export function lostChoiceLabels(idle,route=false){return [
- ['resume',idle==='wait'?'その場で止まる':idle==='patrol'?(route?'往復ルートにもどって続ける':'その場で、行ったり来たりを続ける'):'その場所から歩き回る'],
+ ['resume',idle==='path'?'順路にもどって続ける':idle==='wait'?'その場で止まる':idle==='patrol'?(route?'往復ルートにもどって続ける':'その場で、行ったり来たりを続ける'):'その場所から歩き回る'],
  ['continue','追い続ける'],
- ['return',idle==='wait'?'元の場所にもどって待つ':idle==='patrol'?(route?'ルートのはじめにもどって、行ったり来たり':'元の場所にもどって、行ったり来たり'):'元の場所にもどって歩き回る']
+ ['return',idle==='path'?'順路のはじめにもどって歩く':idle==='wait'?'元の場所にもどって待つ':idle==='patrol'?(route?'ルートのはじめにもどって、行ったり来たり':'元の場所にもどって、行ったり来たり'):'元の場所にもどって歩き回る']
 ];}

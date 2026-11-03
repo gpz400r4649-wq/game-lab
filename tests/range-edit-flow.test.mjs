@@ -108,9 +108,19 @@ test('気づく範囲の広さは２種類とステージ直接編集に絞る',
 
 import {openPatrolEditor} from '../patrol-ui3d.js';
 test('往復ルートは２か所選んでから保存し、途中で閉じても前のルートを保つ',async t=>{
- const {stageRangePointer:routePointer}=await import('../stage-range3d.js?v=20261104b');
+ const {stageRangePointer:routePointer}=await import('../stage-range3d.js?v=20261104c');
  const s=setup(t,'moveRange');s.o.patrolRoute=[{x:0,z:0},{x:4,z:0}];const before=structuredClone(s.o.patrolRoute),previews=[];
  const open=()=>openPatrolEditor(s.o,{getProject:()=>({worldSize:60}),save:()=>s.calls.save++,rebuild:()=>s.calls.rebuild++,preview:p=>previews.push(structuredClone(p)),onClose:()=>{}});
  open();routePointer('start',1,{x:8,z:0});routePointer('end',1,null);assert.deepEqual(s.o.patrolRoute,before);assert.equal(s.calls.save,0);closeLiveRangeEditor();assert.deepEqual(s.o.patrolRoute,before);
  open();routePointer('start',2,{x:8,z:0});routePointer('end',2,null);routePointer('start',3,{x:8,z:0});routePointer('end',3,null);assert.equal(s.calls.save,0);routePointer('start',4,{x:16,z:8});routePointer('end',4,null);assert.equal(s.calls.save,1);assert.deepEqual(s.o.patrolRoute,[{x:8,z:0},{x:16,z:8}]);assert.deepEqual(previews.at(-1),s.o.patrolRoute);closeLiveRangeEditor();assert.equal(routePointer('start',5,{x:0,z:0}),false);
+});
+
+
+import {openWaypointEditor} from '../waypoint-ui3d.js';
+test('順路のマーカーを追加・修正・取り消しでき、開くだけでは保存しない',async t=>{
+ const {stageRangePointer:routePointer}=await import('../stage-range3d.js?v=20261104c');const s=setup(t,'moveRange');s.o.waypoints=[{x:0,z:0},{x:4,z:0}];
+ openWaypointEditor(s.o,{getProject:()=>({worldSize:60}),save:()=>s.calls.save++,rebuild:()=>{},preview:()=>{},onClose:()=>{}});assert.equal(s.calls.save,0);
+ routePointer('start',1,{x:4,z:8});routePointer('end',1,null);assert.deepEqual(s.o.waypoints,[{x:0,z:0},{x:4,z:0},{x:4,z:8}]);
+ const panel=all(s.doc.body).find(n=>n.classList?.contains('range-live-panel'));all(panel).find(n=>n.tagName==='button'&&n.textContent.startsWith('2：')).onclick();routePointer('start',2,{x:8,z:0});routePointer('end',2,null);assert.deepEqual(s.o.waypoints[1],{x:8,z:0});
+ const undo=all(panel).find(n=>n.tagName==='button'&&n.textContent.endsWith('もどす'));assert.ok(undo);undo.onclick();assert.equal(s.o.waypoints.length,2);closeLiveRangeEditor();assert.equal(routePointer('start',3,{x:0,z:0}),false);
 });

@@ -6,7 +6,7 @@ export const coordinateLimit=world=>worldHalf(world)-2;
 export function resizeReason(project,size){
  if(!WORLD_SIZES.includes(size))return 'ひろさをえらぼう';
  const half=size/2,limit=half-2;
- if(project.objects.some(o=>o.patrolRoute?.some(p=>Math.abs(p.x)>limit||Math.abs(p.z)>limit)))return '外にはみ出す往復ルートがあります。先にルートを内側へ動かそう。';
+ if(project.objects.some(o=>[...(o.patrolRoute||[]),...(o.waypoints||[])].some(p=>Math.abs(p.x)>limit||Math.abs(p.z)>limit)))return '外にはみ出すルートがあります。先にルートを内側へ動かそう。';
  if(Math.abs(project.spawn.x)>limit||Math.abs(project.spawn.z)>limit||project.objects.some(o=>Math.abs(o.x)>limit||Math.abs(o.z)>limit||Math.abs(o.x)+o.w/2>half||Math.abs(o.z)+o.d/2>half))return '外にはみ出す部品やスタートがあります。先に内側へ動かそう。';
  return '';
 }
