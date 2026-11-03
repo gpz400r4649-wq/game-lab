@@ -11,3 +11,20 @@ test('待つ・巡回・歩き回るは追いかけない時にも独立して�
 for(const lost of ['resume','continue','return'])test('待つ→気づく→追う→見失う：'+lost,()=>{const {p,g}=setup({idle:'wait',notice:'near',lost});const e=g.objects[0];tick(g,p,20);assert.equal(e.x,0);g.player.x=4;tick(g,p,40);assert.ok(e.x>1);const before=e.x;g.player.x=20;tick(g,p,200);if(lost==='return')assert.ok(Math.hypot(e.x,e.z)<.1);if(lost==='resume')assert.equal(e.x,before);if(lost==='continue')assert.ok(e.x>before);});
 test('戻る途中でも再び気づいたら追いかける',()=>{const {p,g}=setup({idle:'wait',notice:'near',lost:'return'});g.player.x=4;tick(g,p,60);g.player.x=20;tick(g,p,10);const e=g.objects[0],before=e.x;g.player.x=4;tick(g,p,100);assert.ok(e.x>before);});
 test('見本を選び直すと新しい組み合わせからも正しく切り替わる',()=>{const {p}=setup({idle:'roam',notice:'near',lost:'return'}),e=p.objects[0];applyEnemyBehaviorExample(e,'still');assert.equal(e.routine,undefined);assert.deepEqual(e.program,[]);});
+
+import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from '../enemy-behavior-presets3d.js';
+test('旧設定のはじめから追うはふだんの動きとして表示し、表示だけでは変更しない',()=>{
+ for(const idle of ['wait','patrol','roam']){const {p}=setup({idle,notice:'always',lost:'return'}),e=p.objects[0],before=structuredClone(e);assert.equal(enemyRoutineChoices(e).idle,'chase');assert.deepEqual(e,before);}
+ const e=part('enemy');applyEnemyBehaviorExample(e,'chaseAlways');assert.equal(enemyRoutineChoices(e).idle,'chase');
+});
+test('はじめから追うから待つへ変えると追わなくなり、再度選べば追う',()=>{
+ const {p}=setup({idle:'wait',notice:'always',lost:'continue'}),e=p.objects[0];setEnemyRoutineChoice(e,{idle:'wait'});assert.equal(e.routine.notice,'none');let g=create3D(p);tick(g,p,40);assert.equal(g.objects[0].x,0);
+ setEnemyRoutineChoice(e,{idle:'chase'});g=create3D(p);tick(g,p,40);assert.ok(g.objects[0].x>0);assert.equal(enemyRoutineChoices(e).idle,'chase');
+});
+test('はじめから追うから巡回・歩き回るへの変更でも隠れた追跡を残さない',()=>{
+ for(const idle of ['patrol','roam']){const {p}=setup({idle:'wait',notice:'always',lost:'continue'}),e=p.objects[0];setEnemyRoutineChoice(e,{idle});assert.equal(e.routine.notice,'none');assert.equal(enemyRoutineChoices(e).idle,idle);const g=create3D(p);tick(g,p,40);assert.ok(Math.hypot(g.objects[0].x,g.objects[0].z)>.1);assert.equal(g.objects[0].wasChasing,undefined);}
+});
+test('見失った後の文言はその場と出発地点、戻った後の動きを区別する',()=>{
+ assert.equal(Object.fromEntries(lostChoiceLabels('wait')).resume,'その場で止まる');
+ for(const idle of ['wait','patrol','roam']){const {p}=setup({idle,notice:'near',lost:'return'});assert.ok(routineFlow(p.objects[0]).includes(Object.fromEntries(lostChoiceLabels(idle)).return));}
+});

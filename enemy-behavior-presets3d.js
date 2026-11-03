@@ -1,4 +1,4 @@
-import {defaultEnemyRanges} from './enemy-range3d.js?v=20261103c';
+import {defaultEnemyRanges} from './enemy-range3d.js?v=20261103d';
 // Examples combine existing actions, pursuit rules and speed. No runtime preset IDs are saved.
 export const ENEMY_BEHAVIOR_EXAMPLES={
  still:{name:'その場で待つ',icon:'●',program:[],flow:'置いた場所で待つ。自分からは動かないよ。'},
@@ -40,5 +40,21 @@ export function setEnemyRoutine(o,changes){
 export function routineFlow(o){
  const r=enemyRoutine(o);if(!r)return enemyBehaviorFlow(o);
  const idle={wait:'その場で待つ',patrol:'左右を行ったり来たり',roam:'歩き回る'}[r.idle];
- return (r.notice==='always'?'はじめから追いかける':idle+(r.notice==='near'?' → 気づくマスに入ったら追いかける → 見失ったら'+{resume:'ふだんの動きにもどる',continue:'追い続ける',return:'置いた場所にもどる'}[r.lost]:''))+(o.attackEnabled?'。攻撃するマスに入ったら撃つ。':'。攻撃しない。');
+ return (r.notice==='always'?'はじめから追いかける':idle+(r.notice==='near'?' → 気づくマスに入ったら追いかける → 見失ったら'+Object.fromEntries(lostChoiceLabels(r.idle))[r.lost]:''))+(o.attackEnabled?'。攻撃するマスに入ったら撃つ。':'。攻撃しない。');
 }
+
+// Display always-chasing as the normal action; keep saved runtime rules compatible.
+export function enemyRoutineChoices(o){
+ const r=enemyRoutine(o);if(!r)return null;
+ return {...r,idle:r.notice==='always'?'chase':r.idle};
+}
+export function setEnemyRoutineChoice(o,changes){
+ const current=enemyRoutine(o);
+ if(changes.idle==='chase')setEnemyRoutine(o,{notice:'always'});
+ else setEnemyRoutine(o,{...(changes.idle&&current?.notice==='always'?{notice:'none'}:{}),...changes});
+}
+export function lostChoiceLabels(idle){return [
+ ['resume',idle==='wait'?'その場で止まる':idle==='patrol'?'その場所で左右の移動にもどる':'その場所から歩き回る'],
+ ['continue','追い続ける'],
+ ['return',idle==='wait'?'置いた場所にもどって待つ':idle==='patrol'?'置いた場所にもどって左右に動く':'置いた場所にもどって歩き回る']
+];}
