@@ -1,9 +1,9 @@
-import {MAX_BUILD_Y} from './limits3d.js?v=20261104i';
-import {nearbyObjects} from './spatial3d.js?v=20261104i';
-import {worldHalf} from './world3d.js?v=20261104i';
-import {fireDestructionEvents} from './events3d.js?v=20261104i';
-import {topAt} from './building3d.js?v=20261104i';
-import {LIMITS,safeShot,DESTRUCTIBLE_TYPES,impactEffects} from './weapons3d.js?v=20261104i';
+import {MAX_BUILD_Y} from './limits3d.js?v=20261104j';
+import {nearbyObjects} from './spatial3d.js?v=20261104j';
+import {worldHalf} from './world3d.js?v=20261104j';
+import {fireDestructionEvents} from './events3d.js?v=20261104j';
+import {topAt} from './building3d.js?v=20261104j';
+import {LIMITS,safeShot,DESTRUCTIBLE_TYPES,impactEffects} from './weapons3d.js?v=20261104j';
 const solidType=o=>DESTRUCTIBLE_TYPES.has(o.type)||o.type==='door';
 const alive=o=>(o.type!=='enemy'&&!DESTRUCTIBLE_TYPES.has(o.type))||o.hp>0||(DESTRUCTIBLE_TYPES.has(o.type)&&o.destructible===false);
 function axes(f){const length=Math.hypot(f.x,f.z),right=length>.00001?{x:-f.z/length,y:0,z:f.x/length}:{x:1,y:0,z:0};return {right,up:{x:right.y*f.z-right.z*f.y,y:right.z*f.x-right.x*f.z,z:right.x*f.y-right.y*f.x}};}

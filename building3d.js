@@ -1,7 +1,7 @@
-import {validAppearance} from './appearance3d.js?v=20261104i';
-import {MAX_PARTS,MAX_BUILD_Y,MAX_BUILD_LEVEL} from './limits3d.js?v=20261104i';
-import {worldHalf,coordinateLimit} from './world3d.js?v=20261104i';
-import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261104i';
+import {validAppearance} from './appearance3d.js?v=20261104j';
+import {MAX_PARTS,MAX_BUILD_Y,MAX_BUILD_LEVEL} from './limits3d.js?v=20261104j';
+import {worldHalf,coordinateLimit} from './world3d.js?v=20261104j';
+import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261104j';
 // Shared by editor, gameplay and placement preview. No browser dependency.
 export const BUILD_TYPES={wall:'壁',floor:'床',roof:'屋根',ramp:'スロープ'};
 export const GRID={cell:4,layer:3,size:60};
@@ -17,6 +17,13 @@ function rampFloorAnchor(ramp,normal,floor){
 }
 export function snapEditorPiece(o,point,target=null,normal=null,world=60){
   o.x=point.x;o.z=point.z;
+  // A floor's broad top edge is easier to aim at than its 25 cm side.
+  if(o.type==='floor'&&target?.type==='floor'&&normal?.y>.5){
+    const dx=point.x-target.x,dz=point.z-target.z,edgeX=Math.abs(dx)/ (target.w/2),edgeZ=Math.abs(dz)/(target.d/2);
+    if(Math.max(edgeX,edgeZ)>=.5){o.x=target.x;o.z=target.z;o.y=target.y;if(edgeX>edgeZ)o.x+=Math.sign(dx)*(target.w+o.w)/2;else o.z+=Math.sign(dz)*(target.d+o.d)/2;return alignPiece(o,world);}
+  }
+  // Stacked walls inherit the wall below, including when its thin top is tapped near an end.
+  if(o.type==='wall'&&target?.type==='wall'&&normal?.y>.5){o.x=target.x;o.z=target.z;o.y=Math.min(MAX_BUILD_Y,target.y+target.h);o.rotation=target.rotation||0;o.w=o.rotation===90?.25:4;o.d=o.rotation===90?4:.25;return alignPiece(o,world);}
   if(o.type==='floor'&&target?.type==='ramp'){Object.assign(o,rampFloorAnchor(target,normal,o));return alignPiece(o,world);}
   if(!GRID_PARTS.has(o.type)){o.x=Math.max(-coordinateLimit(world),Math.min(coordinateLimit(world),Math.round(o.x)));o.z=Math.max(-coordinateLimit(world),Math.min(coordinateLimit(world),Math.round(o.z)));if(target&&normal?.y>.5)o.y=Math.max(0,Math.min(MAX_BUILD_Y,topAt(target,point.x,point.z)));return o;}
   const side=target&&normal&&Math.abs(normal.y)<.5;
