@@ -1,7 +1,7 @@
-import {mountLiveRangeEditor} from './range-panel3d.js?v=20261104g';
-import {worldMoveRange,rangeCell,MOVE_MAX_CELLS,convertRangeSpace,fitRoamingEnemy} from './enemy-range3d.js?v=20261104g';
-import {worldSize} from './world3d.js?v=20261104g';
-import {setReadingText} from './readings3d.js?v=20261104g';
+import {mountLiveRangeEditor} from './range-panel3d.js?v=20261104h';
+import {worldMoveRange,rangeCell,MOVE_MAX_CELLS,convertRangeSpace,fitRoamingEnemy} from './enemy-range3d.js?v=20261104h';
+import {worldSize} from './world3d.js?v=20261104h';
+import {setReadingText} from './readings3d.js?v=20261104h';
 let painter=null;
 export function setStageRangePainter(next){painter=next;}
 export function stageRangePointer(kind,id,point){return painter?.(kind,id,point)||false;}
@@ -18,7 +18,7 @@ export function openStageMoveRange(o,{getProject,save,rebuild,lookFromAbove,onCl
  const source=o[key]||{shape:'custom',cross:2,circle:2,cells:[],space:movement?'world':'facing'},space=source.space||'legacy';
  const panel=document.createElement('section');panel.className='range-live-panel';panel.setAttribute('role','region');panel.setAttribute('aria-label',`ステージで${name}マスをぬる`);
  const heading=document.createElement('div'),title=document.createElement('h2'),close=document.createElement('button'),note=document.createElement('p'),toolbar=document.createElement('div'),count=document.createElement('p');heading.className='range-live-heading';title.tabIndex=-1;setReadingText(title,`${name}マスをぬる`);setReadingText(close,'できた・とじる');close.className='primary';heading.append(title,close);
- setReadingText(note,`左のステージをなぞって、${color}のマスをぬろう。カメラは左下のスティックで動かせるよ。`+(space!=='world'?'敵からたて・よこ８マスまで。':''));toolbar.className='stage-range-tools';
+ setReadingText(note,`高さ${o.y||0}mのマスを編集しているよ。上の階は編集中だけ隠すよ。左のステージをなぞって、${color}のマスをぬろう。カメラは左下のスティックで動かせるよ。`+(space!=='world'?'敵からたて・よこ８マスまで。':''));toolbar.className='stage-range-tools';
  let mode='paint',pointer=null,previous=null,dirty=false;const buttons=[];
  const current=movement?worldMoveRange(source,o):convertRangeSpace(source,'world',o);
  const store=()=>{o[key]=movement||space==='world'?structuredClone(current):convertRangeSpace(current,space,o);};
