@@ -1,0 +1,6 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {createEditHistory} from '../history3d.js';
+test('削除した部品と設定を戻し、再度削除状態へ進める',()=>{const p={objects:[{id:'a',hp:20,events:[{target:'b'}]}]},h=createEditHistory(p);p.objects=[];h.record(p);assert.equal(h.canUndo,true);const restored=h.undo();assert.equal(restored.objects[0].hp,20);assert.equal(restored.objects[0].events[0].target,'b');h.record(restored);assert.deepEqual(h.redo(),p);});
+test('戻した後に別の編集をすると古い進む履歴を消す',()=>{const h=createEditHistory({n:0});h.record({n:1});h.record({n:2});h.undo();h.record({n:3});assert.equal(h.canRedo,false);assert.deepEqual(h.undo(),{n:1});});
+test('同じ保存は履歴を増やさず、返したオブジェクトは独立する',()=>{const h=createEditHistory({n:0});h.record({n:1});assert.equal(h.record({n:1}),false);const p=h.undo();p.n=99;assert.equal(h.canUndo,false);assert.deepEqual(h.redo(),{n:1});assert.deepEqual(h.undo(),{n:0});});
+test('操作数とメモリ量の上限を守る',()=>{const h=createEditHistory({n:0},{limit:2});for(let n=1;n<=5;n++)h.record({n});assert.deepEqual(h.undo(),{n:4});assert.deepEqual(h.undo(),{n:3});assert.equal(h.undo(),null);const small=createEditHistory({s:'a'},{maxBytes:60});small.record({s:'b'.repeat(100)});assert.equal(small.canUndo,false);small.record({s:'c'});assert.deepEqual(small.undo(),null);});
