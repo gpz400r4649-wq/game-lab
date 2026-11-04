@@ -1,20 +1,21 @@
-import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261105b';
-import {openWaypointEditor} from './waypoint-ui3d.js?v=20261105b';
-import {openPatrolEditor} from './patrol-ui3d.js?v=20261105b';
-import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261105b';
-import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261105b';
-import {inGridRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261105b';
-import {renderEnemyRange} from './enemy-range-ui3d.js?v=20261105b';
-import {gunPreviewSVG} from './appearance3d.js?v=20261105b';
-import {DOOR_PRESETS} from './doors3d.js?v=20261105b';
-import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261105b';
-import {coordinateLimit} from './world3d.js?v=20261105b';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261105b';
-import {actionsFor} from './events3d.js?v=20261105b';
-import {renderEventEditor} from './event-editor3d.js?v=20261105b';
-import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261105b';
-import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261105b';
-import {PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261105b';
+import {makeTool} from './building3d.js?v=20261105c';
+import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261105c';
+import {openWaypointEditor} from './waypoint-ui3d.js?v=20261105c';
+import {openPatrolEditor} from './patrol-ui3d.js?v=20261105c';
+import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261105c';
+import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261105c';
+import {inGridRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261105c';
+import {renderEnemyRange} from './enemy-range-ui3d.js?v=20261105c';
+import {gunPreviewSVG} from './appearance3d.js?v=20261105c';
+import {DOOR_PRESETS} from './doors3d.js?v=20261105c';
+import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261105c';
+import {coordinateLimit} from './world3d.js?v=20261105c';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261105c';
+import {actionsFor} from './events3d.js?v=20261105c';
+import {renderEventEditor} from './event-editor3d.js?v=20261105c';
+import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261105c';
+import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261105c';
+import {PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261105c';
 
 const ICONS={weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
 const DESCRIPTIONS={weapon:'地面に置いて、ふれると拾える銃。持ちもの・銃づくりで用意した銃をえらぼう。',ramp:'低いほうから歩くと、そのまま登れるスロープ。回して好きな向きにつなげよう。',wall:'家を囲う壁。向きを変えてつなげよう。',floor:'家の床と天井に使える板。壁の内側にぴったり合うよ。',roof:'壁の上にのせる三角屋根。向きを変えて家を仕上げよう。',
@@ -119,6 +120,12 @@ export function createWorkshop(api){
       }
       if(!o.attackEnabled){const note=document.createElement('p');note.className='component-description';setReadingText(note,'チェックがオフのあいだは、はんいに入っても攻撃しないよ。設定したはんいは残るよ。');combat.append(note);}
       const directionView=document.createElement('button');setReadingText(directionView,'↑ 上から向きを見る');directionView.onclick=()=>api.lookFromAbove?.();el.append(directionView);
+      const loot=document.createElement('section');loot.className='enemy-settings-group';const lootTitle=document.createElement('h3');setReadingText(lootTitle,'たおされたら何を落とす？');loot.append(lootTitle);el.append(loot);
+      const heldLabel=document.createElement('label'),held=document.createElement('input'),heldText=document.createElement('span');heldLabel.className='enemy-attack-toggle';held.type='checkbox';held.checked=!!o.dropHeldWeapon;setReadingText(heldText,'持っている銃を落とす');heldLabel.append(held,heldText);loot.append(heldLabel);
+      held.onchange=()=>{if(held.checked&&!p.loadout.some(t=>t.id===o.enemyWeaponId&&t.effect==='shoot')){if(p.loadout.length>=8){held.checked=false;api.toast('先に「敵に持たせる銃」をえらぼう。銃は８種類までです');return;}const gun=makeTool('shoot','ロボットブラスター');Object.assign(gun,{pickupOnly:true,speed:o.attackSpeed+5,interval:1.4,appearance:{shape:'robot',color:'#7d62dd',accent:'#ee91a5',barrel:1}});p.loadout.push(gun);o.enemyWeaponId=gun.id;}o.dropHeldWeapon=held.checked;save();rebuild();inspect();};
+      const lootNote=document.createElement('p');lootNote.className='component-description';setReadingText(lootNote,'それとは別に落とすものを追加できるよ。けいけんちは拾うと１ふえるよ。');loot.append(lootNote);
+      for(const [i,drop]of (o.enemyDrops||[]).entries()){const row=document.createElement('div');selectField(row,'落とすもの '+(i+1),[['experience','けいけんち'],['key','カギ'],['star','星'],['heal','回復'],['weapon','銃']],drop.type,v=>{drop.type=v;if(v==='weapon')drop.weaponId='';else delete drop.weaponId;inspect();});if(drop.type==='weapon')selectField(row,'落とす銃 '+(i+1),[['','銃をえらぼう'],...p.loadout.map(t=>[t.id,t.name])],drop.weaponId||'',v=>drop.weaponId=v);const remove=document.createElement('button');setReadingText(remove,'この落とすものを外す');remove.onclick=()=>{o.enemyDrops.splice(i,1);save();inspect();};row.append(remove);loot.append(row);}
+      const addDrop=document.createElement('button');setReadingText(addDrop,'＋ 落とすものを追加');addDrop.disabled=(o.enemyDrops?.length||0)>=6;addDrop.onclick=()=>{o.enemyDrops??=[];o.enemyDrops.push({type:'experience'});save();inspect();};loot.append(addDrop);
       if(loop&&!o.routine){const d=details('さらに工夫する：うごきを組む',[loop],wasOpen);d.className='advanced-program';el.append(d);}
     }
     if(o.type==='moving'){
