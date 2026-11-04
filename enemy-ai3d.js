@@ -1,8 +1,9 @@
-import {walkPatrol,walkWaypoints,activeRoute} from './patrol-route3d.js?v=20261104h';
-import {rangeCell,inGridRange,inEnemyRange,movementCenter} from './enemy-range3d.js?v=20261104h';
+import {walkPatrol,walkWaypoints,activeRoute} from './patrol-route3d.js?v=20261104i';
+import {rangeCell,inGridRange,inEnemyRange,movementCenter} from './enemy-range3d.js?v=20261104i';
 const CELL=4,neighbors=[[0,-1],[1,0],[0,1],[-1,0]];
 export const CHASE_MODES={always:'はじめから、ずっと追いかける',inside:'探すはんいにいる間だけ追いかける',remember:'見つけたら、ずっと追いかける'};
-export function validEnemyMovement(o){return (o.chaseMode===undefined||Object.hasOwn(CHASE_MODES,o.chaseMode))&&(o.routine===undefined||(o.routine&&['wait','patrol','roam','path'].includes(o.routine.idle)&&['none','near','always'].includes(o.routine.notice)&&['resume','continue','return'].includes(o.routine.lost)));}
+export function chaseGraceSeconds(o){return o.chaseGraceSeconds??3;}
+export function validEnemyMovement(o){return (o.chaseGraceSeconds===undefined||(Number.isFinite(o.chaseGraceSeconds)&&o.chaseGraceSeconds>=0&&o.chaseGraceSeconds<=30))&&(o.chaseMode===undefined||Object.hasOwn(CHASE_MODES,o.chaseMode))&&(o.routine===undefined||(o.routine&&['wait','patrol','roam','path'].includes(o.routine.idle)&&['none','near','always'].includes(o.routine.notice)&&['resume','continue','return'].includes(o.routine.lost)));}
 export function canEnemyEnter(o,point){return o.routeTravel===true||!o.moveRange||inGridRange(o.moveRange,movementCenter(o),point);}
 export function detectsPlayer(o,player){return o.searchRange?inEnemyRange(o.searchRange,o,player):Math.hypot(player.x-o.x,player.z-o.z)<18;}
 function route(o,target,r){
@@ -18,11 +19,12 @@ function route(o,target,r){
 }
 export function moveEnemy(o,b,player,dt,time,tryMove){
  o.routeTravel=false;o.debugBlocked='';
- const detected=detectsPlayer(o,player);if(detected)o.foundPlayer=true;
- const mode=o.chaseMode||'always';let chase=mode==='always'||(mode==='inside'?detected:!!o.foundPlayer);
+ const detected=detectsPlayer(o,player);if(detected){o.foundPlayer=true;o.chaseGraceRemaining=chaseGraceSeconds(o);}else{o.chaseGraceRemaining=Math.max(0,(o.chaseGraceRemaining||0)-dt);}
+ const remembered=detected||o.chaseGraceRemaining>1e-8;
+ const mode=o.chaseMode||'always';let chase=mode==='always'||(mode==='inside'?remembered:!!o.foundPlayer);
  let returning=false;const routePoints=['patrol','path'].includes(o.routine?.idle)?activeRoute(o):null,returnPoint=routePoints?routePoints[0]:o.origin;
  if(o.routine){
-  const r=o.routine;chase=r.notice==='always'||(r.notice==='near'&&(detected||(r.lost==='continue'&&o.foundPlayer)));
+  const r=o.routine;chase=r.notice==='always'||(r.notice==='near'&&(remembered||(r.lost==='continue'&&o.foundPlayer)));
   if(chase)o.wasChasing=true;
   returning=!chase&&r.lost==='return'&&o.wasChasing;
   if(returning&&Math.hypot(o.x-returnPoint.x,o.z-returnPoint.z)<.08){o.wasChasing=false;returning=false;o.navigation=null;if(o.routine?.idle==='path'){o.waypointIndex=0;o.waypointFrom=0;o.waypointFinished=false;o.waypointDirection=1;}}

@@ -3,7 +3,7 @@ import {part,fresh3D,create3D,step3D,validate3D} from '../engine3d.js';
 import {setEnemyRoutineChoice} from '../enemy-behavior-presets3d.js';
 import {makeAttackRange,worldMoveRange} from '../enemy-range3d.js';
 import {resizeReason} from '../world3d.js';
-function setup(end='loop'){const p=fresh3D(),e=part('enemy',0,0);e.attackEnabled=false;setEnemyRoutineChoice(e,{idle:'path'});e.waypoints=[{x:0,z:0},{x:4,z:0},{x:4,z:4}];e.routeEnd=end;p.objects=[e];p.spawn={x:20,y:0,z:20};return {p,g:create3D(p)};}
+function setup(end='loop'){const p=fresh3D(),e=part('enemy',0,0);e.chaseGraceSeconds=0;e.attackEnabled=false;setEnemyRoutineChoice(e,{idle:'path'});e.waypoints=[{x:0,z:0},{x:4,z:0},{x:4,z:4}];e.routeEnd=end;p.objects=[e];p.spawn={x:20,y:0,z:20};return {p,g:create3D(p)};}
 const tick=(g,p,n)=>{for(let i=0;i<n;i++)step3D(g,p,{},.02);};
 for(const [end,expected]of [['loop',[0,1,2,0,1]],['reverse',[0,1,2,1,0]],['stop',[0,1,2]]])test('番号順に歩いて最後の動きに従う：'+end,()=>{const {p,g}=setup(end),e=g.objects[0],visited=[0];for(let i=0;i<1000;i++){const before={x:e.x,z:e.z};tick(g,p,1);assert.ok(Math.hypot(e.x-before.x,e.z-before.z)<=.041);const at=e.waypoints.findIndex(q=>Math.hypot(q.x-e.x,q.z-e.z)<.08);if(at>=0&&at!==visited.at(-1))visited.push(at);}assert.deepEqual(visited.slice(0,expected.length),expected);if(end==='stop'){assert.deepEqual(visited,expected);assert.equal(e.debugAction,'wait');}});
 test('順路が曲がる場所を斜めに飛ばさず、壁もすり抜けない',()=>{const {p}=setup('stop');p.objects.push(part('box',4,4));const g=create3D(p),e=g.objects[0];for(let i=0;i<400;i++){tick(g,p,1);assert.ok(Math.abs(e.z)<.08||Math.abs(e.x-4)<.08);}assert.ok(e.z<2);});

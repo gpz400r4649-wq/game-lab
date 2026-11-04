@@ -2,7 +2,7 @@ import test from 'node:test';import assert from 'node:assert/strict';
 import {ENEMY_BEHAVIOR_EXAMPLES,applyEnemyBehaviorExample,enemyBehaviorExampleKey,basicEnemyBehavior,enemyBehaviorFlow} from '../enemy-behavior-presets3d.js';
 import {fresh3D,part,create3D,step3D,validate3D} from '../engine3d.js';
 import {makeAttackRange} from '../enemy-range3d.js';
-function setup(key){const p=fresh3D(),enemy=part('enemy',0,0);enemy.facing=270;enemy.attackEnabled=false;applyEnemyBehaviorExample(enemy,key);p.objects=[enemy];p.spawn={x:20,y:0,z:0};return {p,g:create3D(p)};}
+function setup(key){const p=fresh3D(),enemy=part('enemy',0,0);enemy.chaseGraceSeconds=0;enemy.facing=270;enemy.attackEnabled=false;applyEnemyBehaviorExample(enemy,key);p.objects=[enemy];p.spawn={x:20,y:0,z:0};return {p,g:create3D(p)};}
 function tick(g,p,n=1){for(let i=0;i<n;i++)step3D(g,p,{},.02);}
 test('９種類は重複しない動きの組み合わせで、すべて保存・読み込みできる',()=>{
  assert.equal(Object.keys(ENEMY_BEHAVIOR_EXAMPLES).length,9);const combinations=new Set();for(const [key,example]of Object.entries(ENEMY_BEHAVIOR_EXAMPLES)){const p=fresh3D(),enemy=part('enemy');assert.ok(example.name);assert.ok(example.flow);assert.ok(applyEnemyBehaviorExample(enemy,key));assert.equal(enemyBehaviorExampleKey(enemy),key);p.objects=[enemy];assert.deepEqual(validate3D(p),p);combinations.add(JSON.stringify([enemy.program,example.chaseMode]));}assert.equal(combinations.size,9);

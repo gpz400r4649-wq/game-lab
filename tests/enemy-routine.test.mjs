@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {part,fresh3D,create3D,step3D,validate3D} from '../engine3d.js';
 import {enemyRoutine,setEnemyRoutine,applyEnemyBehaviorExample} from '../enemy-behavior-presets3d.js';
 const tick=(g,p,n)=>{for(let i=0;i<n;i++)step3D(g,p,{},.02);};
-function setup(r){const p=fresh3D(),e=part('enemy',0,0);e.attackEnabled=false;setEnemyRoutine(e,r);e.searchRange={space:'world',cells:[[1,0],[0,0]]};p.objects=[e];p.spawn={x:20,y:0,z:0};return {p,g:create3D(p)};}
+function setup(r){const p=fresh3D(),e=part('enemy',0,0);e.chaseGraceSeconds=0;e.attackEnabled=false;setEnemyRoutine(e,r);e.searchRange={space:'world',cells:[[1,0],[0,0]]};p.objects=[e];p.spawn={x:20,y:0,z:0};return {p,g:create3D(p)};}
 test('旧作品を表示するだけではデータを変更しない',()=>{for(const key of ['still','patrol','chaseInside','searchRemember','chaseAlways']){const e=part('enemy');applyEnemyBehaviorExample(e,key);const before=structuredClone(e);assert.ok(enemyRoutine(e));assert.deepEqual(e,before);}});
 test('全27通りの動きの組み合わせが保存でき、範囲・銃を保つ',()=>{for(const idle of ['wait','patrol','roam'])for(const notice of ['none','near','always'])for(const lost of ['resume','continue','return']){const e=part('enemy');e.enemyWeaponId='abc';const before=structuredClone(e);setEnemyRoutine(e,{idle,notice,lost});const p=fresh3D();p.objects=[e];assert.deepEqual(validate3D(p).objects[0].routine,{idle,notice,lost});for(const key of ['moveRange','searchRange','attackRange','enemyWeaponId','hp'])assert.deepEqual(e[key],before[key]);}});
 test('不正な動きの選択は読み込まない',()=>{const {p}=setup({idle:'wait',notice:'near',lost:'return'});p.objects[0].routine.lost='invalid';assert.throws(()=>validate3D(p));});

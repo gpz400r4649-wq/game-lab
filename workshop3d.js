@@ -1,19 +1,20 @@
-import {openWaypointEditor} from './waypoint-ui3d.js?v=20261104h';
-import {openPatrolEditor} from './patrol-ui3d.js?v=20261104h';
-import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261104h';
-import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261104h';
-import {inGridRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261104h';
-import {renderEnemyRange} from './enemy-range-ui3d.js?v=20261104h';
-import {gunPreviewSVG} from './appearance3d.js?v=20261104h';
-import {DOOR_PRESETS} from './doors3d.js?v=20261104h';
-import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261104h';
-import {coordinateLimit} from './world3d.js?v=20261104h';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261104h';
-import {actionsFor} from './events3d.js?v=20261104h';
-import {renderEventEditor} from './event-editor3d.js?v=20261104h';
-import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261104h';
-import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261104h';
-import {PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261104h';
+import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261104i';
+import {openWaypointEditor} from './waypoint-ui3d.js?v=20261104i';
+import {openPatrolEditor} from './patrol-ui3d.js?v=20261104i';
+import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261104i';
+import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261104i';
+import {inGridRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261104i';
+import {renderEnemyRange} from './enemy-range-ui3d.js?v=20261104i';
+import {gunPreviewSVG} from './appearance3d.js?v=20261104i';
+import {DOOR_PRESETS} from './doors3d.js?v=20261104i';
+import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261104i';
+import {coordinateLimit} from './world3d.js?v=20261104i';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261104i';
+import {actionsFor} from './events3d.js?v=20261104i';
+import {renderEventEditor} from './event-editor3d.js?v=20261104i';
+import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261104i';
+import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261104i';
+import {PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261104i';
 
 const ICONS={weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
 const DESCRIPTIONS={weapon:'地面に置いて、ふれると拾える銃。持ちもの・銃づくりで用意した銃をえらぼう。',ramp:'低いほうから歩くと、そのまま登れるスロープ。回して好きな向きにつなげよう。',wall:'家を囲う壁。向きを変えてつなげよう。',floor:'家の床と天井に使える板。壁の内側にぴったり合うよ。',roof:'壁の上にのせる三角屋根。向きを変えて家を仕上げよう。',
@@ -93,6 +94,13 @@ export function createWorkshop(api){
           renderEnemyRange(notice,o,rangeApi,'searchRange');
           const noticeHint=document.createElement('p');noticeHint.className='component-description';setReadingText(noticeHint,'気づくマスに入ると見つけ、外に出ると見失うよ。壁にかくれても、マスの中なら気づくよ。');notice.append(noticeHint);
           const lost=stage('③ 見失ったらどうする？');
+          if(routine.lost!=='continue'){
+            const quick=document.createElement('div');quick.className='stage-range-tools';const buttons=[];
+            const sync=()=>{for(const [button,n]of buttons)button.setAttribute('aria-pressed',String(chaseGraceSeconds(o)===n));setReadingText(flow,routineFlow(o));};
+            field(lost,'見失っても追いかける時間（秒）',chaseGraceSeconds(o),0,30,.5,n=>{o.chaseGraceSeconds=n;sync();});
+            for(const [n,label]of [[0,'すぐやめる：0秒'],[3,'すこしねばる：3秒'],[5,'しつこくおう：5秒']]){const button=document.createElement('button');setReadingText(button,label);button.onclick=()=>{o.chaseGraceSeconds=n;save();inspect();};buttons.push([button,n]);quick.append(button);}sync();lost.append(quick);
+            const note=document.createElement('p');note.className='component-description';setReadingText(note,'もう一度見つけたら、時間を数え直すよ。追いかけてよい場所の外には出ないよ。');lost.append(note);
+          }
           selectField(lost,'見失ったら',lostChoiceLabels(routine.idle,!!o.patrolRoute),routine.lost,v=>change({lost:v}));
         }
         }

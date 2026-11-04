@@ -1,16 +1,17 @@
-import {defaultPatrolRoute,placeAtRouteStart} from './patrol-route3d.js?v=20261104h';
-import {defaultEnemyRanges} from './enemy-range3d.js?v=20261104h';
+import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261104i';
+import {defaultPatrolRoute,placeAtRouteStart} from './patrol-route3d.js?v=20261104i';
+import {defaultEnemyRanges} from './enemy-range3d.js?v=20261104i';
 // Examples combine existing actions, pursuit rules and speed. No runtime preset IDs are saved.
 export const ENEMY_BEHAVIOR_EXAMPLES={
  still:{name:'その場で待つ',icon:'●',program:[],flow:'置いた場所で待つ。自分からは動かないよ。'},
  patrol:{name:'行ったり来たり',icon:'↔',program:[{action:'patrol',speed:2}],flow:'ルートのはじめへ → おわりへ → はじめへ。プレイヤーは追いかけないよ。'},
  slowPatrol:{name:'ゆっくり、行ったり来たり',icon:'🐢',program:[{action:'patrol',speed:1}],flow:'行ったり来たりする速さを、ゆっくりにした見本だよ。'},
  chaseAlways:{name:'はじめから追いかける',icon:'👣',program:[{action:'chase',speed:2}],chaseMode:'always',flow:'はじめから追いかける。気づくマスに入らなくても追うよ。'},
- chaseInside:{name:'近づいた間だけ追いかける',icon:'◎',program:[{action:'chase',speed:2}],chaseMode:'inside',flow:'待つ → 気づくマスで見つける → 追う。はんいを出ると止まるよ。'},
+ chaseInside:{name:'近づくと追いかける',icon:'◎',program:[{action:'chase',speed:2}],chaseMode:'inside',flow:'待つ → 気づくマスで見つける → 追う。見失っても、設定した時間は追うよ。'},
  chaseRemember:{name:'見つけたら追い続ける',icon:'！',program:[{action:'chase',speed:2}],chaseMode:'remember',flow:'待つ → 見つける → 追い続ける。気づくマスを出ても追うよ。'},
- searchInside:{name:'歩いて探し、探し直す',icon:'🔎',program:[{action:'search',speed:2}],chaseMode:'inside',flow:'歩き回る → 見つける → 追う。気づくマスを出ると、また歩いて探すよ。'},
+ searchInside:{name:'歩いて探し、探し直す',icon:'🔎',program:[{action:'search',speed:2}],chaseMode:'inside',flow:'歩き回る → 見つける → 追う。見失った後、設定した時間がたつと、また歩いて探すよ。'},
  searchRemember:{name:'歩いて探し、追い続ける',icon:'🔍',program:[{action:'search',speed:2}],chaseMode:'remember',flow:'歩き回る → 見つける → その後は追い続けるよ。'},
- fastChase:{name:'すばやく追いかける',icon:'⚡',program:[{action:'chase',speed:4}],chaseMode:'inside',flow:'気づくマスに入ったら、速く追いかける。はんいを出ると止まるよ。'}
+ fastChase:{name:'すばやく追いかける',icon:'⚡',program:[{action:'chase',speed:4}],chaseMode:'inside',flow:'気づくマスに入ったら、速く追いかける。見失っても、設定した時間は追うよ。'}
 };
 export function basicEnemyBehavior(o){if(!o.program.length)return 'still';return o.program.length===1&&['chase','patrol','search'].includes(o.program[0].action)?o.program[0].action:'custom';}
 export function enemyBehaviorExampleKey(o){if(o.routine)return 'custom';return Object.keys(ENEMY_BEHAVIOR_EXAMPLES).find(key=>{const example=ENEMY_BEHAVIOR_EXAMPLES[key];return o.program.length===example.program.length&&o.program.every((block,i)=>block.action===example.program[i].action&&block.speed===example.program[i].speed)&&(example.chaseMode===undefined||(o.chaseMode||'always')===example.chaseMode);})||'custom';}
@@ -42,7 +43,7 @@ export function setEnemyRoutine(o,changes){
 export function routineFlow(o){
  const r=enemyRoutine(o);if(!r)return enemyBehaviorFlow(o);
  const idle={wait:'その場で待つ',patrol:'行ったり来たり',path:'コースにそってあるく',roam:'歩き回る'}[r.idle];
- return (r.notice==='always'?'はじめから追いかける':idle+(r.notice==='near'?' → 気づくマスに入ったら追いかける → 見失ったら'+Object.fromEntries(lostChoiceLabels(r.idle,!!o.patrolRoute))[r.lost]:''))+(o.attackEnabled?'。攻撃するマスに入ったら撃つ。':'。攻撃しない。');
+ return (r.notice==='always'?'はじめから追いかける':idle+(r.notice==='near'?' → 気づくマスに入ったら追いかける → 見失ったら'+(r.lost!=='continue'&&chaseGraceSeconds(o)>0?chaseGraceSeconds(o)+'秒追ってから、':'')+Object.fromEntries(lostChoiceLabels(r.idle,!!o.patrolRoute))[r.lost]:''))+(o.attackEnabled?'。攻撃するマスに入ったら撃つ。':'。攻撃しない。');
 }
 
 // Display always-chasing as the normal action; keep saved runtime rules compatible.

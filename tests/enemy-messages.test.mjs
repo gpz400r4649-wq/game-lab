@@ -5,7 +5,7 @@ import {part,fresh3D,create3D,step3D} from '../engine3d.js';
 import {setEnemyRoutine} from '../enemy-behavior-presets3d.js';
 import {PerspectiveCamera} from '../vendor/three.module.min.js';
 const tick=(g,p,n)=>{for(let i=0;i<n;i++)step3D(g,p,{},.02);};
-function setup(){const p=fresh3D(),e=part('enemy',0,0);e.attackEnabled=false;setEnemyRoutine(e,{idle:'wait',notice:'near',lost:'return'});e.searchRange={space:'world',cells:[[1,0]]};p.objects=[e];p.spawn={x:20,y:0,z:0};return {p,g:create3D(p)};}
+function setup(){const p=fresh3D(),e=part('enemy',0,0);e.chaseGraceSeconds=0;e.attackEnabled=false;setEnemyRoutine(e,{idle:'wait',notice:'near',lost:'return'});e.searchRange={space:'world',cells:[[1,0]]};p.objects=[e];p.spawn={x:20,y:0,z:0};return {p,g:create3D(p)};}
 test('頭上の行動は実際の待機・追跡・帰還に合わせて変わる',()=>{const {p,g}=setup(),e=g.objects[0];tick(g,p,2);assert.equal(enemyMessageState(e,g.player).action,'wait');g.player.x=4;tick(g,p,40);assert.equal(enemyMessageState(e,g.player).action,'chase');g.player.x=20;tick(g,p,2);assert.equal(enemyMessageState(e,g.player).action,'return');tick(g,p,100);assert.equal(enemyMessageState(e,g.player).action,'wait');});
 test('気づいた・見失ったは変化時だけ表示し、同じ状態で延長しない',()=>{const {g}=setup(),e=g.objects[0],t=createMessageTracker();assert.equal(t.read(e,g.player,0).event,'');g.player.x=4;assert.equal(t.read(e,g.player,100).event,'！ きづいた');assert.equal(t.read(e,g.player,1800).event,'');g.player.x=20;assert.equal(t.read(e,g.player,1900).event,'？ みうしなった');assert.equal(t.read(e,g.player,3600).event,'');});
 test('最初から追う敵や追わない敵には気づいたメッセージを出さない',()=>{for(const notice of ['always','none']){const {g}=setup(),e=g.objects[0];e.routine.notice=notice;g.player.x=4;assert.equal(createMessageTracker().read(e,g.player,0).event,'');}});
