@@ -1,15 +1,15 @@
-import {validAppearance} from './appearance3d.js?v=20261104j';
-import {MAX_PARTS,MAX_BUILD_Y,MAX_BUILD_LEVEL} from './limits3d.js?v=20261104j';
-import {worldHalf,coordinateLimit} from './world3d.js?v=20261104j';
-import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261104j';
+import {validAppearance} from './appearance3d.js?v=20261104k';
+import {MAX_PARTS,MAX_BUILD_Y,MAX_BUILD_LEVEL} from './limits3d.js?v=20261104k';
+import {worldHalf,coordinateLimit} from './world3d.js?v=20261104k';
+import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261104k';
 // Shared by editor, gameplay and placement preview. No browser dependency.
 export const BUILD_TYPES={wall:'壁',floor:'床',roof:'屋根',ramp:'スロープ'};
 export const GRID={cell:4,layer:3,size:60};
 export const GRID_PARTS=new Set(['box','platform','moving','bounce','hazard','door','wall','floor','roof','ramp']);
 const snap=(value,step=GRID.cell,offset=0)=>Math.round((value-offset)/step)*step+offset;
 function boundedGrid(value,extent,offset=0,world=60){extent=Math.max(2,extent);const lo=Math.ceil((-worldHalf(world)+extent-offset)/4)*4+offset,hi=Math.floor((worldHalf(world)-extent-offset)/4)*4+offset;return Math.max(lo,Math.min(hi,snap(value,4,offset)));}
-export function alignPiece(o,world=60){if(!GRID_PARTS.has(o.type))return o;const turned=o.type==='wall'&&o.rotation===90;o.x=boundedGrid(o.x,o.w/2,turned?2:0,world);o.z=boundedGrid(o.z,o.d/2,o.type==='wall'&&!turned?2:0,world);return o;}
-export function gridStep(o,axis){return GRID_PARTS.has(o.type)?axis==='y'?(['box','wall','floor','roof','ramp'].includes(o.type)?3:.5):4:axis==='y'?.5:1;}
+export function alignPiece(o,world=60){if(!GRID_PARTS.has(o.type))return o;const bordered=['wall','door'].includes(o.type),turned=bordered&&o.rotation===90;o.x=boundedGrid(o.x,o.w/2,turned?2:0,world);o.z=boundedGrid(o.z,o.d/2,bordered&&!turned?2:0,world);return o;}
+export function gridStep(o,axis){return GRID_PARTS.has(o.type)?axis==='y'?(['box','wall','floor','roof','ramp','door'].includes(o.type)?3:.5):4:axis==='y'?.5:1;}
 function rampFloorAnchor(ramp,normal,floor){
  const angle=(ramp.rotation||0)*Math.PI/180,high={x:-Math.sin(angle),z:-Math.cos(angle)},dot=(normal?.x||0)*high.x+(normal?.z||0)*high.z,side=normal&&Math.abs(normal.y)<.5;
  const low=side&&dot<-.5,dir=side&&Math.abs(dot)<.5?normal:low?{x:-high.x,z:-high.z}:high;
@@ -27,6 +27,7 @@ export function snapEditorPiece(o,point,target=null,normal=null,world=60){
   if(o.type==='floor'&&target?.type==='ramp'){Object.assign(o,rampFloorAnchor(target,normal,o));return alignPiece(o,world);}
   if(!GRID_PARTS.has(o.type)){o.x=Math.max(-coordinateLimit(world),Math.min(coordinateLimit(world),Math.round(o.x)));o.z=Math.max(-coordinateLimit(world),Math.min(coordinateLimit(world),Math.round(o.z)));if(target&&normal?.y>.5)o.y=Math.max(0,Math.min(MAX_BUILD_Y,topAt(target,point.x,point.z)));return o;}
   const side=target&&normal&&Math.abs(normal.y)<.5;
+  if(o.type==='door'){const turned=o.rotation===90,width=turned?o.d:o.w,depth=turned?o.w:o.d;o.rotation=Math.abs(point.x-snap(point.x,4,2))<Math.abs(point.z-snap(point.z,4,2))?90:0;o.w=o.rotation===90?depth:width;o.d=o.rotation===90?width:depth;}
   if(o.type==='wall'){
     o.rotation=side?(Math.abs(normal.x)>.5?90:0):Math.abs(point.x-snap(point.x,4,2))<Math.abs(point.z-snap(point.z,4,2))?90:0;
     o.w=o.rotation===90?.25:4;o.d=o.rotation===90?4:.25;
@@ -38,7 +39,7 @@ export function snapEditorPiece(o,point,target=null,normal=null,world=60){
   if(target&&normal?.y>.5){
     if(target.type==='wall'&&['floor','roof'].includes(o.type)){o.x=target.x-(target.rotation===90?2:0);o.z=target.z-(target.rotation!==90?2:0);}
     const top=topAt(target,point.x,point.z);
-    o.y=o.type==='wall'&&target.type==='ramp'?Math.floor((target.y+.05)/3)*3:o.type==='roof'?(target.type==='floor'?snap(target.y,3)+3:Math.ceil((top-.02)/3)*3):['wall','floor'].includes(o.type)?snap(top,3):top;
+    o.y=o.type==='wall'&&target.type==='ramp'?Math.floor((target.y+.05)/3)*3:o.type==='roof'?(target.type==='floor'?snap(target.y,3)+3:Math.ceil((top-.02)/3)*3):['wall','floor','door'].includes(o.type)?snap(top,3):top;
   }else if(target&&normal?.y<-.5)o.y=Math.max(0,target.y-o.h);
   else if(side)o.y=target.y;
   else o.y=o.type==='roof'?3:['wall','floor','box'].includes(o.type)?0:o.y;
@@ -48,7 +49,7 @@ function joins(a,b){
   if(!intersects(a,b))return true;
   if(a.type==='wall'&&b.type==='wall'&&a.rotation!==(b.rotation||0))return (a.w+b.w)/2-Math.abs(a.x-b.x)<=.26&&(a.d+b.d)/2-Math.abs(a.z-b.z)<=.26;
   const wall=a.type==='wall'?a:b.type==='wall'?b:null,other=wall===a?b:a;
-  if(wall&&other.type==='floor'&&Math.abs(wall.y-other.y)<.02)return true;
+  if((wall||a.type==='door'||b.type==='door')&&(a.type==='floor'||b.type==='floor')&&Math.abs(a.y-b.y)<.02)return true;
   if(wall&&other.type==='ramp'){
     // Walls occupy the border of a cell; a ramp may fill that cell's interior.
     const thickness=wall.rotation===90?wall.w:wall.d;
@@ -82,7 +83,7 @@ export function constructionPart(type,x=0,z=0,y=0,rotation=0){
     d:type==='wall'?(turned?4:.25):4,hp:20,destructible:true,program:[],
     settings:{axis:'x',distance:3,speed:2,value:1,condition:'touch',required:1}};
 }
-export function rotatePiece(o,world=60){if(!Object.hasOwn(BUILD_TYPES,o.type))return;const anchor={x:o.x-(o.type==='wall'&&o.rotation===90?2:0),z:o.z-(o.type==='wall'&&o.rotation!==90?2:0)};[o.w,o.d]=[o.d,o.w];o.rotation=o.type==='ramp'?((o.rotation||0)+90)%360:o.rotation===90?0:90;if(o.type==='wall'){o.x=anchor.x+(o.rotation===90?2:0);o.z=anchor.z+(o.rotation===0?2:0);}alignPiece(o,world);}
+export function rotatePiece(o,world=60){if(!Object.hasOwn(BUILD_TYPES,o.type)&&o.type!=='door')return;const anchor={x:o.x-(['wall','door'].includes(o.type)&&o.rotation===90?2:0),z:o.z-(['wall','door'].includes(o.type)&&o.rotation!==90?2:0)};[o.w,o.d]=[o.d,o.w];o.rotation=o.type==='ramp'?((o.rotation||0)+90)%360:o.rotation===90?0:90;if(['wall','door'].includes(o.type)){o.x=anchor.x+(o.rotation===90?2:0);o.z=anchor.z+(o.rotation===0?2:0);}alignPiece(o,world);}
 export function topAt(o,x,z){
   if(o.type==='ramp'){const angle=(o.rotation||0)*Math.PI/180,localZ=Math.sin(angle)*(x-o.x)+Math.cos(angle)*(z-o.z),depth=(o.rotation||0)%180===90?o.w:o.d;return o.y+o.h*Math.max(0,Math.min(1,.5-localZ/depth));}if(o.type!=='roof')return o.y+o.h;
   const turned=o.rotation===90,offset=turned?z-o.z:x-o.x,width=turned?o.d:o.w;

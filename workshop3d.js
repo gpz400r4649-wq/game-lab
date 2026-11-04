@@ -1,20 +1,20 @@
-import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261104j';
-import {openWaypointEditor} from './waypoint-ui3d.js?v=20261104j';
-import {openPatrolEditor} from './patrol-ui3d.js?v=20261104j';
-import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261104j';
-import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261104j';
-import {inGridRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261104j';
-import {renderEnemyRange} from './enemy-range-ui3d.js?v=20261104j';
-import {gunPreviewSVG} from './appearance3d.js?v=20261104j';
-import {DOOR_PRESETS} from './doors3d.js?v=20261104j';
-import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261104j';
-import {coordinateLimit} from './world3d.js?v=20261104j';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261104j';
-import {actionsFor} from './events3d.js?v=20261104j';
-import {renderEventEditor} from './event-editor3d.js?v=20261104j';
-import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261104j';
-import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261104j';
-import {PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261104j';
+import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261104k';
+import {openWaypointEditor} from './waypoint-ui3d.js?v=20261104k';
+import {openPatrolEditor} from './patrol-ui3d.js?v=20261104k';
+import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261104k';
+import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261104k';
+import {inGridRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261104k';
+import {renderEnemyRange} from './enemy-range-ui3d.js?v=20261104k';
+import {gunPreviewSVG} from './appearance3d.js?v=20261104k';
+import {DOOR_PRESETS} from './doors3d.js?v=20261104k';
+import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261104k';
+import {coordinateLimit} from './world3d.js?v=20261104k';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261104k';
+import {actionsFor} from './events3d.js?v=20261104k';
+import {renderEventEditor} from './event-editor3d.js?v=20261104k';
+import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261104k';
+import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261104k';
+import {PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261104k';
 
 const ICONS={weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
 const DESCRIPTIONS={weapon:'地面に置いて、ふれると拾える銃。持ちもの・銃づくりで用意した銃をえらぼう。',ramp:'低いほうから歩くと、そのまま登れるスロープ。回して好きな向きにつなげよう。',wall:'家を囲う壁。向きを変えてつなげよう。',floor:'家の床と天井に使える板。壁の内側にぴったり合うよ。',roof:'壁の上にのせる三角屋根。向きを変えて家を仕上げよう。',
@@ -130,7 +130,8 @@ export function createWorkshop(api){
       field(el,label,s.value,min,max,1,n=>s.value=Math.round(n));
     }
     if(o.type==='door'){
-      selectField(el,'ドアの開き方',[['swing','手前にひらく'],['slide','横にスライド']],o.doorStyle||'swing',v=>o.doorStyle=v);
+      selectField(el,'ドアの開き方',[['swing','回してひらく'],['slide','横にスライド']],o.doorStyle||'swing',v=>o.doorStyle=v);
+      selectField(el,'開く向き',[['1','ふつう'],['-1','反対にひらく']],String(o.doorDirection||1),v=>o.doorDirection=Number(v));
       selectField(el,'ドアの使い方',[['auto','これまでの自動ドア'],['free','ふつうに開け閉めする'],['key','カギで開け閉めする']],o.doorMode||'auto',v=>{if(v==='auto')delete o.doorMode;else{o.doorMode=v;o.doorStyle??='swing';s.condition=v==='key'?'keys':'touch';}inspect();});
       const turn=document.createElement('button');setReadingText(turn,'↻ ドアを90°回す');turn.onclick=()=>{[o.w,o.d]=[o.d,o.w];o.rotation=o.rotation===90?0:90;save();rebuild();inspect();};el.append(turn);
     }
@@ -153,7 +154,7 @@ export function createWorkshop(api){
     for(const [key,name,min,max] of [['x','横 X',-coordinateLimit(p),coordinateLimit(p)],['y','高さ Y',0,MAX_BUILD_Y],['z','奥行 Z',-coordinateLimit(p),coordinateLimit(p)]])field(positions,name,o[key],min,max,gridStep(o,key),n=>{o[key]=n;alignPiece(o,p);return o[key];});fine.append(positions);
     if(['box','platform','moving','door','bounce','hazard','wall','floor','roof','ramp'].includes(o.type))for(const [key,name] of [['w','はば'],['h','たかさ'],['d','おくゆき']])field(fine,name,o[key],['wall','floor','roof','bounce','hazard'].includes(o.type)?.2:.5,10,.5,n=>o[key]=n);
     el.append(details('位置・大きさを数字でちょうせい',[fine]));
-    if(['wall','floor','roof','ramp'].includes(o.type)){const rotate=document.createElement('button');setReadingText(rotate,'↻ 90° 回す');rotate.onclick=()=>{rotatePiece(o,p);save();rebuild();inspect();};el.append(rotate);}
+    if(['wall','floor','roof','ramp','door'].includes(o.type)){const rotate=document.createElement('button');setReadingText(rotate,'↻ 90° 回す');rotate.onclick=()=>{rotatePiece(o,p);save();rebuild();inspect();};el.append(rotate);}
     const actions=document.createElement('div');actions.className='object-actions';
     const copy=document.createElement('button');setReadingText(copy,'＋ 同じ部品をもう１つ');copy.onclick=()=>{if(p.objects.length>=MAX_PARTS){api.toast('部品は2000個まで置けます');return;}const duplicate=structuredClone(o);duplicate.id=crypto.randomUUID();for(const a of duplicate.events||[])if(a.target===o.id)a.target=duplicate.id;let found=false;for(const [dx,dz] of [[Math.max(4,Math.ceil(o.w/4)*4),0],[0,Math.max(4,Math.ceil(o.d/4)*4)],[-Math.max(4,Math.ceil(o.w/4)*4),0],[0,-Math.max(4,Math.ceil(o.d/4)*4)]]){duplicate.x=o.x+dx;duplicate.z=o.z+dz;if(!GRID_PARTS.has(o.type)){duplicate.x=clamp(o.x+2,-coordinateLimit(p),coordinateLimit(p));duplicate.z=o.z;found=true;break;}alignPiece(duplicate,p);if(!editorPlacementReason(duplicate,p.objects,p.spawn)){found=true;break;}}if(!found){api.toast('隣のマスが空いていません');return;}p.objects.push(duplicate);select(duplicate.id);save();rebuild();api.objectList();inspect();};
     const del=document.createElement('button');setReadingText(del,'削除');del.className='danger';del.onclick=()=>{p.objects=p.objects.filter(x=>x.id!==o.id);select(null);save();rebuild();api.objectList();inspect();};actions.append(copy,del);el.append(actions);
@@ -166,7 +167,7 @@ export function createWorkshop(api){
   }
   const groups=[['つくる道具',['select','erase']],['地形・しかけ',['wall','floor','roof','ramp','box','platform','moving','bounce','hazard']],['キャラクター・アイテム',['enemy','weapon','star','key','heal']],['進みかたをつくる',['checkpoint','door','goal']]];
   function chooseWeapon(){const d=document.createElement('dialog'),h=document.createElement('h2');setReadingText(h,'どの銃をアイテムにする？');d.append(h);for(const tool of getProject().loadout){const b=document.createElement('button'),icon=document.createElement('span'),caption=document.createElement('span');b.className='door-choice';icon.className='hot-gun-icon';icon.innerHTML=gunPreviewSVG(tool);setReadingText(caption,tool.name);b.append(icon,caption);b.onclick=()=>{setTool('weapon',tool.id);d.close();d.remove();};d.append(b);}const cancel=document.createElement('button');setReadingText(cancel,'もどる');cancel.onclick=()=>{d.close();d.remove();};d.oncancel=()=>d.remove();d.append(cancel);document.body.append(d);d.showModal();}
-  function chooseDoor(){const d=document.createElement('dialog'),h=document.createElement('h2'),note=document.createElement('p');setReadingText(h,'どのドアを置く？');setReadingText(note,'近づいて「あける」ボタンで開け閉めできるよ。');d.append(h,note);for(const [key,preset]of Object.entries(DOOR_PRESETS)){const b=document.createElement('button');b.className='door-choice';setReadingText(b,preset.name);b.onclick=()=>{setTool('door',key);d.close();d.remove();};d.append(b);}const cancel=document.createElement('button');setReadingText(cancel,'もどる');cancel.onclick=()=>{d.close();d.remove();};d.oncancel=()=>d.remove();d.append(cancel);document.body.append(d);d.showModal();}
+  function chooseDoor(){const d=document.createElement('dialog'),h=document.createElement('h2'),note=document.createElement('p');setReadingText(h,'どのドアを置く？');setReadingText(note,'近づいて「あける」ボタンで開け閉めできるよ。置いた後に「開く向き」を反対に変えられるよ。');d.append(h,note);for(const [key,preset]of Object.entries(DOOR_PRESETS)){const b=document.createElement('button');b.className='door-choice';setReadingText(b,preset.name);b.onclick=()=>{setTool('door',key);d.close();d.remove();};d.append(b);}const cancel=document.createElement('button');setReadingText(cancel,'もどる');cancel.onclick=()=>{d.close();d.remove();};d.oncancel=()=>d.remove();d.append(cancel);document.body.append(d);d.showModal();}
   function renderPalette(){
     const palette=$('#palette3'),aside=$('aside'),top=aside.scrollTop,before=palette.getBoundingClientRect(),above=before.bottom<=aside.getBoundingClientRect().top,min=palette.style.minHeight,selected=api.getToolSelection?.()||{type:'select'};palette.style.minHeight=before.height+'px';palette.replaceChildren();
     for(const [label,types]of groups){

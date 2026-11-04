@@ -1,30 +1,31 @@
-import {enemyEditHeight,createFloorRangeView} from './floor-edit3d.js?v=20261104j';
-import {createPatrolOverlay} from './patrol-ui3d.js?v=20261104j';
-import {stageRangePointer} from './stage-range3d.js?v=20261104j';
-import {createEnemyMessages} from './enemy-messages3d.js?v=20261104j';
-import {createPlayRanges} from './play-ranges3d.js?v=20261104j';
-import {closeLiveRangeEditor,isLiveRangeEditing} from './enemy-range-ui3d.js?v=20261104j';
-import {dragCandidate} from './editor-drag3d.js?v=20261104j';
-import {rangeWorldCells,enemyYaw,defaultEnemyRanges,MOVE_MAX_CELLS} from './enemy-range3d.js?v=20261104j';
-import {TPS_GUN_MOUNT} from './muzzle3d.js?v=20261104j';
-import {configureDoor,nearbyDoor} from './doors3d.js?v=20261104j';
-import {appearanceFor} from './appearance3d.js?v=20261104j';
-import {makeGunModel,applyFPSGunPose,worldGunMuzzle} from './gun-model3d.js?v=20261104j';
-import {moveEditorCamera,createEditorNavigation} from './editor-camera3d.js?v=20261104j';
-import {createStructureRenderer,BATCH_TYPES} from './structure-render3d.js?v=20261104j';
-import {MAX_PROJECT_BYTES,MAX_BUILD_Y} from './limits3d.js?v=20261104j';
-import {worldSize,coordinateLimit} from './world3d.js?v=20261104j';
-import {createWorldUI} from './world-ui3d.js?v=20261104j';
-import {configureNumericInput} from './numeric3d.js?v=20261104j';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261104j';
-import {installGameTouchGuard,bindHeldButton,bindGameAction,createGamePageMode} from './input3d.js?v=20261104j';
-import {actionsFor,ACTION_NAMES} from './events3d.js?v=20261104j';
-import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261104j';
-import {BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,editorPlacementReason,blockPlacement} from './building3d.js?v=20261104j';
-import {createToolsUI} from './tools3d.js?v=20261104j';
+import {makeDoorModel,updateDoorModel} from './door-model3d.js?v=20261104k';
+import {enemyEditHeight,createFloorRangeView} from './floor-edit3d.js?v=20261104k';
+import {createPatrolOverlay} from './patrol-ui3d.js?v=20261104k';
+import {stageRangePointer} from './stage-range3d.js?v=20261104k';
+import {createEnemyMessages} from './enemy-messages3d.js?v=20261104k';
+import {createPlayRanges} from './play-ranges3d.js?v=20261104k';
+import {closeLiveRangeEditor,isLiveRangeEditing} from './enemy-range-ui3d.js?v=20261104k';
+import {dragCandidate} from './editor-drag3d.js?v=20261104k';
+import {rangeWorldCells,enemyYaw,defaultEnemyRanges,MOVE_MAX_CELLS} from './enemy-range3d.js?v=20261104k';
+import {TPS_GUN_MOUNT} from './muzzle3d.js?v=20261104k';
+import {configureDoor,nearbyDoor} from './doors3d.js?v=20261104k';
+import {appearanceFor} from './appearance3d.js?v=20261104k';
+import {makeGunModel,applyFPSGunPose,worldGunMuzzle} from './gun-model3d.js?v=20261104k';
+import {moveEditorCamera,createEditorNavigation} from './editor-camera3d.js?v=20261104k';
+import {createStructureRenderer,BATCH_TYPES} from './structure-render3d.js?v=20261104k';
+import {MAX_PROJECT_BYTES,MAX_BUILD_Y} from './limits3d.js?v=20261104k';
+import {worldSize,coordinateLimit} from './world3d.js?v=20261104k';
+import {createWorldUI} from './world-ui3d.js?v=20261104k';
+import {configureNumericInput} from './numeric3d.js?v=20261104k';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261104k';
+import {installGameTouchGuard,bindHeldButton,bindGameAction,createGamePageMode} from './input3d.js?v=20261104k';
+import {actionsFor,ACTION_NAMES} from './events3d.js?v=20261104k';
+import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261104k';
+import {BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,editorPlacementReason,blockPlacement} from './building3d.js?v=20261104k';
+import {createToolsUI} from './tools3d.js?v=20261104k';
 import * as T from './vendor/three.module.min.js';
-import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,conditionHint} from './engine3d.js?v=20261104j';
-import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261104j';
+import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,conditionHint} from './engine3d.js?v=20261104k';
+import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261104k';
 const $=s=>document.querySelector(s),view=$('#viewport'),KEY='tsukuru-lab-3d-v1';
 let enemyRangeView='attackRange';
 let project=fresh3D(),selected=null,tool='select',doorPreset='key',weaponPresetId='',mode='edit',perspective='tps',game=null,yaw=0,pitch=-.05,editYaw=.55,editPitch=.7,editDistance=30,editTarget=new T.Vector3(0,0,0),stick={x:0,z:0},keys=new Set(),fireHeld=false,firePressed=false,jumpPressed=false,doorPressed=false,look=null,saveTimer,toastTimer,lastTime=0;
@@ -66,9 +67,7 @@ function partModel(o){let mesh=new T.Group();
   }else if(o.type==='enemy'){const weapon=enemyWeapon(o,project.loadout);mesh=robot(materials.enemy,!weapon);mesh.rotation.y=(o.facing||0)*Math.PI/180;if(weapon){const held=makeGunModel(weapon);held.position.set(TPS_GUN_MOUNT.x,TPS_GUN_MOUNT.y,TPS_GUN_MOUNT.z);held.scale.setScalar(TPS_GUN_MOUNT.scale);mesh.add(held);}}
   else if(o.type==='star'){const m=new T.Mesh(starGeometry,materials.star);m.position.y=.85;mesh.add(m);}
   else if(o.type==='door'){
-   const turned=o.rotation===90,w=turned?o.d:o.w,d=turned?o.w:o.d;mesh.rotation.y=(o.rotation||0)*Math.PI/180;
-   box(mesh,materials.door,-w/2,o.h/2,0,.18,o.h,d);box(mesh,materials.door,w/2,o.h/2,0,.18,o.h,d);box(mesh,materials.door,0,o.h,0,w,.18,d);
-   const hinge=new T.Group();hinge.position.x=o.doorStyle==='slide'?0:-w/2;mesh.add(hinge);const panel=box(hinge,materials.door,o.doorStyle==='slide'?0:w/2,o.h/2,0,w-.2,o.h-.2,d*.6);box(panel,o.doorMode==='key'?materials.star:materials.dark,w*.3,0,-d*.35,.12,.12,.1);mesh.userData.panel=panel;mesh.userData.hinge=hinge;mesh.userData.doorWidth=w;
+   mesh=makeDoorModel(o,materials);
   }else if(o.type==='goal'){
    const m=new T.Mesh(portalGeometry,materials.goal);m.position.y=1.3;mesh.add(m);box(mesh,materials.goal,0,.12,0,2.4,.24,1.2);mesh.userData.portal=m;
   }else if(o.type==='key'){
@@ -86,7 +85,7 @@ if(BATCH_TYPES.has(o.type))structureRenderer.mark(mesh);return mesh;}
 function rebuild(){updateWorld();
  objectsGroup.clear();meshes.clear();const objects=mode==='play'?[...game.objects,...game.drops]:project.objects;
  for(const o of objects){const mesh=partModel(o);mesh.position.set(o.x,o.y,o.z);mesh.visible=mode!=='play'||(!o.hidden&&!o.collected);mesh.userData.id=o.id;objectsGroup.add(mesh);meshes.set(o.id,mesh);}
- structureRenderer.sync(objects,meshes);solidMeshes=solids(objects).map(o=>meshes.get(o.id));updateSelection();
+ structureRenderer.sync(objects,meshes);solidMeshes=[...new Set(solids(objects).map(o=>meshes.get(o.sourceDoorId||o.id)).filter(Boolean))];updateSelection();
 }
 const patrolOverlay=createPatrolOverlay(scene);
 const playRanges=createPlayRanges(scene),enemyMessages=createEnemyMessages();
@@ -143,11 +142,11 @@ const effectPool=[],bulletPool=[];function syncGameMeshes(){
   if(DESTRUCTIBLE_TYPES.has(o.type)||o.type==='enemy')mesh.traverse(child=>{if(child.isMesh){child.userData.baseMaterial??=child.material;child.material=o.hitUntil>game.time?materials.hitFlash:child.userData.baseMaterial;}});
   if(o.type==='enemy')mesh.rotation.y=enemyYaw(o,game.player);
   if(['star','key','weapon','blockItem'].includes(o.type))mesh.rotation.y=game.time;
-  if(o.type==='door'){if(o.doorStyle==='slide')mesh.userData.hinge.position.x=(o.doorAmount||0)*mesh.userData.doorWidth;else if(o.doorStyle)mesh.userData.hinge.rotation.y=-(o.doorAmount||0)*Math.PI/2;else mesh.userData.panel.visible=!o.open;}
+  if(o.type==='door')updateDoorModel(mesh,o);
   if(o.type==='goal')mesh.userData.portal.material=conditionMet(o,game)?materials.ready:materials.goal;
   if(o.type==='checkpoint')mesh.userData.flag.material=game.checkpoint?.id===o.id?materials.ready:materials.checkpoint;
  }
- structureRenderer.sync(visibleObjects,meshes,game.time);solidMeshes=solids(game.objects).map(o=>meshes.get(o.id));
+ structureRenderer.sync(visibleObjects,meshes,game.time);solidMeshes=[...new Set(solids(game.objects).map(o=>meshes.get(o.sourceDoorId||o.id)).filter(Boolean))];
  while(bulletPool.length<game.bullets.length&&bulletPool.length<LIMITS.bullets){const group=new T.Group(),ball=new T.Mesh(sphere,materials.bullet),rocket=new T.Mesh(rocketGeometry,materials.rocket);group.add(ball,rocket);group.userData.ball=ball;group.userData.rocket=rocket;bulletPool.push(group);bulletGroup.add(group);}
  bulletPool.forEach((m,i)=>{const b=game.bullets[i];m.visible=!!b;if(b){m.position.set(b.x,b.y,b.z);const r=b.radius||.1,isRocket=b.projectile==='rocket';m.userData.ball.visible=!isRocket;m.userData.rocket.visible=isRocket;m.userData.ball.scale.setScalar(r/.09);m.userData.ball.material=b.enemy?materials.enemyBullet:materials.bullet;m.userData.rocket.scale.set(r,r*2,r);m.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),new T.Vector3(b.vx,b.vy,b.vz).normalize());}});
  while(effectPool.length<game.effects.length&&effectPool.length<LIMITS.effects){const m=new T.Mesh(starGeometry,new T.MeshBasicMaterial({color:'#ffb86e',transparent:true,opacity:.4,depthWrite:false}));effectPool.push(m);bulletGroup.add(m);}
@@ -159,7 +158,7 @@ const effectPool=[],bulletPool=[];function syncGameMeshes(){
  if(currentRules!==rule){currentRules=rule;$('#mission3').hidden=!rule;setReadingText($('#mission3'),rule);}
 }
 function editorCandidate(event){if(tool==='select'||tool==='erase')return null;const hit=hits(event,[objectsGroup,ground]).find(visibleHit);if(!hit)return null;const target=project.objects.find(o=>o.id===objectId(hit.object))||null,normal=hit.face?hit.face.normal.clone().transformDirection(hit.object.matrixWorld):null,piece=snapEditorPiece(tool==='door'?configureDoor(part(tool),doorPreset):tool==='weapon'?{...part(tool),weaponId:weaponPresetId}:part(tool),hit.point,target,normal,project);if(piece.type==='enemy')Object.assign(piece,defaultEnemyRanges(piece));return {piece,reason:editorPlacementReason(piece,project.objects,project.spawn,project)};}
-function showGhost(o,valid){const shape=[o.type,o.rotation||0,o.w,o.h,o.d].join(':');if(shape!==ghostShape){ghost.clear();if(Object.hasOwn(BUILD_TYPES,o.type))ghost.add(structureModel(o,ghostMaterial));else box(ghost,ghostMaterial,0,o.h/2,0,o.w,o.h,o.d);ghostShape=shape;}ghost.position.set(o.x,o.y,o.z);ghostMaterial.color.set(valid?0x53d9b4:0xee8592);ghost.visible=true;}
+function showGhost(o,valid){const shape=[o.type,o.rotation||0,o.w,o.h,o.d].join(':');if(shape!==ghostShape){ghost.clear();if(Object.hasOwn(BUILD_TYPES,o.type))ghost.add(structureModel(o,ghostMaterial));else if(o.type==='door')ghost.add(makeDoorModel(o,{door:ghostMaterial,wall:ghostMaterial,dark:ghostMaterial,star:ghostMaterial}));else box(ghost,ghostMaterial,0,o.h/2,0,o.w,o.h,o.d);ghostShape=shape;}ghost.position.set(o.x,o.y,o.z);ghostMaterial.color.set(valid?0x53d9b4:0xee8592);ghost.visible=true;}
 function updateEditorGhost(){syncPlacementUI();if(placementLook||isLiveRangeEditing()||look?.drag){ghost.visible=false;return;}if(!editorPointer||!withinSurface(editorPointer)||!GRID_PARTS.has(tool)){ghost.visible=false;return;}const candidate=editorCandidate(editorPointer);if(!candidate){ghost.visible=false;return;}showGhost(candidate.piece,!candidate.reason);}
 function visibleHit(hit){let o=hit.object;while(o){if(!o.visible)return false;o=o.parent;}return true;}
 function buildTarget(){ray.setFromCamera(new T.Vector2(0,0),camera);const hit=ray.intersectObjects([...objectsGroup.children,ground],true).find(h=>h.point.distanceTo(new T.Vector3(game.player.x,game.player.y+1.35,game.player.z))<8&&visibleHit(h));if(hit){const p=hit.point.clone();if(hit.face)p.addScaledVector(hit.face.normal.clone().transformDirection(hit.object.matrixWorld),.03);const surface=game.objects.find(o=>o.id===objectId(hit.object))||null,normal=hit.face?hit.face.normal.clone().transformDirection(hit.object.matrixWorld):null;return {x:p.x,y:p.y,z:p.z,surface,normal};}const p=game.player;return {x:p.x-Math.sin(yaw)*6,y:Math.floor(p.y/3)*3,z:p.z-Math.cos(yaw)*6};}
