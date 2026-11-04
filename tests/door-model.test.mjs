@@ -24,3 +24,8 @@ test('開いた後も左右の枠は残り、中央は通れる',()=>{
 test('開く向きは保存でき、不正な値を拒否する',()=>{
  const p=fresh3D(),o=configureDoor(part('door'),'swing');p.objects=[o];for(const value of [1,-1]){o.doorDirection=value;assert.equal(validate3D(p).objects[0].doorDirection,value);}for(const value of [0,2,'reverse',null]){o.doorDirection=value;assert.throws(()=>validate3D(p));}
 });
+
+test('スライドの両面の矢印は、90度回したドアも実際の開く方向を指す',()=>{
+ for(const rotation of [0,90])for(const direction of [1,-1]){const o=configureDoor(part('door'),'slide');if(rotation)rotatePiece(o);o.doorDirection=direction;const root=makeDoorModel(o,materials);root.updateMatrixWorld(true);const arrows=root.userData.arrows;assert.equal(arrows.length,2);assert.ok(arrows[0].position.z*arrows[1].position.z<0);const closed=root.userData.panel.getWorldPosition(new T.Vector3());o.doorAmount=1;updateDoorModel(root,o);root.updateMatrixWorld(true);const travel=root.userData.panel.getWorldPosition(new T.Vector3()).sub(closed).normalize();for(const arrow of arrows){const a=arrow.localToWorld(new T.Vector3(0,0,0)),b=arrow.localToWorld(new T.Vector3(1,0,0)).sub(a).normalize();assert.ok(b.dot(travel)>.999);}}
+ const swing=makeDoorModel(configureDoor(part('door'),'swing'),materials);assert.equal(swing.userData.arrows.length,0);
+});
