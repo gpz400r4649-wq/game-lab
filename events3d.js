@@ -1,6 +1,6 @@
-import {DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261106a';
-import {blockTemplate} from './building3d.js?v=20261106a';
-import {dropPickup} from './loot3d.js?v=20261106a';
+import {DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261106b';
+import {blockTemplate} from './building3d.js?v=20261106b';
+import {dropPickup} from './loot3d.js?v=20261106b';
 // A fixed menu of one-shot events. Item creation is bounded by the loot limit.
 export const EVENT_TYPES=new Set(['weapon','star','key','heal','door','checkpoint','goal']);
 export const EVENT_LIMIT=6;
@@ -29,7 +29,7 @@ export function validEvents(o){
   if(o.destroyEvents!==undefined&&(!DESTRUCTIBLE_TYPES.has(o.type)||!validList(o.destroyEvents,true)))return false;
   return true;
 }
-function runActions(g,p,o,actions,tell){
+export function runActions(g,p,o,actions,tell,recipient=g.player){
   const messages=[];
   for(const a of actions){
     switch(a.type){
@@ -39,7 +39,7 @@ function runActions(g,p,o,actions,tell){
       case 'addStar':g.stars++;messages.push('星を見つけた！');break;
       case 'addKey':g.keys++;messages.push('カギを手に入れた！');break;
       case 'addScore':g.score+=a.amount;messages.push(`得点 ＋${a.amount}`);break;
-      case 'heal':g.player.hp=Math.min(5,g.player.hp+a.amount);messages.push('体力を回復した！');break;
+      case 'heal':recipient.hp=Math.min(recipient.maxHp||5,recipient.hp+a.amount);messages.push('体力を回復した！');break;
       case 'openDoor':{const door=g.objects.find(x=>x.id===a.target&&x.type==='door');if(door){door.open=true;messages.push(door.doorMode==='free'?'ドアがあいた！':'ドアのカギがあいた！');}break;}
       case 'giveTool':{const index=p.loadout.findIndex(t=>t.id===a.target);if(index>=0){const tool=p.loadout[index];g.inventoryCounts??=Object.fromEntries(g.inventory.map(id=>[id,1]));const count=g.inventoryCounts[tool.id]||0;if(count>=99){messages.push('同じ銃は99こまで持てます');break;}if(!g.inventory.includes(tool.id))g.inventory.push(tool.id);g.inventoryCounts[tool.id]=count+1;g.equipped=index;g.blockEquipped=null;g.cooldown=0;g.recoilPitch=0;messages.push(tool.name+'をひろった！');}break;}
       case 'spawnEnemy':{const enemy=g.objects.find(x=>x.id===a.target&&x.type==='enemy'&&x.hidden&&x.hp>0);if(enemy){enemy.hidden=false;messages.push('敵が出現した！');}break;}
@@ -50,7 +50,7 @@ function runActions(g,p,o,actions,tell){
   tell(messages.join(' / ')||(['star','key','heal'].includes(o.type)?'アイテムをひろった！':'イベントが起きた！'));
 }
 
-export function fireEvents(g,p,o,tell){if(o.triggered)return;o.triggered=true;runActions(g,p,o,actionsFor(o),tell);}
+export function fireEvents(g,p,o,tell,recipient=g.player){if(o.triggered)return;o.triggered=true;runActions(g,p,o,actionsFor(o),tell,recipient);}
 export function fireDestructionEvents(g,o){
  if(o.destroyedTriggered)return;o.destroyedTriggered=true;
  const actions=o.destroyEvents||[];if(!actions.length)return;

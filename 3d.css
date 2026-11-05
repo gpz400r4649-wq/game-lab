@@ -72,3 +72,5 @@ main.range-editing{display:grid;grid-template-columns:minmax(0,1fr) min(440px,42
 #ally-order3{position:absolute;transform:translate(-50%,-100%);z-index:6;min-height:44px;background:#e3fff0;color:#175c40}
 
 #ally-gift3{position:absolute;transform:translate(-50%,3px);z-index:6;min-height:44px;background:#e3fff0;color:#175c40}
+
+#talk3,#escort-count3{position:absolute;z-index:6;left:50%;top:20%;transform:translateX(-50%)}#talk3{min-height:44px}#escort-count3{top:12%;background:white;padding:.3em .7em;border-radius:8px}#talk-dialog3 p{white-space:pre-wrap}#talk-dialog3 div{display:grid;gap:.5em;margin-bottom:1em}
