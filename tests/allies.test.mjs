@@ -31,3 +31,10 @@ test('見える範囲は５マスまでで短い銃は射程まで縮む',()=>{
  const a={allyGun:'short'};assert.equal(allyAttackDistance(a,[]),20);
  assert.equal(allyAttackDistance(a,[{id:'short',effect:'shoot',range:8}]),8);
 });
+test('横移動を終えた後に視点だけ一周しても陣形の位置を保つ',()=>{
+ const {a,g,tick}=scene();tick(1,{allyCommand:a.id,yaw:0});g.formation='spread';
+ for(let i=0;i<50;i++){g.player.x+=.1;tick(1);}
+ tick(150);const expected=spreadPosition(g.player,-Math.PI/2,0);
+ assert.ok(Math.hypot(a.x-expected.x,a.z-expected.z)<.01);
+ for(let i=0;i<100;i++){tick(1,{yaw:i*Math.PI/50});assert.ok(Math.hypot(a.x-expected.x,a.z-expected.z)<.01);}
+});

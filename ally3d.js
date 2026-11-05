@@ -33,6 +33,12 @@ export function spreadPosition(player,yaw,rank){
 }
 export function stepAllies(g,p,input,dt,move){
  if(!g.allies?.length)return;
+ const anchor=g.formationAnchor??={x:p.spawn.x,z:p.spawn.z};
+ const travelX=g.player.x-anchor.x,travelZ=g.player.z-anchor.z;
+ if(Math.hypot(travelX,travelZ)>=.08){
+  g.formationYaw=Math.atan2(-travelX,-travelZ);
+  anchor.x=g.player.x;anchor.z=g.player.z;
+ }
  if(input.allyCommand){const a=recruitTarget(g,input.yaw||0);if(a&&a.id===input.allyCommand){a.following=!a.following;a.recruited=true;a.trail=[point(a),point(g.player)];g.message=a.following?'りょうかい！ ついていくよ':'ここでまっているよ';g.messageId++;}}
  let slot=0;
  for(const a of g.allies){
@@ -40,7 +46,7 @@ export function stepAllies(g,p,input,dt,move){
   if(a.following){
    const rank=slot++,trail=a.trail,last=trail.at(-1);
    if(Math.hypot(last.x-g.player.x,last.z-g.player.z)>.5){trail.push(point(g.player));if(trail.length>256)trail.shift();}
-   const offset=spreadPosition(g.player,input.yaw||0,rank);
+   const offset=spreadPosition(g.player,g.formationYaw||0,rank);
    const spread=g.formation==='spread'&&Math.abs(g.player.y-a.y)<.6&&
     !obstructed(g,g.player,offset,g.player.y)&&!obstructed(g,a,offset,a.y);
    const lag=3+rank*3;

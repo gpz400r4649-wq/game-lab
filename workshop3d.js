@@ -1,4 +1,4 @@
-import {allyAttackDistance} from './ally3d.js?v=20261105h';
+import {allyAttackDistance} from './ally3d.js?v=20261105i';
 import {makeTool} from './building3d.js?v=20261105h';
 import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261105h';
 import {openWaypointEditor} from './waypoint-ui3d.js?v=20261105h';
@@ -16,7 +16,7 @@ import {actionsFor} from './events3d.js?v=20261105h';
 import {renderEventEditor} from './event-editor3d.js?v=20261105h';
 import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261105h';
 import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261105h';
-import {PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261105h';
+import {PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261105i';
 
 const ICONS={ally:'🛡',weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
 const DESCRIPTIONS={ally:'近くで「ついてきて」と呼ぶと、一緒に戦うよ。',weapon:'地面に置いて、ふれると拾える銃。持ちもの・銃づくりで用意した銃をえらぼう。',ramp:'低いほうから歩くと、そのまま登れるスロープ。回して好きな向きにつなげよう。',wall:'家を囲う壁。向きを変えてつなげよう。',floor:'家の床と天井に使える板。壁の内側にぴったり合うよ。',roof:'壁の上にのせる三角屋根。向きを変えて家を仕上げよう。',

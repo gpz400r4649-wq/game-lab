@@ -1,4 +1,4 @@
-import {stepAllies} from './ally3d.js?v=20261105h';
+import {stepAllies} from './ally3d.js?v=20261105i';
 import {validEnemyLoot} from './enemy-loot3d.js?v=20261105h';
 import {validPatrolRoute,validWaypoints} from './patrol-route3d.js?v=20261105h';
 import {validLibrary} from './assets3d.js?v=20261105h';
