@@ -1,5 +1,5 @@
-import {doorwayOccupied} from './doors3d.js?v=20261106d';
-import {runActions} from './events3d.js?v=20261106d';
+import {doorwayOccupied} from './doors3d.js?v=20261106f';
+import {runActions} from './events3d.js?v=20261106f';
 
 export function nearbyActor(g,yaw){
  let best=null,distance=4;
@@ -28,7 +28,7 @@ export function updatePlates(g){
  }
  for(const door of g.plateDoors)door.open=held.has(door.id)||(door.open&&(doorwayOccupied(door,g.player)||g.allies.some(a=>doorwayOccupied(door,a))));
 }
-export const ACTOR_HATS={yellow:'きいろのぼうし',none:'ぼうしなし',cap:'キャップ',chef:'コックぼう',witch:'とんがりぼうし'};
+export const ACTOR_HATS={yellow:'きいろのぼうし',straw:'むぎわらぼうし',none:'ぼうしなし',cap:'キャップ',chef:'コックぼう',witch:'とんがりぼうし'};
 export function validCharacterSettings(o){
  if(o.type==='actor')return (o.hat===undefined||Object.hasOwn(ACTOR_HATS,o.hat))&&(o.actorName===undefined||typeof o.actorName==='string'&&o.actorName.length<=32)&&(o.speech===undefined||typeof o.speech==='string'&&o.speech.length<=240)&&(o.offers===undefined||Array.isArray(o.offers)&&o.offers.length<=6&&o.offers.every(a=>a&&typeof a.gun==='string'&&a.gun.length<=100&&Number.isInteger(a.price)&&a.price>=1&&a.price<=99));
  if(o.type==='plate')return (o.doorId===undefined||typeof o.doorId==='string')&&(o.who===undefined||['both','player','ally'].includes(o.who));

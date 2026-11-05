@@ -1,10 +1,10 @@
-import {dropEnemyLoot} from './enemy-loot3d.js?v=20261106d';
-import {MAX_BUILD_Y} from './limits3d.js?v=20261106d';
-import {nearbyObjects} from './spatial3d.js?v=20261106d';
-import {worldHalf} from './world3d.js?v=20261106d';
-import {fireDestructionEvents} from './events3d.js?v=20261106d';
-import {topAt} from './building3d.js?v=20261106d';
-import {LIMITS,safeShot,DESTRUCTIBLE_TYPES,impactEffects} from './weapons3d.js?v=20261106d';
+import {dropEnemyLoot} from './enemy-loot3d.js?v=20261106f';
+import {MAX_BUILD_Y} from './limits3d.js?v=20261106f';
+import {nearbyObjects} from './spatial3d.js?v=20261106f';
+import {worldHalf} from './world3d.js?v=20261106f';
+import {fireDestructionEvents} from './events3d.js?v=20261106f';
+import {topAt} from './building3d.js?v=20261106f';
+import {LIMITS,safeShot,DESTRUCTIBLE_TYPES,impactEffects} from './weapons3d.js?v=20261106f';
 const solidType=o=>DESTRUCTIBLE_TYPES.has(o.type)||o.type==='door';
 const robot=o=>o.type==='enemy'||o.type==='ally';
 function canHitRobot(g,b,o){
@@ -37,16 +37,16 @@ function damageObject(g,o,damage){
   g.hitInfo={name:o.type==='ally'?'味方ロボット':o.type==='enemy'?'敵ロボット':o.type==='ramp'?'スロープ':'ブロック',hp:o.hp,maxHp:o.maxHp,until:g.time+1.2};
   if(o.hp===0){if(o.type==='enemy')g.score+=10;g.message=o.type==='ally'?'味方がたおれた！':o.type==='enemy'?'敵をたおした！':'ブロックをこわした！';g.messageId++;}
 }
-function boxDistance(point,o){const w=robot(o)?1.3:o.w,d=robot(o)?1.3:o.d,h=robot(o)?1.8:o.h;return Math.hypot(Math.max(0,Math.abs(point.x-o.x)-w/2),Math.max(o.y-point.y,point.y-o.y-h,0),Math.max(0,Math.abs(point.z-o.z)-d/2));}
+function boxDistance(point,o){const w=robot(o)?1.3*(o.enemyScale||1):o.w,d=robot(o)?1.3*(o.enemyScale||1):o.d,h=robot(o)?1.8*(o.enemyScale||1):o.h;return Math.hypot(Math.max(0,Math.abs(point.x-o.x)-w/2),Math.max(o.y-point.y,point.y-o.y-h,0),Math.max(0,Math.abs(point.z-o.z)-d/2));}
 function explode(g,b){effect(g,b,b.blastRadius,'blast');for(const o of g.objects)if(!o.hidden&&alive(o)&&(canHitRobot(g,b,o)||DESTRUCTIBLE_TYPES.has(o.type))&&boxDistance(b,o)<=b.blastRadius)damageObject(g,o,b.damage);if(b.enemy&&g.player.invincible<=0&&boxDistance(b,{...g.player,type:'player',w:.7,d:.7,h:1.7})<=b.blastRadius){g.player.hp-=b.damage;g.player.invincible=1;}}
-function contains(b,o){const r=b.radius||.1;if(robot(o))return Math.hypot(b.x-o.x,b.z-o.z)<.65+r&&b.y>o.y-r&&b.y<o.y+1.8+r;return Math.abs(b.x-o.x)<o.w/2+r&&Math.abs(b.z-o.z)<o.d/2+r&&b.y>o.y-r&&b.y<topAt(o,b.x,b.z)+r;}
+function contains(b,o){const r=b.radius||.1;if(robot(o))return Math.hypot(b.x-o.x,b.z-o.z)<.65*(o.enemyScale||1)+r&&b.y>o.y-r&&b.y<o.y+1.8*(o.enemyScale||1)+r;return Math.abs(b.x-o.x)<o.w/2+r&&Math.abs(b.z-o.z)<o.d/2+r&&b.y>o.y-r&&b.y<topAt(o,b.x,b.z)+r;}
 // Stop the firing origin at the first obstruction between the player and muzzle.
 // This prevents a long barrel from starting a bullet on the far side of a wall.
 export function resolveShotOrigin(g,start,muzzle,radius=.1,ignoreId=null){
  const distance=Math.hypot(muzzle.x-start.x,muzzle.y-start.y,muzzle.z-start.z),steps=Math.max(1,Math.min(96,Math.ceil(distance/.04))),targets=nearbyObjects(g,Math.min(start.x,muzzle.x)-radius,Math.min(start.z,muzzle.z)-radius,Math.max(start.x,muzzle.x)+radius,Math.max(start.z,muzzle.z)+radius).filter(o=>o.id!==ignoreId&&!o.hidden&&alive(o)&&(solidType(o)&&!o.open||o.type==='enemy'));
  for(let i=0;i<=steps;i++){const t=i/steps,p={x:start.x+(muzzle.x-start.x)*t,y:start.y+(muzzle.y-start.y)*t,z:start.z+(muzzle.z-start.z)*t,radius};if(targets.some(o=>contains(p,o)))return {x:p.x,y:p.y,z:p.z};}return {x:muzzle.x,y:muzzle.y,z:muzzle.z};
 }
-function nearbySweep(b,end,o){const r=b.radius||.1,w=robot(o)?1.3:o.w,h=robot(o)?1.8:o.h,d=robot(o)?1.3:o.d;return Math.min(b.x,end.x)-r<=o.x+w/2&&Math.max(b.x,end.x)+r>=o.x-w/2&&Math.min(b.z,end.z)-r<=o.z+d/2&&Math.max(b.z,end.z)+r>=o.z-d/2&&Math.min(b.y,end.y)-r<=o.y+h&&Math.max(b.y,end.y)+r>=o.y;}
+function nearbySweep(b,end,o){const r=b.radius||.1,w=robot(o)?1.3*(o.enemyScale||1):o.w,h=robot(o)?1.8*(o.enemyScale||1):o.h,d=robot(o)?1.3*(o.enemyScale||1):o.d;return Math.min(b.x,end.x)-r<=o.x+w/2&&Math.max(b.x,end.x)+r>=o.x-w/2&&Math.min(b.z,end.z)-r<=o.z+d/2&&Math.max(b.z,end.z)+r>=o.z-d/2&&Math.min(b.y,end.y)-r<=o.y+h&&Math.max(b.y,end.y)+r>=o.y;}
 function normalAt(b,o){if(!o)return {x:0,y:1,z:0};const r=b.radius||.1,faces=[{d:Math.abs(b.x-(o.x-o.w/2-r)),x:-1,y:0,z:0},{d:Math.abs(b.x-(o.x+o.w/2+r)),x:1,y:0,z:0},{d:Math.abs(b.z-(o.z-o.d/2-r)),x:0,y:0,z:-1},{d:Math.abs(b.z-(o.z+o.d/2+r)),x:0,y:0,z:1},{d:Math.abs(b.y-(o.y-r)),x:0,y:-1,z:0},{d:Math.abs(b.y-topAt(o,b.x,b.z)-r),x:0,y:1,z:0}];return faces.reduce((a,b)=>a.d<b.d?a:b);}
 export function updateCombat(g,dt){
   g.effects=g.effects.filter(e=>(e.life-=dt)>0);if(g.bullets.length>LIMITS.bullets)g.bullets.length=LIMITS.bullets;

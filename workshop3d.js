@@ -1,23 +1,23 @@
-import {ACTOR_HATS} from './actor3d.js?v=20261106d';
-import {allyAttackDistance} from './ally3d.js?v=20261106d';
-import {makeTool} from './building3d.js?v=20261106d';
-import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261106d';
-import {openWaypointEditor} from './waypoint-ui3d.js?v=20261106d';
-import {openPatrolEditor} from './patrol-ui3d.js?v=20261106d';
-import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261106d';
-import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261106d';
-import {inGridRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261106d';
-import {renderEnemyRange} from './enemy-range-ui3d.js?v=20261106d';
-import {gunPreviewSVG} from './appearance3d.js?v=20261106d';
-import {DOOR_PRESETS} from './doors3d.js?v=20261106d';
-import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261106d';
-import {coordinateLimit} from './world3d.js?v=20261106d';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261106d';
-import {actionsFor} from './events3d.js?v=20261106d';
-import {renderEventEditor} from './event-editor3d.js?v=20261106d';
-import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261106d';
-import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261106d';
-import {PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261106d';
+import {ACTOR_HATS} from './actor3d.js?v=20261106f';
+import {allyAttackDistance} from './ally3d.js?v=20261106f';
+import {makeTool} from './building3d.js?v=20261106f';
+import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261106f';
+import {openWaypointEditor} from './waypoint-ui3d.js?v=20261106f';
+import {openPatrolEditor} from './patrol-ui3d.js?v=20261106f';
+import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261106f';
+import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261106f';
+import {inGridRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261106f';
+import {renderEnemyRange} from './enemy-range-ui3d.js?v=20261106f';
+import {gunPreviewSVG} from './appearance3d.js?v=20261106f';
+import {DOOR_PRESETS} from './doors3d.js?v=20261106f';
+import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261106f';
+import {coordinateLimit} from './world3d.js?v=20261106f';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261106f';
+import {actionsFor} from './events3d.js?v=20261106f';
+import {renderEventEditor} from './event-editor3d.js?v=20261106f';
+import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261106f';
+import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261106f';
+import {PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261106f';
 
 const ICONS={actor:'💬',plate:'▣',ally:'🛡',weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
 const DESCRIPTIONS={actor:'名前とせりふを書こう。交換する品を置くとお店になるよ。',plate:'踏んでいる間、えらんだドアが開くよ。',ally:'近くで「ついてきて」と呼ぶと、一緒に戦うよ。',weapon:'地面に置いて、ふれると拾える銃。持ちもの・銃づくりで用意した銃をえらぼう。',ramp:'低いほうから歩くと、そのまま登れるスロープ。回して好きな向きにつなげよう。',wall:'家を囲う壁。向きを変えてつなげよう。',floor:'家の床と天井に使える板。壁の内側にぴったり合うよ。',roof:'壁の上にのせる三角屋根。向きを変えて家を仕上げよう。',
@@ -111,7 +111,10 @@ export function createWorkshop(api){
     }
     if(o.type==='enemy'){
       selectField(el,'いつ出現する？',[['start','最初からいる'],['event','イベントで出現を待つ']],o.startsHidden?'event':'start',v=>{o.startsHidden=v==='event';inspect();});
-      field(el,'体力',o.hp,1,20,1,n=>o.hp=Math.round(n));
+      field(el,'体力',o.hp,1,500,1,n=>o.hp=Math.round(n));
+      selectField(el,'からだの大きさ',[1,1.5,2,2.5,3].map(n=>[String(n),n+'倍']),String(o.enemyScale||1),v=>{
+        o.enemyScale=Number(v);o.w=o.h=o.d=2*o.enemyScale;
+      });
       const movement=document.createElement('section');movement.className='enemy-settings-group';movement.setAttribute('aria-label','動きかた');const movementTitle=document.createElement('h3');setReadingText(movementTitle,'動きかた');movement.append(movementTitle);el.append(movement);
       if(o.program.length&&!o.patrolRoute&&!o.waypoints&&o.moveRange?.space==='world'&&!inGridRange(o.moveRange,{x:0,z:0},o)){const note=document.createElement('p');note.className='recipe-hint';setReadingText(note,'この敵は移動できるマスの外にいます。青いマスの中に置こう。');movement.append(note);}
       const syncBehavior=renderBehaviorExamples(movement,o,{save,rebuild,inspect,getProject});
