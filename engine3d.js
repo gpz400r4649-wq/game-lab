@@ -1,20 +1,20 @@
-import {companionsAt,updatePlates,validCharacterSettings} from './actor3d.js?v=20261106g';
-import {stepAllies} from './ally3d.js?v=20261106g';
-import {validEnemyLoot} from './enemy-loot3d.js?v=20261106g';
-import {validPatrolRoute,validWaypoints} from './patrol-route3d.js?v=20261106g';
-import {validLibrary} from './assets3d.js?v=20261106g';
-import {moveEnemy,canEnemyEnter,validEnemyMovement} from './enemy-ai3d.js?v=20261106g';
-import {worldMoveRange,validMoveRange,validAttackRange,inAttackRange,enemyYaw,defaultEnemyRanges} from './enemy-range3d.js?v=20261106g';
-import {playerGunMuzzle,finitePoint} from './muzzle3d.js?v=20261106g';
-import {doorFrameSolids,validDoor,nearbyDoor,doorwayOccupied,animateDoors} from './doors3d.js?v=20261106g';
-import {nearbyObjects} from './spatial3d.js?v=20261106g';
-import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261106g';
-import {worldSize,worldHalf,coordinateLimit,WORLD_SIZES} from './world3d.js?v=20261106g';
-import {settleLoot} from './loot3d.js?v=20261106g';
-import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261106g';
-import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261106g';
-import {shootVolley,updateCombat,resolveShotOrigin} from './combat3d.js?v=20261106g';
-import {BUILD_TYPES,constructionPart,topAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261106g';
+import {companionsAt,updatePlates,validCharacterSettings} from './actor3d.js?v=20261106h';
+import {stepAllies} from './ally3d.js?v=20261106h';
+import {validEnemyLoot} from './enemy-loot3d.js?v=20261106h';
+import {validPatrolRoute,validWaypoints} from './patrol-route3d.js?v=20261106h';
+import {validLibrary} from './assets3d.js?v=20261106h';
+import {moveEnemy,canEnemyEnter,validEnemyMovement} from './enemy-ai3d.js?v=20261106h';
+import {worldMoveRange,validMoveRange,validAttackRange,inAttackRange,enemyYaw,defaultEnemyRanges} from './enemy-range3d.js?v=20261106h';
+import {enemyGunMuzzle,playerGunMuzzle,finitePoint} from './muzzle3d.js?v=20261106h';
+import {doorFrameSolids,validDoor,nearbyDoor,doorwayOccupied,animateDoors} from './doors3d.js?v=20261106h';
+import {nearbyObjects} from './spatial3d.js?v=20261106h';
+import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261106h';
+import {worldSize,worldHalf,coordinateLimit,WORLD_SIZES} from './world3d.js?v=20261106h';
+import {settleLoot} from './loot3d.js?v=20261106h';
+import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261106h';
+import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261106h';
+import {shootVolley,updateCombat,resolveShotOrigin} from './combat3d.js?v=20261106h';
+import {BUILD_TYPES,constructionPart,topAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261106h';
 export const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export const ENEMY_SCALES=Array.from({length:19},(_,i)=>1+i/2);
 export const PARTS={actor:'役者キャラクター',plate:'床スイッチ',ally:'味方ロボット',weapon:'銃アイテム',ramp:'スロープ',wall:'壁',floor:'床',roof:'屋根',box:'ブロック',platform:'足場',moving:'動く足場',bounce:'ジャンプ台',enemy:'敵ロボット',star:'星',key:'カギ',door:'ドア',heal:'回復',checkpoint:'セーブポイント',hazard:'ダメージ床',goal:'ゴール'};
@@ -126,7 +126,7 @@ export function step3D(g,p,input,dt){
     movePlayer(o,terrain,0,0,dt,false,g);
     for(const b of o.program)moveEnemy(o,b,player,dt,g.time,tryMove);
     if(o.attackEnabled&&inAttackRange(o,player)){
-      if(o.cooldown<=0){const weapon=enemyWeapon(o,p.loadout),shot=weapon?safeShot(weapon):null,start={x:o.x,y:o.y+1.1*(o.enemyScale||1),z:o.z},yaw=enemyYaw(o,player),origin=weapon?resolveShotOrigin(g,start,playerGunMuzzle(o,weapon,yaw),shot.radius,o.id):start;shootVolley(g,origin,{x:player.x-origin.x,y:player.y+.9-origin.y,z:player.z-origin.z},weapon||{speed:o.attackSpeed+5,damage:1,spread:1},true);o.cooldown=shot?.interval??1.4;}
+      if(o.cooldown<=0){const weapon=enemyWeapon(o,p.loadout),shot=weapon?safeShot(weapon):null,start={x:o.x,y:o.y+1.1*(o.enemyScale||1),z:o.z},yaw=enemyYaw(o,player),origin=resolveShotOrigin(g,start,enemyGunMuzzle(o,weapon,yaw),shot?.radius??.1,o.id);shootVolley(g,origin,{x:player.x-origin.x,y:player.y+.9-origin.y,z:player.z-origin.z},weapon||{speed:o.attackSpeed+5,damage:1,spread:1},true);o.cooldown=shot?.interval??1.4;}
       if(Math.hypot(o.x-player.x,o.z-player.z)<.35+.65*(o.enemyScale||1)&&player.y<o.y+1.7*(o.enemyScale||1)&&player.y+1.7>o.y&&player.invincible<=0){player.hp--;player.invincible=1;}
     }}
   stepAllies(g,p,input,dt,movePlayer);

@@ -12,3 +12,13 @@ test('FPSの銃口はカメラの位置・回転を含めたモデルの先端�
 test('移動後の銃口から発射し、そこから照準の対象へ向かう',()=>{const p=fresh3D(),g=create3D(p),target={x:0,y:1,z:-10};let muzzle=null;const dt=.02;step3D(g,p,{x:1,fire:true,aimTarget:target,getShotOrigin:player=>{assert.ok(player.x>0);muzzle={x:player.x+.3,y:player.y+1.2,z:player.z-.5};return muzzle;}},dt);assert.equal(g.bullets.length,1);const b=g.bullets[0],start={x:b.x-b.vx*dt,y:b.y-b.vy*dt,z:b.z-b.vz*dt};for(const key of ['x','y','z'])assert.ok(Math.abs(start[key]-muzzle[key])<.00001);const direction=new T.Vector3(target.x-start.x,target.y-start.y,target.z-start.z).normalize(),velocity=new T.Vector3(b.vx,b.vy,b.vz).normalize();assert.ok(direction.distanceTo(velocity)<.00001);});
 test('サプレッサーを付けると発射位置がその先端へ移り、不正な位置は使わない',()=>{const player={x:0,y:0,z:0},base={appearance:{shape:'rifle',barrel:1}},normal=playerGunMuzzle(player,base),suppressed=playerGunMuzzle(player,{appearance:{...base.appearance,suppressor:true}});assert.ok(suppressed.z<normal.z);const p=fresh3D(),g=create3D(p);step3D(g,p,{fire:true,getShotOrigin:()=>({x:Infinity,y:0,z:0})},.01);assert.equal(g.bullets.length,1);assert.ok(['x','y','z'].every(k=>Number.isFinite(g.bullets[0][k])));});
 test('銃口が薄い壁の向こうへ出ても、手前の壁で止まり奥の敵へ当たらない',()=>{const p=fresh3D();p.spawn.z=0;const wall=constructionPart('wall',0,-.6);wall.hp=200;const enemy=part('enemy',0,-3);enemy.attackEnabled=false;p.objects=[wall,enemy];const g=create3D(p),start={x:0,y:1.35,z:0},muzzle={x:.4,y:1.1,z:-2},resolved=resolveShotOrigin(g,start,muzzle,.1);assert.ok(resolved.z>wall.z);step3D(g,p,{fire:true,getShotOrigin:()=>muzzle,aimTarget:{x:0,y:1,z:-3}},.02);assert.ok(g.objects.find(o=>o.id===wall.id).hp<200);assert.equal(g.objects.find(o=>o.id===enemy.id).hp,3);assert.equal(g.bullets.length,0);});
+test('標準銃の敵は横向きでも通常サイズ・10倍とも銃身の先端から撃つ',()=>{
+ for(const size of [1,10]){
+  const p=fresh3D(),enemy=part('enemy',0,0);enemy.facing=90;enemy.enemyScale=size;
+  enemy.attackRange={shape:'custom',space:'facing',cross:1,circle:1,cells:[[0,0],[0,-1],[0,-2]]};
+  p.objects=[enemy];p.spawn={x:-8,y:0,z:0};const g=create3D(p);step3D(g,p,{},.01);
+  const b=g.bullets.find(b=>b.enemy);assert.ok(b);
+  const origin=new T.Vector3(b.x-b.vx*.01,b.y-b.vy*.01,b.z-b.vz*.01);
+  assert.ok(origin.distanceTo(new T.Vector3(-.665*size,size,-.45*size))<1e-6);
+ }
+});
