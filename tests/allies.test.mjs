@@ -38,3 +38,15 @@ test('横移動を終えた後に視点だけ一周しても陣形の位置を�
  assert.ok(Math.hypot(a.x-expected.x,a.z-expected.z)<.01);
  for(let i=0;i<100;i++){tick(1,{yaw:i*Math.PI/50});assert.ok(Math.hypot(a.x-expected.x,a.z-expected.z)<.01);}
 });
+import {giveAllyGun} from '../ally3d.js';
+test('近くの仲間に装備中の銃だけを一個渡す。作品には保存しない',()=>{
+ const {a,g,tick}=scene();const catalog=g.toolCatalog;
+ const gift={...catalog[0],id:'gift',name:'ギフト',speed:30};catalog.push(gift);
+ g.inventory.push(gift.id);g.inventoryCounts.gift=2;g.equipped=1;
+ assert.equal(giveAllyGun(g,catalog,a.id,0),false);
+ tick(1,{allyCommand:a.id,yaw:0});assert.equal(giveAllyGun(g,catalog,a.id,0),true);
+ assert.equal(a.allyGun,'gift');assert.equal(g.inventoryCounts.gift,1);assert.equal(g.equipped,1);
+ assert.equal(giveAllyGun(g,catalog,a.id,0),false);
+ a.allyGun='';assert.equal(giveAllyGun(g,catalog,a.id,0),true);
+ assert.equal(g.inventory.includes('gift'),false);assert.equal(g.equipped,0);
+});

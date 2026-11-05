@@ -70,3 +70,5 @@ main.range-editing{display:grid;grid-template-columns:minmax(0,1fr) min(440px,42
 #edit-history3[hidden]{display:none}#edit-history3 button{min-height:46px;min-width:82px}#edit-history3 button:disabled{opacity:.38;cursor:default}
 
 #ally-order3{position:absolute;transform:translate(-50%,-100%);z-index:6;min-height:44px;background:#e3fff0;color:#175c40}
+
+#ally-gift3{position:absolute;transform:translate(-50%,3px);z-index:6;min-height:44px;background:#e3fff0;color:#175c40}

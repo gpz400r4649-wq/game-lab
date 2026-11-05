@@ -1,6 +1,6 @@
-import {nearbyObjects} from './spatial3d.js?v=20261105h';
-import {shootVolley} from './combat3d.js?v=20261105h';
-import {safeShot} from './weapons3d.js?v=20261105h';
+import {nearbyObjects} from './spatial3d.js?v=20261105j';
+import {shootVolley} from './combat3d.js?v=20261105j';
+import {safeShot} from './weapons3d.js?v=20261105j';
 
 export function recruitTarget(g,yaw){
  let best=null,score=0;
@@ -11,6 +11,25 @@ export function recruitTarget(g,yaw){
   if(facing>.65&&facing/(1+d*.06)>score&&!obstructed(g,g.player,a,a.y)){best=a;score=facing/(1+d*.06);}
  }
  return best;
+}
+export function giftableGun(g, ally, catalog){
+ const gun=catalog[g.equipped];
+ if(!ally?.recruited||g.blockEquipped||gun?.effect!=='shoot'||gun.id===ally.allyGun)return null;
+ return g.inventory.includes(gun.id)&&g.inventoryCounts[gun.id]>0?gun:null;
+}
+export function giveAllyGun(g,catalog,targetId,yaw){
+ if(g.state!=='playing')return false;
+ const ally=recruitTarget(g,yaw);
+ if(!ally||ally.id!==targetId)return false;
+ const gun=giftableGun(g,ally,catalog);
+ if(!gun)return false;
+ ally.allyGun=gun.id;
+ if(--g.inventoryCounts[gun.id]===0){
+  g.inventory=g.inventory.filter(id=>id!==gun.id);
+  g.equipped=catalog.findIndex(tool=>g.inventory.includes(tool.id));
+ }
+ g.message=gun.name+'を味方にわたしたよ';g.messageId++;
+ return true;
 }
 function point(o){return {x:o.x,y:o.y,z:o.z};}
 function obstructed(g,start,end,y){
