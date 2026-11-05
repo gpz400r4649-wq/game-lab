@@ -1,19 +1,19 @@
-import {stepAllies} from './ally3d.js?v=20261105k';
-import {validEnemyLoot} from './enemy-loot3d.js?v=20261105k';
-import {validPatrolRoute,validWaypoints} from './patrol-route3d.js?v=20261105k';
-import {validLibrary} from './assets3d.js?v=20261105k';
-import {moveEnemy,canEnemyEnter,validEnemyMovement} from './enemy-ai3d.js?v=20261105k';
-import {worldMoveRange,validMoveRange,validAttackRange,inAttackRange,enemyYaw,defaultEnemyRanges} from './enemy-range3d.js?v=20261105k';
-import {playerGunMuzzle,finitePoint} from './muzzle3d.js?v=20261105k';
-import {doorFrameSolids,validDoor,nearbyDoor,doorwayOccupied,animateDoors} from './doors3d.js?v=20261105k';
-import {nearbyObjects} from './spatial3d.js?v=20261105k';
-import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261105k';
-import {worldSize,worldHalf,coordinateLimit,WORLD_SIZES} from './world3d.js?v=20261105k';
-import {settleLoot} from './loot3d.js?v=20261105k';
-import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261105k';
-import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261105k';
-import {shootVolley,updateCombat,resolveShotOrigin} from './combat3d.js?v=20261105k';
-import {BUILD_TYPES,constructionPart,topAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261105k';
+import {stepAllies} from './ally3d.js?v=20261106a';
+import {validEnemyLoot} from './enemy-loot3d.js?v=20261106a';
+import {validPatrolRoute,validWaypoints} from './patrol-route3d.js?v=20261106a';
+import {validLibrary} from './assets3d.js?v=20261106a';
+import {moveEnemy,canEnemyEnter,validEnemyMovement} from './enemy-ai3d.js?v=20261106a';
+import {worldMoveRange,validMoveRange,validAttackRange,inAttackRange,enemyYaw,defaultEnemyRanges} from './enemy-range3d.js?v=20261106a';
+import {playerGunMuzzle,finitePoint} from './muzzle3d.js?v=20261106a';
+import {doorFrameSolids,validDoor,nearbyDoor,doorwayOccupied,animateDoors} from './doors3d.js?v=20261106a';
+import {nearbyObjects} from './spatial3d.js?v=20261106a';
+import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261106a';
+import {worldSize,worldHalf,coordinateLimit,WORLD_SIZES} from './world3d.js?v=20261106a';
+import {settleLoot} from './loot3d.js?v=20261106a';
+import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261106a';
+import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261106a';
+import {shootVolley,updateCombat,resolveShotOrigin} from './combat3d.js?v=20261106a';
+import {BUILD_TYPES,constructionPart,topAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261106a';
 export const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export const PARTS={ally:'味方ロボット',weapon:'銃アイテム',ramp:'スロープ',wall:'壁',floor:'床',roof:'屋根',box:'ブロック',platform:'足場',moving:'動く足場',bounce:'ジャンプ台',enemy:'敵ロボット',star:'星',key:'カギ',door:'ドア',heal:'回復',checkpoint:'セーブポイント',hazard:'ダメージ床',goal:'ゴール'};
 export const BEHAVIORS={chase:'プレイヤーを追いかける',patrol:'行ったり来たり',search:'歩き回って探す'};
@@ -23,7 +23,7 @@ export const CONDITION_NAMES={unset:'クリア条件をえらぶ',touch:'その�
 const solidTypes=new Set(['box','platform','moving','door','wall','floor','roof','ramp']);
 export function settingsFor(type){return {axis:'x',distance:3,speed:2,value:type==='bounce'?11:type==='star'?5:1,condition:type==='goal'?'unset':type==='door'?'keys':'touch',required:1};}
 export function part(type,x=0,z=-5){if(Object.hasOwn(BUILD_TYPES,type))return constructionPart(type,x,z);return {id:crypto.randomUUID(),type,x,y:['platform','moving'].includes(type)?1:0,z,w:['box','platform','moving'].includes(type)?4:type==='door'?3:2,h:type==='box'?3:['platform','moving'].includes(type)?.5:['bounce','hazard'].includes(type)?.2:type==='door'?3:2,d:type==='door'?.6:['box','platform','moving'].includes(type)?4:2,hp:DESTRUCTIBLE_TYPES.has(type)?20:3,...(DESTRUCTIBLE_TYPES.has(type)?{destructible:true}:{}),program:[],settings:settingsFor(type),...(type==='weapon'?{weaponId:''}:{}),...(type==='enemy'?{attackEnabled:true,attackSpeed:3,...defaultEnemyRanges({x,z})}:{})};}
-export function fresh3D(){const weapon={speed:24,interval:.25,damage:1,spread:1};return {version:1,kind:'game-lab-3d',worldSize:60,title:'わたしの3Dワールド',spawn:{x:0,y:0,z:8},weapon,loadout:defaultLoadout(weapon),objects:[]};}
+export function fresh3D(){const weapon={speed:24,interval:.25,damage:1,spread:1};return {version:1,kind:'game-lab-3d',worldSize:60,playerHitsAlly:false,title:'わたしの3Dワールド',spawn:{x:0,y:0,z:8},weapon,loadout:defaultLoadout(weapon),objects:[]};}
 export function validate3D(data){
   const p=structuredClone(data),number=(v,a,b)=>Number.isFinite(v)&&v>=a&&v<=b;
   if(p?.worldSize!==undefined&&!WORLD_SIZES.includes(p.worldSize))throw Error('マップのひろさを確認してください');
@@ -50,7 +50,12 @@ export function validate3D(data){
     if(o.type==='enemy'){if(o.facing!==undefined&&![0,90,180,270].includes(o.facing))throw Error('敵の向きを確認してください');if(o.attackEnabled!==undefined&&typeof o.attackEnabled!=='boolean'||o.attackSpeed!==undefined&&!number(o.attackSpeed,.5,8)||o.enemyWeaponId!==undefined&&typeof o.enemyWeaponId!=='string')throw Error('敵の攻撃設定を確認してください');upgradeEnemy(o);}
     if(o.settings===undefined)o.settings=settingsFor(o.type);
     const s=o.settings;if(!s||!['x','y','z'].includes(s.axis)||!number(s.distance,.5,8)||!number(s.speed,.5,5)||!Number.isInteger(s.value)||!number(s.value,1,20)||!Object.hasOwn(CONDITION_NAMES,s.condition)||!Number.isInteger(s.required)||!number(s.required,1,20))throw Error('しかけの設定を確認してください');
-  }return p;
+  }
+  if(p.playerHitsAlly!==undefined&&typeof p.playerHitsAlly!=='boolean')throw Error('作品のルールを確認してください');
+  const allies=p.objects.filter(o=>o.type==='ally');
+  p.playerHitsAlly??=allies.length>0&&allies.every(a=>a.playerHitsAlly===true);
+  for(const ally of allies)delete ally.playerHitsAlly;
+  return p;
 }
 export const solids=objects=>objects.flatMap(o=>o.type==='door'?[...(!o.open?[o]:[]),...doorFrameSolids(o)]:solidTypes.has(o.type)&&!o.open?[o]:[]);
 function overlaps(p,o){return Math.abs(p.x-o.x)<o.w/2+(p.type==='enemy'?.55:.35)-.00001&&Math.abs(p.z-o.z)<o.d/2+(p.type==='enemy'?.55:.35)-.00001&&p.y<topAt(o,p.x,p.z)-.001&&p.y+1.7>o.y+.001;}
@@ -90,7 +95,7 @@ export function movePlayer(p,objects,dx,dz,dt,jump,world=60){
 // Convert the former shooting behavior without changing saved movement or range.
 export function upgradeEnemy(o){if(o.type!=='enemy')return o;if(o.moveRange)o.moveRange=worldMoveRange(o.moveRange,o);const shot=o.program.find(b=>b.action==='shoot');o.attackEnabled??=!!shot;o.attackSpeed??=shot?.speed??3;o.program=o.program.filter(b=>b.action!=='shoot');return o;}
 export function enemyWeapon(o,catalog=[]){return catalog.find(t=>t.id===o.enemyWeaponId&&t.effect==='shoot')||null;}
-export function create3D(p){const inventory=(p.loadout||[]).filter(t=>!t.pickupOnly).map(t=>t.id);const game={inventoryCounts:Object.fromEntries(inventory.map(id=>[id,1])),buildSelection:{},worldSize:worldSize(p),inventory,toolCatalog:structuredClone(p.loadout||[]),drops:[],blockInventory:[],blockEquipped:null,player:{...p.spawn,vy:0,grounded:true,hp:5,invincible:0},objects:structuredClone(p.objects).map(upgradeEnemy).map(o=>({...o,heading:(o.facing||0)*Math.PI/180,routeTravel:false,patrolNext:0,waypointIndex:0,waypointFrom:0,waypointDirection:1,waypointFinished:false,lootDropped:false,foundPlayer:false,vy:0,grounded:false,supportId:null,chaseGraceRemaining:0,navigation:null,roamTarget:null,previousRoamCell:null,roamStep:0,maxHp:o.hp,settings:o.settings||settingsFor(o.type),origin:{x:o.x,y:o.y,z:o.z},hidden:o.type==='enemy'&&o.startsHidden===true})),bullets:[],effects:[],hitInfo:null,buildings:[],recoilPitch:0,equipped:p.loadout?p.loadout.findIndex(t=>inventory.includes(t.id)):0,time:0,cooldown:0,score:0,stars:0,keys:0,checkpoint:null,message:'',messageId:0,state:'playing'};game.allies=game.objects.filter(o=>o.type==='ally');for(const ally of game.allies){ally.recruited=false;ally.following=false;ally.nextShot=0;}game.formation='line';return game;}
+export function create3D(p){const inventory=(p.loadout||[]).filter(t=>!t.pickupOnly).map(t=>t.id);const game={playerHitsAlly:p.playerHitsAlly===true,inventoryCounts:Object.fromEntries(inventory.map(id=>[id,1])),buildSelection:{},worldSize:worldSize(p),inventory,toolCatalog:structuredClone(p.loadout||[]),drops:[],blockInventory:[],blockEquipped:null,player:{...p.spawn,vy:0,grounded:true,hp:5,invincible:0},objects:structuredClone(p.objects).map(upgradeEnemy).map(o=>({...o,heading:(o.facing||0)*Math.PI/180,routeTravel:false,patrolNext:0,waypointIndex:0,waypointFrom:0,waypointDirection:1,waypointFinished:false,lootDropped:false,foundPlayer:false,vy:0,grounded:false,supportId:null,chaseGraceRemaining:0,navigation:null,roamTarget:null,previousRoamCell:null,roamStep:0,maxHp:o.hp,settings:o.settings||settingsFor(o.type),origin:{x:o.x,y:o.y,z:o.z},hidden:o.type==='enemy'&&o.startsHidden===true})),bullets:[],effects:[],hitInfo:null,buildings:[],recoilPitch:0,equipped:p.loadout?p.loadout.findIndex(t=>inventory.includes(t.id)):0,time:0,cooldown:0,score:0,stars:0,keys:0,checkpoint:null,message:'',messageId:0,state:'playing'};game.allies=game.objects.filter(o=>o.type==='ally');for(const ally of game.allies){ally.recruited=false;ally.following=false;ally.nextShot=0;}game.formation='line';return game;}
 export function conditionMet(o,g){const s=o.settings||settingsFor(o.type);return s.condition==='touch'||(s.condition==='stars'&&g.stars>=s.required)||(s.condition==='keys'&&g.keys>=s.required)||(s.condition==='enemies'&&!g.objects.some(x=>x.type==='enemy'&&x.hp>0));}
 export function conditionHint(o,g){const s=o.settings||settingsFor(o.type);if(s.condition==='unset')return 'クリア条件が未設定';if(s.condition==='touch')return o.type==='door'?'いつでも':'ふれるだけ';if(s.condition==='enemies')return `のこりの敵 ${g.objects.filter(x=>x.type==='enemy'&&x.hp>0).length} 体`;return `${s.condition==='stars'?'星':'カギ'} ${s.condition==='stars'?g.stars:g.keys} / ${s.required}`;}
 function inside(b,o,r=0){return Math.abs(b.x-o.x)<o.w/2+r&&Math.abs(b.z-o.z)<o.d/2+r&&b.y>o.y-r&&b.y<topAt(o,b.x,b.z)+r;}

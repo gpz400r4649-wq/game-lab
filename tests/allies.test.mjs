@@ -53,7 +53,7 @@ test('近くの仲間に装備中の銃だけを一個渡す。作品には保�
 import {shootVolley,updateCombat} from '../combat3d.js';
 test('味方の被弾設定は直撃と爆発に働き、体力ゼロで隊列から外れる',()=>{
  for(const impact of ['damage','explode'])for(const enemy of [false,true])for(const enabled of [false,true]){
-  const {g,a}=scene();a.playerHitsAlly=enabled;a.hp=1;
+  const {g,a}=scene();g.playerHitsAlly=enabled;a.hp=1;
   shootVolley(g,{x:a.x,y:a.y+1,z:a.z+.8},{x:0,y:0,z:-1},{impact,speed:20,damage:1},enemy);
   updateCombat(g,.033);
   assert.equal(g.objects.includes(a),!(enemy||enabled));assert.equal(g.allies.includes(a),!(enemy||enabled));
@@ -62,4 +62,15 @@ test('味方の被弾設定は直撃と爆発に働き、体力ゼロで隊列�
 test('設定したマス数と銃の射程の短い方を使う',()=>{
  const {a,g}=scene();a.allyRangeCells=2;assert.equal(allyAttackDistance(a,g.toolCatalog),8);
  a.allyRangeCells=15;g.toolCatalog[0].range=12;assert.equal(allyAttackDistance(a,g.toolCatalog),12);
+});
+
+test('旧作品は全員が被弾するときだけオンに移行し、明示した全体設定を優先する',()=>{
+ const p=fresh3D();delete p.playerHitsAlly;
+ p.objects=[part('ally'),part('ally')];
+ for(const a of p.objects)a.playerHitsAlly=true;
+ assert.equal(validate3D(p).playerHitsAlly,true);
+ p.objects[1].playerHitsAlly=false;assert.equal(validate3D(p).playerHitsAlly,false);
+ p.playerHitsAlly=true;const saved=validate3D(p);
+ assert.ok(saved.objects.every(a=>a.playerHitsAlly===undefined));
+ assert.equal(create3D(saved).playerHitsAlly,true);
 });

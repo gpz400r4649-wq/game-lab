@@ -1,22 +1,22 @@
-import {allyAttackDistance} from './ally3d.js?v=20261105k';
-import {makeTool} from './building3d.js?v=20261105k';
-import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261105k';
-import {openWaypointEditor} from './waypoint-ui3d.js?v=20261105k';
-import {openPatrolEditor} from './patrol-ui3d.js?v=20261105k';
-import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261105k';
-import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261105k';
-import {inGridRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261105k';
-import {renderEnemyRange} from './enemy-range-ui3d.js?v=20261105k';
-import {gunPreviewSVG} from './appearance3d.js?v=20261105k';
-import {DOOR_PRESETS} from './doors3d.js?v=20261105k';
-import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261105k';
-import {coordinateLimit} from './world3d.js?v=20261105k';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261105k';
-import {actionsFor} from './events3d.js?v=20261105k';
-import {renderEventEditor} from './event-editor3d.js?v=20261105k';
-import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261105k';
-import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261105k';
-import {PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261105k';
+import {allyAttackDistance} from './ally3d.js?v=20261106a';
+import {makeTool} from './building3d.js?v=20261106a';
+import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261106a';
+import {openWaypointEditor} from './waypoint-ui3d.js?v=20261106a';
+import {openPatrolEditor} from './patrol-ui3d.js?v=20261106a';
+import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261106a';
+import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261106a';
+import {inGridRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261106a';
+import {renderEnemyRange} from './enemy-range-ui3d.js?v=20261106a';
+import {gunPreviewSVG} from './appearance3d.js?v=20261106a';
+import {DOOR_PRESETS} from './doors3d.js?v=20261106a';
+import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261106a';
+import {coordinateLimit} from './world3d.js?v=20261106a';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261106a';
+import {actionsFor} from './events3d.js?v=20261106a';
+import {renderEventEditor} from './event-editor3d.js?v=20261106a';
+import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261106a';
+import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261106a';
+import {PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261106a';
 
 const ICONS={ally:'🛡',weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
 const DESCRIPTIONS={ally:'近くで「ついてきて」と呼ぶと、一緒に戦うよ。',weapon:'地面に置いて、ふれると拾える銃。持ちもの・銃づくりで用意した銃をえらぼう。',ramp:'低いほうから歩くと、そのまま登れるスロープ。回して好きな向きにつなげよう。',wall:'家を囲う壁。向きを変えてつなげよう。',floor:'家の床と天井に使える板。壁の内側にぴったり合うよ。',roof:'壁の上にのせる三角屋根。向きを変えて家を仕上げよう。',
@@ -66,7 +66,6 @@ export function createWorkshop(api){
     if(DESTRUCTIBLE_TYPES.has(o.type)){field(el,'ブロックの体力',o.hp,1,LIMITS.maxBlockHp,1,n=>o.hp=Math.round(n));selectField(el,'弾が当たったら',[['yes','体力がなくなると壊れる'],['no','こわれない']],o.destructible===false?'no':'yes',v=>o.destructible=v==='yes');}
     if(o.type==='ally'){
       field(el,'味方の体力',o.hp,1,20,1,n=>o.hp=Math.round(n));
-      selectField(el,'自分の弾は当たる？',[['off','当たらない'],['on','当たる']],o.playerHitsAlly?'on':'off',v=>o.playerHitsAlly=v==='on');
       selectField(el,'射程（マス）',Array.from({length:15},(_,i)=>[String(i+1),(i+1)+'マス']),String(o.allyRangeCells??5),v=>{o.allyRangeCells=Number(v);inspect();});
       selectField(el,'味方に持たせる銃',[['','ロボットブラスター'],...p.loadout.filter(t=>t.effect==='shoot').map(t=>[t.id,t.name])],o.allyGun||'',v=>{o.allyGun=v;inspect();});
       const distance=document.createElement('p');distance.className='component-description';setReadingText(distance,'緑の円は、味方が敵をねらえる距離だよ（'+(allyAttackDistance(o,p.loadout)/4)+'マス）。壁の向こうの敵は見えないよ。');el.append(distance);

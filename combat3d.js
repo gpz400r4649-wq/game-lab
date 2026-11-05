@@ -1,15 +1,15 @@
-import {dropEnemyLoot} from './enemy-loot3d.js?v=20261105k';
-import {MAX_BUILD_Y} from './limits3d.js?v=20261105k';
-import {nearbyObjects} from './spatial3d.js?v=20261105k';
-import {worldHalf} from './world3d.js?v=20261105k';
-import {fireDestructionEvents} from './events3d.js?v=20261105k';
-import {topAt} from './building3d.js?v=20261105k';
-import {LIMITS,safeShot,DESTRUCTIBLE_TYPES,impactEffects} from './weapons3d.js?v=20261105k';
+import {dropEnemyLoot} from './enemy-loot3d.js?v=20261106a';
+import {MAX_BUILD_Y} from './limits3d.js?v=20261106a';
+import {nearbyObjects} from './spatial3d.js?v=20261106a';
+import {worldHalf} from './world3d.js?v=20261106a';
+import {fireDestructionEvents} from './events3d.js?v=20261106a';
+import {topAt} from './building3d.js?v=20261106a';
+import {LIMITS,safeShot,DESTRUCTIBLE_TYPES,impactEffects} from './weapons3d.js?v=20261106a';
 const solidType=o=>DESTRUCTIBLE_TYPES.has(o.type)||o.type==='door';
 const robot=o=>o.type==='enemy'||o.type==='ally';
-function canHitRobot(b,o){
+function canHitRobot(g,b,o){
  if(o.type==='enemy')return !b.enemy;
- return o.type==='ally'&&(b.enemy||(!b.ally&&o.playerHitsAlly===true));
+ return o.type==='ally'&&(b.enemy||(!b.ally&&g.playerHitsAlly===true));
 }
 const alive=o=>(!robot(o)&&!DESTRUCTIBLE_TYPES.has(o.type))||o.hp>0||(DESTRUCTIBLE_TYPES.has(o.type)&&o.destructible===false);
 function axes(f){const length=Math.hypot(f.x,f.z),right=length>.00001?{x:-f.z/length,y:0,z:f.x/length}:{x:1,y:0,z:0};return {right,up:{x:right.y*f.z-right.z*f.y,y:right.z*f.x-right.x*f.z,z:right.x*f.y-right.y*f.x}};}
@@ -38,7 +38,7 @@ function damageObject(g,o,damage){
   if(o.hp===0){if(o.type==='enemy')g.score+=10;g.message=o.type==='ally'?'味方がたおれた！':o.type==='enemy'?'敵をたおした！':'ブロックをこわした！';g.messageId++;}
 }
 function boxDistance(point,o){const w=robot(o)?1.3:o.w,d=robot(o)?1.3:o.d,h=robot(o)?1.8:o.h;return Math.hypot(Math.max(0,Math.abs(point.x-o.x)-w/2),Math.max(o.y-point.y,point.y-o.y-h,0),Math.max(0,Math.abs(point.z-o.z)-d/2));}
-function explode(g,b){effect(g,b,b.blastRadius,'blast');for(const o of g.objects)if(!o.hidden&&alive(o)&&(canHitRobot(b,o)||DESTRUCTIBLE_TYPES.has(o.type))&&boxDistance(b,o)<=b.blastRadius)damageObject(g,o,b.damage);if(b.enemy&&g.player.invincible<=0&&boxDistance(b,{...g.player,type:'player',w:.7,d:.7,h:1.7})<=b.blastRadius){g.player.hp-=b.damage;g.player.invincible=1;}}
+function explode(g,b){effect(g,b,b.blastRadius,'blast');for(const o of g.objects)if(!o.hidden&&alive(o)&&(canHitRobot(g,b,o)||DESTRUCTIBLE_TYPES.has(o.type))&&boxDistance(b,o)<=b.blastRadius)damageObject(g,o,b.damage);if(b.enemy&&g.player.invincible<=0&&boxDistance(b,{...g.player,type:'player',w:.7,d:.7,h:1.7})<=b.blastRadius){g.player.hp-=b.damage;g.player.invincible=1;}}
 function contains(b,o){const r=b.radius||.1;if(robot(o))return Math.hypot(b.x-o.x,b.z-o.z)<.65+r&&b.y>o.y-r&&b.y<o.y+1.8+r;return Math.abs(b.x-o.x)<o.w/2+r&&Math.abs(b.z-o.z)<o.d/2+r&&b.y>o.y-r&&b.y<topAt(o,b.x,b.z)+r;}
 // Stop the firing origin at the first obstruction between the player and muzzle.
 // This prevents a long barrel from starting a bullet on the far side of a wall.
@@ -53,7 +53,7 @@ export function updateCombat(g,dt){
 
   for(const b of g.bullets){
     b.remaining??=60;b.radius??=.1;b.impact??='damage';b.bounces??=2;const impacts=impactEffects(b);
-    const end={x:b.x+b.vx*dt,y:b.y+b.vy*dt,z:b.z+b.vz*dt},targets=nearbyObjects(g,Math.min(b.x,end.x)-(b.radius||.1),Math.min(b.z,end.z)-(b.radius||.1),Math.max(b.x,end.x)+(b.radius||.1),Math.max(b.z,end.z)+(b.radius||.1)).filter(o=>(solidType(o)&&!o.open||canHitRobot(b,o))&&!o.hidden&&alive(o)&&nearbySweep(b,end,o));
+    const end={x:b.x+b.vx*dt,y:b.y+b.vy*dt,z:b.z+b.vz*dt},targets=nearbyObjects(g,Math.min(b.x,end.x)-(b.radius||.1),Math.min(b.z,end.z)-(b.radius||.1),Math.max(b.x,end.x)+(b.radius||.1),Math.max(b.z,end.z)+(b.radius||.1)).filter(o=>(solidType(o)&&!o.open||canHitRobot(g,b,o))&&!o.hidden&&alive(o)&&nearbySweep(b,end,o));
     const steps=Math.min(24,Math.max(1,Math.ceil(Math.hypot(b.vx,b.vy,b.vz)*dt/.15)));
     for(let i=0;i<steps&&b.life>0;i++){
       const speed=Math.hypot(b.vx,b.vy,b.vz),travel=Math.min(speed*dt/steps,b.remaining);if(travel<=.000001){b.life=0;break;}const fraction=travel/(speed||1);b.x+=b.vx*fraction;b.y+=b.vy*fraction;b.z+=b.vz*fraction;b.remaining-=travel;
