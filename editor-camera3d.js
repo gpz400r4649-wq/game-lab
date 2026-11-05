@@ -1,6 +1,6 @@
-import {MAX_BUILD_Y} from './limits3d.js?v=20261106b';
-import {worldHalf} from './world3d.js?v=20261106b';
-import {bindHeldButton} from './input3d.js?v=20261106b';
+import {MAX_BUILD_Y} from './limits3d.js?v=20261106d';
+import {worldHalf} from './world3d.js?v=20261106d';
+import {bindHeldButton} from './input3d.js?v=20261106d';
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 // Move the camera and its orbit target together in camera-relative directions.
 export function moveEditorCamera(target,input,yaw,distance,dt,world,pitch=.7){

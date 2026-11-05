@@ -1,34 +1,34 @@
-import {nearbyActor,trade,companionsAt} from './actor3d.js?v=20261106b';
-import {giveAllyGun,giftableGun,recruitTarget,allyAttackDistance} from './ally3d.js?v=20261106b';
-import {createEditHistory} from './history3d.js?v=20261106b';
-import {makeDoorModel,updateDoorModel} from './door-model3d.js?v=20261106b';
-import {enemyEditHeight,createFloorRangeView} from './floor-edit3d.js?v=20261106b';
-import {createPatrolOverlay} from './patrol-ui3d.js?v=20261106b';
-import {stageRangePointer} from './stage-range3d.js?v=20261106b';
-import {createEnemyMessages} from './enemy-messages3d.js?v=20261106b';
-import {createPlayRanges} from './play-ranges3d.js?v=20261106b';
-import {closeLiveRangeEditor,isLiveRangeEditing} from './enemy-range-ui3d.js?v=20261106b';
-import {dragCandidate} from './editor-drag3d.js?v=20261106b';
-import {rangeWorldCells,enemyYaw,defaultEnemyRanges,MOVE_MAX_CELLS} from './enemy-range3d.js?v=20261106b';
-import {TPS_GUN_MOUNT} from './muzzle3d.js?v=20261106b';
-import {configureDoor,nearbyDoor} from './doors3d.js?v=20261106b';
-import {appearanceFor} from './appearance3d.js?v=20261106b';
-import {makeGunModel,applyFPSGunPose,worldGunMuzzle} from './gun-model3d.js?v=20261106b';
-import {moveEditorCamera,createEditorNavigation} from './editor-camera3d.js?v=20261106b';
-import {createStructureRenderer,BATCH_TYPES} from './structure-render3d.js?v=20261106b';
-import {MAX_PROJECT_BYTES,MAX_BUILD_Y} from './limits3d.js?v=20261106b';
-import {worldSize,coordinateLimit} from './world3d.js?v=20261106b';
-import {createWorldUI} from './world-ui3d.js?v=20261106b';
-import {configureNumericInput} from './numeric3d.js?v=20261106b';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261106b';
-import {installGameTouchGuard,bindHeldButton,bindGameAction,createGamePageMode} from './input3d.js?v=20261106b';
-import {actionsFor,ACTION_NAMES} from './events3d.js?v=20261106b';
-import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261106b';
-import {BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,editorPlacementReason,blockPlacement} from './building3d.js?v=20261106b';
-import {createToolsUI} from './tools3d.js?v=20261106b';
+import {nearbyActor,trade,companionsAt} from './actor3d.js?v=20261106d';
+import {giveAllyGun,giftableGun,recruitTarget,allyAttackDistance} from './ally3d.js?v=20261106d';
+import {createEditHistory} from './history3d.js?v=20261106d';
+import {makeDoorModel,updateDoorModel} from './door-model3d.js?v=20261106d';
+import {enemyEditHeight,createFloorRangeView} from './floor-edit3d.js?v=20261106d';
+import {createPatrolOverlay} from './patrol-ui3d.js?v=20261106d';
+import {stageRangePointer} from './stage-range3d.js?v=20261106d';
+import {createEnemyMessages} from './enemy-messages3d.js?v=20261106d';
+import {createPlayRanges} from './play-ranges3d.js?v=20261106d';
+import {closeLiveRangeEditor,isLiveRangeEditing} from './enemy-range-ui3d.js?v=20261106d';
+import {dragCandidate} from './editor-drag3d.js?v=20261106d';
+import {rangeWorldCells,enemyYaw,defaultEnemyRanges,MOVE_MAX_CELLS} from './enemy-range3d.js?v=20261106d';
+import {TPS_GUN_MOUNT} from './muzzle3d.js?v=20261106d';
+import {configureDoor,nearbyDoor} from './doors3d.js?v=20261106d';
+import {appearanceFor} from './appearance3d.js?v=20261106d';
+import {makeGunModel,applyFPSGunPose,worldGunMuzzle} from './gun-model3d.js?v=20261106d';
+import {moveEditorCamera,createEditorNavigation} from './editor-camera3d.js?v=20261106d';
+import {createStructureRenderer,BATCH_TYPES} from './structure-render3d.js?v=20261106d';
+import {MAX_PROJECT_BYTES,MAX_BUILD_Y} from './limits3d.js?v=20261106d';
+import {worldSize,coordinateLimit} from './world3d.js?v=20261106d';
+import {createWorldUI} from './world-ui3d.js?v=20261106d';
+import {configureNumericInput} from './numeric3d.js?v=20261106d';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261106d';
+import {installGameTouchGuard,bindHeldButton,bindGameAction,createGamePageMode} from './input3d.js?v=20261106d';
+import {actionsFor,ACTION_NAMES} from './events3d.js?v=20261106d';
+import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261106d';
+import {BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,editorPlacementReason,blockPlacement} from './building3d.js?v=20261106d';
+import {createToolsUI} from './tools3d.js?v=20261106d';
 import * as T from './vendor/three.module.min.js';
-import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,conditionHint} from './engine3d.js?v=20261106b';
-import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261106c';
+import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,conditionHint} from './engine3d.js?v=20261106d';
+import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261106d';
 const $=s=>document.querySelector(s),view=$('#viewport'),KEY='tsukuru-lab-3d-v1';
 let enemyRangeView='attackRange';
 let project=fresh3D(),selected=null,tool='select',doorPreset='key',weaponPresetId='',mode='edit',perspective='tps',game=null,yaw=0,pitch=-.05,editYaw=.55,editPitch=.7,editDistance=30,editTarget=new T.Vector3(0,0,0),stick={x:0,z:0},keys=new Set(),fireHeld=false,firePressed=false,jumpPressed=false,doorPressed=false,look=null,saveTimer,toastTimer,lastTime=0;
@@ -89,6 +89,20 @@ function animatePickupGuns(time){
     holder.userData.shown=tool?.id;
   }
 }
+const pointedHat=new T.ConeGeometry(.35,.65,12);
+function addActorHat(mesh,hat='yellow'){
+  if(hat==='none')return;
+  if(hat==='cap'){
+    box(mesh,materials.player,0,1.92,0,.63,.22,.51);
+    box(mesh,materials.player,0,1.84,-.32,.60,.06,.23);
+  }else if(hat==='chef'){
+    box(mesh,materials.white,0,1.93,0,.57,.24,.46);
+    box(mesh,materials.white,0,2.12,0,.74,.23,.59);
+  }else if(hat==='witch'){
+    box(mesh,materials.dark,0,1.84,0,.84,.06,.72);
+    const cone=new T.Mesh(pointedHat,materials.goal);cone.position.y=2.19;mesh.add(cone);
+  }else box(mesh,materials.star,0,1.89,0,.8,.16,.65);
+}
 function partModel(o){let mesh=new T.Group();
   if(Object.hasOwn(BUILD_TYPES,o.type)){mesh=structureModel(o);}
   else if(['box','platform'].includes(o.type)){box(mesh,materials[o.type],0,o.h/2,0,o.w,o.h,o.d);}
@@ -103,7 +117,7 @@ function partModel(o){let mesh=new T.Group();
    const ring=new T.Mesh(portalGeometry,materials.star);ring.rotation.x=Math.PI/2;ring.scale.setScalar(.55);ring.position.y=.08;mesh.add(ring);
   }else if(o.type==='blockItem'){
    const t=o.blockTemplate,mini=Object.hasOwn(BUILD_TYPES,t.type)?structureModel(t):new T.Group();if(!Object.hasOwn(BUILD_TYPES,t.type))box(mini,materials[t.type]||materials.box,0,t.h/2,0,t.w,t.h,t.d);mini.scale.setScalar(.2);mini.position.y=.12;mesh.add(mini);const ring=new T.Mesh(portalGeometry,materials.star);ring.rotation.x=Math.PI/2;ring.scale.setScalar(.5);ring.position.y=.06;mesh.add(ring);
-  }else if(o.type==='actor'){mesh=robot(materials.goal,false);box(mesh,materials.star,0,1.94,0,.8,.16,.65);
+  }else if(o.type==='actor'){mesh=robot(materials.goal,false);addActorHat(mesh,o.hat);
   }else if(o.type==='plate'){box(mesh,materials.dark,0,.04,0,o.w,.08,o.d);const pad=box(mesh,materials.ready,0,.13,0,o.w*.85,.12,o.d*.85);mesh.userData.pad=pad;
   }else if(o.type==='enemy'||o.type==='ally'){const ally=o.type==='ally',weapon=ally?project.loadout.find(t=>t.id===o.allyGun&&t.effect==='shoot'):enemyWeapon(o,project.loadout);mesh=robot(ally?materials.heal:materials.enemy,!weapon);mesh.rotation.y=(o.facing||0)*Math.PI/180;if(weapon){const held=makeGunModel(weapon);held.position.set(TPS_GUN_MOUNT.x,TPS_GUN_MOUNT.y,TPS_GUN_MOUNT.z);held.scale.setScalar(TPS_GUN_MOUNT.scale);mesh.add(held);}}
   else if(o.type==='star'){const m=new T.Mesh(starGeometry,materials.star);m.position.y=.85;mesh.add(m);}

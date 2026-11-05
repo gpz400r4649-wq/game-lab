@@ -1,22 +1,23 @@
-import {allyAttackDistance} from './ally3d.js?v=20261106b';
-import {makeTool} from './building3d.js?v=20261106b';
-import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261106b';
-import {openWaypointEditor} from './waypoint-ui3d.js?v=20261106b';
-import {openPatrolEditor} from './patrol-ui3d.js?v=20261106b';
-import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261106b';
-import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261106b';
-import {inGridRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261106b';
-import {renderEnemyRange} from './enemy-range-ui3d.js?v=20261106b';
-import {gunPreviewSVG} from './appearance3d.js?v=20261106b';
-import {DOOR_PRESETS} from './doors3d.js?v=20261106b';
-import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261106b';
-import {coordinateLimit} from './world3d.js?v=20261106b';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261106b';
-import {actionsFor} from './events3d.js?v=20261106b';
-import {renderEventEditor} from './event-editor3d.js?v=20261106b';
-import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261106b';
-import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261106b';
-import {PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261106b';
+import {ACTOR_HATS} from './actor3d.js?v=20261106d';
+import {allyAttackDistance} from './ally3d.js?v=20261106d';
+import {makeTool} from './building3d.js?v=20261106d';
+import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261106d';
+import {openWaypointEditor} from './waypoint-ui3d.js?v=20261106d';
+import {openPatrolEditor} from './patrol-ui3d.js?v=20261106d';
+import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261106d';
+import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261106d';
+import {inGridRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261106d';
+import {renderEnemyRange} from './enemy-range-ui3d.js?v=20261106d';
+import {gunPreviewSVG} from './appearance3d.js?v=20261106d';
+import {DOOR_PRESETS} from './doors3d.js?v=20261106d';
+import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261106d';
+import {coordinateLimit} from './world3d.js?v=20261106d';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261106d';
+import {actionsFor} from './events3d.js?v=20261106d';
+import {renderEventEditor} from './event-editor3d.js?v=20261106d';
+import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261106d';
+import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261106d';
+import {PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261106d';
 
 const ICONS={actor:'💬',plate:'▣',ally:'🛡',weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
 const DESCRIPTIONS={actor:'名前とせりふを書こう。交換する品を置くとお店になるよ。',plate:'踏んでいる間、えらんだドアが開くよ。',ally:'近くで「ついてきて」と呼ぶと、一緒に戦うよ。',weapon:'地面に置いて、ふれると拾える銃。持ちもの・銃づくりで用意した銃をえらぼう。',ramp:'低いほうから歩くと、そのまま登れるスロープ。回して好きな向きにつなげよう。',wall:'家を囲う壁。向きを変えてつなげよう。',floor:'家の床と天井に使える板。壁の内側にぴったり合うよ。',roof:'壁の上にのせる三角屋根。向きを変えて家を仕上げよう。',
@@ -72,6 +73,7 @@ export function createWorkshop(api){
       selectField(el,'開くドア',[['','ドアをえらぼう'],...doors.map((door,i)=>[door.id,'ドア '+(i+1)+'（'+door.x+', '+door.z+'）'])],o.doorId||'',v=>o.doorId=v);
     }
     if(o.type==='actor'){
+      selectField(el,'ぼうし',Object.entries(ACTOR_HATS),o.hat??'yellow',v=>o.hat=v);
       for(const [key,label,limit]of [['actorName','名前',32],['speech','せりふ',240]]){
         const row=document.createElement('label'),input=document.createElement(key==='speech'?'textarea':'input');
         if(key==='speech'){
