@@ -50,3 +50,16 @@ test('近くの仲間に装備中の銃だけを一個渡す。作品には保�
  a.allyGun='';assert.equal(giveAllyGun(g,catalog,a.id,0),true);
  assert.equal(g.inventory.includes('gift'),false);assert.equal(g.equipped,0);
 });
+import {shootVolley,updateCombat} from '../combat3d.js';
+test('味方の被弾設定は直撃と爆発に働き、体力ゼロで隊列から外れる',()=>{
+ for(const impact of ['damage','explode'])for(const enemy of [false,true])for(const enabled of [false,true]){
+  const {g,a}=scene();a.playerHitsAlly=enabled;a.hp=1;
+  shootVolley(g,{x:a.x,y:a.y+1,z:a.z+.8},{x:0,y:0,z:-1},{impact,speed:20,damage:1},enemy);
+  updateCombat(g,.033);
+  assert.equal(g.objects.includes(a),!(enemy||enabled));assert.equal(g.allies.includes(a),!(enemy||enabled));
+ }
+});
+test('設定したマス数と銃の射程の短い方を使う',()=>{
+ const {a,g}=scene();a.allyRangeCells=2;assert.equal(allyAttackDistance(a,g.toolCatalog),8);
+ a.allyRangeCells=15;g.toolCatalog[0].range=12;assert.equal(allyAttackDistance(a,g.toolCatalog),12);
+});

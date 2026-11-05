@@ -1,6 +1,6 @@
-import {nearbyObjects} from './spatial3d.js?v=20261105j';
-import {shootVolley} from './combat3d.js?v=20261105j';
-import {safeShot} from './weapons3d.js?v=20261105j';
+import {nearbyObjects} from './spatial3d.js?v=20261105k';
+import {shootVolley} from './combat3d.js?v=20261105k';
+import {safeShot} from './weapons3d.js?v=20261105k';
 
 export function recruitTarget(g,yaw){
  let best=null,score=0;
@@ -44,7 +44,7 @@ function obstructed(g,start,end,y){
 }
 export function allyAttackDistance(ally,catalog){
  const gun=catalog.find(t=>t.id===ally.allyGun&&t.effect==='shoot');
- return Math.min(20,safeShot(gun||{}).range);
+ return Math.min((ally.allyRangeCells??5)*4,safeShot(gun||{}).range);
 }
 export function spreadPosition(player,yaw,rank){
  const row=1+Math.floor(rank/2),side=(rank%2?1:-1)*row*3.2,back=row*2.5;
@@ -87,6 +87,6 @@ export function stepAllies(g,p,input,dt,move){
   }
   if(!target){a.nextShot=g.time+.15;continue;}
   const x=target.x-a.x,z=target.z-a.z;a.heading=Math.atan2(-x,-z);
-  shootVolley(g,{x:a.x,y:a.y+1.1,z:a.z},{x,y:target.y-a.y,z},tool||{speed:15,interval:1,damage:1,spread:1},false,Math.random,true);a.nextShot=g.time+(tool?.interval||1);
+  shootVolley(g,{x:a.x,y:a.y+1.1,z:a.z},{x,y:target.y-a.y,z},{...(tool||{speed:15,interval:1,damage:1,spread:1}),range},false,Math.random,true);a.nextShot=g.time+(tool?.interval||1);
  }
 }
