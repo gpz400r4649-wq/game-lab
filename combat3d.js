@@ -1,15 +1,15 @@
-import {dropEnemyLoot} from './enemy-loot3d.js?v=20261105f';
-import {MAX_BUILD_Y} from './limits3d.js?v=20261105f';
-import {nearbyObjects} from './spatial3d.js?v=20261105f';
-import {worldHalf} from './world3d.js?v=20261105f';
-import {fireDestructionEvents} from './events3d.js?v=20261105f';
-import {topAt} from './building3d.js?v=20261105f';
-import {LIMITS,safeShot,DESTRUCTIBLE_TYPES,impactEffects} from './weapons3d.js?v=20261105f';
+import {dropEnemyLoot} from './enemy-loot3d.js?v=20261105g';
+import {MAX_BUILD_Y} from './limits3d.js?v=20261105g';
+import {nearbyObjects} from './spatial3d.js?v=20261105g';
+import {worldHalf} from './world3d.js?v=20261105g';
+import {fireDestructionEvents} from './events3d.js?v=20261105g';
+import {topAt} from './building3d.js?v=20261105g';
+import {LIMITS,safeShot,DESTRUCTIBLE_TYPES,impactEffects} from './weapons3d.js?v=20261105g';
 const solidType=o=>DESTRUCTIBLE_TYPES.has(o.type)||o.type==='door';
 const alive=o=>(o.type!=='enemy'&&!DESTRUCTIBLE_TYPES.has(o.type))||o.hp>0||(DESTRUCTIBLE_TYPES.has(o.type)&&o.destructible===false);
 function axes(f){const length=Math.hypot(f.x,f.z),right=length>.00001?{x:-f.z/length,y:0,z:f.x/length}:{x:1,y:0,z:0};return {right,up:{x:right.y*f.z-right.z*f.y,y:right.z*f.x-right.x*f.z,z:right.x*f.y-right.y*f.x}};}
 function coneDirection(f,radius,azimuth){const {right:r,up:u}=axes(f),c=Math.cos(radius),s=Math.sin(radius),x=Math.cos(azimuth)*s,y=Math.sin(azimuth)*s;return {x:f.x*c+r.x*x+u.x*y,y:f.y*c+r.y*x+u.y*y,z:f.z*c+r.z*x+u.z*y};}
-export function shootVolley(g,origin,direction,tool,enemy=false,random=Math.random){
+export function shootVolley(g,origin,direction,tool,enemy=false,random=Math.random,ally=false){
   const s=safeShot(tool),length=Math.hypot(direction.x,direction.y,direction.z);
   if(!Number.isFinite(length)||length<.0001||!['x','y','z'].every(k=>Number.isFinite(origin[k])))return 0;
   let f={x:direction.x/length,y:direction.y/length,z:direction.z/length};let count=0;
@@ -18,7 +18,7 @@ export function shootVolley(g,origin,direction,tool,enemy=false,random=Math.rand
   for(let i=0;i<s.count&&g.bullets.length<LIMITS.bullets;i++){
     const a=s.count===1?0:(i/(s.count-1)-.5)*s.angle;
     const v=s.pattern==='cone'&&s.count>1?coneDirection(f,Math.sqrt((i+.5)/s.count)*s.angle/2,i*2.399963229728653):{x:f.x*Math.cos(a)+right.x*Math.sin(a),y:f.y*Math.cos(a)+right.y*Math.sin(a),z:f.z*Math.cos(a)+right.z*Math.sin(a)};
-    g.bullets.push({...origin,vx:v.x*s.speed,vy:v.y*s.speed,vz:v.z*s.speed,remaining:s.range,life:Math.min(LIMITS.maxLife,s.range/s.speed/(.85*.85)+.1),enemy,damage:s.damage,radius:s.radius,projectile:s.projectile,impact:s.impact,impacts:s.impacts,blastRadius:s.blastRadius,bounces:2,lastHit:null,ignoreUntil:0});count++;
+    g.bullets.push({...origin,ally,vx:v.x*s.speed,vy:v.y*s.speed,vz:v.z*s.speed,remaining:s.range,life:Math.min(LIMITS.maxLife,s.range/s.speed/(.85*.85)+.1),enemy,damage:s.damage,radius:s.radius,projectile:s.projectile,impact:s.impact,impacts:s.impacts,blastRadius:s.blastRadius,bounces:2,lastHit:null,ignoreUntil:0});count++;
   }return count;
 }
 
@@ -57,6 +57,7 @@ export function updateCombat(g,dt){
       const playerHit=b.enemy&&Math.hypot(b.x-g.player.x,b.z-g.player.z)<.35+b.radius&&b.y>g.player.y-b.radius&&b.y<g.player.y+1.7+b.radius;
       if(playerHit){b.life=0;if(impacts.includes('explode'))explode(g,b);else{if(impacts.includes('damage')&&g.player.invincible<=0){g.player.hp-=b.damage;g.player.invincible=1;}effect(g,b,.35,'hit');}break;}
       if(!ground&&!hit)continue;
+      if(hit?.type==='enemy'&&!b.enemy&&!b.ally){g.playerTarget=hit.id;g.playerTargetUntil=g.time+3;}
       if(impacts.includes('explode'))explode(g,b);
       else {if(hit&&impacts.includes('damage'))damageObject(g,hit,b.damage||1);effect(g,b,.3,'hit');}
       if(impacts.includes('bounce')&&b.bounces>0&&hit?.type!=='enemy'){

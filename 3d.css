@@ -68,3 +68,5 @@ main.range-editing{display:grid;grid-template-columns:minmax(0,1fr) min(440px,42
 #editor-place-tools3{display:flex;align-items:center;gap:10px;padding:6px 2px;flex-wrap:wrap}#editor-place-tools3[hidden]{display:none}#editor-place-tools3>span{font-size:12px;color:#626d85}#editor-place-tools3 button{min-height:42px}
 
 #edit-history3[hidden]{display:none}#edit-history3 button{min-height:46px;min-width:82px}#edit-history3 button:disabled{opacity:.38;cursor:default}
+
+#ally-order3{position:absolute;transform:translate(-50%,-100%);z-index:6;min-height:44px;background:#e3fff0;color:#175c40}
