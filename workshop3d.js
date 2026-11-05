@@ -74,12 +74,28 @@ export function createWorkshop(api){
     if(o.type==='actor'){
       for(const [key,label,limit]of [['actorName','名前',32],['speech','せりふ',240]]){
         const row=document.createElement('label'),input=document.createElement(key==='speech'?'textarea':'input');
+        if(key==='speech'){
+          const picker=document.createElement('select');
+          picker.setAttribute('aria-label','せりふの見本をえらぶ');
+          picker.add(new Option('せりふの見本をえらぶ',''));
+          for(const line of ['いらっしゃい！','こんにちは！','ほしと こうかんしよう！','このさきに なかまがいるよ。','きをつけてね！']){
+            picker.add(new Option(line,line));
+          }
+          picker.onchange=()=>{
+            if(!picker.value)return;
+            input.value=picker.value;
+            o.speech=picker.value;
+            picker.value='';
+            save();
+          };
+          el.append(picker);
+        }
         setReadingText(row,label);input.maxLength=limit;input.value=o[key]||'';input.onchange=()=>{o[key]=input.value;save();};row.append(input);el.append(row);
       }
       for(const [i,offer]of (o.offers||[]).entries()){
         selectField(el,'品もの '+(i+1),[['','銃をえらぼう'],...p.loadout.map(t=>[t.id,t.name])],offer.gun,v=>offer.gun=v);
         field(el,'交換にいる星',offer.price,1,99,1,n=>offer.price=Math.round(n));
-        const remove=document.createElement('button');setReadingText(remove,'この品を外す');remove.onclick=()=>{o.offers.splice(i,1);save();inspect();};el.append(remove);
+        const remove=document.createElement('button');setReadingText(remove,'このしなものを おみせから けす');remove.onclick=()=>{o.offers.splice(i,1);save();inspect();};el.append(remove);
       }
       const add=document.createElement('button');setReadingText(add,'＋ 交換する品を追加');add.disabled=(o.offers?.length||0)>=6;
       add.onclick=()=>{o.offers??=[];o.offers.push({gun:'',price:3});save();inspect();};el.append(add);
