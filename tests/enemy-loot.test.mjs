@@ -6,3 +6,12 @@ test('経験値・鍵・同じ銃を拾えて、元の作品は変えない',()=
 test('未設定では落とさず、削除された銃を出さず、64個上限を守る',()=>{const g=create3D(fresh3D()),source={x:0,y:0,z:0,h:2};dropEnemyLoot(g,{...source});assert.equal(g.drops.length,0);dropEnemyLoot(g,{...source,enemyDrops:[{type:'weapon',weaponId:'missing'}]});assert.equal(g.drops.length,0);for(let i=0;i<20;i++)dropEnemyLoot(g,{...source,enemyDrops:Array.from({length:6},()=>({type:'key'}))});assert.equal(g.drops.length,64);});
 test('落とす設定を保存し、不正な種類や多すぎる件数を拒否する',()=>{const p=fresh3D(),e=part('enemy');p.objects=[e];e.dropHeldWeapon=true;e.enemyDrops=[{type:'experience'},{type:'key'}];assert.equal(validate3D(p).objects[0].enemyDrops[0].type,'star');e.enemyDrops=[{type:'bad'}];assert.throws(()=>validate3D(p));e.enemyDrops=Array.from({length:7},()=>({type:'key'}));assert.throws(()=>validate3D(p));});
 test('ランダム銃は所持済みだけでも拾え、１個だけ増える',()=>{const p=fresh3D(),gun=p.loadout[0],item=part('weapon',p.spawn.x,p.spawn.z);item.weaponId='@random';p.objects=[item];const g=create3D(validate3D(p));step3D(g,p,{},.02);assert.equal(g.inventoryCounts[gun.id],2);step3D(g,p,{},.02);assert.equal(g.inventoryCounts[gun.id],2);assert.equal(item.weaponId,'@random');});
+test('ランダムで拾った建築銃を装備して壁を建てられる',()=>{
+ const p=fresh3D(),gun=p.loadout[0];
+ Object.assign(gun,{effect:'wall',pickupOnly:true});
+ const item=part('weapon',p.spawn.x,p.spawn.z);item.weaponId='@random';p.objects=[item];
+ const g=create3D(validate3D(p));step3D(g,p,{},.02);
+ assert.equal(g.inventoryCounts[gun.id],1);
+ step3D(g,p,{fire:true,buildPoint:{x:4,y:0,z:g.player.z}},.02);
+ assert.equal(g.buildings[0]?.type,'wall');
+});

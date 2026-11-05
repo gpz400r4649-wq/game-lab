@@ -1,18 +1,18 @@
-import {validEnemyLoot} from './enemy-loot3d.js?v=20261105d';
-import {validPatrolRoute,validWaypoints} from './patrol-route3d.js?v=20261105d';
-import {validLibrary} from './assets3d.js?v=20261105d';
-import {moveEnemy,canEnemyEnter,validEnemyMovement} from './enemy-ai3d.js?v=20261105d';
-import {worldMoveRange,validMoveRange,validAttackRange,inAttackRange,enemyYaw,defaultEnemyRanges} from './enemy-range3d.js?v=20261105d';
-import {playerGunMuzzle,finitePoint} from './muzzle3d.js?v=20261105d';
-import {doorFrameSolids,validDoor,nearbyDoor,doorwayOccupied,animateDoors} from './doors3d.js?v=20261105d';
-import {nearbyObjects} from './spatial3d.js?v=20261105d';
-import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261105d';
-import {worldSize,worldHalf,coordinateLimit,WORLD_SIZES} from './world3d.js?v=20261105d';
-import {settleLoot} from './loot3d.js?v=20261105d';
-import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261105d';
-import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261105d';
-import {shootVolley,updateCombat,resolveShotOrigin} from './combat3d.js?v=20261105d';
-import {BUILD_TYPES,constructionPart,topAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261105d';
+import {validEnemyLoot} from './enemy-loot3d.js?v=20261105f';
+import {validPatrolRoute,validWaypoints} from './patrol-route3d.js?v=20261105f';
+import {validLibrary} from './assets3d.js?v=20261105f';
+import {moveEnemy,canEnemyEnter,validEnemyMovement} from './enemy-ai3d.js?v=20261105f';
+import {worldMoveRange,validMoveRange,validAttackRange,inAttackRange,enemyYaw,defaultEnemyRanges} from './enemy-range3d.js?v=20261105f';
+import {playerGunMuzzle,finitePoint} from './muzzle3d.js?v=20261105f';
+import {doorFrameSolids,validDoor,nearbyDoor,doorwayOccupied,animateDoors} from './doors3d.js?v=20261105f';
+import {nearbyObjects} from './spatial3d.js?v=20261105f';
+import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261105f';
+import {worldSize,worldHalf,coordinateLimit,WORLD_SIZES} from './world3d.js?v=20261105f';
+import {settleLoot} from './loot3d.js?v=20261105f';
+import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261105f';
+import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261105f';
+import {shootVolley,updateCombat,resolveShotOrigin} from './combat3d.js?v=20261105f';
+import {BUILD_TYPES,constructionPart,topAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261105f';
 export const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export const PARTS={weapon:'銃アイテム',ramp:'スロープ',wall:'壁',floor:'床',roof:'屋根',box:'ブロック',platform:'足場',moving:'動く足場',bounce:'ジャンプ台',enemy:'敵ロボット',star:'星',key:'カギ',door:'ドア',heal:'回復',checkpoint:'セーブポイント',hazard:'ダメージ床',goal:'ゴール'};
 export const BEHAVIORS={chase:'プレイヤーを追いかける',patrol:'行ったり来たり',search:'歩き回って探す'};
@@ -122,7 +122,7 @@ export function step3D(g,p,input,dt){
   const nearby=o=>(['bounce','hazard'].includes(o.type)?Math.abs(o.x-player.x)<o.w/2+.25&&Math.abs(o.z-player.z)<o.d/2+.25:Math.hypot(o.x-player.x,o.z-player.z)<1.15)&&player.y<o.y+1.8&&player.y+1.7>o.y;
   for(const o of [...g.objects,...g.drops])if(!o.collected&&nearby(o)&&g.time>=(o.pickupAt||0)){
     if(o.type==='weapon'&&o.weaponId==='@random'){
-      const guns=p.loadout.filter(tool=>tool.effect==='shoot');
+      const guns=p.loadout;
       if(!guns.length)continue;
       o.weaponId=guns[Math.floor(Math.random()*guns.length)].id;
     }
