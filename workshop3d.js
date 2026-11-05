@@ -1,21 +1,22 @@
-import {makeTool} from './building3d.js?v=20261105g';
-import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261105g';
-import {openWaypointEditor} from './waypoint-ui3d.js?v=20261105g';
-import {openPatrolEditor} from './patrol-ui3d.js?v=20261105g';
-import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261105g';
-import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261105g';
-import {inGridRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261105g';
-import {renderEnemyRange} from './enemy-range-ui3d.js?v=20261105g';
-import {gunPreviewSVG} from './appearance3d.js?v=20261105g';
-import {DOOR_PRESETS} from './doors3d.js?v=20261105g';
-import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261105g';
-import {coordinateLimit} from './world3d.js?v=20261105g';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261105g';
-import {actionsFor} from './events3d.js?v=20261105g';
-import {renderEventEditor} from './event-editor3d.js?v=20261105g';
-import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261105g';
-import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261105g';
-import {PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261105g';
+import {allyAttackDistance} from './ally3d.js?v=20261105h';
+import {makeTool} from './building3d.js?v=20261105h';
+import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261105h';
+import {openWaypointEditor} from './waypoint-ui3d.js?v=20261105h';
+import {openPatrolEditor} from './patrol-ui3d.js?v=20261105h';
+import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261105h';
+import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261105h';
+import {inGridRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261105h';
+import {renderEnemyRange} from './enemy-range-ui3d.js?v=20261105h';
+import {gunPreviewSVG} from './appearance3d.js?v=20261105h';
+import {DOOR_PRESETS} from './doors3d.js?v=20261105h';
+import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261105h';
+import {coordinateLimit} from './world3d.js?v=20261105h';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261105h';
+import {actionsFor} from './events3d.js?v=20261105h';
+import {renderEventEditor} from './event-editor3d.js?v=20261105h';
+import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261105h';
+import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261105h';
+import {PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261105h';
 
 const ICONS={ally:'🛡',weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
 const DESCRIPTIONS={ally:'近くで「ついてきて」と呼ぶと、一緒に戦うよ。',weapon:'地面に置いて、ふれると拾える銃。持ちもの・銃づくりで用意した銃をえらぼう。',ramp:'低いほうから歩くと、そのまま登れるスロープ。回して好きな向きにつなげよう。',wall:'家を囲う壁。向きを変えてつなげよう。',floor:'家の床と天井に使える板。壁の内側にぴったり合うよ。',roof:'壁の上にのせる三角屋根。向きを変えて家を仕上げよう。',
@@ -64,7 +65,8 @@ export function createWorkshop(api){
     }
     if(DESTRUCTIBLE_TYPES.has(o.type)){field(el,'ブロックの体力',o.hp,1,LIMITS.maxBlockHp,1,n=>o.hp=Math.round(n));selectField(el,'弾が当たったら',[['yes','体力がなくなると壊れる'],['no','こわれない']],o.destructible===false?'no':'yes',v=>o.destructible=v==='yes');}
     if(o.type==='ally'){
-      selectField(el,'味方に持たせる銃',[['','ロボットブラスター'],...p.loadout.filter(t=>t.effect==='shoot').map(t=>[t.id,t.name])],o.allyGun||'',v=>o.allyGun=v);
+      selectField(el,'味方に持たせる銃',[['','ロボットブラスター'],...p.loadout.filter(t=>t.effect==='shoot').map(t=>[t.id,t.name])],o.allyGun||'',v=>{o.allyGun=v;inspect();});
+      const distance=document.createElement('p');distance.className='component-description';setReadingText(distance,'緑の円は、味方が敵をねらえる距離だよ（'+(allyAttackDistance(o,p.loadout)/4)+'マス）。壁の向こうの敵は見えないよ。');el.append(distance);
       selectField(el,'いつ撃つ？',[['auto','敵を見つけたら'],['assist','自分が弾を当てた敵をねらう']],o.allyAttack||'auto',v=>o.allyAttack=v);
     }
     if(o.type==='enemy'){

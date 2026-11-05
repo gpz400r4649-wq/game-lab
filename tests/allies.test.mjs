@@ -21,3 +21,13 @@ test('援護設定は合図を待ち、追従中にプレイヤーの足跡を�
  assert.ok(a.x>2);assert.equal(e.hp,3);
  g.playerTarget=e.id;g.playerTargetUntil=g.time+3;tick(80);assert.ok(e.hp<3);
 });
+import {spreadPosition,allyAttackDistance} from '../ally3d.js';
+test('矢印の先頭から左右対称に広がり、後列ほど外へ出る',()=>{
+ const player={x:0,z:0},positions=[0,1,2,3].map(rank=>spreadPosition(player,0,rank));
+ assert.equal(positions[0].x,-positions[1].x);assert.equal(positions[0].z,positions[1].z);
+ assert.ok(positions[0].z>0&&positions[2].z>positions[0].z&&positions[2].x<positions[0].x);
+});
+test('見える範囲は５マスまでで短い銃は射程まで縮む',()=>{
+ const a={allyGun:'short'};assert.equal(allyAttackDistance(a,[]),20);
+ assert.equal(allyAttackDistance(a,[{id:'short',effect:'shoot',range:8}]),8);
+});
