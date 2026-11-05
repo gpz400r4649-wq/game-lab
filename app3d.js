@@ -90,6 +90,11 @@ function animatePickupGuns(time){
   }
 }
 const pointedHat=new T.ConeGeometry(.35,.65,12);
+const schoolHatCrown=new T.SphereGeometry(1,24,10,0,Math.PI*2,0,Math.PI/2);
+const schoolHatBrim=new T.CylinderGeometry(.43,.44,.045,32);
+const schoolHatBand=new T.CylinderGeometry(.349,.352,.04,24);
+const schoolHatFelt=new T.MeshStandardMaterial({color:0xffcf39,roughness:.9});
+const schoolHatRibbon=new T.MeshStandardMaterial({color:0xbc8426,roughness:.85});
 function addActorHat(mesh,hat='yellow'){
   if(hat==='none')return;
   if(hat==='cap'){
@@ -101,7 +106,15 @@ function addActorHat(mesh,hat='yellow'){
   }else if(hat==='witch'){
     box(mesh,materials.dark,0,1.84,0,.84,.06,.72);
     const cone=new T.Mesh(pointedHat,materials.goal);cone.position.y=2.19;mesh.add(cone);
-  }else box(mesh,materials.star,0,1.89,0,.8,.16,.65);
+  }else{
+    const brim=new T.Mesh(schoolHatBrim,schoolHatFelt);
+    brim.scale.z=.87;brim.position.y=1.825;
+    const crown=new T.Mesh(schoolHatCrown,schoolHatFelt);
+    crown.scale.set(.35,.26,.30);crown.position.y=1.846;
+    const band=new T.Mesh(schoolHatBand,schoolHatRibbon);
+    band.scale.z=.86;band.position.y=1.867;
+    mesh.add(brim,crown,band);
+  }
 }
 function partModel(o){let mesh=new T.Group();
   if(Object.hasOwn(BUILD_TYPES,o.type)){mesh=structureModel(o);}
