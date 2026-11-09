@@ -158,3 +158,5 @@ main.range-editing #reset-camera{margin-left:0}
 .range-distance-entry{display:flex;align-items:center;gap:4px;font-size:12px}
 #range-actions3 .stage-range-tools{background:#fff;border:1px solid #ded6ed;border-radius:10px;padding:6px}
 @media(max-width:600px){#range-actions3 .fan-controls{grid-template-columns:1fr}}
+
+.attack-context-legend{display:flex;gap:12px;flex-wrap:wrap;width:100%;font-size:12px}.attack-context-legend span:first-child{border-left:5px solid #e6b523;padding-left:6px}.attack-context-legend span:last-child{border-left:5px solid #ed7890;padding-left:6px}

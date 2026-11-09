@@ -1,7 +1,7 @@
-import {mountLiveRangeEditor} from './range-panel3d.js?v=20261110a';
-import {worldMoveRange,rangeCell,MOVE_MAX_CELLS,convertRangeSpace,fitRoamingEnemy} from './enemy-range3d.js?v=20261110a';
-import {worldSize} from './world3d.js?v=20261110a';
-import {setReadingText} from './readings3d.js?v=20261110a';
+import {mountLiveRangeEditor} from './range-panel3d.js?v=20261110b';
+import {worldMoveRange,rangeCell,MOVE_MAX_CELLS,convertRangeSpace,fitRoamingEnemy} from './enemy-range3d.js?v=20261110b';
+import {worldSize} from './world3d.js?v=20261110b';
+import {setReadingText} from './readings3d.js?v=20261110b';
 let painter=null;
 export function setStageRangePainter(next){painter=next;}
 export function stageRangePointer(kind,id,point){return painter?.(kind,id,point)||false;}
@@ -16,7 +16,7 @@ export function paintMoveCells(range,from,to,erase,half,accept=()=>true){
 export function openStageMoveRange(o,{getProject,save,rebuild,lookFromAbove,onClose,key='moveRange'}){
  const movement=key==='moveRange',name=movement?'動ける':key==='searchRange'?'気づく':'攻撃する',color=movement?'青':key==='searchRange'?'黄色':'赤';
  const source=o[key]||{shape:'custom',cross:2,circle:2,cells:[],space:movement?'world':'facing'},space=source.space||'legacy';
- const panel=document.createElement('section');panel.className='range-live-panel';panel.setAttribute('role','region');panel.setAttribute('aria-label',`ステージで${name}マスをぬる`);
+ const panel=document.createElement('section');panel.dataset.rangeKey=key;panel.className='range-live-panel';panel.setAttribute('role','region');panel.setAttribute('aria-label',`ステージで${name}マスをぬる`);
  const heading=document.createElement('div'),title=document.createElement('h2'),close=document.createElement('button'),note=document.createElement('p'),toolbar=document.createElement('div'),count=document.createElement('p');heading.className='range-live-heading';title.tabIndex=-1;setReadingText(title,`${name}マスをぬる`);setReadingText(close,'できた・設定にもどる');close.className='primary';heading.append(title,close);
  setReadingText(note,`高さ${o.y||0}mのマスを編集しているよ。上の階は編集中だけ隠すよ。左のステージをなぞって、${color}のマスをぬろう。カメラは左下のスティックで動かせるよ。`+(space!=='world'?'敵からたて・よこ８マスまで。':''));toolbar.className='stage-range-tools';
  let mode='paint',pointer=null,previous=null,dirty=false;const buttons=[];
@@ -26,7 +26,7 @@ export function openStageMoveRange(o,{getProject,save,rebuild,lookFromAbove,onCl
  const refresh=()=>setReadingText(count,`${current.cells.length} / ${MOVE_MAX_CELLS}マス`);
  function commit(){if(dirty){if(movement&&fitRoamingEnemy(o,getProject()))rebuild();save();dirty=false;}pointer=null;previous=null;}
  for(const [value,label]of [['paint','ぬる'],['erase','けす'],['camera','カメラを回す']]){const button=document.createElement('button');setReadingText(button,label);button.onclick=()=>{commit();mode=value;buttons.forEach(([v,b])=>b.setAttribute('aria-pressed',String(v===mode)));};button.setAttribute('aria-pressed',String(value===mode));buttons.push([value,button]);toolbar.append(button);}
- const top=document.createElement('button');top.className='range-top-action';setReadingText(top,'↑ 上から見る');top.onclick=()=>lookFromAbove?.();
+ const top=document.createElement('button');top.className='range-top-action';setReadingText(top,'↑ 上から見る');top.onclick=()=>lookFromAbove?.({facing:space==='facing'});
  const clear=document.createElement('button');setReadingText(clear,'全部のマスをけす');clear.onclick=()=>{commit();current.cells=[];store();save();rebuild();refresh();};
  const unlimited=document.createElement('button');setReadingText(unlimited,'移動の制限をなくす');unlimited.onclick=()=>{commit();delete o[key];save();rebuild();finish();};
  panel.append(heading,note,toolbar,top,count,clear);if(movement)panel.append(unlimited);refresh();
@@ -39,5 +39,5 @@ export function openStageMoveRange(o,{getProject,save,rebuild,lookFromAbove,onCl
   if(point&&Math.abs(point.x)<=half&&Math.abs(point.z)<=half){if(paintMoveCells(current,previous,point,mode==='erase',half,accepts)){store();dirty=true;rebuild();refresh();}previous={x:point.x,z:point.z};}else previous=null;
   return true;
  };
- lookFromAbove?.();title.focus({preventScroll:true});
+ lookFromAbove?.({facing:space==='facing'});title.focus({preventScroll:true});
 }

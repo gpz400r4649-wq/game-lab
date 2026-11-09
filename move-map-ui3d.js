@@ -1,12 +1,12 @@
-import {openStageMoveRange} from './stage-range3d.js?v=20261110a';
-import {mountLiveRangeEditor} from './range-panel3d.js?v=20261110a';
-import {createMapStick,panMapCenter} from './map-stick3d.js?v=20261110a';
-import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261110a';
-import {MOVE_MAX_CELLS,RANGE_MAX,rangeCell,rangeCells,worldMoveRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261110a';
-import {moveGridWindow,moveGridPages} from './world3d.js?v=20261110a';
-import {setReadingText,kanaText} from './readings3d.js?v=20261110a';
+import {openStageMoveRange} from './stage-range3d.js?v=20261110b';
+import {mountLiveRangeEditor} from './range-panel3d.js?v=20261110b';
+import {createMapStick,panMapCenter} from './map-stick3d.js?v=20261110b';
+import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261110b';
+import {MOVE_MAX_CELLS,RANGE_MAX,rangeCell,rangeCells,worldMoveRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261110b';
+import {moveGridWindow,moveGridPages} from './world3d.js?v=20261110b';
+import {setReadingText,kanaText} from './readings3d.js?v=20261110b';
 export function openMoveMap(o,{getProject,save,rebuild,lookFromAbove,onClose,key='moveRange',config,renderMode}){
- const p=getProject(),limit=moveGridWindow(p).limit,d=document.createElement('section');d.className='enemy-range-dialog range-live-panel';d.setAttribute('role','region');d.setAttribute('aria-label',config?.title||'敵が動けるマス');d.style.setProperty('--range-color',config?.color||'#91c7ee');
+ const p=getProject(),limit=moveGridWindow(p).limit,d=document.createElement('section');d.dataset.rangeKey=key;d.className='enemy-range-dialog range-live-panel';d.setAttribute('role','region');d.setAttribute('aria-label',config?.title||'敵が動けるマス');d.style.setProperty('--range-color',config?.color||'#91c7ee');
  const current=o[key]?worldMoveRange(o[key],o):{space:'world',cells:[]};
  const chosen=new Set(current.cells.map(c=>c.join(','))),h=document.createElement('h2'),note=document.createElement('p'),controls=document.createElement('div'),grid=document.createElement('div'),count=document.createElement('p'),close=document.createElement('button');
  const initial=current.cells,cx=initial.length?Math.round((Math.min(...initial.map(c=>c[0]))+Math.max(...initial.map(c=>c[0])))/2):rangeCell(o.x),cz=initial.length?Math.round((Math.min(...initial.map(c=>c[1]))+Math.max(...initial.map(c=>c[1])))/2):rangeCell(o.z);
@@ -40,5 +40,5 @@ export function openMoveMap(o,{getProject,save,rebuild,lookFromAbove,onClose,key
  const unlimited=document.createElement('button');setReadingText(unlimited,'移動の制限をなくす');unlimited.onclick=()=>{delete o[key];save();rebuild();finish();};
  setReadingText(close,'できた・設定にもどる');close.className='primary';const view=document.createElement('button');view.className='range-top-action';setReadingText(view,'↑ マスと同じ向きで上から見る');view.onclick=()=>lookFromAbove?.();
  const heading=document.createElement('div');heading.className='range-live-heading';heading.append(h,close);const presets=document.createElement('div');presets.className='range-preset-controls';presets.append(controls,clear);
- const modeControls=document.createElement('div');modeControls.className='range-mode-controls';renderMode?.(modeControls);d.append(heading,modeControls,note,presets,view,navigation,directionFrame(grid),count,places);if(key==='moveRange')d.append(unlimited);else{const direct=document.createElement('button');setReadingText(direct,'ステージで直接編集');direct.onclick=()=>openStageMoveRange(o,{key,getProject,save,rebuild,lookFromAbove,onClose});d.append(direct);}paint();const finish=mountLiveRangeEditor(d,()=>{mapStick.destroy();cancelAnimationFrame(panFrameId);onClose();});close.onclick=finish;h.focus({preventScroll:true});
+ const modeControls=document.createElement('div');modeControls.className='range-mode-controls';renderMode?.(modeControls);d.append(heading,modeControls,note,presets,view,navigation,directionFrame(grid),count,places);if(key==='moveRange')d.append(unlimited);else{const direct=document.createElement('button');setReadingText(direct,'ステージで直接編集');direct.onclick=()=>openStageMoveRange(o,{key,getProject,save,rebuild,lookFromAbove,onClose});d.append(direct);}paint();const finish=mountLiveRangeEditor(d,()=>{mapStick.destroy();cancelAnimationFrame(panFrameId);onClose();});close.onclick=finish;view.onclick();h.focus({preventScroll:true});
 }

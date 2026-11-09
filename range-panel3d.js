@@ -18,6 +18,11 @@ export function mountLiveRangeEditor(panel,onClose){
   const bar=document.createElement('div');bar.className='range-session-heading';
   const controls=document.createElement('div');controls.className='range-session-controls';
   if(title)bar.append(title);
+  if(panel.dataset.rangeKey==='attackRange'){
+   const legend=document.createElement('span');legend.className='attack-context-legend';
+   const vision=document.createElement('span'),attack=document.createElement('span');
+   vision.textContent='黄色のわく：気づく範囲';attack.textContent='赤いマス：攻撃する範囲';legend.append(vision,attack);controls.append(legend);
+  }
 
   const modes=panel.querySelector('.stage-range-tools');
   const top=panel.querySelector('.range-top-action');
