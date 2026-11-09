@@ -122,3 +122,22 @@ main.range-editing .view-column>nav{position:sticky;top:0;z-index:25;background:
 .workshop-launchers{position:sticky;top:0;z-index:8;background:white;padding:6px 0 10px;display:grid;gap:8px}
 .workshop-launchers .tools-open,.workshop-launchers .enemy-editor-launch{margin:0;width:100%;min-height:48px}
 #enemy-open3:disabled{opacity:.4;cursor:default}
+
+main.range-editing{grid-template-columns:minmax(0,1fr)}
+main.range-editing aside.is-range-editing{display:none}
+#range-actions3{flex:1;justify-content:flex-start}
+#range-actions3 .fan-controls{display:flex;gap:12px;flex-wrap:wrap;margin:0;padding:0;border:0}
+#range-actions3 .fan-controls>div{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+#range-actions3 .fan-controls b{font-size:12px}
+#range-actions3 .fan-controls p{display:none}
+#range-actions3 .fan-choices{display:flex;gap:4px;flex-wrap:wrap}
+#range-actions3 input{width:60px;font-size:16px}
+#range-actions3 .range-mode-controls{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+#range-actions3 .range-mode-controls .field{margin:0;gap:6px}
+#range-actions3 .range-mode-controls p{display:none}
+#range-more3{margin:4px 0;padding:8px 12px;border:1px solid #ddd4ef;background:#fff;border-radius:10px}
+#range-more3[hidden]{display:none}
+#range-more3 summary{cursor:pointer;font-size:12px;min-height:36px;display:flex;align-items:center}
+#range-dock3{max-height:30vh;overflow:auto}
+#range-dock3 .range-live-heading{position:static}
+@media(max-width:700px){main.range-editing{grid-template-columns:minmax(0,1fr)}}
