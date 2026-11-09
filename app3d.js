@@ -25,7 +25,7 @@ import {installGameTouchGuard,bindHeldButton,bindGameAction,createGamePageMode} 
 import {actionsFor,ACTION_NAMES} from './events3d.js?v=20261109a';
 import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261109a';
 import {BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,editorPlacementReason,blockPlacement} from './building3d.js?v=20261109a';
-import {createToolsUI} from './tools3d.js?v=20261109a';
+import {createToolsUI} from './tools3d.js?v=20261109b';
 import * as T from './vendor/three.module.min.js';
 import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,conditionHint} from './engine3d.js?v=20261109a';
 import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261109a';

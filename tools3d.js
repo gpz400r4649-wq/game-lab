@@ -7,7 +7,7 @@ import {buildChoices,activeBuildTool,cycleBuildType,facingBuildRotation,makeTool
 import {WEAPON_PRESETS,PARTS} from './engine3d.js?v=20261109a';
 export function createToolsUI(api){
   const {$,getProject,getGame,getMode,field,save,refresh,finishBuilding}=api;
-  let editing=0,rotation=0,level=0;
+  let editing=0,rotation=0,level=0,activePage='basic';
   const dialog=document.createElement('dialog');dialog.className='tools-dialog';dialog.id='tools-dialog3';dialog.addEventListener('close',()=>api.onCatalogChange?.());document.body.append(dialog);
   function selectField(parent,label,values,current,change){const l=document.createElement('label');l.className='field choice-field';const caption=document.createElement('span');setReadingText(caption,label);l.append(caption);const s=document.createElement('select');s.setAttribute('aria-label',label);values.forEach(([k,v])=>s.add(new Option(kanaText(v),k)));s.value=current;s.onchange=()=>change(s.value);l.append(s);parent.append(l);return s;}
   function changed(){save();renderHotbar();}
@@ -27,7 +27,7 @@ export function createToolsUI(api){
         let sync=()=>{};
         const assign=n=>{const previous=target[key];target[key]=step===1?Math.round(n):n;if(key==='interval'&&Math.abs(previous-target[key])>.000001){Object.assign(tool,cadenceHandling(tool.interval));tuningControls.get('recoil')?.();tuningControls.get('aimJitter')?.();}options.onChange?.(target[key]);sync();syncPreset();return target[key];};
         const old=field(parent,label,target[key],min,max,step,assign),number=old.querySelector('input'),row=document.createElement('div'),caption=document.createElement('label'),group=document.createElement('div');
-        row.className='performance-field';number.id=`tune-${editing}-${key}`;caption.htmlFor=number.id;setReadingText(caption,label);group.className='tuning-options';group.setAttribute('role','radiogroup');group.setAttribute('aria-label',label+'のかんたん調整');
+        row.className='performance-field';row.dataset.tuningKey=key;number.id=`tune-${editing}-${key}`;caption.htmlFor=number.id;setReadingText(caption,label);group.className='tuning-options';group.setAttribute('role','radiogroup');group.setAttribute('aria-label',label+'のかんたん調整');
         const radios=[];
         for(const [text,value] of choices){
           const choice=document.createElement('label'),radio=document.createElement('input'),textNode=document.createElement('span');radio.type='radio';radio.name=number.id;radio.value=value;radio.setAttribute('aria-label',text);setReadingText(textNode,text);const amount=document.createElement('small');amount.textContent=value;choice.append(radio,textNode,amount);group.append(choice);radios.push([radio,value]);
@@ -55,7 +55,7 @@ export function createToolsUI(api){
       const handlingNote=document.createElement('p');handlingNote.className='handling-note';setReadingText(handlingNote,'連射を速くすると、反動とブレも大きくなるよ。次はこの２つを下げて、自分が使いやすい銃にしよう。速さをもう一度変えると、この２つの数値も変わるよ。');d.append(handlingNote);
       performanceField(d,'銃の反動（角度）','recoil',0,LIMITS.maxRecoil,.1,[['なし',0],['すこし',1],['おおきい',4]]);
       performanceField(d,'照準のブレ（角度）','aimJitter',0,LIMITS.maxJitter,.1,[['なし',0],['すこし',1],['おおきい',5]]);
-      const meaning=document.createElement('p');meaning.className='component-description';setReadingText(meaning,'反動は撃つと視点が上がる強さ。ブレは弾がねらいからずれる広さで、照準の丸が広いほど当てにくくなるよ。');d.append(meaning);
+      const meaning=document.createElement('p');meaning.className='component-description';meaning.dataset.gunPage='handling';setReadingText(meaning,'反動は撃つと視点が上がる強さ。ブレは弾がねらいからずれる広さで、照準の丸が広いほど当てにくくなるよ。');d.append(meaning);
       performanceField(d,'弾のつよさ','damage',1,LIMITS.maxDamage,1,[['よわい',1],['ふつう',5],['つよい',20]]);
       performanceField(d,'弾の大きさ（直径）','size',LIMITS.minSize,LIMITS.maxSize,.05,[['ちいさい',.1],['ふつう',.2],['おおきい',1]]);
       performanceField(d,'いちどに出る数','spread',1,LIMITS.pellets,1,[['すくない',1],['ふつう',3],['たくさん',8]]);
@@ -72,6 +72,73 @@ export function createToolsUI(api){
     for(const [effect,label] of [['shoot','＋ 射撃の銃'],['wall','＋ 壁の銃'],['floor','＋ 床の銃'],['roof','＋ 屋根の銃'],['ramp','＋ スロープの銃']]){const b=document.createElement('button');setReadingText(b,label);b.disabled=p.loadout.length>=8;b.onclick=()=>{p.loadout.push(makeTool(effect));editing=p.loadout.length-1;changed();renderEditor();};addRow.append(b);}dialog.append(addRow);
     const del=document.createElement('button');setReadingText(del,'この持ちものをはずす');del.disabled=p.loadout.length===1;del.onclick=()=>{p.loadout.splice(editing,1);editing=Math.max(0,editing-1);changed();renderEditor();};
     const close=document.createElement('button');setReadingText(close,'設定を閉じる');close.className='primary';close.onclick=()=>{dialog.close();renderLauncher();};dialog.append(del,close);
+    const header=document.createElement('div');
+    header.className='gun-editor-header';
+    header.append(title,close,list);
+    const tabs=document.createElement('div');
+    tabs.className='gun-editor-tabs';
+    tabs.setAttribute('role','tablist');
+    tabs.setAttribute('aria-label','銃の設定を切り替える');
+    const pages=new Map();
+    const names=tool.effect==='shoot'
+      ? [['basic','基本'],['look','見た目'],['power','弾の力'],['pattern','弾の出かた'],['handling','連射・ブレ'],['impact','当たったら']]
+      : [['basic','基本'],['look','見た目'],['build','建築']];
+    const body=document.createElement('div');
+    body.className='gun-editor-body';
+    for(const [key,label]of names){
+      const panel=document.createElement('section');
+      panel.id='gun-page-'+key;
+      panel.setAttribute('role','tabpanel');
+      panel.setAttribute('aria-label',label);
+      pages.set(key,panel);body.append(panel);
+    }
+    const moveSelect=(label,key)=>{
+      const select=[...dialog.querySelectorAll('select')].find(node=>node.getAttribute('aria-label')===label);
+      if(select)pages.get(key).append(select.closest('.field'));
+    };
+    pages.get('basic').append(nameLabel);
+    for(const label of ['この銃から出るもの','この銃をいつ使える？','かんたん設定'])moveSelect(label,'basic');
+    lookPanel.open=true;
+    lookTitle.remove();
+    pages.get('look').append(lookPanel);
+    const groups={
+      barrel:'look',range:'power',damage:'power',size:'power',speed:'power',
+      spread:'pattern',spreadAngle:'pattern',interval:'handling',recoil:'handling',aimJitter:'handling',
+      blastRadius:'impact',structureHp:'build'
+    };
+    for(const row of dialog.querySelectorAll('.performance-field')){
+      pages.get(groups[row.dataset.tuningKey]).append(row);
+    }
+    if(tool.effect==='shoot'){
+      moveSelect('どんな弾が出る？','power');
+      moveSelect('弾の出る形','pattern');
+      pages.get('impact').prepend(dialog.querySelector('.impact-choices'));
+      for(const note of dialog.querySelectorAll('.handling-note,[data-gun-page="handling"]'))pages.get('handling').append(note);
+    }else{
+      pages.get('build').prepend(dialog.querySelector('.impact-choices'));
+    }
+    pages.get('basic').append(addRow,del);
+    const showPage=key=>{
+      activePage=key;
+      for(const [id,panel]of pages)panel.hidden=id!==key;
+      for(const button of tabs.children){
+        const current=button.dataset.page===key;
+        button.setAttribute('aria-selected',String(current));
+        button.classList.toggle('active',current);
+      }
+      body.scrollTop=0;
+      dialog.scrollTop=0;
+    };
+    for(const [key,label]of names){
+      const button=document.createElement('button');
+      button.type='button';button.dataset.page=key;
+      button.setAttribute('role','tab');button.setAttribute('aria-controls','gun-page-'+key);
+      setReadingText(button,label);button.onclick=()=>showPage(key);tabs.append(button);
+    }
+    header.append(tabs);
+    dialog.replaceChildren(header,body);
+    showPage(pages.has(activePage)?activePage:'basic');
+
   }
   function open(){renderEditor();dialog.showModal();}
   function renderLauncher(){const el=$('#weapon3');el.replaceChildren();const note=document.createElement('p');note.className='component-description';setReadingText(note,`${getProject().loadout.length}個の持ちもの。射撃の銃も、部品を出す建築銃も追加できるよ。`);const b=document.createElement('button');setReadingText(b,'持ちもの・銃をつくる');b.className='primary';b.onclick=open;el.append(note,b);}

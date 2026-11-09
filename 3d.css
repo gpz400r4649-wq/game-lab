@@ -76,3 +76,16 @@ main.range-editing{display:grid;grid-template-columns:minmax(0,1fr) min(440px,42
 #talk3,#escort-count3{position:absolute;z-index:6;left:50%;top:20%;transform:translateX(-50%)}#talk3{min-height:44px}#escort-count3{top:12%;background:white;padding:.3em .7em;border-radius:8px}#talk-dialog3 p{white-space:pre-wrap}#talk-dialog3 div{display:grid;gap:.5em;margin-bottom:1em}
 
 .inspector-back{position:sticky;top:0;z-index:3;min-height:44px;background:#f3efff;margin-bottom:8px}
+
+.tools-dialog{padding:0;overflow:hidden;max-height:90dvh}
+.gun-editor-header{padding:14px 18px 10px;background:#fff;border-bottom:1px solid #e7e0ee;display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px}
+.gun-editor-header h2{margin:0}
+.gun-editor-header .tool-editor-list{grid-column:1/-1;margin:0;flex-wrap:nowrap;overflow-x:auto;padding:4px 0}
+.gun-editor-header .tool-editor-list button{flex-shrink:0;min-height:40px}
+.gun-editor-tabs{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.gun-editor-tabs button{min-height:44px;padding:6px;font-size:12px}
+.gun-editor-tabs button.active{background:#805ed4;color:white;border-color:#805ed4}
+.gun-editor-body{overflow-y:auto;max-height:calc(90dvh - 225px);padding:12px 18px 20px;overscroll-behavior:contain}
+.gun-editor-body [role=tabpanel][hidden]{display:none}
+.gun-editor-body .gun-appearance{border:0;padding:0}
+.gun-editor-body .performance-field{padding:10px 0}
