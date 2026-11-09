@@ -1,20 +1,20 @@
-import {companionsAt,updatePlates,validCharacterSettings} from './actor3d.js?v=20261106h';
-import {stepAllies} from './ally3d.js?v=20261106h';
-import {validEnemyLoot} from './enemy-loot3d.js?v=20261106h';
-import {validPatrolRoute,validWaypoints} from './patrol-route3d.js?v=20261106h';
-import {validLibrary} from './assets3d.js?v=20261106h';
-import {moveEnemy,canEnemyEnter,validEnemyMovement} from './enemy-ai3d.js?v=20261106h';
-import {worldMoveRange,validMoveRange,validAttackRange,inAttackRange,enemyYaw,defaultEnemyRanges} from './enemy-range3d.js?v=20261106h';
-import {enemyGunMuzzle,playerGunMuzzle,finitePoint} from './muzzle3d.js?v=20261106h';
-import {doorFrameSolids,validDoor,nearbyDoor,doorwayOccupied,animateDoors} from './doors3d.js?v=20261106h';
-import {nearbyObjects} from './spatial3d.js?v=20261106h';
-import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261106h';
-import {worldSize,worldHalf,coordinateLimit,WORLD_SIZES} from './world3d.js?v=20261106h';
-import {settleLoot} from './loot3d.js?v=20261106h';
-import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261106h';
-import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261106h';
-import {shootVolley,updateCombat,resolveShotOrigin} from './combat3d.js?v=20261106h';
-import {BUILD_TYPES,constructionPart,topAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261106h';
+import {companionsAt,updatePlates,validCharacterSettings} from './actor3d.js?v=20261109a';
+import {stepAllies} from './ally3d.js?v=20261109a';
+import {validEnemyLoot} from './enemy-loot3d.js?v=20261109a';
+import {validPatrolRoute,validWaypoints} from './patrol-route3d.js?v=20261109a';
+import {validLibrary} from './assets3d.js?v=20261109a';
+import {moveEnemy,canEnemyEnter,validEnemyMovement} from './enemy-ai3d.js?v=20261109a';
+import {worldMoveRange,validMoveRange,validAttackRange,inAttackRange,enemyYaw,defaultEnemyRanges} from './enemy-range3d.js?v=20261109a';
+import {enemyGunMuzzle,playerGunMuzzle,finitePoint} from './muzzle3d.js?v=20261109a';
+import {doorFrameSolids,validDoor,nearbyDoor,doorwayOccupied,animateDoors} from './doors3d.js?v=20261109a';
+import {nearbyObjects} from './spatial3d.js?v=20261109a';
+import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261109a';
+import {worldSize,worldHalf,coordinateLimit,WORLD_SIZES} from './world3d.js?v=20261109a';
+import {settleLoot} from './loot3d.js?v=20261109a';
+import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261109a';
+import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261109a';
+import {shootVolley,updateCombat,resolveShotOrigin} from './combat3d.js?v=20261109a';
+import {BUILD_TYPES,constructionPart,topAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261109a';
 export const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export const ENEMY_SCALES=Array.from({length:19},(_,i)=>1+i/2);
 export const PARTS={actor:'役者キャラクター',plate:'床スイッチ',ally:'味方ロボット',weapon:'銃アイテム',ramp:'スロープ',wall:'壁',floor:'床',roof:'屋根',box:'ブロック',platform:'足場',moving:'動く足場',bounce:'ジャンプ台',enemy:'敵ロボット',star:'星',key:'カギ',door:'ドア',heal:'回復',checkpoint:'セーブポイント',hazard:'ダメージ床',goal:'ゴール'};
@@ -31,6 +31,7 @@ export function validate3D(data){
   if(p?.worldSize!==undefined&&!WORLD_SIZES.includes(p.worldSize))throw Error('マップのひろさを確認してください');
   const limit=coordinateLimit(p);if(p)p.worldSize=worldSize(p);
   if(!p||p.kind!=='game-lab-3d'||p.version!==1||typeof p.title!=='string'||p.title.length>40||!p.spawn||!['x','z'].every(k=>number(p.spawn[k],-limit,limit))||p.spawn.y!==0||!Array.isArray(p.objects)||p.objects.length>MAX_PARTS)throw Error('3D作品の形式がちがいます');
+  if(p.playerRules!==undefined&&(!p.playerRules||!Number.isInteger(p.playerRules.hp)||!number(p.playerRules.hp,1,100)||!number(p.playerRules.speed,1,12)||!number(p.playerRules.jumpHeight,.5,8)))throw Error('プレイヤーの設定を確認してください');
   if(!p.weapon||!number(p.weapon.speed,5,60)||!number(p.weapon.interval,.1,2)||!Number.isInteger(p.weapon.damage)||!number(p.weapon.damage,1,10)||![1,3,5].includes(p.weapon.spread))throw Error('武器の設定を確認してください');
   if(p.loadout===undefined)p.loadout=defaultLoadout(p.weapon);
   if(Array.isArray(p.loadout))p.loadout.forEach(upgradeTool);
@@ -85,7 +86,7 @@ export function movePlayer(p,objects,dx,dz,dt,jump,world=60){
  }
  moveAxis('x',dx);moveAxis('z',dz);
  if(!steppedOntoOther&&onSlope&&Math.abs(p.x-support.x)<=support.w/2&&Math.abs(p.z-support.z)<=support.d/2){const top=topAt(support,p.x,p.z);if(Math.abs(top-p.y)<.4)p.y=top;}
- if(jump&&p.grounded){p.vy=7;p.grounded=false;}const before=p.y;p.vy-=19*dt;p.y+=p.vy*dt;p.grounded=false;p.supportId=null;
+ if(jump&&p.grounded){p.vy=p.jumpSpeed??7;p.grounded=false;}const before=p.y;p.vy-=19*dt;p.y+=p.vy*dt;p.grounded=false;p.supportId=null;
  let landing=null;
  for(const o of walls){if(Math.abs(p.x-o.x)>=o.w/2+(p.type==='enemy'?.55*(p.enemyScale||1):.35)||Math.abs(p.z-o.z)>=o.d/2+(p.type==='enemy'?.55*(p.enemyScale||1):.35))continue;
   const top=topAt(o,p.x,p.z);
@@ -99,7 +100,7 @@ export function movePlayer(p,objects,dx,dz,dt,jump,world=60){
 // Convert the former shooting behavior without changing saved movement or range.
 export function upgradeEnemy(o){if(o.type!=='enemy')return o;if(o.moveRange)o.moveRange=worldMoveRange(o.moveRange,o);const shot=o.program.find(b=>b.action==='shoot');o.attackEnabled??=!!shot;o.attackSpeed??=shot?.speed??3;o.program=o.program.filter(b=>b.action!=='shoot');return o;}
 export function enemyWeapon(o,catalog=[]){return catalog.find(t=>t.id===o.enemyWeaponId&&t.effect==='shoot')||null;}
-export function create3D(p){const inventory=(p.loadout||[]).filter(t=>!t.pickupOnly).map(t=>t.id);const game={playerHitsAlly:p.playerHitsAlly===true,inventoryCounts:Object.fromEntries(inventory.map(id=>[id,1])),buildSelection:{},worldSize:worldSize(p),inventory,toolCatalog:structuredClone(p.loadout||[]),drops:[],blockInventory:[],blockEquipped:null,player:{...p.spawn,vy:0,grounded:true,hp:5,invincible:0},objects:structuredClone(p.objects).map(upgradeEnemy).map(o=>({...o,heading:(o.facing||0)*Math.PI/180,routeTravel:false,patrolNext:0,waypointIndex:0,waypointFrom:0,waypointDirection:1,waypointFinished:false,lootDropped:false,foundPlayer:false,vy:0,grounded:false,supportId:null,chaseGraceRemaining:0,navigation:null,roamTarget:null,previousRoamCell:null,roamStep:0,maxHp:o.hp,settings:o.settings||settingsFor(o.type),origin:{x:o.x,y:o.y,z:o.z},hidden:o.type==='enemy'&&o.startsHidden===true})),bullets:[],effects:[],hitInfo:null,buildings:[],recoilPitch:0,equipped:p.loadout?p.loadout.findIndex(t=>inventory.includes(t.id)):0,time:0,cooldown:0,score:0,stars:0,keys:0,checkpoint:null,message:'',messageId:0,state:'playing'};game.allies=game.objects.filter(o=>o.type==='ally');for(const ally of game.allies){ally.recruited=false;ally.following=false;ally.nextShot=0;}game.actors=game.objects.filter(o=>o.type==='actor');game.plates=game.objects.filter(o=>o.type==='plate');const controlled=new Set(game.plates.map(o=>o.doorId));game.plateDoors=game.objects.filter(o=>o.type==='door'&&controlled.has(o.id));for(const door of game.plateDoors)door.plateControlled=true;game.formation='line';return game;}
+export function create3D(p){const inventory=(p.loadout||[]).filter(t=>!t.pickupOnly).map(t=>t.id);const game={playerHitsAlly:p.playerHitsAlly===true,inventoryCounts:Object.fromEntries(inventory.map(id=>[id,1])),buildSelection:{},worldSize:worldSize(p),inventory,toolCatalog:structuredClone(p.loadout||[]),drops:[],blockInventory:[],blockEquipped:null,player:{...p.spawn,vy:0,grounded:true,hp:p.playerRules?.hp??5,maxHp:p.playerRules?.hp??5,walkSpeed:p.playerRules?.speed??5,jumpSpeed:p.playerRules?Math.sqrt(38*p.playerRules.jumpHeight):7,invincible:0},objects:structuredClone(p.objects).map(upgradeEnemy).map(o=>({...o,heading:(o.facing||0)*Math.PI/180,routeTravel:false,patrolNext:0,waypointIndex:0,waypointFrom:0,waypointDirection:1,waypointFinished:false,lootDropped:false,foundPlayer:false,vy:0,grounded:false,supportId:null,chaseGraceRemaining:0,navigation:null,roamTarget:null,previousRoamCell:null,roamStep:0,maxHp:o.hp,settings:o.settings||settingsFor(o.type),origin:{x:o.x,y:o.y,z:o.z},hidden:o.type==='enemy'&&o.startsHidden===true})),bullets:[],effects:[],hitInfo:null,buildings:[],recoilPitch:0,equipped:p.loadout?p.loadout.findIndex(t=>inventory.includes(t.id)):0,time:0,cooldown:0,score:0,stars:0,keys:0,checkpoint:null,message:'',messageId:0,state:'playing'};game.allies=game.objects.filter(o=>o.type==='ally');for(const ally of game.allies){ally.recruited=false;ally.following=false;ally.nextShot=0;}game.actors=game.objects.filter(o=>o.type==='actor');game.plates=game.objects.filter(o=>o.type==='plate');const controlled=new Set(game.plates.map(o=>o.doorId));game.plateDoors=game.objects.filter(o=>o.type==='door'&&controlled.has(o.id));for(const door of game.plateDoors)door.plateControlled=true;game.formation='line';return game;}
 export function conditionMet(o,g){const s=o.settings||settingsFor(o.type);return (s.condition==='allies'&&companionsAt(o,g)>=s.required)||s.condition==='touch'||(s.condition==='stars'&&g.stars>=s.required)||(s.condition==='keys'&&g.keys>=s.required)||(s.condition==='enemies'&&!g.objects.some(x=>x.type==='enemy'&&x.hp>0));}
 export function conditionHint(o,g){const s=o.settings||settingsFor(o.type);if(s.condition==='allies')return 'なかま '+companionsAt(o,g)+' / '+s.required;if(s.condition==='unset')return 'クリア条件が未設定';if(s.condition==='touch')return o.type==='door'?'いつでも':'ふれるだけ';if(s.condition==='enemies')return `のこりの敵 ${g.objects.filter(x=>x.type==='enemy'&&x.hp>0).length} 体`;return `${s.condition==='stars'?'星':'カギ'} ${s.condition==='stars'?g.stars:g.keys} / ${s.required}`;}
 function inside(b,o,r=0){return Math.abs(b.x-o.x)<o.w/2+r&&Math.abs(b.z-o.z)<o.d/2+r&&b.y>o.y-r&&b.y<topAt(o,b.x,b.z)+r;}
@@ -108,7 +109,7 @@ export function step3D(g,p,input,dt){
   for(const o of g.objects){if(o.type==='moving'){
     const s=o.settings,before={x:o.x,y:o.y,z:o.z},axis=s.axis;o[axis]=clamp(o.origin[axis]+Math.sin(g.time*s.speed/s.distance)*s.distance,axis==='y'?0:-limit,axis==='y'?MAX_BUILD_Y:limit);
     if(player.grounded&&player.supportId===o.id){player.x+=o.x-before.x;player.y+=o.y-before.y;player.z+=o.z-before.z;}}}
-  let x=input.x||0,z=input.z||0,len=Math.hypot(x,z);if(len>1){x/=len;z/=len;}const yaw=input.yaw||0;movePlayer(player,nearbyObjects(g,player.x-1,player.z-1,player.x+1,player.z+1),(x*Math.cos(yaw)+z*Math.sin(yaw))*5*dt,(-x*Math.sin(yaw)+z*Math.cos(yaw))*5*dt,dt,input.jump,g);
+  let x=input.x||0,z=input.z||0,len=Math.hypot(x,z);if(len>1){x/=len;z/=len;}const yaw=input.yaw||0;movePlayer(player,nearbyObjects(g,player.x-1,player.z-1,player.x+1,player.z+1),(x*Math.cos(yaw)+z*Math.sin(yaw))*player.walkSpeed*dt,(-x*Math.sin(yaw)+z*Math.cos(yaw))*player.walkSpeed*dt,dt,input.jump,g);
   if(input.useDoor){const door=nearbyDoor(g,input.yaw||0);if(door){if(door.open){if(doorwayOccupied(door,player))tell('ドアから少しはなれよう');else{door.open=false;tell('ドアをしめた');}}else if(!conditionMet(door,g))tell('まだあけられません。'+conditionHint(door,g));else if(!door.triggered)fireEvents(g,p,door,tell);else if(actionsFor(door).some(a=>a.type==='openDoor'&&a.target===door.id)){door.open=true;tell('ドアをあけた');}}}
   const tool=p.loadout?p.loadout[g.equipped]:p.weapon;
   if((tool||g.blockEquipped)&&input.fire&&g.cooldown<=0){
@@ -160,5 +161,5 @@ export function step3D(g,p,input,dt){
   // Items are collected before testing conditions. Each source fires once per test play.
   for(const o of g.objects)if(!o.triggered&&((o.type==='door'&&!o.plateControlled&&!o.doorMode&&conditionMet(o,g))||(o.type==='checkpoint'&&nearby(o))||(o.type==='goal'&&nearby(o)&&conditionMet(o,g)&&player.hp>0)))fireEvents(g,p,o,tell);
   updatePlates(g);animateDoors(g,dt);
-  if(player.hp<=0){if(g.checkpoint){Object.assign(player,{x:g.checkpoint.x,y:g.checkpoint.y,z:g.checkpoint.z,vy:0,hp:5,invincible:2,grounded:false,supportId:null});g.bullets=[];tell('セーブポイントからもう一度！');}else g.state='lost';}
+  if(player.hp<=0){if(g.checkpoint){Object.assign(player,{x:g.checkpoint.x,y:g.checkpoint.y,z:g.checkpoint.z,vy:0,hp:player.maxHp,invincible:2,grounded:false,supportId:null});g.bullets=[];tell('セーブポイントからもう一度！');}else g.state='lost';}
 }

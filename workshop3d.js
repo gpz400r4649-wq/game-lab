@@ -1,23 +1,23 @@
-import {ACTOR_HATS} from './actor3d.js?v=20261106h';
-import {allyAttackDistance} from './ally3d.js?v=20261106h';
-import {makeTool} from './building3d.js?v=20261106h';
-import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261106h';
-import {openWaypointEditor} from './waypoint-ui3d.js?v=20261106h';
-import {openPatrolEditor} from './patrol-ui3d.js?v=20261106h';
-import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261106h';
-import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261106h';
-import {inGridRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261106h';
-import {renderEnemyRange} from './enemy-range-ui3d.js?v=20261106h';
-import {gunPreviewSVG} from './appearance3d.js?v=20261106h';
-import {DOOR_PRESETS} from './doors3d.js?v=20261106h';
-import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261106h';
-import {coordinateLimit} from './world3d.js?v=20261106h';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261106h';
-import {actionsFor} from './events3d.js?v=20261106h';
-import {renderEventEditor} from './event-editor3d.js?v=20261106h';
-import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261106h';
-import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261106h';
-import {ENEMY_SCALES,PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261106h';
+import {ACTOR_HATS} from './actor3d.js?v=20261109a';
+import {allyAttackDistance} from './ally3d.js?v=20261109a';
+import {makeTool} from './building3d.js?v=20261109a';
+import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261109a';
+import {openWaypointEditor} from './waypoint-ui3d.js?v=20261109a';
+import {openPatrolEditor} from './patrol-ui3d.js?v=20261109a';
+import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261109a';
+import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261109a';
+import {inGridRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261109a';
+import {renderEnemyRange} from './enemy-range-ui3d.js?v=20261109a';
+import {gunPreviewSVG} from './appearance3d.js?v=20261109a';
+import {DOOR_PRESETS} from './doors3d.js?v=20261109a';
+import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261109a';
+import {coordinateLimit} from './world3d.js?v=20261109a';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261109a';
+import {actionsFor} from './events3d.js?v=20261109a';
+import {renderEventEditor} from './event-editor3d.js?v=20261109a';
+import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261109a';
+import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261109a';
+import {ENEMY_SCALES,PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261109a';
 
 const ICONS={actor:'💬',plate:'▣',ally:'🛡',weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
 const DESCRIPTIONS={actor:'名前とせりふを書こう。交換する品を置くとお店になるよ。',plate:'踏んでいる間、えらんだドアが開くよ。',ally:'近くで「ついてきて」と呼ぶと、一緒に戦うよ。',weapon:'地面に置いて、ふれると拾える銃。持ちもの・銃づくりで用意した銃をえらぼう。',ramp:'低いほうから歩くと、そのまま登れるスロープ。回して好きな向きにつなげよう。',wall:'家を囲う壁。向きを変えてつなげよう。',floor:'家の床と天井に使える板。壁の内側にぴったり合うよ。',roof:'壁の上にのせる三角屋根。向きを変えて家を仕上げよう。',
@@ -45,16 +45,22 @@ export function createWorkshop(api){
     input.onchange=()=>{onchange(input.value);save();rebuild();};row.append(text,input);parent.append(row);return input;
   }
   function details(label,children,open=false){const d=document.createElement('details'),s=document.createElement('summary');setReadingText(s,label);d.open=open;d.append(s,...children);return d;}
+  let inspectedId=null;
   function inspect(){
     const aside=$('aside'),el=$('#inspector3'),top=aside.scrollTop,pageX=window.scrollX,pageY=window.scrollY,min=el.style.minHeight,active=document.activeElement,focusLabel=el.contains(active)?active.getAttribute('aria-label'):null;
     el.style.minHeight=el.getBoundingClientRect().height+'px';
-    try{return inspectContent();}finally{el.style.minHeight=min;aside.scrollTop=top;window.scrollTo(pageX,pageY);if(focusLabel){const replacement=[...el.querySelectorAll('[aria-label]')].find(n=>n.getAttribute('aria-label')===focusLabel);replacement?.focus({preventScroll:true});}aside.scrollTop=top;}
+    try{return inspectContent();}finally{el.style.minHeight=min;aside.scrollTop=top;window.scrollTo(pageX,pageY);if(focusLabel){const replacement=[...el.querySelectorAll('[aria-label]')].find(n=>n.getAttribute('aria-label')===focusLabel);replacement?.focus({preventScroll:true});}aside.scrollTop=top;
+      const id=getSelected();
+      if(id&&id!==inspectedId)aside.scrollTop+=el.getBoundingClientRect().top-aside.getBoundingClientRect().top-8;
+      inspectedId=id;
+    }
   }
   function inspectContent(){
     const el=$('#inspector3'),wasOpen=el.querySelector('.advanced-program')?.open;
     advancedInspector();const loop=el.querySelector('.loop');el.replaceChildren();
     const p=getProject(),o=p.objects.find(o=>o.id===getSelected());
     if(!o){const note=document.createElement('p');note.className='empty';setReadingText(note,'空のステージに、使いたい部品を置こう。敵の動きやクリア条件は、自分でえらんで作れるよ。');el.append(note);return;}
+    const back=document.createElement('button');back.className='inspector-back';setReadingText(back,'← 部品をえらぶ');back.onclick=()=>{inspectedId=null;$('aside').scrollTop=0;};el.append(back);
     const title=document.createElement('h2');title.className='inspector-heading';setReadingText(title,`${ICONS[o.type]} ${PARTS[o.type]}`);
     const description=document.createElement('p');description.className='component-description';setReadingText(description,DESCRIPTIONS[o.type]);el.append(title,description);
     const s=o.settings;
