@@ -1,7 +1,7 @@
-import {mountLiveRangeEditor} from './range-panel3d.js?v=20261109e';
-import {worldMoveRange,rangeCell,MOVE_MAX_CELLS,convertRangeSpace,fitRoamingEnemy} from './enemy-range3d.js?v=20261109e';
-import {worldSize} from './world3d.js?v=20261109e';
-import {setReadingText} from './readings3d.js?v=20261109e';
+import {mountLiveRangeEditor} from './range-panel3d.js?v=20261109f';
+import {worldMoveRange,rangeCell,MOVE_MAX_CELLS,convertRangeSpace,fitRoamingEnemy} from './enemy-range3d.js?v=20261109f';
+import {worldSize} from './world3d.js?v=20261109f';
+import {setReadingText} from './readings3d.js?v=20261109f';
 let painter=null;
 export function setStageRangePainter(next){painter=next;}
 export function stageRangePointer(kind,id,point){return painter?.(kind,id,point)||false;}
@@ -26,7 +26,7 @@ export function openStageMoveRange(o,{getProject,save,rebuild,lookFromAbove,onCl
  const refresh=()=>setReadingText(count,`${current.cells.length} / ${MOVE_MAX_CELLS}マス`);
  function commit(){if(dirty){if(movement&&fitRoamingEnemy(o,getProject()))rebuild();save();dirty=false;}pointer=null;previous=null;}
  for(const [value,label]of [['paint','ぬる'],['erase','けす'],['camera','カメラを回す']]){const button=document.createElement('button');setReadingText(button,label);button.onclick=()=>{commit();mode=value;buttons.forEach(([v,b])=>b.setAttribute('aria-pressed',String(v===mode)));};button.setAttribute('aria-pressed',String(value===mode));buttons.push([value,button]);toolbar.append(button);}
- const top=document.createElement('button');setReadingText(top,'↑ 上から見る');top.onclick=()=>lookFromAbove?.();
+ const top=document.createElement('button');top.className='range-top-action';setReadingText(top,'↑ 上から見る');top.onclick=()=>lookFromAbove?.();
  const clear=document.createElement('button');setReadingText(clear,'全部のマスをけす');clear.onclick=()=>{commit();current.cells=[];store();save();rebuild();refresh();};
  const unlimited=document.createElement('button');setReadingText(unlimited,'移動の制限をなくす');unlimited.onclick=()=>{commit();delete o[key];save();rebuild();finish();};
  panel.append(heading,note,toolbar,top,count,clear);if(movement)panel.append(unlimited);refresh();

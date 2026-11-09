@@ -1,9 +1,9 @@
 import * as T from './vendor/three.module.min.js';
-import {mountLiveRangeEditor} from './range-panel3d.js?v=20261109e';
-import {setStageRangePainter} from './stage-range3d.js?v=20261109e';
-import {worldSize,coordinateLimit} from './world3d.js?v=20261109e';
-import {validPatrolRoute,placeAtRouteStart} from './patrol-route3d.js?v=20261109e';
-import {setReadingText} from './readings3d.js?v=20261109e';
+import {mountLiveRangeEditor} from './range-panel3d.js?v=20261109f';
+import {setStageRangePainter} from './stage-range3d.js?v=20261109f';
+import {worldSize,coordinateLimit} from './world3d.js?v=20261109f';
+import {validPatrolRoute,placeAtRouteStart} from './patrol-route3d.js?v=20261109f';
+import {setReadingText} from './readings3d.js?v=20261109f';
 export function createPatrolOverlay(scene){
  const group=new T.Group(),material=new T.MeshBasicMaterial({color:0x399cda,depthWrite:false}),lineGeometry=new T.CylinderGeometry(.07,.07,1,8),pointGeometry=new T.SphereGeometry(.3,12,8),direction=new T.Vector3(),up=new T.Vector3(0,1,0),lines=[],points=[],labels=[];group.visible=false;scene.add(group);
  for(let i=0;i<16;i++){const line=new T.Mesh(lineGeometry,material),point=new T.Mesh(pointGeometry,new T.MeshBasicMaterial({color:i===0?0x399cda:0xf0a23a,depthWrite:false}));line.layers.set(2);point.layers.set(2);group.add(line,point);lines.push(line);points.push(point);}
@@ -15,7 +15,7 @@ export function openPatrolEditor(o,{getProject,save,rebuild,lookFromAbove,previe
  let draft=structuredClone(o.patrolRoute||[]),next=0,camera=false,pointer=null;const buttons=[];
  function refresh(){buttons.forEach((b,i)=>b.setAttribute('aria-pressed',String(i===2?camera:!camera&&next===i)));setReadingText(summary,camera?'スティックやドラッグでカメラを動かそう。':next===0?'青い「はじめ」の場所をタップしよう。':'オレンジの「おわり」をタップすると保存するよ。');preview?.(draft);}
  for(const [i,label]of ['① はじめをえらぶ','② おわりをえらぶ','カメラを回す'].entries()){const b=document.createElement('button');setReadingText(b,label);b.onclick=()=>{camera=i===2;if(!camera)next=i;refresh();};buttons.push(b);toolbar.append(b);}
- const top=document.createElement('button');setReadingText(top,'↑ 上から見る');top.onclick=()=>lookFromAbove?.();panel.append(heading,note,toolbar,summary,top);
+ const top=document.createElement('button');top.className='range-top-action';setReadingText(top,'↑ 上から見る');top.onclick=()=>lookFromAbove?.();panel.append(heading,note,toolbar,summary,top);
  const finish=mountLiveRangeEditor(panel,()=>{setStageRangePainter(null);preview?.(o.patrolRoute);onClose?.();});close.onclick=finish;
  setStageRangePainter((kind,id,point)=>{
   if(kind==='end'){if(pointer!==id)return false;pointer=null;return true;}

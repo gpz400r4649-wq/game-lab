@@ -1,11 +1,11 @@
-import {renderFanControls} from './fan-controls3d.js?v=20261109e';
-import {openStageMoveRange} from './stage-range3d.js?v=20261109e';
-import {closeLiveRangeEditor,mountLiveRangeEditor} from './range-panel3d.js?v=20261109e';
-export {closeLiveRangeEditor,isLiveRangeEditing} from './range-panel3d.js?v=20261109e';
-import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261109e';
-import {openMoveMap} from './move-map-ui3d.js?v=20261109e';
-import {RANGE_MAX,rangeCells,convertRangeSpace} from './enemy-range3d.js?v=20261109e';
-import {setReadingText,kanaText} from './readings3d.js?v=20261109e';
+import {renderFanControls} from './fan-controls3d.js?v=20261109f';
+import {openStageMoveRange} from './stage-range3d.js?v=20261109f';
+import {closeLiveRangeEditor,mountLiveRangeEditor} from './range-panel3d.js?v=20261109f';
+export {closeLiveRangeEditor,isLiveRangeEditing} from './range-panel3d.js?v=20261109f';
+import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261109f';
+import {openMoveMap} from './move-map-ui3d.js?v=20261109f';
+import {RANGE_MAX,rangeCells,convertRangeSpace} from './enemy-range3d.js?v=20261109f';
+import {setReadingText,kanaText} from './readings3d.js?v=20261109f';
 const RANGE_UI={
  attackRange:{label:'弾を撃つ',title:'敵が弾を撃つマス',note:'色のついたマスに入ったら → 弾を撃つ。',empty:'これまでの近くに来たら撃つ設定',center:'敵のいるマスが中心。敵と一緒に動くよ。',color:'#ef9aae'},
  moveRange:{label:'動ける',title:'敵が動けるマス',note:'色のついたマスの中だけを歩けるよ。つながっていないマスには行けないよ。',empty:'制限なし',center:'敵を置いたマスが中心。ゲーム中もこの場所に固定だよ。',color:'#91c7ee'},
@@ -49,7 +49,7 @@ function openRangeEditor(o,{key,config,save,rebuild,lookFromAbove,onClose,render
  function paint(){syncFan();const active=new Set(r.cells.map(c=>c.join(',')));for(const [key,b]of buttons){const on=active.has(key);b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on));}for(const key of ['cross','circle']){sizes[key].value=String(r[key]);sizes[key].disabled=!['cross','circle','mixed'].includes(shape.value)||(shape.value==='cross'&&key==='circle')||(shape.value==='circle'&&key==='cross');}setReadingText(count,`${config.label}マス：${r.cells.length}個 ／ 中心から、たて・よこ８マスまで。`+(r.space==='facing'?'顔の向きに合わせて、マスが90°ごとに回るよ。':'敵と一緒に移動するよ。顔が向きを変えても、マスは回らないよ。'));}
  function changed(){o[key]=structuredClone(r);paint();save();rebuild();}
  setReadingText(close,'できた・設定にもどる');close.className='primary';
- const view=document.createElement('button');setReadingText(view,'↑ マスと同じ向きで上から見る');view.onclick=()=>lookFromAbove?.({facing:r.space==='facing'});
+ const view=document.createElement('button');view.className='range-top-action';setReadingText(view,'↑ マスと同じ向きで上から見る');view.onclick=()=>lookFromAbove?.({facing:r.space==='facing'});
  const presets=document.createElement('div');presets.className='range-preset-controls';presets.append(controls,clear);
  const heading=document.createElement('div');heading.className='range-live-heading';heading.append(h,close);
  const modeControls=document.createElement('div');modeControls.className='range-mode-controls';renderMode?.(modeControls);const fan=document.createElement('div');syncFan=renderFanControls(fan,r,key,()=>{shape.value='custom';changed();},null);const manual=document.createElement('button');manual.className='manual-range-edit';setReadingText(manual,'自由にマスをぬって決める');manual.onclick=()=>openStageMoveRange(o,{key,getProject,save,rebuild,lookFromAbove,onClose});const fine=document.createElement('details'),fineTitle=document.createElement('summary');setReadingText(fineTitle,'マスで細かく変える・ほかの形');fine.append(fineTitle,manual,presets,directionFrame(grid,{facing:r.space==='facing'}),count);d.append(heading,modeControls,note,fan,view,fine);paint();close.onclick=mountLiveRangeEditor(d,onClose);h.focus({preventScroll:true});
