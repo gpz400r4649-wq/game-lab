@@ -6,7 +6,7 @@ export function mountLiveRangeEditor(panel,onClose){
  closeLiveRangeEditor();
  globalThis.window?.dispatchEvent(new Event('enemy-range-open'));
  const aside=document.querySelector('aside'),main=aside.closest('main'),scrollTop=aside.scrollTop;
- const finish=()=>{if(activeFinish!==finish)return;activeFinish=null;onClose?.();panel.remove();aside.classList.remove('is-range-editing');main.classList.remove('range-editing');aside.scrollTop=scrollTop;globalThis.window?.dispatchEvent(new Event('enemy-range-close'));};
+ const finish=()=>{if(activeFinish!==finish)return;activeFinish=null;onClose?.();panel.remove();aside.classList.remove('is-range-editing');main.classList.remove('range-editing');aside.scrollTop=scrollTop;queueMicrotask(()=>{if(!activeFinish)globalThis.window?.dispatchEvent(new Event('enemy-range-close'));});};
  panel.onkeydown=e=>{if(e.key==='Escape'){e.preventDefault();finish();}};
  activeFinish=finish;aside.append(panel);aside.classList.add('is-range-editing');main.classList.add('range-editing');aside.scrollTop=0;
  return finish;

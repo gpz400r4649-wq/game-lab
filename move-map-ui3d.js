@@ -1,10 +1,10 @@
-import {openStageMoveRange} from './stage-range3d.js?v=20261109d';
-import {mountLiveRangeEditor} from './range-panel3d.js?v=20261109d';
-import {createMapStick,panMapCenter} from './map-stick3d.js?v=20261109d';
-import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261109d';
-import {MOVE_MAX_CELLS,RANGE_MAX,rangeCell,rangeCells,worldMoveRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261109d';
-import {moveGridWindow,moveGridPages} from './world3d.js?v=20261109d';
-import {setReadingText,kanaText} from './readings3d.js?v=20261109d';
+import {openStageMoveRange} from './stage-range3d.js?v=20261109e';
+import {mountLiveRangeEditor} from './range-panel3d.js?v=20261109e';
+import {createMapStick,panMapCenter} from './map-stick3d.js?v=20261109e';
+import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261109e';
+import {MOVE_MAX_CELLS,RANGE_MAX,rangeCell,rangeCells,worldMoveRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261109e';
+import {moveGridWindow,moveGridPages} from './world3d.js?v=20261109e';
+import {setReadingText,kanaText} from './readings3d.js?v=20261109e';
 export function openMoveMap(o,{getProject,save,rebuild,lookFromAbove,onClose,key='moveRange',config,renderMode}){
  const p=getProject(),limit=moveGridWindow(p).limit,d=document.createElement('section');d.className='enemy-range-dialog range-live-panel';d.setAttribute('role','region');d.setAttribute('aria-label',config?.title||'敵が動けるマス');d.style.setProperty('--range-color',config?.color||'#91c7ee');
  const current=o[key]?worldMoveRange(o[key],o):{space:'world',cells:[]};
@@ -38,7 +38,7 @@ export function openMoveMap(o,{getProject,save,rebuild,lookFromAbove,onClose,key
  }
  function changed(){o[key]={space:'world',cells:[...chosen].map(key=>key.split(',').map(Number))};if(key==='moveRange')fitRoamingEnemy(o,p);save();rebuild();paint();}
  const unlimited=document.createElement('button');setReadingText(unlimited,'移動の制限をなくす');unlimited.onclick=()=>{delete o[key];save();rebuild();finish();};
- setReadingText(close,'できた・とじる');close.className='primary';const view=document.createElement('button');setReadingText(view,'↑ マスと同じ向きで上から見る');view.onclick=()=>lookFromAbove?.();
+ setReadingText(close,'できた・設定にもどる');close.className='primary';const view=document.createElement('button');setReadingText(view,'↑ マスと同じ向きで上から見る');view.onclick=()=>lookFromAbove?.();
  const heading=document.createElement('div');heading.className='range-live-heading';heading.append(h,close);const presets=document.createElement('div');presets.className='range-preset-controls';presets.append(controls,clear);
  const modeControls=document.createElement('div');modeControls.className='range-mode-controls';renderMode?.(modeControls);d.append(heading,modeControls,note,presets,view,navigation,directionFrame(grid),count,places);if(key==='moveRange')d.append(unlimited);else{const direct=document.createElement('button');setReadingText(direct,'ステージで直接編集');direct.onclick=()=>openStageMoveRange(o,{key,getProject,save,rebuild,lookFromAbove,onClose});d.append(direct);}paint();const finish=mountLiveRangeEditor(d,()=>{mapStick.destroy();cancelAnimationFrame(panFrameId);onClose();});close.onclick=finish;h.focus({preventScroll:true});
 }

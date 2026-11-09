@@ -1,9 +1,9 @@
 import * as T from './vendor/three.module.min.js';
-import {mountLiveRangeEditor} from './range-panel3d.js?v=20261109d';
-import {setStageRangePainter} from './stage-range3d.js?v=20261109d';
-import {worldSize,coordinateLimit} from './world3d.js?v=20261109d';
-import {validPatrolRoute,placeAtRouteStart} from './patrol-route3d.js?v=20261109d';
-import {setReadingText} from './readings3d.js?v=20261109d';
+import {mountLiveRangeEditor} from './range-panel3d.js?v=20261109e';
+import {setStageRangePainter} from './stage-range3d.js?v=20261109e';
+import {worldSize,coordinateLimit} from './world3d.js?v=20261109e';
+import {validPatrolRoute,placeAtRouteStart} from './patrol-route3d.js?v=20261109e';
+import {setReadingText} from './readings3d.js?v=20261109e';
 export function createPatrolOverlay(scene){
  const group=new T.Group(),material=new T.MeshBasicMaterial({color:0x399cda,depthWrite:false}),lineGeometry=new T.CylinderGeometry(.07,.07,1,8),pointGeometry=new T.SphereGeometry(.3,12,8),direction=new T.Vector3(),up=new T.Vector3(0,1,0),lines=[],points=[],labels=[];group.visible=false;scene.add(group);
  for(let i=0;i<16;i++){const line=new T.Mesh(lineGeometry,material),point=new T.Mesh(pointGeometry,new T.MeshBasicMaterial({color:i===0?0x399cda:0xf0a23a,depthWrite:false}));line.layers.set(2);point.layers.set(2);group.add(line,point);lines.push(line);points.push(point);}
@@ -11,7 +11,7 @@ export function createPatrolOverlay(scene){
  return {show(route,y=0,loop=false){group.visible=!!route?.length;if(!group.visible)return;points.forEach((mesh,i)=>{mesh.visible=!!route[i];if(route[i]){mesh.position.set(route[i].x,y+.15,route[i].z);const number=label(i);if(number){number.visible=true;number.position.set(route[i].x,y+.85,route[i].z);}}else if(labels[i])labels[i].visible=false;});lines.forEach((line,i)=>{const a=route[i],b=route[i+1]||(loop&&i===route.length-1?route[0]:null);line.visible=!!a&&!!b;if(line.visible){direction.set(b.x-a.x,0,b.z-a.z);line.position.set((a.x+b.x)/2,y+.15,(a.z+b.z)/2);line.scale.set(1,direction.length(),1);line.quaternion.setFromUnitVectors(up,direction.normalize());}});}};
 }
 export function openPatrolEditor(o,{getProject,save,rebuild,lookFromAbove,preview,onClose}){
- const panel=document.createElement('section'),heading=document.createElement('div'),title=document.createElement('h2'),close=document.createElement('button'),note=document.createElement('p'),toolbar=document.createElement('div'),summary=document.createElement('p');panel.className='range-live-panel';panel.setAttribute('role','region');panel.setAttribute('aria-label','往復ルートをえらぶ');heading.className='range-live-heading';title.tabIndex=-1;setReadingText(title,'往復ルートをえらぶ');setReadingText(close,'できた・とじる');close.className='primary';heading.append(title,close);setReadingText(note,'ステージで２か所をえらぼう。青がはじめ、オレンジがおわり。２か所をまっすぐ往復するよ。壁があると止まるよ。');toolbar.className='stage-range-tools';
+ const panel=document.createElement('section'),heading=document.createElement('div'),title=document.createElement('h2'),close=document.createElement('button'),note=document.createElement('p'),toolbar=document.createElement('div'),summary=document.createElement('p');panel.className='range-live-panel';panel.setAttribute('role','region');panel.setAttribute('aria-label','往復ルートをえらぶ');heading.className='range-live-heading';title.tabIndex=-1;setReadingText(title,'往復ルートをえらぶ');setReadingText(close,'できた・設定にもどる');close.className='primary';heading.append(title,close);setReadingText(note,'ステージで２か所をえらぼう。青がはじめ、オレンジがおわり。２か所をまっすぐ往復するよ。壁があると止まるよ。');toolbar.className='stage-range-tools';
  let draft=structuredClone(o.patrolRoute||[]),next=0,camera=false,pointer=null;const buttons=[];
  function refresh(){buttons.forEach((b,i)=>b.setAttribute('aria-pressed',String(i===2?camera:!camera&&next===i)));setReadingText(summary,camera?'スティックやドラッグでカメラを動かそう。':next===0?'青い「はじめ」の場所をタップしよう。':'オレンジの「おわり」をタップすると保存するよ。');preview?.(draft);}
  for(const [i,label]of ['① はじめをえらぶ','② おわりをえらぶ','カメラを回す'].entries()){const b=document.createElement('button');setReadingText(b,label);b.onclick=()=>{camera=i===2;if(!camera)next=i;refresh();};buttons.push(b);toolbar.append(b);}

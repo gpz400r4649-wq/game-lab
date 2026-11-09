@@ -1,7 +1,7 @@
-import {mountLiveRangeEditor} from './range-panel3d.js?v=20261109d';
-import {worldMoveRange,rangeCell,MOVE_MAX_CELLS,convertRangeSpace,fitRoamingEnemy} from './enemy-range3d.js?v=20261109d';
-import {worldSize} from './world3d.js?v=20261109d';
-import {setReadingText} from './readings3d.js?v=20261109d';
+import {mountLiveRangeEditor} from './range-panel3d.js?v=20261109e';
+import {worldMoveRange,rangeCell,MOVE_MAX_CELLS,convertRangeSpace,fitRoamingEnemy} from './enemy-range3d.js?v=20261109e';
+import {worldSize} from './world3d.js?v=20261109e';
+import {setReadingText} from './readings3d.js?v=20261109e';
 let painter=null;
 export function setStageRangePainter(next){painter=next;}
 export function stageRangePointer(kind,id,point){return painter?.(kind,id,point)||false;}
@@ -17,7 +17,7 @@ export function openStageMoveRange(o,{getProject,save,rebuild,lookFromAbove,onCl
  const movement=key==='moveRange',name=movement?'動ける':key==='searchRange'?'気づく':'攻撃する',color=movement?'青':key==='searchRange'?'黄色':'赤';
  const source=o[key]||{shape:'custom',cross:2,circle:2,cells:[],space:movement?'world':'facing'},space=source.space||'legacy';
  const panel=document.createElement('section');panel.className='range-live-panel';panel.setAttribute('role','region');panel.setAttribute('aria-label',`ステージで${name}マスをぬる`);
- const heading=document.createElement('div'),title=document.createElement('h2'),close=document.createElement('button'),note=document.createElement('p'),toolbar=document.createElement('div'),count=document.createElement('p');heading.className='range-live-heading';title.tabIndex=-1;setReadingText(title,`${name}マスをぬる`);setReadingText(close,'できた・とじる');close.className='primary';heading.append(title,close);
+ const heading=document.createElement('div'),title=document.createElement('h2'),close=document.createElement('button'),note=document.createElement('p'),toolbar=document.createElement('div'),count=document.createElement('p');heading.className='range-live-heading';title.tabIndex=-1;setReadingText(title,`${name}マスをぬる`);setReadingText(close,'できた・設定にもどる');close.className='primary';heading.append(title,close);
  setReadingText(note,`高さ${o.y||0}mのマスを編集しているよ。上の階は編集中だけ隠すよ。左のステージをなぞって、${color}のマスをぬろう。カメラは左下のスティックで動かせるよ。`+(space!=='world'?'敵からたて・よこ８マスまで。':''));toolbar.className='stage-range-tools';
  let mode='paint',pointer=null,previous=null,dirty=false;const buttons=[];
  const current=movement?worldMoveRange(source,o):convertRangeSpace(source,'world',o);

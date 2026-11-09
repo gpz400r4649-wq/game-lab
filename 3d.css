@@ -106,3 +106,8 @@ main.range-editing{display:grid;grid-template-columns:minmax(0,1fr) min(440px,42
 .enemy-dialog-content .enemy-settings-tabs{top:0;grid-template-columns:repeat(4,minmax(0,1fr))}
 .enemy-dialog-content [role=tabpanel][hidden]{display:none}
 .enemy-dialog-content .enemy-behavior-flow{background:#f3efff;padding:10px;border-radius:8px}
+
+main.range-editing aside.is-range-editing{position:fixed;z-index:20;top:12vh;right:12px;bottom:12px;width:min(410px,40vw);max-height:86vh;overflow-y:auto;background:white;border:1px solid #ded5eb;border-radius:14px;box-shadow:0 8px 32px #283b542b;padding:0 14px 18px}
+aside.is-range-editing .range-live-heading{top:0;padding:10px 0;flex-wrap:wrap}
+aside.is-range-editing .range-live-heading button{min-height:44px;font-size:12px;margin-left:auto}
+aside.is-range-editing .fan-choices button{min-height:44px}

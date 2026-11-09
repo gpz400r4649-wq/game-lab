@@ -101,14 +101,14 @@ for(const key of ['searchRange','attackRange'])test(`${key}: ステージにぬ�
  stageRangePointer('start',1,{x:4,z:8});stageRangePointer('end',1,null);assert.equal(s.o[key].space,'facing');assert.deepEqual(s.o[key].cells.map(c=>c.map(n=>n+0)),[[0,-1]]);assert.ok(validAttackRange(s.o[key]));
  stageRangePointer('start',2,{x:100,z:100});stageRangePointer('end',2,null);assert.deepEqual(s.o[key].cells.map(c=>c.map(n=>n+0)),[[0,-1]]);assert.equal(s.calls.save,1);
 });
-test('気づく範囲の広さは２種類とステージ直接編集に絞る',t=>{
- const s=setup(t,'searchRange',defaultEnemyRanges({x:8,z:8}).searchRange),panel=s.open(),choices=all(panel).find(n=>n.className==='fan-choices');assert.equal(choices.children.length,3);assert.equal(choices.children[1].textContent,'90°');assert.ok(choices.children[2].textContent.includes('ステージ'));choices.children[2].onclick();assert.ok(isLiveRangeEditing());assert.equal(s.calls.save,0);
+test('視野は広さと遠さから調整し、自由なペイントは詳細から開く',t=>{
+ const s=setup(t,'searchRange',defaultEnemyRanges({x:8,z:8}).searchRange),panel=s.open(),choices=all(panel).find(n=>n.className==='fan-choices');assert.equal(choices.children.length,2);assert.equal(choices.children[1].textContent,'90°');const manual=all(panel).find(n=>n.className==='manual-range-edit');assert.ok(manual);assert.equal(manual.parentElement.tagName,'details');manual.onclick();assert.ok(isLiveRangeEditing());assert.equal(s.calls.save,0);
 });
 
 
 import {openPatrolEditor} from '../patrol-ui3d.js';
 test('往復ルートは２か所選んでから保存し、途中で閉じても前のルートを保つ',async t=>{
- const {stageRangePointer:routePointer}=await import('../stage-range3d.js?v=20261109d');
+ const {stageRangePointer:routePointer}=await import('../stage-range3d.js?v=20261109e');
  const s=setup(t,'moveRange');s.o.patrolRoute=[{x:0,z:0},{x:4,z:0}];const before=structuredClone(s.o.patrolRoute),previews=[];
  const open=()=>openPatrolEditor(s.o,{getProject:()=>({worldSize:60}),save:()=>s.calls.save++,rebuild:()=>s.calls.rebuild++,preview:p=>previews.push(structuredClone(p)),onClose:()=>{}});
  open();routePointer('start',1,{x:8,z:0});routePointer('end',1,null);assert.deepEqual(s.o.patrolRoute,before);assert.equal(s.o.z,8);assert.equal(s.calls.save,0);closeLiveRangeEditor();assert.deepEqual(s.o.patrolRoute,before);
@@ -118,7 +118,7 @@ test('往復ルートは２か所選んでから保存し、途中で閉じて�
 
 import {openWaypointEditor} from '../waypoint-ui3d.js';
 test('順路のマーカーを追加・修正・取り消しでき、開くだけでは保存しない',async t=>{
- const {stageRangePointer:routePointer}=await import('../stage-range3d.js?v=20261109d');const s=setup(t,'moveRange');s.o.waypoints=[{x:0,z:0},{x:4,z:0}];
+ const {stageRangePointer:routePointer}=await import('../stage-range3d.js?v=20261109e');const s=setup(t,'moveRange');s.o.waypoints=[{x:0,z:0},{x:4,z:0}];
  openWaypointEditor(s.o,{getProject:()=>({worldSize:60}),save:()=>s.calls.save++,rebuild:()=>{},preview:()=>{},onClose:()=>{}});assert.equal(s.calls.save,0);
  routePointer('start',1,{x:4,z:8});routePointer('end',1,null);assert.deepEqual(s.o.waypoints,[{x:0,z:0},{x:4,z:0},{x:4,z:8}]);assert.equal(s.o.x,0);assert.equal(s.o.z,0);
  const panel=all(s.doc.body).find(n=>n.classList?.contains('range-live-panel'));all(panel).find(n=>n.tagName==='button'&&n.textContent.startsWith('2：')).onclick();routePointer('start',2,{x:8,z:0});routePointer('end',2,null);assert.deepEqual(s.o.waypoints[1],{x:8,z:0});
