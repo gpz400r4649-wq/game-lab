@@ -53,15 +53,18 @@ export function createWorkshop(api){
   const pauseEnemyDialog=()=>{if(enemyDialog.open){rangeReturn=true;enemyDialog.close();}};
   window.addEventListener('enemy-range-open',pauseEnemyDialog);
   window.addEventListener('enemy-range-close',()=>{if(rangeReturn&&getSelected()===enemyPageOwner){rangeReturn=false;enemyDialog.showModal();}});
+  const enemyOpen=$('#enemy-open3');
+  enemyOpen.onclick=()=>{
+    const selected=getProject().objects.find(o=>o.id===getSelected());
+    if(selected?.type!=='enemy')return;
+    rangeReturn=false;enemyDialog.showModal();enemyContent.scrollTop=0;
+  };
   function presentEnemyEditor(){
+    enemyOpen.disabled=getProject().objects.find(o=>o.id===getSelected())?.type!=='enemy';
     const tabs=$('#inspector3').querySelector('.enemy-settings-tabs');
     if(!tabs)return;
     enemyContent.replaceChildren(tabs,...$('#inspector3').querySelectorAll('[role="tabpanel"]'));
-    const enemyReturn=document.createElement('button');enemyReturn.className='primary enemy-editor-launch';
-    setReadingText(enemyReturn,'敵のせっていをひらく');
-    enemyReturn.onclick=()=>{rangeReturn=false;enemyDialog.showModal();enemyContent.scrollTop=0;};
-    const heading=$('#inspector3').querySelector('.inspector-heading');
-    heading.after(enemyReturn);
+
   }
   let inspectedId=null,enemyPage='movement',enemyPageOwner=null;
   function inspect(){
@@ -71,7 +74,7 @@ export function createWorkshop(api){
     el.style.minHeight=el.getBoundingClientRect().height+'px';
     try{inspectContent();presentEnemyEditor();}finally{el.style.minHeight=min;aside.scrollTop=top;window.scrollTo(pageX,pageY);if(focusLabel){const replacement=[...el.querySelectorAll('[aria-label]')].find(n=>n.getAttribute('aria-label')===focusLabel);replacement?.focus({preventScroll:true});}aside.scrollTop=top;
       const id=getSelected();
-      if(id&&id!==inspectedId)aside.scrollTop+=el.getBoundingClientRect().top-aside.getBoundingClientRect().top-8;
+      if(id&&id!==inspectedId&&getProject().objects.find(o=>o.id===id)?.type!=='enemy')aside.scrollTop+=el.getBoundingClientRect().top-aside.getBoundingClientRect().top-8;
       inspectedId=id;
     }
   }
