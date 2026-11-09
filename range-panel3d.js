@@ -21,7 +21,7 @@ export function mountLiveRangeEditor(panel,onClose){
   if(panel.dataset.rangeKey==='attackRange'){
    const legend=document.createElement('span');legend.className='attack-context-legend';
    const vision=document.createElement('span'),attack=document.createElement('span');
-   vision.textContent='黄色のわく：気づく範囲';attack.textContent='赤いマス：攻撃する範囲';legend.append(vision,attack);controls.append(legend);
+   vision.textContent='黄色のわく：気づくはんい';attack.textContent='赤いマス：攻撃するはんい';legend.append(vision,attack);controls.append(legend);
   }
 
   const modes=panel.querySelector('.stage-range-tools');
