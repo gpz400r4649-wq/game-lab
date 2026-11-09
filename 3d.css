@@ -141,3 +141,20 @@ main.range-editing aside.is-range-editing{display:none}
 #range-dock3{max-height:30vh;overflow:auto}
 #range-dock3 .range-live-heading{position:static}
 @media(max-width:700px){main.range-editing{grid-template-columns:minmax(0,1fr)}}
+
+main.range-editing .view-column>nav{align-items:flex-start;gap:8px;padding:10px}
+main.range-editing .view-column>nav>:not(#map3):not(#reset-camera):not(#range-actions3){display:none}
+main.range-editing #reset-camera{margin-left:0}
+#range-actions3{display:block;min-width:0;margin:0;flex:1 1 540px}
+#range-actions3[hidden]{display:none}
+.range-session-heading{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.range-session-heading h2{font-size:15px;line-height:1.5;margin:0;margin-right:auto;color:#51446b}
+#range-actions3 .range-session-heading button{flex-shrink:0}
+.range-session-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#range-actions3 .fan-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%}
+#range-actions3 .fan-controls .range-control-group{display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:#fff;border:1px solid #ded6ed;border-radius:10px;padding:8px}
+#range-actions3 .range-control-group>b{width:100%;font-size:12px}
+#range-actions3 .fan-controls .range-current-summary{display:block;grid-column:1/-1;font-size:11px;line-height:1.4;margin:0;color:#67577d}
+.range-distance-entry{display:flex;align-items:center;gap:4px;font-size:12px}
+#range-actions3 .stage-range-tools{background:#fff;border:1px solid #ded6ed;border-radius:10px;padding:6px}
+@media(max-width:600px){#range-actions3 .fan-controls{grid-template-columns:1fr}}

@@ -12,16 +12,22 @@ export function mountLiveRangeEditor(panel,onClose){
  activeFinish=finish;aside.append(panel);aside.classList.add('is-range-editing');main.classList.add('range-editing');aside.scrollTop=0;
  if(actions){
   actions.replaceChildren();
-  const done=panel.querySelector('.range-live-heading')?.querySelector('button');
+  const heading=panel.querySelector('.range-live-heading');
+  const done=heading?.querySelector('button');
+  const title=heading?.querySelector('h2');
+  const bar=document.createElement('div');bar.className='range-session-heading';
+  const controls=document.createElement('div');controls.className='range-session-controls';
+  if(title)bar.append(title);
+
   const modes=panel.querySelector('.stage-range-tools');
   const top=panel.querySelector('.range-top-action');
-  if(done)actions.append(done);
-  if(modes)actions.append(modes);
-  if(top)actions.append(top);
+  if(done)bar.append(done);
+  actions.append(bar,controls);
+  if(modes)controls.append(modes);
+  if(top)bar.insertBefore(top,done||null);
   const fan=panel.querySelector('.fan-controls');
-  if(fan)actions.append(fan);
-  const mode=panel.querySelector('.range-mode-controls');
-  if(mode)actions.append(mode);
+  if(fan)controls.prepend(fan);
+
   if(dock){dock.replaceChildren(panel);more.hidden=false;more.open=false;}
 
   actions.hidden=false;

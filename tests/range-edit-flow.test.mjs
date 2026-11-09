@@ -79,7 +79,7 @@ test('移動の円２マスを初期表示し、広さを変えても敵を置�
 test('扇形の広さ・遠さは明示的な操作で変わり、開くだけではマスを置き換えない',t=>{
  const s=setup(t,'searchRange',defaultEnemyRanges({x:8,z:8}).searchRange),panel=s.open();assert.equal(s.calls.save,0);
  assert.ok(!all(panel).some(n=>n.tagName==='input'&&n.getAttribute('aria-label')==='視野の広さ（度）を数字で設定'));const angle=all(panel).find(n=>n.tagName==='button'&&n.textContent==='90°');angle.onclick();assert.equal(s.o.searchRange.fanAngle,90);assert.ok(s.o.searchRange.cells.every(([x,z])=>z<=0));
- const distance=all(panel).find(n=>n.tagName==='input'&&n.getAttribute('aria-label')==='何マス先まで気づく？を数字で設定');distance.value='6';distance.oninput();assert.ok(s.o.searchRange.cells.some(([x,z])=>z===-6));assert.ok(validAttackRange(s.o.searchRange));
+ const distance=all(panel).find(n=>n.tagName==='input'&&n.getAttribute('aria-label')==='敵から何マス先まで見える？を数字で設定');distance.value='6';distance.oninput();assert.ok(s.o.searchRange.cells.some(([x,z])=>z===-6));assert.ok(validAttackRange(s.o.searchRange));
 });
 
 
@@ -108,7 +108,7 @@ test('視野は広さと遠さから調整し、自由なペイントは詳細�
 
 import {openPatrolEditor} from '../patrol-ui3d.js';
 test('往復ルートは２か所選んでから保存し、途中で閉じても前のルートを保つ',async t=>{
- const {stageRangePointer:routePointer}=await import('../stage-range3d.js?v=20261109h');
+ const {stageRangePointer:routePointer}=await import('../stage-range3d.js?v=20261110a');
  const s=setup(t,'moveRange');s.o.patrolRoute=[{x:0,z:0},{x:4,z:0}];const before=structuredClone(s.o.patrolRoute),previews=[];
  const open=()=>openPatrolEditor(s.o,{getProject:()=>({worldSize:60}),save:()=>s.calls.save++,rebuild:()=>s.calls.rebuild++,preview:p=>previews.push(structuredClone(p)),onClose:()=>{}});
  open();routePointer('start',1,{x:8,z:0});routePointer('end',1,null);assert.deepEqual(s.o.patrolRoute,before);assert.equal(s.o.z,8);assert.equal(s.calls.save,0);closeLiveRangeEditor();assert.deepEqual(s.o.patrolRoute,before);
@@ -118,7 +118,7 @@ test('往復ルートは２か所選んでから保存し、途中で閉じて�
 
 import {openWaypointEditor} from '../waypoint-ui3d.js';
 test('順路のマーカーを追加・修正・取り消しでき、開くだけでは保存しない',async t=>{
- const {stageRangePointer:routePointer}=await import('../stage-range3d.js?v=20261109h');const s=setup(t,'moveRange');s.o.waypoints=[{x:0,z:0},{x:4,z:0}];
+ const {stageRangePointer:routePointer}=await import('../stage-range3d.js?v=20261110a');const s=setup(t,'moveRange');s.o.waypoints=[{x:0,z:0},{x:4,z:0}];
  openWaypointEditor(s.o,{getProject:()=>({worldSize:60}),save:()=>s.calls.save++,rebuild:()=>{},preview:()=>{},onClose:()=>{}});assert.equal(s.calls.save,0);
  routePointer('start',1,{x:4,z:8});routePointer('end',1,null);assert.deepEqual(s.o.waypoints,[{x:0,z:0},{x:4,z:0},{x:4,z:8}]);assert.equal(s.o.x,0);assert.equal(s.o.z,0);
  const panel=all(s.doc.body).find(n=>n.classList?.contains('range-live-panel'));all(panel).find(n=>n.tagName==='button'&&n.textContent.startsWith('2：')).onclick();routePointer('start',2,{x:8,z:0});routePointer('end',2,null);assert.deepEqual(s.o.waypoints[1],{x:8,z:0});
