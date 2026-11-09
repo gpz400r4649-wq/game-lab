@@ -89,3 +89,10 @@ main.range-editing{display:grid;grid-template-columns:minmax(0,1fr) min(440px,42
 .gun-editor-body [role=tabpanel][hidden]{display:none}
 .gun-editor-body .gun-appearance{border:0;padding:0}
 .gun-editor-body .performance-field{padding:10px 0}
+
+.enemy-settings-tabs{position:sticky;top:52px;z-index:2;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:6px 0 10px;background:white}
+.enemy-settings-tabs button{min-height:44px;font-size:12px;padding:6px}
+.enemy-settings-tabs button.active{background:#805ed4;color:white;border-color:#805ed4}
+#inspector3 [role=tabpanel][hidden]{display:none}
+#inspector3 [role=tabpanel] .enemy-settings-group{margin-top:0}
+#inspector3 .enemy-behavior-flow{margin-top:0;padding:10px;background:#f3efff;border-radius:8px}

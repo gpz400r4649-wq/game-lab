@@ -45,7 +45,7 @@ export function createWorkshop(api){
     input.onchange=()=>{onchange(input.value);save();rebuild();};row.append(text,input);parent.append(row);return input;
   }
   function details(label,children,open=false){const d=document.createElement('details'),s=document.createElement('summary');setReadingText(s,label);d.open=open;d.append(s,...children);return d;}
-  let inspectedId=null;
+  let inspectedId=null,enemyPage='movement',enemyPageOwner=null;
   function inspect(){
     const aside=$('aside'),el=$('#inspector3'),top=aside.scrollTop,pageX=window.scrollX,pageY=window.scrollY,min=el.style.minHeight,active=document.activeElement,focusLabel=el.contains(active)?active.getAttribute('aria-label'):null;
     el.style.minHeight=el.getBoundingClientRect().height+'px';
@@ -116,16 +116,31 @@ export function createWorkshop(api){
       selectField(el,'いつ撃つ？',[['auto','敵を見つけたら'],['assist','自分が弾を当てた敵をねらう']],o.allyAttack||'auto',v=>o.allyAttack=v);
     }
     if(o.type==='enemy'){
-      selectField(el,'いつ出現する？',[['start','最初からいる'],['event','イベントで出現を待つ']],o.startsHidden?'event':'start',v=>{o.startsHidden=v==='event';inspect();});
-      field(el,'体力',o.hp,1,500,1,n=>o.hp=Math.round(n));
-      selectField(el,'からだの大きさ',ENEMY_SCALES.map(n=>[String(n),n+'倍']),String(o.enemyScale||1),v=>{
+      if(enemyPageOwner!==o.id){enemyPageOwner=o.id;enemyPage='movement';}
+      const tabs=document.createElement('div');tabs.className='enemy-settings-tabs';tabs.setAttribute('role','tablist');tabs.setAttribute('aria-label','敵の設定を切り替える');
+      const pages=new Map();
+      el.append(tabs);
+      for(const [key,label]of [['body','からだ'],['movement','うごき'],['combat','こうげき'],['loot','おとすもの']]){
+        const panel=document.createElement('section');panel.id='enemy-settings-'+key;panel.setAttribute('role','tabpanel');panel.setAttribute('aria-label',label);pages.set(key,panel);el.append(panel);
+        const button=document.createElement('button');button.type='button';button.dataset.page=key;button.setAttribute('role','tab');button.setAttribute('aria-controls',panel.id);setReadingText(button,label);
+        button.onclick=()=>{enemyPage=key;syncEnemyPages();const aside=$('aside');aside.scrollTop+=tabs.getBoundingClientRect().top-aside.getBoundingClientRect().top-58;};tabs.append(button);
+      }
+      function syncEnemyPages(){
+        for(const [key,panel]of pages)panel.hidden=key!==enemyPage;
+        for(const button of tabs.children){const active=button.dataset.page===enemyPage;button.setAttribute('aria-selected',String(active));button.classList.toggle('active',active);}
+      }
+      syncEnemyPages();
+      const body=pages.get('body');
+      selectField(body,'いつ出現する？',[['start','最初からいる'],['event','イベントで出現を待つ']],o.startsHidden?'event':'start',v=>{o.startsHidden=v==='event';inspect();});
+      field(body,'体力',o.hp,1,500,1,n=>o.hp=Math.round(n));
+      selectField(body,'からだの大きさ',ENEMY_SCALES.map(n=>[String(n),n+'倍']),String(o.enemyScale||1),v=>{
         o.enemyScale=Number(v);o.w=o.h=o.d=2*o.enemyScale;
       });
-      const movement=document.createElement('section');movement.className='enemy-settings-group';movement.setAttribute('aria-label','動きかた');const movementTitle=document.createElement('h3');setReadingText(movementTitle,'動きかた');movement.append(movementTitle);el.append(movement);
+      const movement=document.createElement('section');movement.className='enemy-settings-group';movement.setAttribute('aria-label','動きかた');pages.get('movement').append(movement);
       if(o.program.length&&!o.patrolRoute&&!o.waypoints&&o.moveRange?.space==='world'&&!inGridRange(o.moveRange,{x:0,z:0},o)){const note=document.createElement('p');note.className='recipe-hint';setReadingText(note,'この敵は移動できるマスの外にいます。青いマスの中に置こう。');movement.append(note);}
       const syncBehavior=renderBehaviorExamples(movement,o,{save,rebuild,inspect,getProject});
       const rangeApi={directMove:true,getProject,lookFromAbove:api.lookFromAbove,save,rebuild:api.refreshRange||rebuild,getRangeView:api.getRangeView,showRange:key=>{api.showRange?.(key);for(const button of el.querySelectorAll('.enemy-range-choice'))button.setAttribute('aria-pressed',String(button.dataset.range===key));}};
-      const routine=enemyRoutineChoices(o),flow=document.createElement('p');flow.className='enemy-behavior-flow';flow.setAttribute('aria-live','polite');setReadingText(flow,routineFlow(o));movement.append(flow);
+      const routine=enemyRoutineChoices(o),flow=document.createElement('p');flow.className='enemy-behavior-flow';flow.setAttribute('aria-live','polite');setReadingText(flow,routineFlow(o));movement.prepend(flow);
       const change=patch=>{setEnemyRoutineChoice(o,patch);fitRoamingEnemy(o,p);inspect();};
       if(routine){
         const stage=(label)=>{const section=document.createElement('section');section.className='enemy-routine-step';const h=document.createElement('h4');setReadingText(h,label);section.append(h);movement.append(section);return section;};
@@ -164,7 +179,7 @@ export function createWorkshop(api){
         const hint=document.createElement('p');setReadingText(hint,'組み合わせた動きは、そのまま残してあるよ。「さらに工夫する」で編集するか、見本から新しい動きをえらぼう。');movement.append(hint);
         for(const key of ['moveRange','searchRange'])renderEnemyRange(movement,o,rangeApi,key);
       }
-      const combat=document.createElement('section');combat.className='enemy-settings-group';combat.setAttribute('aria-label','攻撃');const combatTitle=document.createElement('h3');setReadingText(combatTitle,`${!routine||routine.notice==='near'? '④':routine.idle==='chase'?'②':'③'} 攻撃はどうする？`);combat.append(combatTitle);el.append(combat);
+      const combat=document.createElement('section');combat.className='enemy-settings-group';combat.setAttribute('aria-label','攻撃');pages.get('combat').append(combat);
       const attackLabel=document.createElement('label'),attack=document.createElement('input'),attackText=document.createElement('span');attackLabel.className='enemy-attack-toggle';attack.type='checkbox';attack.checked=o.attackEnabled;attack.setAttribute('aria-label','攻撃してくる');setReadingText(attackText,'攻撃してくる');attack.onchange=()=>{o.attackEnabled=attack.checked;save();rebuild();inspect();};attackLabel.append(attack,attackText);combat.append(attackLabel);
       if(o.attackEnabled){
       const guns=p.loadout.filter(t=>t.effect==='shoot'),missing=o.enemyWeaponId&&!guns.some(t=>t.id===o.enemyWeaponId);
@@ -174,14 +189,14 @@ export function createWorkshop(api){
       const gunHint=document.createElement('p');gunHint.className='component-description';setReadingText(gunHint,'追いかけるかどうかとは別に、攻撃するマスに入ったら撃つよ。銃づくりで弾の届く距離も変えられるよ。');combat.append(gunHint);
       }
       if(!o.attackEnabled){const note=document.createElement('p');note.className='component-description';setReadingText(note,'チェックがオフのあいだは、はんいに入っても攻撃しないよ。設定したはんいは残るよ。');combat.append(note);}
-      const directionView=document.createElement('button');setReadingText(directionView,'↑ 上から向きを見る');directionView.onclick=()=>api.lookFromAbove?.();el.append(directionView);
-      const loot=document.createElement('section');loot.className='enemy-settings-group';const lootTitle=document.createElement('h3');setReadingText(lootTitle,'たおされたら何を落とす？');loot.append(lootTitle);el.append(loot);
+      const directionView=document.createElement('button');setReadingText(directionView,'↑ 上から向きを見る');directionView.onclick=()=>api.lookFromAbove?.();movement.append(directionView);
+      const loot=document.createElement('section');loot.className='enemy-settings-group';const lootTitle=document.createElement('h3');setReadingText(lootTitle,'たおされたら何を落とす？');loot.append(lootTitle);pages.get('loot').append(loot);
       const heldLabel=document.createElement('label'),held=document.createElement('input'),heldText=document.createElement('span');heldLabel.className='enemy-attack-toggle';held.type='checkbox';held.checked=!!o.dropHeldWeapon;setReadingText(heldText,'持っている銃を落とす');heldLabel.append(held,heldText);loot.append(heldLabel);
       held.onchange=()=>{if(held.checked&&!p.loadout.some(t=>t.id===o.enemyWeaponId&&t.effect==='shoot')){if(p.loadout.length>=8){held.checked=false;api.toast('先に「敵に持たせる銃」をえらぼう。銃は８種類までです');return;}const gun=makeTool('shoot','ロボットブラスター');Object.assign(gun,{pickupOnly:true,speed:o.attackSpeed+5,interval:1.4,appearance:{shape:'robot',color:'#7d62dd',accent:'#ee91a5',barrel:1}});p.loadout.push(gun);o.enemyWeaponId=gun.id;}o.dropHeldWeapon=held.checked;save();rebuild();inspect();};
       const lootNote=document.createElement('p');lootNote.className='component-description';setReadingText(lootNote,'それとは別に落とすものを追加できるよ。');loot.append(lootNote);
       for(const [i,drop]of (o.enemyDrops||[]).entries()){const row=document.createElement('div');selectField(row,'落とすもの '+(i+1),[['key','カギ'],['star','星'],['heal','回復'],['weapon','銃']],drop.type,v=>{drop.type=v;if(v==='weapon')drop.weaponId='';else delete drop.weaponId;inspect();});if(drop.type==='weapon')selectField(row,'落とす銃 '+(i+1),[['','銃をえらぼう'],['@random','ランダムでひとつ'],...p.loadout.map(t=>[t.id,t.name])],drop.weaponId||'',v=>drop.weaponId=v);const remove=document.createElement('button');setReadingText(remove,'この落とすものを外す');remove.onclick=()=>{o.enemyDrops.splice(i,1);save();inspect();};row.append(remove);loot.append(row);}
       const addDrop=document.createElement('button');setReadingText(addDrop,'＋ 落とすものを追加');addDrop.disabled=(o.enemyDrops?.length||0)>=6;addDrop.onclick=()=>{o.enemyDrops??=[];o.enemyDrops.push({type:'star'});save();inspect();};loot.append(addDrop);
-      if(loop&&!o.routine){const d=details('さらに工夫する：うごきを組む',[loop],wasOpen);d.className='advanced-program';el.append(d);}
+      if(loop&&!o.routine){const d=details('さらに工夫する：うごきを組む',[loop],wasOpen);d.className='advanced-program';movement.append(d);}
     }
     if(o.type==='moving'){
       selectField(el,'動く方向',[['x','左右'],['z','前後'],['y','上下']],s.axis,v=>s.axis=v);
