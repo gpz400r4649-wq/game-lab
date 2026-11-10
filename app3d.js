@@ -28,7 +28,7 @@ import {BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,editorPlacementReason,b
 import {createToolsUI} from './tools3d.js?v=20261110e';
 import * as T from './vendor/three.module.min.js';
 import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet} from './engine3d.js?v=20261110e';
-import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261110e';
+import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261110g';
 const $=s=>document.querySelector(s),view=$('#viewport'),KEY='tsukuru-lab-3d-v1';
 let enemyRangeView='attackRange';
 let project=fresh3D(),selected=null,tool='select',doorPreset='key',weaponPresetId='',mode='edit',perspective='tps',game=null,yaw=0,pitch=-.05,editYaw=.55,editPitch=.7,editDistance=30,editTarget=new T.Vector3(0,0,0),stick={x:0,z:0},keys=new Set(),fireHeld=false,firePressed=false,jumpPressed=false,doorPressed=false,look=null,saveTimer,toastTimer,lastTime=0;

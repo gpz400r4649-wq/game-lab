@@ -66,15 +66,31 @@ export function createWorkshop(api){
     enemyContent.replaceChildren(tabs,...$('#inspector3').querySelectorAll('[role="tabpanel"]'));
 
   }
+  const goalDialog=document.createElement('dialog');goalDialog.className='enemy-editor-dialog';
+  const goalHeader=document.createElement('header'),goalTitle=document.createElement('h2'),goalClose=document.createElement('button'),goalContent=document.createElement('div');
+  setReadingText(goalTitle,'ゴールのせってい');setReadingText(goalClose,'とじる');goalClose.onclick=()=>goalDialog.close();
+  goalHeader.append(goalTitle,goalClose);goalContent.className='enemy-dialog-content';goalDialog.append(goalHeader,goalContent);document.body.append(goalDialog);
+  const goalOpen=$('#goal-open3');let goalOwner=null;
+  goalOpen.onclick=()=>{if(getProject().objects.find(o=>o.id===getSelected())?.type!=='goal')return;goalDialog.showModal();goalContent.scrollTop=0;};
+  function presentGoalEditor(){
+    const selected=getProject().objects.find(o=>o.id===getSelected());
+    goalOpen.disabled=selected?.type!=='goal';
+    if(goalOpen.disabled)return;
+    goalOwner=selected.id;
+    const el=$('#inspector3');
+    goalContent.replaceChildren(...[...el.children].filter(node=>!node.classList.contains('inspector-back')&&!node.classList.contains('inspector-heading')&&!node.classList.contains('component-description')));
+  }
   let inspectedId=null,enemyPage='movement',enemyPageOwner=null;
   function inspect(){
     const aside=$('aside'),el=$('#inspector3'),top=aside.scrollTop,pageX=window.scrollX,pageY=window.scrollY,min=el.style.minHeight,active=document.activeElement,focusLabel=el.contains(active)?active.getAttribute('aria-label'):null;
     if(enemyPageOwner&&enemyPageOwner!==getSelected()){enemyDialog.close();rangeReturn=false;}
+    if(goalOwner&&goalOwner!==getSelected())goalDialog.close();
+    if(goalContent.children.length)el.append(...goalContent.children);
     if(enemyContent.children.length)el.append(...enemyContent.children);
     el.style.minHeight=el.getBoundingClientRect().height+'px';
-    try{inspectContent();presentEnemyEditor();}finally{el.style.minHeight=min;aside.scrollTop=top;window.scrollTo(pageX,pageY);if(focusLabel){const replacement=[...el.querySelectorAll('[aria-label]')].find(n=>n.getAttribute('aria-label')===focusLabel);replacement?.focus({preventScroll:true});}aside.scrollTop=top;
+    try{inspectContent();presentEnemyEditor();presentGoalEditor();}finally{el.style.minHeight=min;aside.scrollTop=top;window.scrollTo(pageX,pageY);if(focusLabel){const replacement=[...el.querySelectorAll('[aria-label]')].find(n=>n.getAttribute('aria-label')===focusLabel);replacement?.focus({preventScroll:true});}aside.scrollTop=top;
       const id=getSelected();
-      if(id&&id!==inspectedId&&getProject().objects.find(o=>o.id===id)?.type!=='enemy')aside.scrollTop+=el.getBoundingClientRect().top-aside.getBoundingClientRect().top-8;
+      if(id&&id!==inspectedId&&!['enemy','goal'].includes(getProject().objects.find(o=>o.id===id)?.type))aside.scrollTop+=el.getBoundingClientRect().top-aside.getBoundingClientRect().top-8;
       inspectedId=id;
     }
   }
