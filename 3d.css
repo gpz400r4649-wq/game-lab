@@ -177,3 +177,5 @@ main.range-editing #reset-camera{margin-left:0}
 #editor-tools3[hidden]{display:none}
 #editor-tools3 button{min-height:52px;min-width:92px;font-size:15px;border-width:2px;background:#fff}
 #editor-tools3 button.active{background:#805ed4;color:#fff;border-color:#805ed4}
+
+#duplicate3:disabled{opacity:.4;cursor:default}.enemy-batch-dialog fieldset{margin:12px 0;border:1px solid #ded6ed;border-radius:10px;padding:12px}.enemy-batch-dialog fieldset label{padding:6px 0}.enemy-batch-dialog fieldset:nth-of-type(2){max-height:35vh;overflow:auto}

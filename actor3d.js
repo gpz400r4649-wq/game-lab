@@ -1,5 +1,5 @@
-import {doorwayOccupied} from './doors3d.js?v=20261110e';
-import {runActions} from './events3d.js?v=20261110e';
+import {doorwayOccupied} from './doors3d.js?v=20261110k';
+import {runActions} from './events3d.js?v=20261110k';
 
 export function nearbyActor(g,yaw){
  let best=null,distance=4;

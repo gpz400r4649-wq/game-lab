@@ -1,23 +1,24 @@
-import {ACTOR_HATS} from './actor3d.js?v=20261110e';
-import {allyAttackDistance} from './ally3d.js?v=20261110e';
-import {makeTool} from './building3d.js?v=20261110e';
-import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261110e';
-import {openWaypointEditor} from './waypoint-ui3d.js?v=20261110e';
-import {openPatrolEditor} from './patrol-ui3d.js?v=20261110e';
-import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261110e';
-import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261110e';
-import {inGridRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261110e';
-import {renderEnemyRange} from './enemy-range-ui3d.js?v=20261110e';
-import {gunPreviewSVG} from './appearance3d.js?v=20261110e';
-import {DOOR_PRESETS} from './doors3d.js?v=20261110e';
-import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261110e';
-import {coordinateLimit} from './world3d.js?v=20261110e';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261110e';
-import {actionsFor} from './events3d.js?v=20261110e';
-import {renderEventEditor} from './event-editor3d.js?v=20261110e';
-import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261110e';
-import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261110e';
-import {ENEMY_SCALES,PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261110e';
+import {copyEnemySettings,ENEMY_COPY_GROUPS} from './enemy-batch3d.js?v=20261110k';
+import {ACTOR_HATS} from './actor3d.js?v=20261110k';
+import {allyAttackDistance} from './ally3d.js?v=20261110k';
+import {makeTool} from './building3d.js?v=20261110k';
+import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261110k';
+import {openWaypointEditor} from './waypoint-ui3d.js?v=20261110k';
+import {openPatrolEditor} from './patrol-ui3d.js?v=20261110k';
+import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261110k';
+import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261110k';
+import {inGridRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261110k';
+import {renderEnemyRange} from './enemy-range-ui3d.js?v=20261110k';
+import {gunPreviewSVG} from './appearance3d.js?v=20261110k';
+import {DOOR_PRESETS} from './doors3d.js?v=20261110k';
+import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261110k';
+import {coordinateLimit} from './world3d.js?v=20261110k';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261110k';
+import {actionsFor} from './events3d.js?v=20261110k';
+import {renderEventEditor} from './event-editor3d.js?v=20261110k';
+import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261110k';
+import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261110k';
+import {ENEMY_SCALES,PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261110k';
 
 const ICONS={actor:'💬',plate:'▣',ally:'🛡',weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
 const DESCRIPTIONS={actor:'名前とせりふを書こう。交換する品を置くとお店になるよ。',plate:'踏んでいる間、えらんだドアが開くよ。',ally:'近くで「ついてきて」と呼ぶと、一緒に戦うよ。',weapon:'地面に置いて、ふれると拾える銃。持ちもの・銃づくりで用意した銃をえらぼう。',ramp:'低いほうから歩くと、そのまま登れるスロープ。回して好きな向きにつなげよう。',wall:'家を囲う壁。向きを変えてつなげよう。',floor:'家の床と天井に使える板。壁の内側にぴったり合うよ。',roof:'壁の上にのせる三角屋根。向きを変えて家を仕上げよう。',
@@ -45,10 +46,29 @@ export function createWorkshop(api){
     input.onchange=()=>{onchange(input.value);save();rebuild();};row.append(text,input);parent.append(row);return input;
   }
   function details(label,children,open=false){const d=document.createElement('details'),s=document.createElement('summary');setReadingText(s,label);d.open=open;d.append(s,...children);return d;}
+  const duplicateButton=$('#duplicate3');let duplicateSelected=null;
+  duplicateButton.onclick=()=>duplicateSelected?.();
+  function openEnemyBatch(){
+    const project=getProject(),source=project.objects.find(o=>o.id===getSelected());if(source?.type!=='enemy')return;
+    const dialog=document.createElement('dialog');dialog.className='enemy-batch-dialog';
+    const title=document.createElement('h2'),note=document.createElement('p'),groups=document.createElement('fieldset'),targets=document.createElement('fieldset'),apply=document.createElement('button'),cancel=document.createElement('button'),error=document.createElement('p');
+    setReadingText(title,'ほかの敵にも、この設定を使う');setReadingText(note,'マップの位置や向きは、その敵のまま。はんいやコースは、それぞれの敵のまわりに作るよ。');
+    const options=[],checks=[];
+    const makeCheck=(parent,text,checked)=>{const row=document.createElement('label'),input=document.createElement('input'),caption=document.createElement('span');row.className='enemy-attack-toggle';input.type='checkbox';input.checked=checked;setReadingText(caption,text);row.append(input,caption);parent.append(row);return input;};
+    const groupTitle=document.createElement('legend');setReadingText(groupTitle,'コピーする設定');groups.append(groupTitle);
+    for(const [key,group]of Object.entries(ENEMY_COPY_GROUPS))options.push([key,makeCheck(groups,group.label,true)]);
+    const targetTitle=document.createElement('legend');setReadingText(targetTitle,'どの敵に使う？');targets.append(targetTitle);
+    const all=document.createElement('button');setReadingText(all,'全部の敵をえらぶ');all.onclick=()=>{checks.forEach(([,check])=>check.checked=true);sync();};targets.append(all);
+    for(const [index,enemy]of project.objects.filter(o=>o.type==='enemy').entries())if(enemy.id!==source.id)checks.push([enemy.id,makeCheck(targets,'敵 '+(index+1)+'（X '+enemy.x+'・Z '+enemy.z+'・高さ '+enemy.y+'）',false)]);
+    const sync=()=>{const count=checks.filter(([,check])=>check.checked).length;setReadingText(apply,count+'体に設定をコピー');apply.disabled=!count||!options.some(([,check])=>check.checked);};
+    for(const [,check]of [...options,...checks])check.onchange=sync;sync();apply.className='primary';
+    apply.onclick=()=>{try{const count=copyEnemySettings(project,source.id,checks.filter(([,check])=>check.checked).map(([id])=>id),options.filter(([,check])=>check.checked).map(([key])=>key));save();rebuild();api.objectList();inspect();dialog.close();dialog.remove();api.toast(count+'体に設定をコピーしたよ');}catch{setReadingText(error,'マップの外にはみ出すはんいやコースがあります。コピーする設定か、敵をえらび直そう。');}};
+    setReadingText(cancel,'やめる');cancel.onclick=()=>{dialog.close();dialog.remove();};dialog.oncancel=()=>dialog.remove();dialog.append(title,note,groups,targets,error,apply,cancel);document.body.append(dialog);dialog.showModal();
+  }
   const enemyDialog=document.createElement('dialog');enemyDialog.className='enemy-editor-dialog';
   const enemyHeader=document.createElement('header'),enemyTitle=document.createElement('h2'),enemyClose=document.createElement('button'),enemyContent=document.createElement('div');
   setReadingText(enemyTitle,'敵のせってい');setReadingText(enemyClose,'とじる');enemyClose.onclick=()=>enemyDialog.close();
-  enemyHeader.append(enemyTitle,enemyClose);enemyContent.className='enemy-dialog-content';enemyDialog.append(enemyHeader,enemyContent);document.body.append(enemyDialog);
+  const batchButton=document.createElement('button');setReadingText(batchButton,'まとめて設定');batchButton.onclick=openEnemyBatch;enemyHeader.append(enemyTitle,batchButton,enemyClose);enemyContent.className='enemy-dialog-content';enemyDialog.append(enemyHeader,enemyContent);document.body.append(enemyDialog);
   let rangeReturn=false;
   const pauseEnemyDialog=()=>{if(enemyDialog.open){rangeReturn=true;enemyDialog.close();}};
   window.addEventListener('enemy-range-open',pauseEnemyDialog);
@@ -114,6 +134,7 @@ export function createWorkshop(api){
   }
   function inspectContent(){
     const el=$('#inspector3'),wasOpen=el.querySelector('.advanced-program')?.open;
+    duplicateSelected=null;duplicateButton.disabled=true;
     advancedInspector();const loop=el.querySelector('.loop');el.replaceChildren();
     const p=getProject(),o=p.objects.find(o=>o.id===getSelected());
     if(!o){const note=document.createElement('p');note.className='empty';setReadingText(note,'空のステージに、使いたいパーツを置こう。敵の動きやクリア条件は、自分でえらんで作れるよ。');el.append(note);return;}
@@ -291,7 +312,8 @@ export function createWorkshop(api){
     if(['wall','floor','roof','ramp','door'].includes(o.type)){const rotate=document.createElement('button');rotate.className='placement-controls';setReadingText(rotate,'↻ 90° 回す');rotate.onclick=()=>{rotatePiece(o,p);save();rebuild();inspect();};el.append(rotate);}
     const actions=document.createElement('div');actions.className='object-actions placement-controls';
     const copy=document.createElement('button');setReadingText(copy,'＋ 同じパーツをもう１つ');copy.onclick=()=>{if(p.objects.length>=MAX_PARTS){api.toast('パーツは2000個まで置けます');return;}const duplicate=structuredClone(o);duplicate.id=crypto.randomUUID();for(const a of duplicate.events||[])if(a.target===o.id)a.target=duplicate.id;let found=false;for(const [dx,dz] of [[Math.max(4,Math.ceil(o.w/4)*4),0],[0,Math.max(4,Math.ceil(o.d/4)*4)],[-Math.max(4,Math.ceil(o.w/4)*4),0],[0,-Math.max(4,Math.ceil(o.d/4)*4)]]){duplicate.x=o.x+dx;duplicate.z=o.z+dz;if(!GRID_PARTS.has(o.type)){duplicate.x=clamp(o.x+2,-coordinateLimit(p),coordinateLimit(p));duplicate.z=o.z;found=true;break;}alignPiece(duplicate,p);if(!editorPlacementReason(duplicate,p.objects,p.spawn)){found=true;break;}}if(!found){api.toast('隣のマスが空いていません');return;}p.objects.push(duplicate);select(duplicate.id);save();rebuild();api.objectList();inspect();};
-    const del=document.createElement('button');setReadingText(del,'削除');del.className='danger';del.onclick=()=>{p.objects=p.objects.filter(x=>x.id!==o.id);select(null);save();rebuild();api.objectList();inspect();};actions.append(copy,del);el.append(actions);
+    duplicateSelected=copy.onclick;duplicateButton.disabled=p.objects.length>=MAX_PARTS;
+    const del=document.createElement('button');setReadingText(del,'削除');del.className='danger';del.onclick=()=>{p.objects=p.objects.filter(x=>x.id!==o.id);select(null);save();rebuild();api.objectList();inspect();};actions.append(del);el.append(actions);
   }
   function weapons(){if(api.renderLoadout){api.renderLoadout();return;}
     advancedWeaponFields();const el=$('#weapon3'),advanced=[...el.childNodes];el.replaceChildren();const p=getProject();
