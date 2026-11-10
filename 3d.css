@@ -207,7 +207,7 @@ main.common-preview #stats3{display:none}
 #editor-tools3 button{min-width:82px;min-height:48px;font-size:14px;padding:8px 11px}
 .stage-toolbar.is-playing #stage-mode3{margin-right:auto}
 .view-column>nav.stage-toolbar.is-playing,main.range-editing .view-column>nav.stage-toolbar,main.common-preview .view-column>nav.stage-toolbar{display:flex;flex-wrap:wrap}
-main.range-editing #view-menu3 .perspective-options3,main.common-preview #view-menu3 .perspective-options3{display:none}
+.stage-toolbar:not(.is-playing) #view-menu3 .perspective-options3,main.range-editing #view-menu3 .perspective-options3,main.common-preview #view-menu3 .perspective-options3{display:none}
 main.range-editing #view-menu3,main.common-preview #view-menu3{margin-left:auto}
 @media(max-width:700px){.view-column>nav.stage-toolbar{gap:6px}#editor-tools3 button{min-width:64px;min-height:46px;padding:7px;font-size:12px}#edit-history3 button{min-width:50px;min-height:46px;padding:7px;font-size:11px}#view-menu3>summary,#map3{padding:8px 10px}}
 @media(max-width:380px){#edit-history3{grid-column:1/-1;grid-row:3;justify-self:end}}
