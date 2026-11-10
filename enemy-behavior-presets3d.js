@@ -1,6 +1,6 @@
-import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261110l';
-import {defaultPatrolRoute,placeAtRouteStart} from './patrol-route3d.js?v=20261110l';
-import {defaultEnemyRanges} from './enemy-range3d.js?v=20261110l';
+import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261110m';
+import {defaultPatrolRoute,placeAtRouteStart} from './patrol-route3d.js?v=20261110m';
+import {defaultEnemyRanges} from './enemy-range3d.js?v=20261110m';
 // Examples combine existing actions, pursuit rules and speed. No runtime preset IDs are saved.
 export const ENEMY_BEHAVIOR_EXAMPLES={
  still:{name:'その場で待つ',icon:'●',program:[],flow:'置いた場所で待つ。自分からは動かないよ。'},

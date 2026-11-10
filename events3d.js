@@ -1,6 +1,6 @@
-import {DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261110l';
-import {blockTemplate} from './building3d.js?v=20261110l';
-import {dropPickup} from './loot3d.js?v=20261110l';
+import {DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261110m';
+import {blockTemplate} from './building3d.js?v=20261110m';
+import {dropPickup} from './loot3d.js?v=20261110m';
 // A fixed menu of one-shot events. Item creation is bounded by the loot limit.
 export const EVENT_TYPES=new Set(['weapon','star','key','heal','door','checkpoint','goal']);
 export const EVENT_LIMIT=6;

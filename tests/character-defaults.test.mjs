@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {part,fresh3D,validate3D,create3D} from '../engine3d.js';
 import {initializeCharacterDefaults,synchronizeCharacterDefaults,inheritNewCharacter,useCharacterDefaults} from '../character-defaults3d.js';
+import {writeCharacterDefaults,sharedKeys} from '../character-defaults3d.js';
 
 for(const type of ['enemy','ally'])test(type+'は基本設定を参照し、個別の体力だけを上書きできる',()=>{
  const p=fresh3D();p.objects=[part(type,0,0),part(type,8,0)];initializeCharacterDefaults(p,part);
@@ -23,4 +24,22 @@ test('基本設定の不正な体力や個別指定を読み込まない',()=>{
  const p=fresh3D();p.objects=[part('enemy')];initializeCharacterDefaults(p,part);
  p.characterDefaults.enemy.hp=501;assert.throws(()=>validate3D(p));p.characterDefaults.enemy.hp=3;
  p.objects[0].characterOverrides=['x'];assert.throws(()=>validate3D(p));
+});
+
+test('見本で塗った移動エリアとコースは各敵の位置へ反映され、見本自体は作品に入らない',()=>{
+ const p=fresh3D();p.objects=[part('enemy',8,4)];initializeCharacterDefaults(p,part);
+ const preview=inheritNewCharacter(p,part('enemy',0,0));preview.characterOverrides=[...sharedKeys('enemy')];
+ preview.moveRange={space:'world',shape:'custom',cells:[[0,0],[1,0],[2,0]]};preview.patrolRoute=[{x:0,z:0},{x:8,z:0}];
+ writeCharacterDefaults(p,preview);
+ assert.equal(p.objects.length,1);assert.deepEqual(p.objects[0].moveRange.cells,[[2,1],[3,1],[4,1]]);
+ assert.deepEqual(p.objects[0].patrolRoute,[{x:8,z:4},{x:16,z:4}]);
+ assert.deepEqual(inheritNewCharacter(p,part('enemy',-8,0)).patrolRoute,[{x:-8,z:0},{x:0,z:0}]);
+ assert.ok(validate3D(p));
+});
+test('以前に個別で塗ったエリアは基本設定を更新しても保つ',()=>{
+ const p=fresh3D(),enemy=part('enemy',8,4);p.objects=[enemy];initializeCharacterDefaults(p,part);
+ enemy.moveRange={space:'world',shape:'custom',cells:[[5,5]]};synchronizeCharacterDefaults(p);
+ p.characterDefaults.enemy.moveRange.cells=[[0,0]];synchronizeCharacterDefaults(p);
+ assert.deepEqual(enemy.moveRange.cells,[[5,5]]);
+ const saved=validate3D(p);assert.deepEqual(saved.objects[0].moveRange.cells,[[5,5]]);
 });
