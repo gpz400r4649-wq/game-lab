@@ -1,5 +1,5 @@
-import {walkPatrol,walkWaypoints,activeRoute} from './patrol-route3d.js?v=20261110m';
-import {rangeCell,inGridRange,inEnemyRange,movementCenter} from './enemy-range3d.js?v=20261110m';
+import {walkPatrol,walkWaypoints,activeRoute} from './patrol-route3d.js?v=20261110n';
+import {rangeCell,inGridRange,inEnemyRange,movementCenter} from './enemy-range3d.js?v=20261110n';
 const CELL=4,neighbors=[[0,-1],[1,0],[0,1],[-1,0]];
 export const CHASE_MODES={always:'はじめから、ずっと追いかける',inside:'探すはんいにいる間だけ追いかける',remember:'見つけたら、ずっと追いかける'};
 export function chaseGraceSeconds(o){return o.chaseGraceSeconds??3;}
