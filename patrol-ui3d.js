@@ -1,9 +1,9 @@
 import * as T from './vendor/three.module.min.js';
-import {mountLiveRangeEditor} from './range-panel3d.js?v=20261110t';
-import {setStageRangePainter} from './stage-range3d.js?v=20261110t';
-import {worldSize,coordinateLimit} from './world3d.js?v=20261110t';
-import {validPatrolRoute,placeAtRouteStart} from './patrol-route3d.js?v=20261110t';
-import {setReadingText} from './readings3d.js?v=20261110t';
+import {mountLiveRangeEditor} from './range-panel3d.js?v=20261110w';
+import {setStageRangePainter} from './stage-range3d.js?v=20261110w';
+import {worldSize,coordinateLimit} from './world3d.js?v=20261110w';
+import {validPatrolRoute,placeAtRouteStart} from './patrol-route3d.js?v=20261110w';
+import {setReadingText} from './readings3d.js?v=20261110w';
 export function createPatrolOverlay(scene){
  const group=new T.Group(),material=new T.MeshBasicMaterial({color:0x399cda,depthWrite:false}),lineGeometry=new T.CylinderGeometry(.07,.07,1,8),pointGeometry=new T.SphereGeometry(.3,12,8),direction=new T.Vector3(),up=new T.Vector3(0,1,0),lines=[],points=[],labels=[];group.visible=false;scene.add(group);
  for(let i=0;i<16;i++){const line=new T.Mesh(lineGeometry,material),point=new T.Mesh(pointGeometry,new T.MeshBasicMaterial({color:i===0?0x399cda:0xf0a23a,depthWrite:false}));line.layers.set(2);point.layers.set(2);group.add(line,point);lines.push(line);points.push(point);}

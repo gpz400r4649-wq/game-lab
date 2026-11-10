@@ -1,6 +1,6 @@
-import {MAX_PARTS} from './limits3d.js?v=20261110t';
-import {worldSize,coordinateLimit,WORLD_SIZES,resizeReason,spawnReason} from './world3d.js?v=20261110t';
-import {setReadingText} from './readings3d.js?v=20261110t';
+import {MAX_PARTS} from './limits3d.js?v=20261110w';
+import {worldSize,coordinateLimit,WORLD_SIZES,resizeReason,spawnReason} from './world3d.js?v=20261110w';
+import {setReadingText} from './readings3d.js?v=20261110w';
 export function createWorldUI(api){
  const dialog=document.createElement('dialog');dialog.id='world-dialog3';
  const title=document.createElement('h2'),label=document.createElement('label'),sizes=document.createElement('select'),note=document.createElement('p'),canvas=document.createElement('canvas'),status=document.createElement('p'),actions=document.createElement('div');
