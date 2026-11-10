@@ -80,17 +80,35 @@ export function createWorkshop(api){
     const el=$('#inspector3');
     goalContent.replaceChildren(...[...el.children].filter(node=>!node.classList.contains('inspector-back')&&!node.classList.contains('inspector-heading')&&!node.classList.contains('component-description')&&!node.classList.contains('placement-controls')));
   }
+  const partDialog=document.createElement('dialog');partDialog.className='enemy-editor-dialog';
+  const partHeader=document.createElement('header'),partTitle=document.createElement('h2'),partClose=document.createElement('button'),partContent=document.createElement('div');
+  setReadingText(partClose,'とじる');partClose.onclick=()=>partDialog.close();
+  partHeader.append(partTitle,partClose);partContent.className='enemy-dialog-content';partDialog.append(partHeader,partContent);document.body.append(partDialog);
+  const partOpen=$('#part-open3');let partOwner=null;
+  const isOtherPart=o=>!!o&&!['enemy','goal'].includes(o.type);
+  partOpen.onclick=()=>{if(!isOtherPart(getProject().objects.find(o=>o.id===getSelected())))return;partDialog.showModal();partContent.scrollTop=0;};
+  function presentPartEditor(){
+    const selected=getProject().objects.find(o=>o.id===getSelected());
+    partOpen.disabled=!isOtherPart(selected);
+    setReadingText(partOpen,partOpen.disabled?'ほかの部品のせってい':PARTS[selected.type]+'のせっていをひらく');
+    if(partOpen.disabled)return;
+    partOwner=selected.id;setReadingText(partTitle,PARTS[selected.type]+'のせってい');
+    const el=$('#inspector3');
+    partContent.replaceChildren(...[...el.children].filter(node=>!node.classList.contains('inspector-back')&&!node.classList.contains('inspector-heading')&&!node.classList.contains('placement-controls')));
+  }
   let inspectedId=null,enemyPage='movement',enemyPageOwner=null;
   function inspect(){
     const aside=$('aside'),el=$('#inspector3'),top=aside.scrollTop,pageX=window.scrollX,pageY=window.scrollY,min=el.style.minHeight,active=document.activeElement,focusLabel=el.contains(active)?active.getAttribute('aria-label'):null;
     if(enemyPageOwner&&enemyPageOwner!==getSelected()){enemyDialog.close();rangeReturn=false;}
     if(goalOwner&&goalOwner!==getSelected())goalDialog.close();
+    if(partOwner&&partOwner!==getSelected())partDialog.close();
+    if(partContent.children.length)el.append(...partContent.children);
     if(goalContent.children.length)el.append(...goalContent.children);
     if(enemyContent.children.length)el.append(...enemyContent.children);
     el.style.minHeight=el.getBoundingClientRect().height+'px';
-    try{inspectContent();presentEnemyEditor();presentGoalEditor();}finally{el.style.minHeight=min;aside.scrollTop=top;window.scrollTo(pageX,pageY);if(focusLabel){const replacement=[...el.querySelectorAll('[aria-label]')].find(n=>n.getAttribute('aria-label')===focusLabel);replacement?.focus({preventScroll:true});}aside.scrollTop=top;
+    try{inspectContent();presentEnemyEditor();presentGoalEditor();presentPartEditor();}finally{el.style.minHeight=min;aside.scrollTop=top;window.scrollTo(pageX,pageY);if(focusLabel){const replacement=[...el.querySelectorAll('[aria-label]')].find(n=>n.getAttribute('aria-label')===focusLabel);replacement?.focus({preventScroll:true});}aside.scrollTop=top;
       const id=getSelected();
-      if(id&&id!==inspectedId&&!['enemy','goal'].includes(getProject().objects.find(o=>o.id===id)?.type))aside.scrollTop+=el.getBoundingClientRect().top-aside.getBoundingClientRect().top-8;
+
       inspectedId=id;
     }
   }
@@ -249,7 +267,7 @@ export function createWorkshop(api){
       selectField(el,'ドアの開き方',[['swing','回してひらく'],['slide','横にスライド']],o.doorStyle||'swing',v=>o.doorStyle=v);
       selectField(el,'開く向き',[['1','ふつう'],['-1','反対にひらく']],String(o.doorDirection||1),v=>o.doorDirection=Number(v));
       selectField(el,'ドアの使い方',[['auto','これまでの自動ドア'],['free','ふつうに開け閉めする'],['key','カギで開け閉めする']],o.doorMode||'auto',v=>{if(v==='auto')delete o.doorMode;else{o.doorMode=v;o.doorStyle??='swing';s.condition=v==='key'?'keys':'touch';}inspect();});
-      const turn=document.createElement('button');setReadingText(turn,'↻ ドアを90°回す');turn.onclick=()=>{[o.w,o.d]=[o.d,o.w];o.rotation=o.rotation===90?0:90;save();rebuild();inspect();};el.append(turn);
+
     }
     if(o.type==='door'||o.type==='goal'){
       const rules=document.createElement('div');rules.className='recipe-rule';
@@ -270,8 +288,8 @@ export function createWorkshop(api){
     for(const [key,name,min,max] of [['x','横 X',-coordinateLimit(p),coordinateLimit(p)],['y','高さ Y',0,MAX_BUILD_Y],['z','奥行 Z',-coordinateLimit(p),coordinateLimit(p)]])field(positions,name,o[key],min,max,gridStep(o,key),n=>{o[key]=n;alignPiece(o,p);return o[key];});fine.append(positions);
     if(['box','platform','moving','door','bounce','hazard','wall','floor','roof','ramp'].includes(o.type))for(const [key,name] of [['w','はば'],['h','たかさ'],['d','おくゆき']])field(fine,name,o[key],['wall','floor','roof','bounce','hazard'].includes(o.type)?.2:.5,10,.5,n=>o[key]=n);
     const positionDetails=details('位置・大きさを数字でちょうせい',[fine]);positionDetails.className='placement-controls';el.append(positionDetails);
-    if(['wall','floor','roof','ramp','door'].includes(o.type)){const rotate=document.createElement('button');setReadingText(rotate,'↻ 90° 回す');rotate.onclick=()=>{rotatePiece(o,p);save();rebuild();inspect();};el.append(rotate);}
-    const actions=document.createElement('div');actions.className='object-actions';
+    if(['wall','floor','roof','ramp','door'].includes(o.type)){const rotate=document.createElement('button');rotate.className='placement-controls';setReadingText(rotate,'↻ 90° 回す');rotate.onclick=()=>{rotatePiece(o,p);save();rebuild();inspect();};el.append(rotate);}
+    const actions=document.createElement('div');actions.className='object-actions placement-controls';
     const copy=document.createElement('button');setReadingText(copy,'＋ 同じ部品をもう１つ');copy.onclick=()=>{if(p.objects.length>=MAX_PARTS){api.toast('部品は2000個まで置けます');return;}const duplicate=structuredClone(o);duplicate.id=crypto.randomUUID();for(const a of duplicate.events||[])if(a.target===o.id)a.target=duplicate.id;let found=false;for(const [dx,dz] of [[Math.max(4,Math.ceil(o.w/4)*4),0],[0,Math.max(4,Math.ceil(o.d/4)*4)],[-Math.max(4,Math.ceil(o.w/4)*4),0],[0,-Math.max(4,Math.ceil(o.d/4)*4)]]){duplicate.x=o.x+dx;duplicate.z=o.z+dz;if(!GRID_PARTS.has(o.type)){duplicate.x=clamp(o.x+2,-coordinateLimit(p),coordinateLimit(p));duplicate.z=o.z;found=true;break;}alignPiece(duplicate,p);if(!editorPlacementReason(duplicate,p.objects,p.spawn)){found=true;break;}}if(!found){api.toast('隣のマスが空いていません');return;}p.objects.push(duplicate);select(duplicate.id);save();rebuild();api.objectList();inspect();};
     const del=document.createElement('button');setReadingText(del,'削除');del.className='danger';del.onclick=()=>{p.objects=p.objects.filter(x=>x.id!==o.id);select(null);save();rebuild();api.objectList();inspect();};actions.append(copy,del);el.append(actions);
   }
