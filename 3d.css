@@ -252,9 +252,25 @@ main.range-editing #reset-camera,main.common-preview #reset-camera{margin-left:a
 .stage-toolbar.is-playing .toolbar-palette{display:none!important}
 main.range-editing .view-column>nav.stage-toolbar>.toolbar-row,main.common-preview .view-column>nav.stage-toolbar>.toolbar-row{display:contents}
 main.range-editing .toolbar-row>:not(#map3):not(#reset-camera),main.common-preview .toolbar-row>:not(#reset-camera){display:none!important}
-@media(max-width:1120px){.toolbar-row{flex-wrap:wrap}.toolbar-row>#map3{margin-left:auto}.toolbar-row>#edit-history3{margin-left:auto}#palette3.toolbar-palette,#palette-extra3.toolbar-palette{flex-basis:100%;order:1;min-height:54px}}
+@media(max-width:1160px){.toolbar-row{flex-wrap:wrap}.toolbar-row>#map3{margin-left:auto}.toolbar-row>#edit-history3{margin-left:auto}#palette3.toolbar-palette,#palette-extra3.toolbar-palette{flex-basis:100%;order:1;min-height:54px}}
 @media(max-width:520px){#palette3.toolbar-palette,#palette-extra3.toolbar-palette{grid-template-columns:repeat(5,minmax(0,1fr))}.toolbar-palette .part{min-height:48px}}
 
 main.range-editing .view-column>nav.stage-toolbar,main.common-preview .view-column>nav.stage-toolbar{flex-direction:row;align-items:flex-start}
 
 main.range-editing #range-actions3{order:1}main.range-editing #reset-camera{order:2}
+
+/* Give parts the largest touch targets; keep surrounding tools compact in width. */
+.toolbar-row{gap:7px}
+.toolbar-row>#stage-mode3 button{min-height:46px;min-width:58px;font-size:11px;padding:8px}
+.toolbar-row>#editor-tools3{gap:4px}
+.toolbar-row>#editor-tools3 button{min-width:62px;min-height:48px;padding:8px 7px;font-size:12px}
+.toolbar-row>#editor-tools3 #duplicate3{min-width:68px}
+.toolbar-row>#edit-history3{gap:2px;padding:3px}
+.toolbar-row>#edit-history3 button{min-width:53px;min-height:46px;padding:7px 5px;font-size:11px}
+.toolbar-row>#map3,.toolbar-row>#reset-camera{min-height:46px;padding:8px;font-size:11px;white-space:nowrap}
+#palette3.toolbar-palette,#palette-extra3.toolbar-palette{gap:5px}
+.toolbar-palette .part{min-height:66px;padding:5px 2px;gap:4px;border-radius:10px}
+.toolbar-palette .part .part-icon{font-size:24px}
+.toolbar-palette .part .part-caption{font-size:11px;line-height:1.25;font-weight:650}
+.toolbar-palette .part.active:after{top:1px;right:2px;font-size:12px}
+@media(max-width:700px){.toolbar-row>#stage-mode3 button{min-height:44px}.toolbar-row>#editor-tools3 button{min-width:62px}.toolbar-palette .part{min-height:62px}}
