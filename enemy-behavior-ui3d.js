@@ -1,6 +1,6 @@
-import {fitRoamingEnemy} from './enemy-range3d.js?v=20261110s';
-import {ENEMY_BEHAVIOR_EXAMPLES,enemyBehaviorExampleKey,applyEnemyBehaviorExample,enemyBehaviorFlow} from './enemy-behavior-presets3d.js?v=20261110s';
-import {setReadingText} from './readings3d.js?v=20261110s';
+import {fitRoamingEnemy} from './enemy-range3d.js?v=20261110t';
+import {ENEMY_BEHAVIOR_EXAMPLES,enemyBehaviorExampleKey,applyEnemyBehaviorExample,enemyBehaviorFlow} from './enemy-behavior-presets3d.js?v=20261110t';
+import {setReadingText} from './readings3d.js?v=20261110t';
 export function renderBehaviorExamples(parent,o,{save,rebuild,inspect,getProject}){
  const box=document.createElement('div'),button=document.createElement('button'),summary=document.createElement('p');box.className='enemy-behavior-launcher';button.className='enemy-behavior-open';setReadingText(button,`▦ 動きの見本をえらぶ（${Object.keys(ENEMY_BEHAVIOR_EXAMPLES).length}種類）`);summary.className='enemy-behavior-summary';summary.setAttribute('aria-live','polite');box.append(button,summary);parent.append(box);
  const sync=()=>{const key=enemyBehaviorExampleKey(o),name=key==='custom'?'自分でちょうせいした動き':ENEMY_BEHAVIOR_EXAMPLES[key].name;setReadingText(summary,'今の動き：'+name);};sync();

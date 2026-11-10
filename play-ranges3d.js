@@ -1,8 +1,8 @@
-import {createPatrolOverlay} from './patrol-ui3d.js?v=20261110s';
-import {usesPatrolRoute,usesWaypoints,activeRoute} from './patrol-route3d.js?v=20261110s';
+import {createPatrolOverlay} from './patrol-ui3d.js?v=20261110t';
+import {usesPatrolRoute,usesWaypoints,activeRoute} from './patrol-route3d.js?v=20261110t';
 import * as T from './vendor/three.module.min.js';
-import {rangeWorldCells,MOVE_MAX_CELLS} from './enemy-range3d.js?v=20261110s';
-import {setReadingText} from './readings3d.js?v=20261110s';
+import {rangeWorldCells,MOVE_MAX_CELLS} from './enemy-range3d.js?v=20261110t';
+import {setReadingText} from './readings3d.js?v=20261110t';
 export function playRangeCells(enemy,key){
  if(!enemy||enemy.hp<=0||enemy.hidden||!enemy[key])return [];
  return rangeWorldCells(enemy[key],key==='moveRange'?(enemy.origin||enemy):enemy).slice(0,MOVE_MAX_CELLS);
