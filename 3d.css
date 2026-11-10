@@ -143,7 +143,7 @@ main.range-editing aside.is-range-editing{display:none}
 @media(max-width:700px){main.range-editing{grid-template-columns:minmax(0,1fr)}}
 
 main.range-editing .view-column>nav{align-items:flex-start;gap:8px;padding:10px}
-main.range-editing .view-column>nav>:not(#map3):not(#reset-camera):not(#range-actions3){display:none}
+main.range-editing .view-column>nav>:not(#map3):not(#reset-camera):not(#range-actions3):not(.toolbar-row){display:none}
 main.range-editing #reset-camera{margin-left:0}
 #range-actions3{display:block;min-width:0;margin:0;flex:1 1 540px}
 #range-actions3[hidden]{display:none}
@@ -184,7 +184,7 @@ main.range-editing #reset-camera{margin-left:0}
 
 #common-preview-actions3{display:flex;align-items:center;gap:8px;flex-wrap:wrap}#common-preview-actions3[hidden]{display:none}
 main.common-preview .workshop-launchers{pointer-events:none;opacity:.5}
-main.common-preview .view-column>nav>:not(#common-preview-actions3):not(#range-actions3):not(#reset-camera){display:none}
+main.common-preview .view-column>nav>:not(#common-preview-actions3):not(#range-actions3):not(#reset-camera):not(.toolbar-row){display:none}
 main.common-preview.range-editing #common-preview-actions3{display:none}
 
 main.common-preview #stats3{display:none}
@@ -237,3 +237,24 @@ main.range-editing #reset-camera,main.common-preview #reset-camera{margin-left:a
 .range-layer.move:has(input:checked){background:#dbeeff;border-color:#63a8de;color:#245f8c}
 .range-layer.search:has(input:checked){background:#fff3c2;border-color:#cbaa3e;color:#786016}
 .range-layer.attack:has(input:checked){background:#ffe0e6;border-color:#dd8194;color:#98374c}
+
+/* Parts stay beside the stage instead of scrolling with the settings sidebar. */
+.view-column>nav.stage-toolbar:not(.is-playing){display:flex;flex-direction:column;align-items:stretch}
+.toolbar-row{display:flex;align-items:center;gap:8px;min-width:0;width:100%}
+.toolbar-row>#stage-mode3,.toolbar-row>#editor-tools3,.toolbar-row>#edit-history3,.toolbar-row>#map3,.toolbar-row>#reset-camera{flex:none;margin:0}
+#palette3.toolbar-palette,#palette-extra3.toolbar-palette{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:3px;flex:1;min-width:0;align-self:stretch}
+.toolbar-palette .part{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:0;min-height:54px;padding:4px 1px;border-radius:8px;border-width:1px;position:relative}
+.toolbar-palette .part .part-icon{font-size:20px;line-height:1;display:block;margin:0}
+.toolbar-palette .part .part-caption{display:block;font-size:9px;line-height:1.25;margin:0;text-align:center;overflow-wrap:anywhere}
+.toolbar-palette .part.active{border:2px solid #805ed4;background:#ece3fc;color:#6242b3;box-shadow:0 0 0 1px #c4afe9}
+.toolbar-palette .part.active:after{content:'✓';position:absolute;right:1px;top:0;font-size:10px;font-weight:800;color:#6242b3}
+.stage-toolbar.is-playing>.toolbar-row{display:contents}
+.stage-toolbar.is-playing .toolbar-palette{display:none!important}
+main.range-editing .view-column>nav.stage-toolbar>.toolbar-row,main.common-preview .view-column>nav.stage-toolbar>.toolbar-row{display:contents}
+main.range-editing .toolbar-row>:not(#map3):not(#reset-camera),main.common-preview .toolbar-row>:not(#reset-camera){display:none!important}
+@media(max-width:1120px){.toolbar-row{flex-wrap:wrap}.toolbar-row>#map3{margin-left:auto}.toolbar-row>#edit-history3{margin-left:auto}#palette3.toolbar-palette,#palette-extra3.toolbar-palette{flex-basis:100%;order:1;min-height:54px}}
+@media(max-width:520px){#palette3.toolbar-palette,#palette-extra3.toolbar-palette{grid-template-columns:repeat(5,minmax(0,1fr))}.toolbar-palette .part{min-height:48px}}
+
+main.range-editing .view-column>nav.stage-toolbar,main.common-preview .view-column>nav.stage-toolbar{flex-direction:row;align-items:flex-start}
+
+main.range-editing #range-actions3{order:1}main.range-editing #reset-camera{order:2}
