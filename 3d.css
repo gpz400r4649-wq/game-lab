@@ -171,3 +171,9 @@ main.range-editing #reset-camera{margin-left:0}
 #goal-open3{min-height:48px;width:100%;margin:0}#goal-open3:disabled{opacity:.4;cursor:default}
 
 #part-open3{min-height:48px;width:100%;margin:0}#part-open3:disabled{opacity:.4;cursor:default}
+
+.view-column>nav{position:sticky;top:0;z-index:10;background:#eff3f9}
+#editor-tools3{display:flex;gap:6px}
+#editor-tools3[hidden]{display:none}
+#editor-tools3 button{min-height:52px;min-width:92px;font-size:15px;border-width:2px;background:#fff}
+#editor-tools3 button.active{background:#805ed4;color:#fff;border-color:#805ed4}

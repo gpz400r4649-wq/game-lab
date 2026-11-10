@@ -90,7 +90,7 @@ export function createWorkshop(api){
   function presentPartEditor(){
     const selected=getProject().objects.find(o=>o.id===getSelected());
     partOpen.disabled=!isOtherPart(selected);
-    setReadingText(partOpen,partOpen.disabled?'ほかの部品のせってい':PARTS[selected.type]+'のせっていをひらく');
+    setReadingText(partOpen,'えらんだパーツのせってい');
     if(partOpen.disabled)return;
     partOwner=selected.id;setReadingText(partTitle,PARTS[selected.type]+'のせってい');
     const el=$('#inspector3');
@@ -116,8 +116,8 @@ export function createWorkshop(api){
     const el=$('#inspector3'),wasOpen=el.querySelector('.advanced-program')?.open;
     advancedInspector();const loop=el.querySelector('.loop');el.replaceChildren();
     const p=getProject(),o=p.objects.find(o=>o.id===getSelected());
-    if(!o){const note=document.createElement('p');note.className='empty';setReadingText(note,'空のステージに、使いたい部品を置こう。敵の動きやクリア条件は、自分でえらんで作れるよ。');el.append(note);return;}
-    const back=document.createElement('button');back.className='inspector-back';setReadingText(back,'← 部品をえらぶ');back.onclick=()=>{inspectedId=null;$('aside').scrollTop=0;};el.append(back);
+    if(!o){const note=document.createElement('p');note.className='empty';setReadingText(note,'空のステージに、使いたいパーツを置こう。敵の動きやクリア条件は、自分でえらんで作れるよ。');el.append(note);return;}
+    const back=document.createElement('button');back.className='inspector-back';setReadingText(back,'← パーツをえらぶ');back.onclick=()=>{inspectedId=null;$('aside').scrollTop=0;};el.append(back);
     const title=document.createElement('h2');title.className='inspector-heading';setReadingText(title,`${ICONS[o.type]} ${PARTS[o.type]}`);
     const description=document.createElement('p');description.className='component-description';setReadingText(description,DESCRIPTIONS[o.type]);el.append(title,description);
     const s=o.settings;
@@ -290,7 +290,7 @@ export function createWorkshop(api){
     const positionDetails=details('位置・大きさを数字でちょうせい',[fine]);positionDetails.className='placement-controls';el.append(positionDetails);
     if(['wall','floor','roof','ramp','door'].includes(o.type)){const rotate=document.createElement('button');rotate.className='placement-controls';setReadingText(rotate,'↻ 90° 回す');rotate.onclick=()=>{rotatePiece(o,p);save();rebuild();inspect();};el.append(rotate);}
     const actions=document.createElement('div');actions.className='object-actions placement-controls';
-    const copy=document.createElement('button');setReadingText(copy,'＋ 同じ部品をもう１つ');copy.onclick=()=>{if(p.objects.length>=MAX_PARTS){api.toast('部品は2000個まで置けます');return;}const duplicate=structuredClone(o);duplicate.id=crypto.randomUUID();for(const a of duplicate.events||[])if(a.target===o.id)a.target=duplicate.id;let found=false;for(const [dx,dz] of [[Math.max(4,Math.ceil(o.w/4)*4),0],[0,Math.max(4,Math.ceil(o.d/4)*4)],[-Math.max(4,Math.ceil(o.w/4)*4),0],[0,-Math.max(4,Math.ceil(o.d/4)*4)]]){duplicate.x=o.x+dx;duplicate.z=o.z+dz;if(!GRID_PARTS.has(o.type)){duplicate.x=clamp(o.x+2,-coordinateLimit(p),coordinateLimit(p));duplicate.z=o.z;found=true;break;}alignPiece(duplicate,p);if(!editorPlacementReason(duplicate,p.objects,p.spawn)){found=true;break;}}if(!found){api.toast('隣のマスが空いていません');return;}p.objects.push(duplicate);select(duplicate.id);save();rebuild();api.objectList();inspect();};
+    const copy=document.createElement('button');setReadingText(copy,'＋ 同じパーツをもう１つ');copy.onclick=()=>{if(p.objects.length>=MAX_PARTS){api.toast('パーツは2000個まで置けます');return;}const duplicate=structuredClone(o);duplicate.id=crypto.randomUUID();for(const a of duplicate.events||[])if(a.target===o.id)a.target=duplicate.id;let found=false;for(const [dx,dz] of [[Math.max(4,Math.ceil(o.w/4)*4),0],[0,Math.max(4,Math.ceil(o.d/4)*4)],[-Math.max(4,Math.ceil(o.w/4)*4),0],[0,-Math.max(4,Math.ceil(o.d/4)*4)]]){duplicate.x=o.x+dx;duplicate.z=o.z+dz;if(!GRID_PARTS.has(o.type)){duplicate.x=clamp(o.x+2,-coordinateLimit(p),coordinateLimit(p));duplicate.z=o.z;found=true;break;}alignPiece(duplicate,p);if(!editorPlacementReason(duplicate,p.objects,p.spawn)){found=true;break;}}if(!found){api.toast('隣のマスが空いていません');return;}p.objects.push(duplicate);select(duplicate.id);save();rebuild();api.objectList();inspect();};
     const del=document.createElement('button');setReadingText(del,'削除');del.className='danger';del.onclick=()=>{p.objects=p.objects.filter(x=>x.id!==o.id);select(null);save();rebuild();api.objectList();inspect();};actions.append(copy,del);el.append(actions);
   }
   function weapons(){if(api.renderLoadout){api.renderLoadout();return;}
@@ -299,7 +299,7 @@ export function createWorkshop(api){
     selectField(el,'武器のタイプ',[...Object.entries(WEAPON_PRESETS).map(([k,v])=>[k,v.name]),['custom','自分でちょうせい']],current,k=>{if(k!=='custom'){const {name,...weapon}=WEAPON_PRESETS[k];p.weapon=weapon;weapons();}});
     el.append(details('速さ・つよさを工夫する',advanced));
   }
-  const groups=[['つくる道具',['select','erase']],['地形・しかけ',['wall','floor','roof','ramp','box','platform','moving','bounce','hazard']],['キャラクター・アイテム',['enemy','ally','actor','weapon','star','key','heal']],['進みかたをつくる',['checkpoint','door','plate','goal']]];
+  const groups=[['地形・しかけ',['wall','floor','roof','ramp','box','platform','moving','bounce','hazard']],['キャラクター・アイテム',['enemy','ally','actor','weapon','star','key','heal']],['進みかたをつくる',['checkpoint','door','plate','goal']]];
   function chooseWeapon(){const d=document.createElement('dialog'),h=document.createElement('h2');setReadingText(h,'どの銃をアイテムにする？');d.append(h);const random=document.createElement('button');setReadingText(random,'ランダムでひとつ');random.onclick=()=>{setTool('weapon','@random');d.close();d.remove();};d.append(random);for(const tool of getProject().loadout){const b=document.createElement('button'),icon=document.createElement('span'),caption=document.createElement('span');b.className='door-choice';icon.className='hot-gun-icon';icon.innerHTML=gunPreviewSVG(tool);setReadingText(caption,tool.name);b.append(icon,caption);b.onclick=()=>{setTool('weapon',tool.id);d.close();d.remove();};d.append(b);}const cancel=document.createElement('button');setReadingText(cancel,'もどる');cancel.onclick=()=>{d.close();d.remove();};d.oncancel=()=>d.remove();d.append(cancel);document.body.append(d);d.showModal();}
   function chooseDoor(){const d=document.createElement('dialog'),h=document.createElement('h2'),note=document.createElement('p');setReadingText(h,'どのドアを置く？');setReadingText(note,'近づいて「あける」ボタンで開け閉めできるよ。置いた後に「開く向き」を反対に変えられるよ。');d.append(h,note);for(const [key,preset]of Object.entries(DOOR_PRESETS)){const b=document.createElement('button');b.className='door-choice';setReadingText(b,preset.name);b.onclick=()=>{setTool('door',key);d.close();d.remove();};d.append(b);}const cancel=document.createElement('button');setReadingText(cancel,'もどる');cancel.onclick=()=>{d.close();d.remove();};d.oncancel=()=>d.remove();d.append(cancel);document.body.append(d);d.showModal();}
   function renderPalette(){
@@ -312,6 +312,7 @@ export function createWorkshop(api){
     }
     palette.style.minHeight=min;aside.scrollTop=top+(above?palette.getBoundingClientRect().height-before.height:0);
   }
+  document.querySelectorAll('[data-editor-tool]').forEach(button=>{button.onclick=()=>setTool(button.dataset.part,'');});
   renderPalette();
   return {inspect,weapons,palette:renderPalette};
 }
