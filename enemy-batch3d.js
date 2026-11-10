@@ -1,9 +1,9 @@
-import {rangeCell} from './enemy-range3d.js?v=20261110k';
-import {validate3D} from './engine3d.js?v=20261110k';
+import {rangeCell} from './enemy-range3d.js?v=20261110l';
+import {validate3D} from './engine3d.js?v=20261110l';
 
 export const ENEMY_COPY_GROUPS={
  body:{label:'からだ・体力',keys:['hp','enemyScale','w','h','d']},
- movement:{label:'うごき・気づくはんい',keys:['program','routine','chaseMode','chaseGraceSeconds','moveRange','searchRange','patrolRoute','waypoints','routeEnd']},
+ movement:{label:'うごき・気づくはんい',keys:['program','routine','movementSpeed','chaseMode','chaseGraceSeconds','moveRange','searchRange','patrolRoute','waypoints','routeEnd']},
  attack:{label:'こうげき・持つ銃',keys:['attackEnabled','attackSpeed','enemyWeaponId','attackRange']},
  loot:{label:'おとすもの',keys:['dropHeldWeapon','enemyDrops']}
 };
@@ -30,6 +30,7 @@ export function copyEnemySettings(project,sourceId,targetIds,groups){
   for(const key of ['patrolRoute','waypoints']){
    if(keys.includes(key)&&next[key])next[key]=next[key].map(point=>({...point,x:point.x+target.x-source.x,z:point.z+target.z-source.z}));
   }
+  if(project.characterDefaults)next.characterOverrides=[...new Set([...(next.characterOverrides||[]),...keys.filter(key=>Object.hasOwn(project.characterDefaults.enemy,key)||['enemyScale','movementSpeed','routine','chaseMode','chaseGraceSeconds','enemyWeaponId','dropHeldWeapon','enemyDrops'].includes(key))])];
   replacements.set(target.id,next);
  }
  const candidate={...project,objects:project.objects.map(o=>replacements.get(o.id)||o)};

@@ -179,3 +179,5 @@ main.range-editing #reset-camera{margin-left:0}
 #editor-tools3 button.active{background:#805ed4;color:#fff;border-color:#805ed4}
 
 #duplicate3:disabled{opacity:.4;cursor:default}.enemy-batch-dialog fieldset{margin:12px 0;border:1px solid #ded6ed;border-radius:10px;padding:12px}.enemy-batch-dialog fieldset label{padding:6px 0}.enemy-batch-dialog fieldset:nth-of-type(2){max-height:35vh;overflow:auto}
+
+#ally-open3{width:100%;min-height:48px;margin:0}.shared-setting{padding:6px 8px;margin:6px 0;border:1px solid #e5dfef;border-radius:8px}.shared-choice{display:flex;align-items:center;gap:6px;font-size:12px;padding:5px 0}.shared-setting input:disabled,.shared-setting select:disabled{opacity:.65}

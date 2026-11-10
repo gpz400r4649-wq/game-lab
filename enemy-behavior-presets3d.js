@@ -1,6 +1,6 @@
-import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261110k';
-import {defaultPatrolRoute,placeAtRouteStart} from './patrol-route3d.js?v=20261110k';
-import {defaultEnemyRanges} from './enemy-range3d.js?v=20261110k';
+import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261110l';
+import {defaultPatrolRoute,placeAtRouteStart} from './patrol-route3d.js?v=20261110l';
+import {defaultEnemyRanges} from './enemy-range3d.js?v=20261110l';
 // Examples combine existing actions, pursuit rules and speed. No runtime preset IDs are saved.
 export const ENEMY_BEHAVIOR_EXAMPLES={
  still:{name:'その場で待つ',icon:'●',program:[],flow:'置いた場所で待つ。自分からは動かないよ。'},
@@ -18,7 +18,7 @@ export function enemyBehaviorExampleKey(o){if(o.routine)return 'custom';return O
 export function applyEnemyBehaviorExample(o,key){
  const example=ENEMY_BEHAVIOR_EXAMPLES[key];if(!Object.hasOwn(ENEMY_BEHAVIOR_EXAMPLES,key))return false;
  if(example.program[0]?.action==='patrol'){o.patrolRoute??=defaultPatrolRoute(o);placeAtRouteStart(o,o.patrolRoute);}
- delete o.routine;o.program=structuredClone(example.program);if(example.chaseMode!==undefined)o.chaseMode=example.chaseMode;
+ delete o.routine;if(o.characterOverrides&&example.program[0])o.movementSpeed=example.program[0].speed;o.program=structuredClone(example.program);if(example.chaseMode!==undefined)o.chaseMode=example.chaseMode;
  if(o.program.length){const defaults=defaultEnemyRanges(o);o.moveRange??=defaults.moveRange;if(example.chaseMode!==undefined)o.searchRange??=defaults.searchRange;}
  return true;
 }
