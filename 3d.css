@@ -274,3 +274,14 @@ main.range-editing #range-actions3{order:1}main.range-editing #reset-camera{orde
 .toolbar-palette .part .part-caption{font-size:11px;line-height:1.25;font-weight:650}
 .toolbar-palette .part.active:after{top:1px;right:2px;font-size:12px}
 @media(max-width:700px){.toolbar-row>#stage-mode3 button{min-height:44px}.toolbar-row>#editor-tools3 button{min-width:62px}.toolbar-palette .part{min-height:62px}}
+
+/* Keep the workshop introduction short enough to leave room for its controls. */
+aside{padding-top:12px;padding-bottom:12px}
+aside>.eyebrow{font-size:9px;line-height:1.5;letter-spacing:.5px;margin:0}
+aside>h1{font-size:19px;line-height:1.5;margin:4px 0}
+aside>.intro{font-size:11px;line-height:1.65;margin:4px 0 8px}
+aside>.workshop-launchers{padding-top:4px;padding-bottom:6px}
+aside>.new-stage{margin:6px 0}
+aside>.select-row{margin:10px 0 0;padding-bottom:8px}
+aside>.select-row select{margin-top:5px}
+@media(min-width:701px){.view-column>#viewport{min-height:320px}}
