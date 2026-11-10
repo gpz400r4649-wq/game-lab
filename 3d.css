@@ -198,7 +198,7 @@ main.common-preview #stats3{display:none}
 #edit-history3 button{min-width:76px;min-height:48px;font-size:12px}
 #editor-tools3 button{min-width:82px;min-height:48px;font-size:14px;padding:8px 11px}
 .stage-toolbar.is-playing #stage-mode3{margin-right:auto}
-.view-column>nav.stage-toolbar.is-playing,main.range-editing .view-column>nav.stage-toolbar,main.common-preview .view-column>nav.stage-toolbar{display:flex;flex-wrap:wrap}
+main.range-editing .view-column>nav.stage-toolbar,main.common-preview .view-column>nav.stage-toolbar{display:flex;flex-wrap:wrap}
 @media(max-width:380px){#edit-history3{grid-column:1/-1;grid-row:3;justify-self:end}}
 
 #perspective3{display:none}
@@ -206,3 +206,16 @@ main.common-preview #stats3{display:none}
 .stage-toolbar #reset-camera{display:block;grid-column:3;grid-row:1;margin:0;min-height:44px;font-size:12px}
 main.range-editing #reset-camera,main.common-preview #reset-camera{margin-left:auto}
 @media(max-width:700px){.view-column>nav.stage-toolbar{gap:6px}#editor-tools3 button{min-width:64px;min-height:46px;padding:7px;font-size:12px}#edit-history3 button{min-width:50px;min-height:46px;padding:7px;font-size:11px}.stage-toolbar #reset-camera,#map3{padding:8px 10px;font-size:11px}}
+
+/* Match the two rows in play mode: mode/perspective left, map/ranges right. */
+.view-column>nav.stage-toolbar.is-playing{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center}
+.stage-toolbar.is-playing #stage-mode3{grid-column:1;grid-row:1;justify-self:start;margin:0}
+.stage-toolbar.is-playing #perspective3{grid-column:1;grid-row:2;justify-self:start}
+.stage-toolbar.is-playing #map3{grid-column:2;grid-row:1}
+.stage-toolbar.is-playing #reset-camera{grid-column:3;grid-row:1}
+.stage-toolbar.is-playing #play-ranges3{grid-column:2;grid-row:2;align-self:stretch}
+.stage-toolbar.is-playing #play-ranges3>summary{display:flex;align-items:center;justify-content:center;min-height:44px;height:100%}
+.stage-toolbar.is-playing #ally-range-toggle3{grid-column:3;grid-row:2;min-height:44px}
+.stage-toolbar.is-playing #formation3{grid-column:2/4;grid-row:3;justify-self:end}
+.stage-toolbar.is-playing .play-range-options{left:auto;right:0}
+@media(max-width:520px){.view-column>nav.stage-toolbar.is-playing{grid-template-columns:minmax(0,1fr) auto auto;gap:5px}.stage-toolbar.is-playing #perspective3 button{padding:7px 5px;font-size:9px}.stage-toolbar.is-playing #ally-range-toggle3{padding:7px;font-size:10px}}
