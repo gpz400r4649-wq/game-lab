@@ -1,7 +1,13 @@
-import {MAX_BUILD_Y} from './limits3d.js?v=20261110w';
-import {worldHalf} from './world3d.js?v=20261110w';
-import {bindHeldButton} from './input3d.js?v=20261110w';
+import {MAX_BUILD_Y} from './limits3d.js?v=20261111a';
+import {worldHalf} from './world3d.js?v=20261111a';
+import {bindHeldButton} from './input3d.js?v=20261111a';
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+// Resume editing near the player's floor, with the same horizontal direction.
+export function editorViewFromPlay(player,yaw,pitch,world){
+ if(!player||!['x','y','z'].every(key=>Number.isFinite(player[key])))return null;
+ const half=worldHalf(world);
+ return {target:{x:clamp(player.x,-half,half),y:clamp(player.y+1,1,MAX_BUILD_Y+10),z:clamp(player.z,-half,half)},yaw:Number.isFinite(yaw)?yaw:0,pitch:clamp(Number.isFinite(pitch)?-pitch:.35,.35,1.1),distance:12};
+}
 // Move the camera and its orbit target together in camera-relative directions.
 export function moveEditorCamera(target,input,yaw,distance,dt,world,pitch=.7){
  let x=input.x||0,z=input.z||0,y=input.y||0;const length=Math.hypot(x,z,y);if(!length||!Number.isFinite(length))return false;if(length>1){x/=length;z/=length;y/=length;}
