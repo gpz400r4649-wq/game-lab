@@ -11,14 +11,16 @@ test('たしかめる：表示しても保存データを変えない',()=>{cons
 test('オン・オフと編集モードで表示を切り替え、倒れたら消す',async()=>{
  const {createPlayRanges}=await import('../play-ranges3d.js');
  const {Scene}=await import('../vendor/three.module.min.js');
- const previous=globalThis.document,checks=[{checked:true},{checked:false},{checked:true}],select={},note={closest:()=>null,replaceChildren(){},append(){}};
- const panel={querySelector:q=>q==='select'?select:note,querySelectorAll:()=>checks};
+ const previous=globalThis.document,checks=[{checked:true},{checked:false},{checked:true}],select={},master={checked:true},note={closest:()=>null,replaceChildren(){},append(){}};
+ const panel={querySelector:q=>q==='select'?select:q==='#enemy-ranges-enabled3'?master:q==='summary'?null:note,querySelectorAll:()=>checks};
  globalThis.document={querySelector:()=>panel,createElement:()=>({append(){},setAttribute(){}}),createTextNode:s=>s};
  note.ownerDocument=globalThis.document;
  try{const scene=new Scene(),ui=createPlayRanges(scene),e={...enemy(),id:'e'},game={objects:[e],worldSize:60};
  // Set the target through the same selection callback as the menu.
  select.value='e';select.onchange();ui.update(game,true,100);assert.deepEqual(scene.children.filter(m=>m.isInstancedMesh).map(m=>m.visible),[true,false,true]);assert.equal(panel.hidden,false);
  checks[0].checked=false;checks[0].onchange();ui.update(game,true,160);assert.deepEqual(scene.children.filter(m=>m.isInstancedMesh).map(m=>m.visible),[false,false,true]);
+ master.checked=false;master.onchange();ui.update(game,true,165);assert.ok(scene.children.every(m=>!m.visible));
+ checks[2].onchange();assert.equal(master.checked,true);ui.update(game,true,166);assert.equal(scene.children.filter(m=>m.isInstancedMesh)[2].visible,true);
  ui.update(game,false,170);assert.ok(scene.children.every(m=>!m.visible));assert.equal(panel.hidden,true);
  e.hp=0;ui.update(game,true,230);assert.ok(scene.children.every(m=>!m.visible));
  }finally{globalThis.document=previous;}

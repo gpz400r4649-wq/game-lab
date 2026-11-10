@@ -219,3 +219,21 @@ main.range-editing #reset-camera,main.common-preview #reset-camera{margin-left:a
 .stage-toolbar.is-playing #formation3{grid-column:2/4;grid-row:3;justify-self:end}
 .stage-toolbar.is-playing .play-range-options{left:auto;right:0}
 @media(max-width:520px){.view-column>nav.stage-toolbar.is-playing{grid-template-columns:minmax(0,1fr) auto auto;gap:5px}.stage-toolbar.is-playing #perspective3 button{padding:7px 5px;font-size:9px}.stage-toolbar.is-playing #ally-range-toggle3{padding:7px;font-size:10px}}
+
+.range-view-menu{position:relative;margin:0;padding:0;border:0}
+.range-view-menu[hidden]{display:none}
+.range-view-menu>summary{display:flex;align-items:center;justify-content:center;min-height:44px;padding:8px 10px;border:1px solid #dfe4ef;border-radius:10px;background:white;font-size:11px;list-style:none;white-space:nowrap}
+.range-view-menu>summary::-webkit-details-marker{display:none}
+.range-view-menu>summary.range-is-on{background:#eee8fb;color:#6444b5;border-color:#a48ad6}
+.range-view-menu[open]>summary{box-shadow:0 0 0 2px #b7a3df}
+.range-view-menu .play-range-options{left:auto;right:0;top:calc(100% + 6px);width:310px;max-width:calc(100vw - 24px);padding:14px;display:grid;gap:10px;max-height:calc(100dvh - 210px);overflow-y:auto}
+.range-view-menu .play-range-options>label{justify-content:space-between;font-size:13px;gap:10px;margin:0}
+.range-view-menu .play-range-options .range-master{justify-content:flex-start;background:#f3effb;padding:10px;border-radius:9px;font-weight:700}
+.range-view-menu .play-range-options input{flex:none;width:22px;height:22px;accent-color:#805ed4}
+.range-view-menu .play-range-options select{font-size:14px;min-height:44px;width:185px}
+.range-view-menu .play-range-options>button{min-height:44px;background:#805ed4;color:white;border-color:#805ed4}
+.range-layer-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.range-layer-choices .range-layer{display:flex;flex-direction:column;justify-content:center;gap:5px;min-height:70px;border:2px solid #dce3ed;border-radius:10px;background:#f9fafc;padding:8px 2px;font-size:12px}
+.range-layer.move:has(input:checked){background:#dbeeff;border-color:#63a8de;color:#245f8c}
+.range-layer.search:has(input:checked){background:#fff3c2;border-color:#cbaa3e;color:#786016}
+.range-layer.attack:has(input:checked){background:#ffe0e6;border-color:#dd8194;color:#98374c}
