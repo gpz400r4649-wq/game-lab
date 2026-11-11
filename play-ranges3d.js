@@ -1,22 +1,22 @@
-import {createPatrolOverlay} from './patrol-ui3d.js?v=20261111r';
-import {usesPatrolRoute,usesWaypoints,activeRoute} from './patrol-route3d.js?v=20261111r';
+import {createPatrolOverlay} from './patrol-ui3d.js?v=20261111s';
+import {usesPatrolRoute,usesWaypoints,activeRoute} from './patrol-route3d.js?v=20261111s';
 import * as T from './vendor/three.module.min.js';
-import {rangeWorldCells,MOVE_MAX_CELLS} from './enemy-range3d.js?v=20261111r';
-import {setReadingText} from './readings3d.js?v=20261111r';
+import {rangeWorldCells,MOVE_MAX_CELLS} from './enemy-range3d.js?v=20261111s';
+import {setReadingText} from './readings3d.js?v=20261111s';
 export function playRangeCells(enemy,key){
  if(!enemy||enemy.hp<=0||enemy.hidden||!enemy[key])return [];
  return rangeWorldCells(enemy[key],key==='moveRange'?(enemy.origin||enemy):enemy).slice(0,MOVE_MAX_CELLS);
 }
 export function createPlayRanges(scene){
  const patrol=createPatrolOverlay(scene);
- const panel=document.querySelector('#play-ranges3'),select=panel.querySelector('select'),note=panel.querySelector('p'),checks=[...panel.querySelectorAll('[data-range-layer]')],enabledControl=panel.querySelector('#enemy-ranges-enabled3'),summary=panel.querySelector('summary');
+ const panel=document.querySelector('#play-ranges3'),select=panel.querySelector('.setting-choices'),note=panel.querySelector('p'),checks=[...panel.querySelectorAll('[data-range-layer]')],enabledControl=panel.querySelector('#enemy-ranges-enabled3'),summary=panel.querySelector('summary');
  const specs=[['moveRange',0x469edf,3.85],['searchRange',0xdcb52b,3.35],['attackRange',0xed7890,2.85]],matrix=new T.Matrix4();let target='',stamp='',last=0;
  const meshes=specs.map(([key,color,size])=>{const mesh=new T.InstancedMesh(new T.PlaneGeometry(size,size).rotateX(-Math.PI/2),new T.MeshBasicMaterial({color,transparent:true,opacity:.42,depthWrite:false,side:T.DoubleSide}),MOVE_MAX_CELLS);mesh.layers.set(2);mesh.frustumCulled=false;mesh.visible=false;scene.add(mesh);return mesh;});
  const marker=new T.Mesh(new T.RingGeometry(.95,1.1,32),new T.MeshBasicMaterial({color:0x6b51c5,side:T.DoubleSide,depthWrite:false}));marker.rotation.x=-Math.PI/2;marker.visible=false;scene.add(marker);
  function syncToggle(){if(summary){setReadingText(summary,enabledControl?.checked?'はんいを見る：オン':'はんいを見る');summary.classList?.toggle('range-is-on',!!enabledControl?.checked);}}
  if(enabledControl)enabledControl.onchange=()=>{last=0;syncToggle();};
  select.onchange=()=>{target=select.value;last=0;};checks.forEach(check=>check.onchange=()=>{if(enabledControl)enabledControl.checked=true;last=0;syncToggle();});
- function start(objects,selected){const enemies=objects.filter(o=>o.type==='enemy');select.replaceChildren();for(const [i,e]of enemies.entries()){const option=document.createElement('option');option.value=e.id;option.textContent=`てき ${i+1}`;select.append(option);}target=enemies.some(e=>e.id===selected)?selected:enemies.some(e=>e.id===target)?target:enemies[0]?.id||'';select.value=target;stamp='';last=0;panel.open=false;syncToggle();}
+ function start(objects,selected){const enemies=objects.filter(o=>o.type==='enemy');select.replaceChildren();for(const [i,e]of enemies.entries()){const option=document.createElement('option');option.value=e.id;option.textContent=`てき ${i+1}`;select.add(option);}target=enemies.some(e=>e.id===selected)?selected:enemies.some(e=>e.id===target)?target:enemies[0]?.id||'';select.value=target;stamp='';last=0;panel.open=false;syncToggle();}
  function update(game,playing,time){
   panel.hidden=!playing;if(!playing){marker.visible=false;patrol.show(null);meshes.forEach(m=>m.visible=false);return;}
   if(last&&time-last<50)return;last=time;

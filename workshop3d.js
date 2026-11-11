@@ -1,25 +1,26 @@
-import {sharedKeys,synchronizeCharacterDefaults,useCharacterDefaults,inheritNewCharacter,writeCharacterDefaults} from './character-defaults3d.js?v=20261111r';
-import {copyEnemySettings,ENEMY_COPY_GROUPS} from './enemy-batch3d.js?v=20261111r';
-import {ACTOR_HATS} from './actor3d.js?v=20261111r';
-import {allyAttackDistance} from './ally3d.js?v=20261111r';
-import {makeTool} from './building3d.js?v=20261111r';
-import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261111r';
-import {openWaypointEditor} from './waypoint-ui3d.js?v=20261111r';
-import {openPatrolEditor} from './patrol-ui3d.js?v=20261111r';
-import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261111r';
-import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261111r';
-import {inGridRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261111r';
-import {closeLiveRangeEditor,renderEnemyRange as renderEnemyRangeBase} from './enemy-range-ui3d.js?v=20261111r';
-import {gunPreviewSVG} from './appearance3d.js?v=20261111r';
-import {DOOR_PRESETS} from './doors3d.js?v=20261111r';
-import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261111r';
-import {coordinateLimit} from './world3d.js?v=20261111r';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261111r';
-import {actionsFor} from './events3d.js?v=20261111r';
-import {renderEventEditor} from './event-editor3d.js?v=20261111r';
-import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261111r';
-import {alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261111r';
-import {part,ENEMY_SCALES,PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261111r';
+import {createChoiceControl} from './choices3d.js?v=20261111s';
+import {sharedKeys,synchronizeCharacterDefaults,useCharacterDefaults,inheritNewCharacter,writeCharacterDefaults} from './character-defaults3d.js?v=20261111s';
+import {copyEnemySettings,ENEMY_COPY_GROUPS} from './enemy-batch3d.js?v=20261111s';
+import {ACTOR_HATS} from './actor3d.js?v=20261111s';
+import {allyAttackDistance} from './ally3d.js?v=20261111s';
+import {makeTool} from './building3d.js?v=20261111s';
+import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261111s';
+import {openWaypointEditor} from './waypoint-ui3d.js?v=20261111s';
+import {openPatrolEditor} from './patrol-ui3d.js?v=20261111s';
+import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261111s';
+import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261111s';
+import {inGridRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261111s';
+import {closeLiveRangeEditor,renderEnemyRange as renderEnemyRangeBase} from './enemy-range-ui3d.js?v=20261111s';
+import {gunPreviewSVG} from './appearance3d.js?v=20261111s';
+import {DOOR_PRESETS} from './doors3d.js?v=20261111s';
+import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261111s';
+import {coordinateLimit} from './world3d.js?v=20261111s';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261111s';
+import {actionsFor} from './events3d.js?v=20261111s';
+import {renderEventEditor} from './event-editor3d.js?v=20261111s';
+import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261111s';
+import {alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261111s';
+import {part,ENEMY_SCALES,PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261111s';
 
 const ICONS={actor:'💬',plate:'▣',ally:'🛡',weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
 const DESCRIPTIONS={actor:'名前とせりふを書こう。交換する品を置くとお店になるよ。',plate:'踏んでいる間、えらんだドアが開くよ。',ally:'近くで「ついてきて」と呼ぶと、一緒に戦うよ。',weapon:'地面に置いて、ふれると拾える銃。持ちもの・銃づくりで用意した銃をえらぼう。',ramp:'低いほうから歩くと、そのまま登れるスロープ。回して好きな向きにつなげよう。',wall:'家を囲う壁。向きを変えてつなげよう。',floor:'家の床と天井に使える板。壁の内側にぴったり合うよ。',roof:'壁の上にのせる三角屋根。向きを変えて家を仕上げよう。',
@@ -79,18 +80,12 @@ export function createWorkshop(api){
       row.querySelector('.enemy-range-choice').disabled=false;
     }
   }
-  function enemyChoiceField(parent,label,entries,value,onchange){
-    const row=document.createElement('div'),caption=document.createElement('span'),choices=document.createElement('div');row.className='field choice-field enemy-choice-field';setReadingText(caption,label);choices.className='enemy-choice-grid';choices.setAttribute('role','group');choices.setAttribute('aria-label',label);
-    if(label==='からだの大きさ'){row.classList.toggle('enemy-size-field',true);choices.classList.toggle('enemy-size-choices',true);}
-    const sync=selected=>{for(const button of choices.children){const active=button.value===String(selected);button.setAttribute('aria-pressed',String(active));button.classList.toggle('active',active);}};
-    for(const [key,name]of entries){const button=document.createElement('button');button.type='button';button.value=String(key);button.dataset.choice=String(key);setReadingText(button,name);button.onclick=()=>{if(button.disabled||button.getAttribute('aria-pressed')==='true')return;sync(key);onchange(key);save();rebuild();};choices.append(button);}
-    sync(value);row.append(caption,choices);parent.append(row);decorateShared(row,sharedFields[label]);return choices;
-  }
   function selectField(parent,label,entries,value,onchange){
-    if(sharedObject?.type==='enemy')return enemyChoiceField(parent,label,entries,value,onchange);
-    const row=document.createElement('label');row.className='field choice-field';const text=document.createElement('span');setReadingText(text,label);
-    const input=document.createElement('select');input.setAttribute('aria-label',label);for(const [key,name] of entries)input.add(new Option(kanaText(name),key));input.value=value;
-    input.onchange=()=>{onchange(input.value);save();rebuild();};row.append(text,input);parent.append(row);decorateShared(row,sharedFields[label]);return input;
+    const row=document.createElement('div'),caption=document.createElement('span'),choices=createChoiceControl();row.className='field choice-field';setReadingText(caption,label);choices.setAttribute('aria-label',label);
+    if(sharedObject?.type==='enemy'){row.classList.toggle('enemy-choice-field',true);choices.classList.toggle('enemy-choice-grid',true);}
+    if(label==='からだの大きさ'){row.classList.toggle('enemy-size-field',true);choices.classList.toggle('enemy-size-choices',true);}
+    for(const [key,name]of entries)choices.add(new Option(kanaText(name),key));choices.value=value;choices.onchange=()=>{onchange(choices.value);save();rebuild();};
+    row.append(caption,choices);parent.append(row);decorateShared(row,sharedFields[label]);return choices;
   }
   function details(label,children,open=false){const d=document.createElement('details'),s=document.createElement('summary');setReadingText(s,label);d.open=open;d.append(s,...children);return d;}
   const duplicateButton=$('#duplicate3');let duplicateSelected=null;
@@ -223,9 +218,9 @@ export function createWorkshop(api){
       for(const [key,label,limit]of [['actorName','名前',32],['speech','せりふ',240]]){
         const row=document.createElement('label'),input=document.createElement(key==='speech'?'textarea':'input');
         if(key==='speech'){
-          const picker=document.createElement('select');
+          const picker=createChoiceControl();
           picker.setAttribute('aria-label','せりふの見本をえらぶ');
-          picker.add(new Option('せりふの見本をえらぶ',''));
+          const heading=document.createElement('p');setReadingText(heading,'せりふの見本');el.append(heading);
           for(const line of ['いらっしゃい！','こんにちは！','ほしと こうかんしよう！','このさきに なかまがいるよ。','きをつけてね！']){
             picker.add(new Option(line,line));
           }

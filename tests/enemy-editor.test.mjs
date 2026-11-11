@@ -14,7 +14,8 @@ function setup(t,{idle='patrol',notice='near',lost='return'}={}){
  const ui=createWorkshop({$,getProject:()=>p,getSelected:()=>selected,select:id=>selected=id,save:()=>saves++,rebuild(){},field,advancedInspector(){},advancedWeaponFields(){},loadProject(){},setTool(){},toast(){}});
  ui.inspect();$('#enemy-open3').onclick();const dialog=dom.doc.querySelector('.enemy-workspace'),page=key=>dialog.querySelector('#enemy-settings-'+key),tab=key=>dialog.querySelectorAll('[role=tab]').find(b=>b.dataset.page===key).onclick();
  const choose=(key,label,value)=>{tab(key);const control=page(key).querySelector(`[aria-label="${label}"]`);assert.ok(control,label);const button=control.children.find(b=>b.value===value);assert.ok(button,value);button.onclick();};
- return {p,enemy,dialog,page,tab,choose,ui,$,saves:()=>saves};
+ const setPart=type=>{const object=part(type,8,0);p.objects.push(object);selected=object.id;ui.inspect();return object;};
+ return {p,enemy,dialog,page,tab,choose,ui,$,setPart,saves:()=>saves};
 }
 test('敵の動きの流れを6つのタブで見渡せて、設定を変えても同じタブに戻る',t=>{
  const {p,dialog,page,tab,choose}=setup(t);assert.equal(dialog.querySelectorAll('[role=tab]').length,6);assert.equal(dialog.querySelector('.enemy-settings-tabs').parentElement.tagName,'header');assert.equal(dialog.querySelector('.enemy-behavior-flow').parentElement.tagName,'header');
@@ -53,4 +54,12 @@ test('ぜんたい設定を参照する選択ボタンも、個別設定へ切�
  const close=dialog.querySelector('header').children[3];close.onclick();ui.inspect();tab('movement');
  let group=page('movement').querySelector('[aria-label="ふだんの動き"]');assert.ok(group.children.every(b=>b.disabled));assert.equal(group.children.find(b=>b.value==='wait').getAttribute('aria-pressed'),'true');
  const check=group.closest('.shared-setting').querySelector('.shared-choice input');check.checked=false;check.onchange();group=page('movement').querySelector('[aria-label="ふだんの動き"]');assert.ok(group.children.every(b=>!b.disabled));choose('movement','ふだんの動き','roam');assert.equal(enemy.routine.idle,'roam');assert.ok(validate3D(p));
+});
+
+test('味方・ドア・役者・ゴールも、選択肢を見渡して直接設定できる',t=>{
+ const {p,setPart,$}=setup(t);const choose=(label,value)=>{const group=document.querySelectorAll('.setting-choices').find(g=>g.getAttribute('aria-label')===label&&g.closest('.enemy-dialog-content'));assert.ok(group,label);const button=group.options.find(b=>b.value===value);assert.ok(button,value);button.onclick();};
+ const ally=setPart('ally');choose('いつ撃つ？','assist');assert.equal(ally.allyAttack,'assist');choose('射程（マス）','10');assert.equal(ally.allyRangeCells,10);
+ const door=setPart('door');choose('ドアの開き方','slide');assert.equal(door.doorStyle,'slide');choose('開く向き','-1');assert.equal(door.doorDirection,-1);
+ const actor=setPart('actor');choose('ぼうし','none');assert.equal(actor.hat,'none');const preset=document.querySelectorAll('.setting-choices').find(g=>g.getAttribute('aria-label')==='せりふの見本をえらぶ');preset.options[0].onclick();assert.equal(actor.speech,'いらっしゃい！');
+ const goal=setPart('goal');choose('② 条件','stars');assert.equal(goal.settings.condition,'stars');assert.equal(document.querySelectorAll('select').length,0);assert.ok(validate3D(p));
 });

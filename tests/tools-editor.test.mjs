@@ -12,7 +12,7 @@ function setup(t){
  return {p,dialog,tab,page,dom,$,ui,saved:()=>saved};
 }
 test('銃づくりの主な項目を6タブへ分け、管理操作や長い説明はページに積み重ねない',t=>{
- const {dialog,page,tab}=setup(t);assert.equal(dialog.querySelectorAll('[role=tab]').length,6);assert.equal(dialog.querySelector('.gun-catalog-field'),null);assert.equal(dialog.querySelector('.gun-catalog-list').children.length,1);assert.equal(dialog.querySelector('.gun-catalog-list').children[0].getAttribute('aria-pressed'),'true');assert.equal(page('basic').querySelectorAll('.field').length,4);assert.equal(page('basic').querySelector('.new-tools'),null);
+ const {dialog,page,tab}=setup(t);assert.equal(dialog.querySelectorAll('[role=tab]').length,6);assert.equal(dialog.querySelectorAll('select').length,0);assert.equal(dialog.querySelector('.gun-catalog-field'),null);assert.equal(dialog.querySelector('.gun-catalog-list').children.length,1);assert.equal(dialog.querySelector('.gun-catalog-list').children[0].getAttribute('aria-pressed'),'true');assert.equal(page('basic').querySelectorAll('.field').length,4);assert.equal(page('basic').querySelector('.new-tools'),null);
  assert.equal(page('power').querySelectorAll('.performance-field').length,4);assert.equal(page('handling').querySelectorAll('.performance-field').length,3);assert.equal(page('pattern').querySelectorAll('.performance-field').length,2);
  const look=page('look').querySelector('.gun-appearance');assert.equal(look.tagName,'section');assert.ok(look.querySelector('.gun-preview'));assert.ok(look.querySelector('.gun-look-controls .performance-field'));
  for(const help of dialog.querySelectorAll('details[data-gun-help]'))assert.equal(help.open,false);const note=page('handling').querySelector('.handling-note');assert.ok(note.closest('.gun-help'));
@@ -29,7 +29,7 @@ test('爆発と跳ね返りを組み合わせても、設定を保ち、爆発�
 test('上部から銃を追加・切り替え・削除でき、見た目と銃の名前も編集できる',t=>{
  const {p,page,tab,dialog}=setup(t);dialog.querySelector('.new-tools').children[0].onclick();assert.equal(p.loadout.length,2);assert.equal(dialog.querySelector('.gun-catalog-list').children[1].getAttribute('aria-pressed'),'true');
  const name=page('basic').querySelector('input');name.value='わたしの銃';name.oninput();assert.equal(p.loadout[1].name,'わたしの銃');assert.ok(dialog.querySelector('.gun-catalog-list').children[1].textContent.includes('わたしの'));assert.equal(page('basic').querySelector('input').value,'わたしの銃');
- tab('look');const preview=page('look').querySelector('.gun-preview'),before=preview.innerHTML,shape=page('look').querySelector('select');shape.value='launcher';shape.onchange();assert.equal(p.loadout[1].appearance.shape,'launcher');assert.notEqual(preview.innerHTML,before);
+ tab('look');const preview=page('look').querySelector('.gun-preview'),before=preview.innerHTML,shape=page('look').querySelector('[aria-label="銃の形"]');shape.options.find(b=>b.value==='launcher').onclick();assert.equal(p.loadout[1].appearance.shape,'launcher');assert.notEqual(preview.innerHTML,before);
  dialog.querySelector('.gun-catalog-list').children[0].onclick();assert.equal(dialog.querySelector('[aria-selected="true"]').dataset.page,'look');assert.equal(dialog.querySelector('.gun-catalog-list').children[0].getAttribute('aria-pressed'),'true');dialog.querySelector('.gun-catalog-actions').children[1].onclick();assert.equal(p.loadout.length,1);assert.ok(validate3D(p));
 });
 test('建築銃でもブロック切替と体力を見渡せるページにまとめ、数値を保存する',t=>{

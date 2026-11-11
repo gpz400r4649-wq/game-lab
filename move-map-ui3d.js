@@ -1,10 +1,11 @@
-import {openStageMoveRange} from './stage-range3d.js?v=20261111r';
-import {mountLiveRangeEditor} from './range-panel3d.js?v=20261111r';
-import {createMapStick,panMapCenter} from './map-stick3d.js?v=20261111r';
-import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261111r';
-import {MOVE_MAX_CELLS,RANGE_MAX,rangeCell,rangeCells,worldMoveRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261111r';
-import {moveGridWindow,moveGridPages} from './world3d.js?v=20261111r';
-import {setReadingText,kanaText} from './readings3d.js?v=20261111r';
+import {createChoiceControl} from './choices3d.js?v=20261111s';
+import {openStageMoveRange} from './stage-range3d.js?v=20261111s';
+import {mountLiveRangeEditor} from './range-panel3d.js?v=20261111s';
+import {createMapStick,panMapCenter} from './map-stick3d.js?v=20261111s';
+import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261111s';
+import {MOVE_MAX_CELLS,RANGE_MAX,rangeCell,rangeCells,worldMoveRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261111s';
+import {moveGridWindow,moveGridPages} from './world3d.js?v=20261111s';
+import {setReadingText,kanaText} from './readings3d.js?v=20261111s';
 export function openMoveMap(o,{getProject,save,rebuild,lookFromAbove,onClose,key='moveRange',config,renderMode}){
  const p=getProject(),limit=moveGridWindow(p).limit,d=document.createElement('section');d.dataset.rangeKey=key;d.className='enemy-range-dialog range-live-panel';d.setAttribute('role','region');d.setAttribute('aria-label',config?.title||'敵が動けるマス');d.style.setProperty('--range-color',config?.color||'#91c7ee');
  const current=o[key]?worldMoveRange(o[key],o):{space:'world',cells:[]};
@@ -13,7 +14,7 @@ export function openMoveMap(o,{getProject,save,rebuild,lookFromAbove,onClose,key
  const initialWindow=moveGridWindow(p,cx,cz);let centerX=initialWindow.centerX,centerZ=initialWindow.centerZ,cross=2,circle=2,presetX=cx,presetZ=cz;
  h.setAttribute('tabindex','-1');h.setAttribute('autofocus','');setReadingText(h,config?.title||'敵が動けるマス');setReadingText(note,'色のついた場所はマップに固定。敵が動いても変わらないよ。マスをタップすると、ステージにもすぐ反映されるよ。🤖は敵、●はスタート。形をえらび直すと、今のはんいを置き換えるよ。');
  controls.className='range-controls';grid.className='enemy-range-grid move-world-grid';grid.style.gridTemplateColumns=`repeat(${initialWindow.count},minmax(0,1fr))`;grid.setAttribute('role','group');grid.setAttribute('aria-label',config?config.label+'はんいのマス':'動けるはんいのマス');count.setAttribute('aria-live','polite');
- function select(parent,label,values,value,change){const row=document.createElement('label'),text=document.createElement('span'),input=document.createElement('select');setReadingText(text,label);input.setAttribute('aria-label',label);for(const [v,t]of values)input.add(new Option(kanaText(t),v));input.value=value;input.onchange=()=>change(input.value);row.append(text,input);parent.append(row);return input;}
+ function select(parent,label,values,value,change){const row=document.createElement('div'),text=document.createElement('span'),input=createChoiceControl();row.className='choice-control-row';setReadingText(text,label);input.setAttribute('aria-label',label);for(const [v,t]of values)input.add(new Option(kanaText(t),v));input.value=value;input.onchange=()=>change(input.value);row.append(text,input);parent.append(row);return input;}
  function preset(){if(!shape.value||shape.value==='custom')return;chosen.clear();for(const [x,z]of rangeCells(shape.value,cross,circle)){if(Math.abs(presetX+x)<=limit&&Math.abs(presetZ+z)<=limit)chosen.add(`${presetX+x},${presetZ+z}`);}changed();}
  const defaultCircle=rangeCells('circle',2,2).map(([x,z])=>`${cx+x},${cz+z}`),initialShape=chosen.size===defaultCircle.length&&defaultCircle.every(cell=>chosen.has(cell))?'circle':'custom';
  const shape=select(controls,'はんいの形',[['custom','自分でマスをえらぶ'],['cross','十字'],['circle','円'],['mixed','十字＋円']],initialShape,v=>{if(v==='mixed'&&cross<=circle){circle=Math.min(circle,6);cross=circle+2;}preset();paint();});

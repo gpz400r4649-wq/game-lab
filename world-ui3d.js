@@ -1,9 +1,10 @@
-import {MAX_PARTS} from './limits3d.js?v=20261111r';
-import {worldSize,coordinateLimit,WORLD_SIZES,resizeReason,spawnReason} from './world3d.js?v=20261111r';
-import {setReadingText} from './readings3d.js?v=20261111r';
+import {createChoiceControl} from './choices3d.js?v=20261111s';
+import {MAX_PARTS} from './limits3d.js?v=20261111s';
+import {worldSize,coordinateLimit,WORLD_SIZES,resizeReason,spawnReason} from './world3d.js?v=20261111s';
+import {setReadingText} from './readings3d.js?v=20261111s';
 export function createWorldUI(api){
  const dialog=document.createElement('dialog');dialog.id='world-dialog3';
- const title=document.createElement('h2'),label=document.createElement('label'),sizes=document.createElement('select'),note=document.createElement('p'),canvas=document.createElement('canvas'),status=document.createElement('p'),actions=document.createElement('div');
+ const title=document.createElement('h2'),label=document.createElement('div'),sizes=createChoiceControl(),note=document.createElement('p'),canvas=document.createElement('canvas'),status=document.createElement('p'),actions=document.createElement('div');
  setReadingText(title,'マップ');setReadingText(label,'ひろさ ');sizes.setAttribute('aria-label','マップのひろさ');WORLD_SIZES.forEach(n=>sizes.add(new Option(`${n}m × ${n}m`,n)));label.append(sizes);
  setReadingText(note,'マップをタップして、つくる場所をえらぼう。部品は2000こまで。ひろげても部品はふえません。');
  canvas.width=512;canvas.height=512;canvas.style.cssText='width:min(100%,44vh,360px);height:auto;display:block;margin:0 auto;touch-action:none;border:1px solid #acbdcd;border-radius:12px';canvas.tabIndex=0;canvas.setAttribute('role','img');canvas.setAttribute('aria-label','マップ。タップまたは矢印キーで場所をえらぶ');

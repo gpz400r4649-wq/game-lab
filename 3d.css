@@ -476,3 +476,24 @@ aside>#group-tools3{padding:0;margin:0;border:0;background:transparent;border-ra
 .enemy-workspace .enemy-size-choices>button{text-align:center}
 .enemy-workspace .enemy-routine-step .enemy-choice-field{margin:8px 0}
 @media(max-width:700px){.enemy-workspace .enemy-size-choices{grid-template-columns:repeat(4,minmax(0,1fr))}}
+
+/* Shared, always-visible choices for all 3D settings. */
+.setting-choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(120px,100%),1fr));gap:6px;width:100%;min-width:0;align-content:start}
+.setting-choices>button{min-height:44px;min-width:0;width:auto;padding:7px 9px;border:1px solid #dcd3ec;background:white;color:#53637b;font-size:12px;line-height:1.65;text-align:left;white-space:normal;overflow-wrap:anywhere}
+.setting-choices>button.active{background:#eee5ff;color:#64429c;border-color:#9573cc;box-shadow:inset 0 0 0 1px #9573cc}
+.setting-choices>button.active::before{content:'✓ ';font-weight:800}
+.setting-choices>button:disabled{opacity:.6;cursor:default}
+.field:has(>.setting-choices){flex-direction:column;align-items:stretch;gap:8px}
+.choice-control-row{display:flex;flex-direction:column;gap:7px;min-width:0;font-size:12px}
+.range-controls>.choice-control-row{flex:1 1 100%;width:100%;min-width:0}
+.setting-choices:has(>.color-choice){grid-template-columns:repeat(3,minmax(0,1fr))}
+.setting-choices>.color-choice{padding:5px;font-size:11px;min-height:40px}
+.setting-choices>.color-choice::before{content:'';display:inline-block;vertical-align:middle;width:15px;height:15px;margin-right:4px;border:1px solid #7d8491;border-radius:50%;background:var(--choice-color)}
+.setting-choices>.color-choice.active{outline:2px solid #9573cc;outline-offset:-2px}
+.setting-choices.numeric-choices{grid-template-columns:repeat(auto-fit,minmax(56px,1fr))}
+.setting-choices.numeric-choices>button{text-align:center}
+.gun-editor-body .choice-field:has(>.setting-choices){flex-direction:column;align-items:stretch}
+.gun-look-controls>.choice-field>.setting-choices{grid-template-columns:repeat(3,minmax(0,1fr))}
+.gun-look-controls>.choice-field>.setting-choices>button{font-size:11px;padding:5px;line-height:1.6}
+.play-range-options .setting-choices{grid-template-columns:repeat(2,minmax(0,1fr))}
+.block>.setting-choices{margin-bottom:8px}

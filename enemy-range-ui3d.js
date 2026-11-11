@@ -1,11 +1,12 @@
-import {renderFanControls} from './fan-controls3d.js?v=20261111r';
-import {openStageMoveRange} from './stage-range3d.js?v=20261111r';
-import {closeLiveRangeEditor,mountLiveRangeEditor} from './range-panel3d.js?v=20261111r';
-export {closeLiveRangeEditor,isLiveRangeEditing} from './range-panel3d.js?v=20261111r';
-import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261111r';
-import {openMoveMap} from './move-map-ui3d.js?v=20261111r';
-import {RANGE_MAX,rangeCells,convertRangeSpace} from './enemy-range3d.js?v=20261111r';
-import {setReadingText,kanaText} from './readings3d.js?v=20261111r';
+import {createChoiceControl} from './choices3d.js?v=20261111s';
+import {renderFanControls} from './fan-controls3d.js?v=20261111s';
+import {openStageMoveRange} from './stage-range3d.js?v=20261111s';
+import {closeLiveRangeEditor,mountLiveRangeEditor} from './range-panel3d.js?v=20261111s';
+export {closeLiveRangeEditor,isLiveRangeEditing} from './range-panel3d.js?v=20261111s';
+import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261111s';
+import {openMoveMap} from './move-map-ui3d.js?v=20261111s';
+import {RANGE_MAX,rangeCells,convertRangeSpace} from './enemy-range3d.js?v=20261111s';
+import {setReadingText,kanaText} from './readings3d.js?v=20261111s';
 const RANGE_UI={
  attackRange:{label:'弾を撃つ',title:'敵が弾を撃つマス',note:'色のついたマスに入ったら → 弾を撃つ。',empty:'これまでの近くに来たら撃つ設定',center:'敵のいるマスが中心。敵と一緒に動くよ。',color:'#ef9aae'},
  moveRange:{label:'動ける',title:'敵が動けるマス',note:'色のついたマスの中だけを歩けるよ。つながっていないマスには行けないよ。',empty:'制限なし',center:'敵を置いたマスが中心。ゲーム中もこの場所に固定だよ。',color:'#91c7ee'},
@@ -24,7 +25,7 @@ function openConfiguredRange(o,api){
  if(o[key]?.space==='world')openMoveMap(o,{...api,renderMode});else openRangeEditor(o,{...api,renderMode});
 }
 function renderRangeMode(parent,o,api){
- const {key,save,rebuild}=api,row=document.createElement('label'),caption=document.createElement('span'),select=document.createElement('select'),notice=document.createElement('p');row.className='field choice-field';notice.hidden=true;setReadingText(caption,'はんいの決め方');select.setAttribute('aria-label','はんいの決め方');
+ const {key,save,rebuild}=api,row=document.createElement('div'),caption=document.createElement('span'),select=createChoiceControl(),notice=document.createElement('p');row.className='field choice-field';notice.hidden=true;setReadingText(caption,'はんいの決め方');select.setAttribute('aria-label','はんいの決め方');
  for(const [value,label]of [['world','マップのエリアを指定'],['facing','敵の向きに合わせる（90°ごと）'],['legacy','敵と移動する・回転しない']])select.add(new Option(kanaText(label),value));select.value=o[key]?.space||'legacy';row.append(caption,select);parent.append(row,notice);
  select.onchange=()=>{const next=convertRangeSpace(o[key],select.value,o);if(!next){select.value=o[key]?.space||'legacy';notice.hidden=false;setReadingText(notice,'切り替えるには、敵の中心からたて・よこ８マス以内に収めてね。今のマスは変更していないよ。');return;}closeLiveRangeEditor();o[key]=next;save();rebuild();openConfiguredRange(o,api);};
  if(o[key]?.space==='facing'){
@@ -36,7 +37,7 @@ function openRangeEditor(o,{key,config,save,rebuild,lookFromAbove,onClose,render
  const h=document.createElement('h2'),note=document.createElement('p'),controls=document.createElement('div'),grid=document.createElement('div'),count=document.createElement('p'),close=document.createElement('button');
  h.setAttribute('tabindex','-1');h.setAttribute('autofocus','');setReadingText(h,config.title);setReadingText(note,(key==='searchRange'?'広さと遠さをえらぶと、左のステージの黄色い範囲が変わるよ。':config.note)+` 高さ${o.y||0}mのマスだよ。上の階は編集中だけ隠すよ。`+' マスをタップすると、ステージにもすぐ反映されるよ。');
  controls.className='range-controls';grid.className='enemy-range-grid';grid.setAttribute('role','group');grid.setAttribute('aria-label',config.label+'はんいのマス');count.setAttribute('aria-live','polite');
- function choose(label,values,value,change){const l=document.createElement('label'),s=document.createElement('span'),select=document.createElement('select');setReadingText(s,label);select.setAttribute('aria-label',label);for(const [v,text]of values)select.add(new Option(kanaText(text),v));select.value=value;select.onchange=()=>change(select.value);l.append(s,select);controls.append(l);return select;}
+ function choose(label,values,value,change){const l=document.createElement('div'),s=document.createElement('span'),select=createChoiceControl();l.className='choice-control-row';setReadingText(s,label);select.setAttribute('aria-label',label);for(const [v,text]of values)select.add(new Option(kanaText(text),v));select.value=value;select.onchange=()=>change(select.value);l.append(s,select);controls.append(l);return select;}
  let syncFan=()=>{};
  const sizes={};
  const shape=choose('はんいの形',[['cross','十字'],['circle','円'],['mixed','十字＋円'],['custom','自分でマスをえらぶ']],r.shape,v=>{r.shape=v;if(v==='mixed'&&r.cross<=r.circle){r.circle=Math.min(r.circle,6);r.cross=r.circle+2;}if(v!=='custom')r.cells=rangeCells(v,r.cross,r.circle);changed();});

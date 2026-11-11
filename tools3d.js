@@ -1,15 +1,16 @@
-import {MAX_BUILD_LEVEL} from './limits3d.js?v=20261111r';
-import {appearanceFor,GUN_SHAPES,GUN_COLORS,gunPreviewSVG} from './appearance3d.js?v=20261111r';
-import {bindGameAction} from './input3d.js?v=20261111r';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261111r';
-import {LIMITS,PROJECTILES,IMPACTS,impactEffects,weaponPresetKey,SHOT_PATTERNS,cadenceHandling} from './weapons3d.js?v=20261111r';
-import {buildChoices,activeBuildTool,cycleBuildType,facingBuildRotation,makeTool,TOOL_EFFECTS,BUILD_TYPES,equipTool,keepStructures,equipBlock} from './building3d.js?v=20261111r';
-import {WEAPON_PRESETS,PARTS} from './engine3d.js?v=20261111r';
+import {createChoiceControl} from './choices3d.js?v=20261111s';
+import {MAX_BUILD_LEVEL} from './limits3d.js?v=20261111s';
+import {appearanceFor,GUN_SHAPES,GUN_COLORS,gunPreviewSVG} from './appearance3d.js?v=20261111s';
+import {bindGameAction} from './input3d.js?v=20261111s';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261111s';
+import {LIMITS,PROJECTILES,IMPACTS,impactEffects,weaponPresetKey,SHOT_PATTERNS,cadenceHandling} from './weapons3d.js?v=20261111s';
+import {buildChoices,activeBuildTool,cycleBuildType,facingBuildRotation,makeTool,TOOL_EFFECTS,BUILD_TYPES,equipTool,keepStructures,equipBlock} from './building3d.js?v=20261111s';
+import {WEAPON_PRESETS,PARTS} from './engine3d.js?v=20261111s';
 export function createToolsUI(api){
   const {$,getProject,getGame,getMode,field,save,refresh,finishBuilding}=api;
   let editing=0,rotation=0,level=0,activePage='basic';
   const dialog=document.createElement('dialog');dialog.className='tools-dialog';dialog.id='tools-dialog3';dialog.addEventListener('pointerdown',event=>{const menu=dialog.querySelector('.gun-catalog-menu');if(menu&&!menu.contains(event.target))menu.open=false;});dialog.addEventListener('close',()=>api.onCatalogChange?.());document.body.append(dialog);
-  function selectField(parent,label,values,current,change){const l=document.createElement('label');l.className='field choice-field';const caption=document.createElement('span');setReadingText(caption,label);l.append(caption);const s=document.createElement('select');s.setAttribute('aria-label',label);values.forEach(([k,v])=>s.add(new Option(kanaText(v),k)));s.value=current;s.onchange=()=>change(s.value);l.append(s);parent.append(l);return s;}
+  function selectField(parent,label,values,current,change){const l=document.createElement('div');l.className='field choice-field';const caption=document.createElement('span');setReadingText(caption,label);l.append(caption);const s=createChoiceControl();s.setAttribute('aria-label',label);values.forEach(([k,v])=>s.add(new Option(kanaText(v),k)));s.value=current;s.onchange=()=>change(s.value);l.append(s);parent.append(l);return s;}
   function changed(){save();renderHotbar();}
   function renderEditor(){
     const p=getProject();editing=Math.min(editing,p.loadout.length-1);const tool=p.loadout[editing],openHelp=new Set([...dialog.querySelectorAll('details[data-gun-help]')].filter(node=>node.open).map(node=>node.dataset.gunHelp));dialog.replaceChildren();
@@ -94,7 +95,7 @@ export function createToolsUI(api){
       pages.set(key,panel);body.append(panel);
     }
     const moveSelect=(label,key,first=false)=>{
-      const select=[...dialog.querySelectorAll('select')].find(node=>node.getAttribute('aria-label')===label);
+      const select=[...dialog.querySelectorAll('.setting-choices')].find(node=>node.getAttribute('aria-label')===label);
       if(select){const row=select.closest('.field');if(first)pages.get(key).prepend(row);else pages.get(key).append(row);}
     };
     pages.get('basic').append(nameLabel);

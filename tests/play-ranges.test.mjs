@@ -12,7 +12,7 @@ test('オン・オフと編集モードで表示を切り替え、倒れたら�
  const {createPlayRanges}=await import('../play-ranges3d.js');
  const {Scene}=await import('../vendor/three.module.min.js');
  const previous=globalThis.document,checks=[{checked:true},{checked:false},{checked:true}],select={},master={checked:true},note={closest:()=>null,replaceChildren(){},append(){}};
- const panel={querySelector:q=>q==='select'?select:q==='#enemy-ranges-enabled3'?master:q==='summary'?null:note,querySelectorAll:()=>checks};
+ const panel={querySelector:q=>q==='.setting-choices'?select:q==='#enemy-ranges-enabled3'?master:q==='summary'?null:note,querySelectorAll:()=>checks};
  globalThis.document={querySelector:()=>panel,createElement:()=>({append(){},setAttribute(){}}),createTextNode:s=>s};
  note.ownerDocument=globalThis.document;
  try{const scene=new Scene(),ui=createPlayRanges(scene),e={...enemy(),id:'e'},game={objects:[e],worldSize:60};
