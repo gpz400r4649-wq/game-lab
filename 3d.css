@@ -295,3 +295,19 @@ main.range-editing #multi-select3,main.common-preview #multi-select3{display:non
 #group-tools3 button{min-height:44px;padding:7px 10px;font-size:12px}
 #group-tools3 .seg button{min-height:38px}#group-delete3{color:#a13d59}#group-done3{background:#805ed4;border-color:#805ed4;color:white}
 #group-moves3{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding-top:8px}#group-moves3 span{font-size:11px;color:#756385;margin-right:auto}
+
+/* Group controls replace sidebar contents, leaving the stage at its usual size. */
+main.group-editing aside>:not(#group-tools3){display:none}
+aside>#group-tools3{padding:0;margin:0;border:0;background:transparent;border-radius:0}
+#group-tools3>h2{font-size:18px;line-height:1.5;margin:0 0 10px;color:#6748a5}
+#group-tools3 .group-main-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+#group-tools3 .group-main-actions strong{grid-column:1/-1;padding:10px 12px;margin:0;border-radius:9px;background:#f0e9fa;font-size:14px}
+#group-tools3 .group-main-actions>.seg{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr}
+#group-tools3 .group-main-actions>button{width:100%;min-height:46px;padding:8px 5px}
+#group-tools3 .group-main-actions .seg button{min-height:44px;font-size:12px}
+#group-tools3 #group-moves3{display:block;padding-top:10px}
+#group-tools3 #group-moves3[hidden]{display:none}
+#group-moves3>p{font-size:12px;line-height:1.7;margin:0 0 8px;color:#756385}
+#group-nudge3{margin:0;padding:0;border:0}#group-nudge3>summary{border:1px solid #ded7ec;border-radius:9px;padding:8px 10px;background:#faf8ff;min-height:44px;font-size:12px;color:#6f559a}
+.group-nudge-buttons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding-top:8px}
+#group-tools3 .group-nudge-buttons button{min-height:44px;padding:8px 4px;font-size:12px}
