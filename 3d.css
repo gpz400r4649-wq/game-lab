@@ -285,3 +285,13 @@ aside>.new-stage{margin:6px 0}
 aside>.select-row{margin:10px 0 0;padding-bottom:8px}
 aside>.select-row select{margin-top:5px}
 @media(min-width:701px){.view-column>#viewport{min-height:320px}}
+
+#multi-select3{pointer-events:auto;min-height:42px;padding:8px 12px;font-size:12px;margin-left:auto;white-space:nowrap;background:#fffffff0;letter-spacing:0}
+#multi-select3[hidden],#group-tools3[hidden],#group-moves3[hidden]{display:none}
+#multi-select3.active{background:#805ed4;border-color:#805ed4;color:white}
+main.range-editing #multi-select3,main.common-preview #multi-select3{display:none}
+#group-tools3{padding:8px;margin:0 0 8px;border:1px solid #cbb8e7;border-radius:12px;background:#f4effb;flex:none}
+.group-main-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.group-main-actions strong{font-size:12px;margin-right:auto;color:#7050ad}
+#group-tools3 button{min-height:44px;padding:7px 10px;font-size:12px}
+#group-tools3 .seg button{min-height:38px}#group-delete3{color:#a13d59}#group-done3{background:#805ed4;border-color:#805ed4;color:white}
+#group-moves3{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding-top:8px}#group-moves3 span{font-size:11px;color:#756385;margin-right:auto}

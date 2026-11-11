@@ -27,7 +27,7 @@ jobs:
           cp index.html style.css app.js engine.js public/
           cp 3d.html 3d.css app3d.js engine3d.js public/
           cp assets3d.js asset-ui3d.js move-map-ui3d.js public/
-          cp character-defaults3d.js enemy-batch3d.js actor3d.js ally3d.js enemy-loot3d.js history3d.js door-model3d.js floor-edit3d.js waypoint-ui3d.js patrol-route3d.js patrol-ui3d.js stage-range3d.js fan-controls3d.js range-direction3d.js range-panel3d.js map-stick3d.js editor-drag3d.js public/
+          cp character-defaults3d.js enemy-batch3d.js actor3d.js ally3d.js enemy-loot3d.js history3d.js door-model3d.js floor-edit3d.js waypoint-ui3d.js patrol-route3d.js patrol-ui3d.js stage-range3d.js fan-controls3d.js range-direction3d.js range-panel3d.js map-stick3d.js editor-drag3d.js group-edit3d.js public/
           cp enemy-messages3d.js play-ranges3d.js enemy-ai3d.js enemy-range3d.js enemy-range-ui3d.js public/
           cp enemy-behavior-presets3d.js enemy-behavior-ui3d.js public/
           cp workshop3d.js world3d.js world-ui3d.js limits3d.js structure-render3d.js spatial3d.js public/
