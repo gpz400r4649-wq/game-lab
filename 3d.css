@@ -332,3 +332,24 @@ aside>#group-tools3{padding:0;margin:0;border:0;background:transparent;border-ra
 #placement-panel3 .nudge-grid button{min-height:44px;padding:7px 5px;font-size:12px}
 #placement-panel3 #inspector3>details.placement-controls{margin:4px 0 0;padding-top:0;border-top:0}
 #placement-panel3 #inspector3>details.placement-controls>summary{min-height:40px;padding:7px 0;font-size:11px}
+
+/* Match editor and play toolbar rows while retaining the full parts palette. */
+.stage-toolbar #stage-mode3,.stage-toolbar #perspective3,.stage-toolbar #edit-history3{height:48px;padding:3px;gap:2px}
+.stage-toolbar #stage-mode3 button,.stage-toolbar #perspective3 button,.stage-toolbar #edit-history3 button{height:42px;min-height:42px;padding:6px 8px}
+.stage-toolbar #editor-tools3 button,.stage-toolbar #map3,.stage-toolbar #reset-camera{height:48px;min-height:48px}
+.stage-toolbar.is-playing .range-view-menu>summary{height:48px;min-height:48px}
+#palette3.toolbar-palette,#palette-extra3.toolbar-palette{min-height:48px;align-self:center}
+.toolbar-palette .part{height:48px;min-height:48px;padding:3px 2px;gap:2px;border-radius:8px}
+.toolbar-palette .part .part-icon{font-size:18px;line-height:18px}
+.toolbar-palette .part .part-caption{font-size:10px;line-height:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.toolbar-palette .part.active:after{font-size:10px;top:0;right:1px}
+@media(min-width:1161px){main:not(.range-editing):not(.common-preview) .toolbar-row{height:48px;min-height:48px}main:not(.range-editing):not(.common-preview) .stage-toolbar.is-playing{grid-template-rows:48px 48px}}
+@media(min-width:701px){.view-column>footer{height:44px;min-height:44px;flex:none;padding:8px 3px 0}}
+.stage-toolbar.is-playing #formation3{position:absolute;grid-area:auto;top:0;left:50%;right:auto;transform:translateX(-50%);z-index:3;min-height:44px;margin:0}
+#viewport>#editor-place-tools3{position:absolute;z-index:3;left:50%;bottom:16px;transform:translateX(-50%);padding:0;gap:0;flex-wrap:nowrap}
+#viewport>#editor-place-tools3>span{display:none}
+#viewport>#editor-place-tools3 .seg{background:#ffffffe6;border:1px solid #dce3ed;box-shadow:0 2px 8px #30405515}
+#viewport>#editor-place-tools3 button{min-height:40px;padding:7px 10px;font-size:12px}
+@media(max-width:700px){#viewport>#editor-place-tools3{bottom:72px;right:12px;left:auto;transform:none}}
+
+@media(max-width:900px){.stage-toolbar.is-playing #formation3{top:calc(100% + 120px);left:auto;right:16px;transform:none}}
