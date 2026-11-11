@@ -315,3 +315,15 @@ aside>#group-tools3{padding:0;margin:0;border:0;background:transparent;border-ra
 #rotate-selected3{position:absolute;right:16px;bottom:74px;z-index:3;min-height:48px;padding:10px 14px;background:#fffffff0;color:#7050b0;border:1px solid #b9a2dc;box-shadow:0 2px 8px #30405518;font-size:13px;touch-action:manipulation}
 #rotate-selected3[hidden],main.range-editing #rotate-selected3,main.common-preview #rotate-selected3{display:none}
 @media(max-width:700px){#rotate-selected3{right:12px;bottom:70px;min-height:46px}}
+
+/* Put selected-part placement controls before the general settings launchers. */
+aside>#inspector3:empty{display:none}
+aside>#inspector3>.inspector-heading{font-size:13px;line-height:1.5;margin:4px 0}
+aside>#inspector3>.small-heading.placement-controls{margin:6px 0;color:#7050ad;font-size:12px}
+aside>#inspector3>.nudge-grid{margin:0 0 6px;gap:5px}
+aside>#inspector3>.nudge-grid button{min-height:44px;padding:7px 5px;font-size:12px}
+aside>#inspector3>details.placement-controls{margin:4px 0 8px;padding-top:0;border-top:0}
+aside>#inspector3>details.placement-controls>summary{min-height:40px;padding:7px 0;font-size:11px}
+
+aside>#inspector3:has(.placement-controls){position:sticky;top:0;z-index:9;background:white;padding:4px 0 6px;border-bottom:1px solid #e8e0f1}
+aside:has(#inspector3 .placement-controls)>.workshop-launchers{position:static}
