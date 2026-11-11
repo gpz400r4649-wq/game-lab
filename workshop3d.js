@@ -1,26 +1,26 @@
-import {createChoiceControl} from './choices3d.js?v=20261111t';
-import {sharedKeys,synchronizeCharacterDefaults,useCharacterDefaults,inheritNewCharacter,writeCharacterDefaults} from './character-defaults3d.js?v=20261111t';
-import {copyEnemySettings,ENEMY_COPY_GROUPS} from './enemy-batch3d.js?v=20261111t';
-import {ACTOR_HATS} from './actor3d.js?v=20261111t';
-import {allyAttackDistance} from './ally3d.js?v=20261111t';
-import {makeTool} from './building3d.js?v=20261111t';
-import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261111t';
-import {openWaypointEditor} from './waypoint-ui3d.js?v=20261111t';
-import {openPatrolEditor} from './patrol-ui3d.js?v=20261111t';
-import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261111t';
-import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261111t';
-import {inGridRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261111t';
-import {closeLiveRangeEditor,renderEnemyRange as renderEnemyRangeBase} from './enemy-range-ui3d.js?v=20261111t';
-import {gunPreviewSVG} from './appearance3d.js?v=20261111t';
-import {DOOR_PRESETS} from './doors3d.js?v=20261111t';
-import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261111t';
-import {coordinateLimit} from './world3d.js?v=20261111t';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261111t';
-import {actionsFor} from './events3d.js?v=20261111t';
-import {renderEventEditor} from './event-editor3d.js?v=20261111t';
-import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261111t';
-import {alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261111t';
-import {part,ENEMY_SCALES,PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261111t';
+import {renderAllyRangePreview} from './ally-range-preview3d.js?v=20261111u';
+import {createChoiceControl} from './choices3d.js?v=20261111u';
+import {sharedKeys,synchronizeCharacterDefaults,useCharacterDefaults,inheritNewCharacter,writeCharacterDefaults} from './character-defaults3d.js?v=20261111u';
+import {copyEnemySettings,ENEMY_COPY_GROUPS} from './enemy-batch3d.js?v=20261111u';
+import {ACTOR_HATS} from './actor3d.js?v=20261111u';
+import {makeTool} from './building3d.js?v=20261111u';
+import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261111u';
+import {openWaypointEditor} from './waypoint-ui3d.js?v=20261111u';
+import {openPatrolEditor} from './patrol-ui3d.js?v=20261111u';
+import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261111u';
+import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261111u';
+import {inGridRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261111u';
+import {closeLiveRangeEditor,renderEnemyRange as renderEnemyRangeBase} from './enemy-range-ui3d.js?v=20261111u';
+import {gunPreviewSVG} from './appearance3d.js?v=20261111u';
+import {DOOR_PRESETS} from './doors3d.js?v=20261111u';
+import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261111u';
+import {coordinateLimit} from './world3d.js?v=20261111u';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261111u';
+import {actionsFor} from './events3d.js?v=20261111u';
+import {renderEventEditor} from './event-editor3d.js?v=20261111u';
+import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261111u';
+import {alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261111u';
+import {part,ENEMY_SCALES,PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261111u';
 
 const ICONS={actor:'💬',plate:'▣',ally:'🛡',weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
 const DESCRIPTIONS={actor:'名前とせりふを書こう。交換する品を置くとお店になるよ。',plate:'踏んでいる間、えらんだドアが開くよ。',ally:'近くで「ついてきて」と呼ぶと、一緒に戦うよ。',weapon:'地面に置いて、ふれると拾える銃。持ちもの・銃づくりで用意した銃をえらぼう。',ramp:'低いほうから歩くと、そのまま登れるスロープ。回して好きな向きにつなげよう。',wall:'家を囲う壁。向きを変えてつなげよう。',floor:'家の床と天井に使える板。壁の内側にぴったり合うよ。',roof:'壁の上にのせる三角屋根。向きを変えて家を仕上げよう。',
@@ -168,12 +168,13 @@ export function createWorkshop(api){
   function presentPartEditor(){
     setReadingText(allyOpen,getProject().objects.find(o=>o.id===getSelected())?.type==='ally'?'この味方のせっていをひらく':'味方のぜんたい設定をひらく');
     const selected=getProject().objects.find(o=>o.id===getSelected());
+    partDialog.classList.toggle('ally-workspace',selected?.type==='ally');
     partOpen.disabled=!isOtherPart(selected)||selected.type==='ally';
     setReadingText(partOpen,'えらんだパーツのせってい');
     if(!isOtherPart(selected))return;
     partOwner=selected.id;setReadingText(partTitle,commonObject?'味方のぜんたい設定':PARTS[selected.type]+'のせってい');
     const el=$('#inspector3');
-    partContent.replaceChildren(...[...el.children].filter(node=>!node.classList.contains('inspector-back')&&!node.classList.contains('inspector-heading')&&!node.classList.contains('placement-controls')));
+    partContent.replaceChildren(...[...el.children].filter(node=>!node.classList.contains('inspector-back')&&!node.classList.contains('inspector-heading')&&!node.classList.contains('placement-controls')&&!(selected.type==='ally'&&node.classList.contains('component-description'))));
   }
   let enemyPage='movement',enemyPageOwner=null;
   function inspect(){
@@ -244,12 +245,13 @@ export function createWorkshop(api){
       add.onclick=()=>{o.offers??=[];o.offers.push({gun:'',price:3});save();inspect();};el.append(add);
     }
     if(o.type==='ally'){
-      const basic=document.createElement('button');setReadingText(basic,'味方のぜんたい設定へ');basic.onclick=()=>openBasic('ally');if(!commonObject)el.append(basic);
-      field(el,'味方の体力',o.hp,1,20,1,n=>o.hp=Math.round(n));
-      selectField(el,'射程（マス）',Array.from({length:15},(_,i)=>[String(i+1),(i+1)+'マス']),String(o.allyRangeCells??5),v=>{o.allyRangeCells=Number(v);inspect();});
-      selectField(el,'味方に持たせる銃',[['','ロボットブラスター'],...p.loadout.filter(t=>t.effect==='shoot').map(t=>[t.id,t.name])],o.allyGun||'',v=>{o.allyGun=v;inspect();});
-      const distance=document.createElement('p');distance.className='component-description';setReadingText(distance,'緑の円は、味方が敵をねらえる距離だよ（'+(allyAttackDistance(o,p.loadout)/4)+'マス）。壁の向こうの敵は見えないよ。');el.append(distance);
-      selectField(el,'いつ撃つ？',[['auto','敵を見つけたら'],['assist','自分が弾を当てた敵をねらう']],o.allyAttack||'auto',v=>o.allyAttack=v);
+      const layout=document.createElement('div'),controls=document.createElement('div');layout.className='ally-settings-layout';controls.className='ally-settings-controls';renderAllyRangePreview(layout,o,p.loadout);layout.append(controls);el.append(layout);
+      const basic=document.createElement('button');setReadingText(basic,'味方のぜんたい設定へ');basic.onclick=()=>openBasic('ally');if(!commonObject)controls.append(basic);
+      const mark=(row,name)=>(row.closest('.shared-setting')||row).classList.toggle(name,true);
+      mark(field(controls,'味方の体力',o.hp,1,20,1,n=>o.hp=Math.round(n)),'ally-health-setting');
+      mark(selectField(controls,'射程（マス）',Array.from({length:15},(_,i)=>[String(i+1),(i+1)+'マス']),String(o.allyRangeCells??5),v=>{o.allyRangeCells=Number(v);inspect();}).closest('.field'),'ally-distance-setting');
+      mark(selectField(controls,'味方に持たせる銃',[['','ロボットブラスター'],...p.loadout.filter(t=>t.effect==='shoot').map(t=>[t.id,t.name])],o.allyGun||'',v=>{o.allyGun=v;inspect();}).closest('.field'),'ally-gun-setting');
+      mark(selectField(controls,'いつ撃つ？',[['auto','敵を見つけたら'],['assist','自分が弾を当てた敵をねらう']],o.allyAttack||'auto',v=>{o.allyAttack=v;inspect();}).closest('.field'),'ally-attack-setting');
     }
     if(o.type==='enemy'){
       if(enemyPageOwner!==o.id){enemyPageOwner=o.id;enemyPage='movement';}

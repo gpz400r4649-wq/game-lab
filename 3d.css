@@ -497,3 +497,29 @@ aside>#group-tools3{padding:0;margin:0;border:0;background:transparent;border-ra
 .gun-look-controls>.choice-field>.setting-choices>button{font-size:11px;padding:5px;line-height:1.6}
 .play-range-options .setting-choices{grid-template-columns:repeat(2,minmax(0,1fr))}
 .block>.setting-choices{margin-bottom:8px}
+
+/* Keep the ally's range visible while its settings change. */
+.ally-workspace{width:calc(100% - 24px);max-width:1040px;height:94dvh;max-height:94dvh}
+.ally-workspace[open]{display:flex;flex-direction:column}
+.ally-workspace>header{height:auto;min-height:64px;flex:none}
+.ally-workspace .enemy-dialog-content{flex:1;min-height:0;max-height:none;padding:12px 16px;overflow-y:auto}
+.ally-settings-layout{display:grid;grid-template-columns:minmax(250px,.85fr) minmax(0,1.4fr);gap:18px;align-items:start}
+.ally-range-preview{position:sticky;top:0;padding:12px;border:1px solid #cfdfdc;border-radius:12px;background:#fff}
+.ally-range-preview h3{margin:0 0 6px;font-size:16px}
+.ally-range-picture{max-width:280px;margin:0 auto}
+.ally-range-picture svg{display:block;width:100%;height:auto;font-family:system-ui,sans-serif;font-size:10px}
+.ally-range-preview .ally-range-summary{font-size:13px;line-height:1.8;color:#237543;font-weight:700;margin:8px 0}
+.ally-range-preview .ally-range-note{font-size:12px;line-height:1.8;margin:6px 0}
+.ally-range-preview .limited{padding:8px;background:#fff5de;border-radius:8px;color:#805f21}
+.ally-settings-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;min-width:0}
+.ally-settings-controls>.field,.ally-settings-controls>.shared-setting{margin:0;min-width:0;border:1px solid #e2dcf4;border-radius:10px;background:#faf8ff;padding:10px}
+.ally-settings-controls .field{font-size:13px;line-height:1.7;gap:8px;flex-direction:column;align-items:stretch}
+.ally-settings-controls>.shared-setting>.field{margin:0}
+.ally-settings-controls input[data-numeric]{width:100%;min-height:44px}
+.ally-settings-controls>.ally-health-setting,.ally-settings-controls>.ally-attack-setting{order:0}
+.ally-settings-controls>.ally-distance-setting{grid-column:1/-1;order:1}
+.ally-settings-controls>.ally-gun-setting{grid-column:1/-1;order:2}
+.ally-settings-controls>.ally-gun-setting .setting-choices{grid-template-columns:repeat(3,minmax(0,1fr))}
+.ally-settings-controls>button{grid-column:1/-1;order:-1}
+.ally-settings-controls>.ally-attack-setting .setting-choices{grid-template-columns:1fr}
+@media(max-width:700px){.ally-settings-layout{grid-template-columns:1fr}.ally-range-preview{position:static;max-width:380px;width:100%;margin:0 auto}.ally-settings-controls>.ally-gun-setting .setting-choices{grid-template-columns:repeat(2,minmax(0,1fr))}}

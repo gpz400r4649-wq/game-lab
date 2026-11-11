@@ -63,3 +63,14 @@ test('味方・ドア・役者・ゴールも、選択肢を見渡して直接�
  const actor=setPart('actor');choose('ぼうし','none');assert.equal(actor.hat,'none');const preset=document.querySelectorAll('.setting-choices').find(g=>g.getAttribute('aria-label')==='せりふの見本をえらぶ');preset.options[0].onclick();assert.equal(actor.speech,'いらっしゃい！');
  const goal=setPart('goal');choose('② 条件','stars');assert.equal(goal.settings.condition,'stars');assert.equal(document.querySelectorAll('select').length,0);assert.ok(validate3D(p));
 });
+
+test('味方の射程と銃を変えると、同じ縮尺のプレビューに実際の届く範囲を反映する',t=>{
+ const {p,setPart,$,ui}=setup(t),ally=setPart('ally');$('#ally-open3').onclick();
+ const preview=()=>document.querySelector('.ally-range-preview'),picture=()=>preview().querySelector('.ally-range-picture').innerHTML;
+ const choose=(label,value)=>document.querySelectorAll('.setting-choices').find(g=>g.getAttribute('aria-label')===label&&g.closest('.ally-settings-controls')).options.find(b=>b.value===value).onclick();
+ const initial=picture();choose('射程（マス）','10');assert.equal(ally.allyRangeCells,10);assert.notEqual(picture(),initial);assert.match(picture(),/r="100"/);assert.match(picture(),/data-distance="7" data-reachable="true"/);assert.match(picture(),/data-distance="11" data-reachable="false"/);
+ p.loadout[0].range=8;choose('味方に持たせる銃',p.loadout[0].id);assert.match(picture(),/r="20"/);assert.match(picture(),/stroke-dasharray/);assert.ok(preview().querySelector('.limited'));assert.ok(preview().querySelector('.ally-range-summary').textContent.includes('2マス'));
+ choose('味方に持たせる銃','');assert.equal(preview().querySelector('.limited'),null);assert.match(picture(),/r="100"/);assert.ok(validate3D(p));
+ // Defaults use the same preview and do not alter a placed ally by opening alone.
+ initializeCharacterDefaults(p,part);ui.inspect();document.querySelector('.ally-settings-controls').children.find(n=>n.tagName==='button').onclick();choose('射程（マス）','4');assert.ok(preview().querySelector('.ally-range-summary').textContent.includes('4マス'));assert.equal(p.characterDefaults.ally.allyRangeCells,4);assert.ok(validate3D(p));
+});

@@ -1,0 +1,14 @@
+import {allyAttackDistance} from './ally3d.js?v=20261111u';
+import {setReadingText} from './readings3d.js?v=20261111u';
+
+export function renderAllyRangePreview(parent,ally,catalog){
+ const selected=ally.allyRangeCells??5,actual=allyAttackDistance(ally,catalog)/4,limited=actual<selected;
+ const box=document.createElement('section'),heading=document.createElement('h3'),picture=document.createElement('div'),summary=document.createElement('p'),note=document.createElement('p');
+ box.className='ally-range-preview';box.setAttribute('aria-label','味方の射程プレビュー');setReadingText(heading,'どこまで ねらえる？');picture.className='ally-range-picture';
+ const grid=Array.from({length:31},(_,i)=>{const at=30+i*10;return `<path d="M${at} 30V330M30 ${at}H330"/>`;}).join('');
+ const targets=[[3,0],[-7,0],[0,-11],[0,14]].map(([x,z])=>{const distance=Math.hypot(x,z),reachable=distance<actual,px=180+x*10,py=180+z*10;return `<g transform="translate(${px} ${py})" data-distance="${distance}" data-reachable="${reachable}"><rect x="-10" y="-10" width="20" height="18" rx="4" fill="${reachable?'#d8f2df':'#e8ecf1'}" stroke="${reachable?'#21864a':'#9ba7b7'}" stroke-width="2"/><path d="M-5 -3h3m4 0h3" stroke="#53637b" stroke-width="2"/><text y="23" text-anchor="middle" fill="${reachable?'#19743e':'#6a7789'}">${distance}マス</text></g>`;}).join('');
+ picture.innerHTML=`<svg viewBox="0 0 360 370" role="img" aria-label="1マス4メートル。緑の円は${actual}マスの射程。見本の敵は3、7、11、14マス先。"><rect width="360" height="370" rx="12" fill="#f5f8fc"/><g stroke="#dbe3ee" stroke-width=".7">${grid}</g>${limited?`<circle cx="180" cy="180" r="${selected*10}" fill="none" stroke="#8b80ae" stroke-width="2" stroke-dasharray="5 4"/>`:''}<circle cx="180" cy="180" r="${actual*10}" fill="#86dba2" fill-opacity=".22" stroke="#2b9b57" stroke-width="2"/>${targets}<g transform="translate(180 180)"><circle r="13" fill="#49a8a5" stroke="white" stroke-width="2"/><path d="M-5 -3h3m4 0h3M-4 4h8" stroke="white" stroke-width="2"/></g><g font-size="10" fill="#64738a"><text x="18" y="16">うえからみたみほん・１マス＝じめんの１マス</text><text x="18" y="359">みどりのまる：ねらえるはんい</text></g></svg>`;
+ summary.className='ally-range-summary';summary.setAttribute('aria-live','polite');setReadingText(summary,`えらんだ距離：${selected}マス ／ ねらえる距離：${actual}マス`);
+ note.className=limited?'ally-range-note limited':'ally-range-note';const gun=catalog.find(t=>t.id===ally.allyGun&&t.effect==='shoot');setReadingText(note,limited?`「${gun?.name||'ロボットブラスター'}」の弾が届くのは${actual}マスまで。点線はえらんだ距離だよ。銃づくりで届く距離をのばせるよ。`:'みどりの見本の敵には届くよ。数字を変えてもマス目の大きさは同じだよ。');
+ const rule=document.createElement('p');rule.className='ally-range-note';setReadingText(rule,'「ついてきて」で仲間にした後、'+(ally.allyAttack==='assist'?'自分が弾を当てた敵をねらうよ。':'円の中の近い敵をねらうよ。')+'壁の向こうの敵はねらえないよ。');box.append(heading,picture,summary,note,rule);parent.append(box);return box;
+}
