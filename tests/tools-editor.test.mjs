@@ -12,7 +12,7 @@ function setup(t){
  return {p,dialog,tab,page,dom,$,ui,saved:()=>saved};
 }
 test('銃づくりの主な項目を6タブへ分け、管理操作や長い説明はページに積み重ねない',t=>{
- const {dialog,page,tab}=setup(t);assert.equal(dialog.querySelectorAll('[role=tab]').length,6);assert.ok(dialog.querySelector('.gun-catalog-field select'));assert.equal(dialog.querySelectorAll('.tool-editor-list').length,0);assert.equal(page('basic').querySelectorAll('.field').length,4);assert.equal(page('basic').querySelector('.new-tools'),null);
+ const {dialog,page,tab}=setup(t);assert.equal(dialog.querySelectorAll('[role=tab]').length,6);assert.equal(dialog.querySelector('.gun-catalog-field'),null);assert.equal(dialog.querySelector('.gun-catalog-list').children.length,1);assert.equal(dialog.querySelector('.gun-catalog-list').children[0].getAttribute('aria-pressed'),'true');assert.equal(page('basic').querySelectorAll('.field').length,4);assert.equal(page('basic').querySelector('.new-tools'),null);
  assert.equal(page('power').querySelectorAll('.performance-field').length,4);assert.equal(page('handling').querySelectorAll('.performance-field').length,3);assert.equal(page('pattern').querySelectorAll('.performance-field').length,2);
  const look=page('look').querySelector('.gun-appearance');assert.equal(look.tagName,'section');assert.ok(look.querySelector('.gun-preview'));assert.ok(look.querySelector('.gun-look-controls .performance-field'));
  for(const help of dialog.querySelectorAll('details[data-gun-help]'))assert.equal(help.open,false);const note=page('handling').querySelector('.handling-note');assert.ok(note.closest('.gun-help'));
@@ -27,16 +27,20 @@ test('爆発と跳ね返りを組み合わせても、設定を保ち、爆発�
  page('impact').querySelector('.gun-help').open=true;const bounce=page('impact').querySelectorAll('input').find(n=>n.value==='bounce');bounce.checked=true;bounce.onchange();assert.deepEqual(p.loadout[0].impacts,['damage','explode','bounce']);assert.equal(page('impact').querySelector('.gun-help').open,true);assert.equal(dialog.querySelector('[aria-selected="true"]').dataset.page,'impact');assert.ok(validate3D(p));
 });
 test('上部から銃を追加・切り替え・削除でき、見た目と銃の名前も編集できる',t=>{
- const {p,page,tab,dialog}=setup(t);dialog.querySelector('.new-tools').children[0].onclick();assert.equal(p.loadout.length,2);assert.equal(dialog.querySelector('.gun-catalog-field select').value,'1');
- const name=page('basic').querySelector('input');name.value='わたしの銃';name.oninput();assert.equal(p.loadout[1].name,'わたしの銃');assert.ok(dialog.querySelector('.gun-catalog-field select').options[1].textContent.includes('わたしの銃'));
+ const {p,page,tab,dialog}=setup(t);dialog.querySelector('.new-tools').children[0].onclick();assert.equal(p.loadout.length,2);assert.equal(dialog.querySelector('.gun-catalog-list').children[1].getAttribute('aria-pressed'),'true');
+ const name=page('basic').querySelector('input');name.value='わたしの銃';name.oninput();assert.equal(p.loadout[1].name,'わたしの銃');assert.ok(dialog.querySelector('.gun-catalog-list').children[1].textContent.includes('わたしの'));assert.equal(page('basic').querySelector('input').value,'わたしの銃');
  tab('look');const preview=page('look').querySelector('.gun-preview'),before=preview.innerHTML,shape=page('look').querySelector('select');shape.value='launcher';shape.onchange();assert.equal(p.loadout[1].appearance.shape,'launcher');assert.notEqual(preview.innerHTML,before);
- const catalog=dialog.querySelector('.gun-catalog-field select');catalog.value='0';catalog.onchange();assert.equal(dialog.querySelector('[aria-selected="true"]').dataset.page,'look');assert.equal(dialog.querySelector('.gun-catalog-field select').value,'0');dialog.querySelector('.gun-catalog-actions').children[1].onclick();assert.equal(p.loadout.length,1);assert.ok(validate3D(p));
+ dialog.querySelector('.gun-catalog-list').children[0].onclick();assert.equal(dialog.querySelector('[aria-selected="true"]').dataset.page,'look');assert.equal(dialog.querySelector('.gun-catalog-list').children[0].getAttribute('aria-pressed'),'true');dialog.querySelector('.gun-catalog-actions').children[1].onclick();assert.equal(p.loadout.length,1);assert.ok(validate3D(p));
 });
 test('建築銃でもブロック切替と体力を見渡せるページにまとめ、数値を保存する',t=>{
  const {p,page,tab,dialog}=setup(t);const effect=page('basic').querySelector('[aria-label="この銃から出るもの"]');effect.value='wall';effect.onchange();assert.equal(dialog.querySelectorAll('[role=tab]').length,3);tab('build');const choices=page('build').querySelectorAll('input').filter(n=>n.type==='checkbox');assert.equal(choices.length,4);choices[1].checked=true;choices[1].onchange();assert.deepEqual(p.loadout[0].buildChoices,['wall','floor']);
  const hp=page('build').querySelector('input[data-numeric]');hp.value='100';hp.onchange();assert.equal(p.loadout[0].structureHp,100);assert.equal(page('build').querySelector('.gun-help').open,false);assert.ok(validate3D(p));
 });
 
-test('8本の銃があっても上部の選択欄から選べ、追加上限を守る',t=>{
- const {p,dialog}=setup(t);for(let i=1;i<8;i++)dialog.querySelector('.new-tools').children[0].onclick();const catalog=dialog.querySelector('.gun-catalog-field select');assert.equal(catalog.options.length,8);assert.equal(catalog.value,'7');assert.ok(dialog.querySelector('.new-tools').children.every(button=>button.disabled));catalog.value='0';catalog.onchange();assert.equal(dialog.querySelector('.gun-catalog-field select').value,'0');assert.ok(validate3D(p));
+test('8本の銃を常に一覧で表示し、タブを切り替えても選択を保ち、追加上限を守る',t=>{
+ const {p,dialog,tab}=setup(t);for(let i=1;i<8;i++)dialog.querySelector('.new-tools').children[0].onclick();
+ const checkCatalog=selected=>{const list=dialog.querySelector('.gun-catalog-list');assert.equal(list.children.length,8);assert.equal(list.parentElement.className,'gun-editor-header');for(const [i,button] of list.children.entries()){assert.equal(button.hidden,false);assert.equal(button.getAttribute('aria-pressed'),String(i===selected));assert.equal(button.classList.contains('active'),i===selected);}};
+ checkCatalog(7);assert.ok(dialog.querySelector('.new-tools').children.every(button=>button.disabled));
+ for(const key of ['power','pattern','handling','look','impact','basic']){tab(key);checkCatalog(7);}
+ dialog.querySelector('.gun-catalog-list').children[0].onclick();checkCatalog(0);assert.ok(validate3D(p));
 });

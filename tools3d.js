@@ -1,10 +1,10 @@
-import {MAX_BUILD_LEVEL} from './limits3d.js?v=20261111o';
-import {appearanceFor,GUN_SHAPES,GUN_COLORS,gunPreviewSVG} from './appearance3d.js?v=20261111o';
-import {bindGameAction} from './input3d.js?v=20261111o';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261111o';
-import {LIMITS,PROJECTILES,IMPACTS,impactEffects,weaponPresetKey,SHOT_PATTERNS,cadenceHandling} from './weapons3d.js?v=20261111o';
-import {buildChoices,activeBuildTool,cycleBuildType,facingBuildRotation,makeTool,TOOL_EFFECTS,BUILD_TYPES,equipTool,keepStructures,equipBlock} from './building3d.js?v=20261111o';
-import {WEAPON_PRESETS,PARTS} from './engine3d.js?v=20261111o';
+import {MAX_BUILD_LEVEL} from './limits3d.js?v=20261111p';
+import {appearanceFor,GUN_SHAPES,GUN_COLORS,gunPreviewSVG} from './appearance3d.js?v=20261111p';
+import {bindGameAction} from './input3d.js?v=20261111p';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261111p';
+import {LIMITS,PROJECTILES,IMPACTS,impactEffects,weaponPresetKey,SHOT_PATTERNS,cadenceHandling} from './weapons3d.js?v=20261111p';
+import {buildChoices,activeBuildTool,cycleBuildType,facingBuildRotation,makeTool,TOOL_EFFECTS,BUILD_TYPES,equipTool,keepStructures,equipBlock} from './building3d.js?v=20261111p';
+import {WEAPON_PRESETS,PARTS} from './engine3d.js?v=20261111p';
 export function createToolsUI(api){
   const {$,getProject,getGame,getMode,field,save,refresh,finishBuilding}=api;
   let editing=0,rotation=0,level=0,activePage='basic';
@@ -14,8 +14,8 @@ export function createToolsUI(api){
   function renderEditor(){
     const p=getProject();editing=Math.min(editing,p.loadout.length-1);const tool=p.loadout[editing],openHelp=new Set([...dialog.querySelectorAll('details[data-gun-help]')].filter(node=>node.open).map(node=>node.dataset.gunHelp));dialog.replaceChildren();
     const title=document.createElement('h2');setReadingText(title,'持ちものと銃づくり');const intro=document.createElement('p');setReadingText(intro,'「何を出す銃にする？」を選ぼう。遊んでいるときは画面の持ちもの、または数字キーで持ち替えられるよ。');dialog.append(title,intro);
-    const list=document.createElement('label'),listCaption=document.createElement('span'),catalog=document.createElement('select');list.className='gun-catalog-field';setReadingText(listCaption,'つくる銃');catalog.setAttribute('aria-label','つくる銃をえらぶ');p.loadout.forEach((t,i)=>catalog.add(new Option(`${i+1}. ${t.name}`,String(i))));catalog.value=String(editing);catalog.onchange=()=>{editing=Number(catalog.value);renderEditor();};list.append(listCaption,catalog);dialog.append(list);
-    const nameLabel=document.createElement('label');nameLabel.className='field choice-field';const nameCaption=document.createElement('span');setReadingText(nameCaption,'銃の名前');nameLabel.append(nameCaption);const name=document.createElement('input');name.type='text';name.setAttribute('aria-label','銃の名前');name.maxLength=32;name.value=tool.name;name.oninput=()=>{if(name.value.trim()){tool.name=name.value;catalog.options[editing].textContent=`${editing+1}. ${tool.name}`;changed();}};name.onchange=()=>{name.value=tool.name;};nameLabel.append(name);dialog.append(nameLabel);
+    const list=document.createElement('div');list.className='tool-editor-list gun-catalog-list';list.setAttribute('role','group');list.setAttribute('aria-label','作った銃の一覧');p.loadout.forEach((t,i)=>{const button=document.createElement('button');button.type='button';button.dataset.toolIndex=String(i);setReadingText(button,`${i+1}. ${t.name}`);button.classList.toggle('active',i===editing);button.setAttribute('aria-pressed',String(i===editing));button.onclick=()=>{editing=i;renderEditor();};list.append(button);});dialog.append(list);
+    const nameLabel=document.createElement('label');nameLabel.className='field choice-field';const nameCaption=document.createElement('span');setReadingText(nameCaption,'銃の名前');nameLabel.append(nameCaption);const name=document.createElement('input');name.type='text';name.setAttribute('aria-label','銃の名前');name.maxLength=32;name.value=tool.name;name.oninput=()=>{if(name.value.trim()){tool.name=name.value;setReadingText(list.children[editing],`${editing+1}. ${tool.name}`);changed();}};name.onchange=()=>{name.value=tool.name;};nameLabel.append(name);dialog.append(nameLabel);
     selectField(dialog,'この銃から出るもの',Object.entries(TOOL_EFFECTS),tool.effect,effect=>{tool.effect=effect;delete tool.buildChoices;changed();renderEditor();});
     selectField(dialog,'この銃をいつ使える？',[['start','最初から持つ'],['pickup','イベントで拾って使う']],tool.pickupOnly?'pickup':'start',v=>{tool.pickupOnly=v==='pickup';changed();renderEditor();});
     let syncPreset=()=>{};const tuningControls=new Map();
@@ -74,7 +74,7 @@ export function createToolsUI(api){
     const close=document.createElement('button');setReadingText(close,'とじる');close.setAttribute('aria-label','銃づくりの設定をとじる');close.className='primary gun-editor-close';close.onclick=()=>{dialog.close();renderLauncher();};dialog.append(del,close);
     const header=document.createElement('div');
     header.className='gun-editor-header';
-    const manage=document.createElement('details'),manageTitle=document.createElement('summary'),manageBody=document.createElement('div');manage.className='gun-catalog-menu';setReadingText(manageTitle,'＋ ふやす・けす');manageBody.className='gun-catalog-actions';manageBody.append(addRow,del);manage.append(manageTitle,manageBody);header.append(title,list,manage,close);
+    const manage=document.createElement('details'),manageTitle=document.createElement('summary'),manageBody=document.createElement('div');manage.className='gun-catalog-menu';setReadingText(manageTitle,'＋ ふやす・けす');manageBody.className='gun-catalog-actions';manageBody.append(addRow,del);manage.append(manageTitle,manageBody);header.append(title,manage,close,list);
     const tabs=document.createElement('div');
     tabs.className='gun-editor-tabs';
     tabs.setAttribute('role','tablist');

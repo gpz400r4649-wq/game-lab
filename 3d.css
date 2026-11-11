@@ -410,3 +410,16 @@ aside>#group-tools3{padding:0;margin:0;border:0;background:transparent;border-ra
 @media(max-width:700px){.tools-dialog .gun-editor-header{grid-template-columns:minmax(0,1fr) auto}.gun-editor-header h2{grid-column:1;grid-row:1;font-size:16px}.gun-editor-header .gun-editor-close{grid-column:2;grid-row:1}.gun-catalog-field{grid-column:1;grid-row:2}.gun-catalog-menu{grid-column:2;grid-row:2}.tools-dialog .gun-editor-tabs{grid-template-columns:repeat(3,minmax(0,1fr))}.gun-editor-body>[role=tabpanel]{grid-template-columns:1fr}#gun-page-look>.gun-appearance{grid-template-columns:1fr}.gun-appearance>.gun-preview{position:static;max-width:260px;margin:0 auto}.gun-editor-body .impact-choices{grid-template-columns:1fr}#gun-page-build .impact-choices{grid-template-columns:repeat(2,minmax(0,1fr))}.gun-look-controls{grid-template-columns:1fr}.gun-catalog-actions{right:0}}
 
 .tools-dialog .gun-editor-tabs.gun-tabs-build{grid-template-columns:repeat(3,minmax(0,1fr))}
+
+/* Keep the same large workspace and show the entire weapon collection. */
+.tools-dialog[open]{height:94dvh;max-height:94dvh}
+.tools-dialog .gun-editor-body{flex:1 1 auto;min-height:0}
+.tools-dialog .gun-editor-header{grid-template-columns:minmax(0,1fr) auto auto;grid-template-rows:auto 94px auto}
+.tools-dialog .gun-editor-header>h2{grid-column:1;grid-row:1}
+.tools-dialog .gun-editor-header>.gun-catalog-menu{grid-column:2;grid-row:1}
+.tools-dialog .gun-editor-header>.gun-editor-close{grid-column:3;grid-row:1}
+.tools-dialog .gun-editor-header>.gun-catalog-list{grid-column:1/-1;grid-row:2;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(2,44px);gap:6px;margin:0;padding:0;overflow:visible;align-content:start}
+.tools-dialog .gun-catalog-list button{width:100%;height:44px;min-height:44px;min-width:0;padding:4px 8px;font-size:12px;line-height:1.35;white-space:normal;overflow-wrap:anywhere;text-align:left}
+.tools-dialog .gun-catalog-list button.active{background:#805ed4;border-color:#805ed4;color:white;box-shadow:0 0 0 1px #b7a0e5}
+.tools-dialog .gun-editor-header>.gun-editor-tabs{grid-column:1/-1;grid-row:3}
+@media(max-width:700px){.tools-dialog .gun-editor-header{grid-template-rows:auto 194px auto}.tools-dialog .gun-editor-header>.gun-catalog-list{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(4,44px)}.tools-dialog .gun-catalog-menu>summary{font-size:11px;padding:8px}}
