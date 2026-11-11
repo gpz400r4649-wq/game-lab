@@ -353,3 +353,7 @@ aside>#group-tools3{padding:0;margin:0;border:0;background:transparent;border-ra
 @media(max-width:700px){#viewport>#editor-place-tools3{bottom:72px;right:12px;left:auto;transform:none}}
 
 @media(max-width:900px){.stage-toolbar.is-playing #formation3{top:calc(100% + 120px);left:auto;right:16px;transform:none}}
+
+.viewport-top{align-items:flex-start}
+.viewport-top-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;margin-left:auto}
+.viewport-top-right>#multi-select3{margin-left:0}
