@@ -423,3 +423,44 @@ aside>#group-tools3{padding:0;margin:0;border:0;background:transparent;border-ra
 .tools-dialog .gun-catalog-list button.active{background:#805ed4;border-color:#805ed4;color:white;box-shadow:0 0 0 1px #b7a0e5}
 .tools-dialog .gun-editor-header>.gun-editor-tabs{grid-column:1/-1;grid-row:3}
 @media(max-width:700px){.tools-dialog .gun-editor-header{grid-template-rows:auto 194px auto}.tools-dialog .gun-editor-header>.gun-catalog-list{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(4,44px)}.tools-dialog .gun-catalog-menu>summary{font-size:11px;padding:8px}}
+
+/* Enemy rules share a fixed workspace, with each step visible as a tab. */
+.enemy-workspace{width:calc(100% - 24px);max-width:1040px;height:94dvh;max-height:94dvh}
+.enemy-workspace[open]{display:flex;flex-direction:column}
+.enemy-workspace>header{height:auto;flex:none;display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:8px;padding:10px 14px}
+.enemy-workspace>header h2{font-size:17px}
+.enemy-workspace>header>button{padding:8px 10px;font-size:12px}
+.enemy-workspace .enemy-settings-tabs{position:static;grid-column:1/-1;grid-template-columns:repeat(6,minmax(0,1fr));padding:0;gap:5px}
+.enemy-workspace .enemy-settings-tabs button{min-height:44px;padding:6px 4px;font-size:12px}
+.enemy-workspace .enemy-behavior-flow{grid-column:1/-1;margin:0;min-height:54px;padding:8px 10px;line-height:1.65;font-size:12px;border-radius:8px}
+.enemy-workspace .enemy-dialog-content{flex:1;min-height:0;max-height:none;padding:12px 14px;overflow-y:auto}
+.enemy-workspace [role=tabpanel]{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-content:start;gap:12px}
+.enemy-workspace [role=tabpanel][hidden]{display:none}
+.enemy-workspace .enemy-settings-group{display:contents}
+.enemy-workspace .enemy-routine-step{margin:0;padding:12px;min-width:0}
+.enemy-workspace .enemy-behavior-launcher{margin:0;padding:12px;border:1px solid #e2dcf4;border-radius:12px;background:#faf8ff}
+.enemy-workspace .enemy-behavior-open{min-height:52px;font-size:13px}
+.enemy-workspace .enemy-behavior-summary{margin:12px 0 0;font-size:13px;line-height:1.8}
+.enemy-workspace .field{flex-direction:column;align-items:stretch;justify-content:flex-start;gap:8px;margin:0;padding:12px;border:1px solid #e2dcf4;border-radius:10px;background:#faf8ff;font-size:13px;line-height:1.7;min-width:0}
+.enemy-workspace .field>input,.enemy-workspace .field>select{width:100%;min-width:0;min-height:44px;font-size:14px}
+.enemy-workspace .shared-setting{margin:0;min-width:0}
+.enemy-workspace .enemy-routine-step>.field,.enemy-workspace .enemy-routine-step>.shared-setting{margin:8px 0}
+.enemy-workspace .enemy-routine-step>button{margin:4px 6px 4px 0;font-size:12px}
+.enemy-workspace .enemy-routine-step>h4{font-size:14px;line-height:1.7}
+.enemy-workspace #enemy-settings-notice>.enemy-routine-step,.enemy-workspace #enemy-settings-lost>.enemy-routine-step{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.enemy-workspace .enemy-routine-step>h4,.enemy-workspace .enemy-routine-step>.component-description,.enemy-workspace .enemy-routine-step>.stage-range-tools{grid-column:1/-1;margin:0}
+.enemy-workspace .enemy-range-row{margin:0;min-width:0;align-self:start}
+.enemy-workspace .enemy-range-choice{min-height:64px}
+.enemy-workspace .enemy-range-edit{min-height:44px}
+.enemy-workspace .component-description{font-size:12px;line-height:1.7;margin:0}
+.enemy-workspace .enemy-attack-toggle{grid-column:1/-1;display:flex;align-items:center;gap:10px;min-height:48px;font-size:14px}
+.enemy-workspace .enemy-attack-toggle input{width:22px;height:22px;flex-shrink:0}
+.enemy-workspace #enemy-settings-combat>.component-description,.enemy-workspace #enemy-settings-movement>button,.enemy-workspace .recipe-hint,.enemy-workspace .enemy-page-note,.enemy-workspace .advanced-program{grid-column:1/-1}
+.enemy-workspace .enemy-page-note{padding:18px;margin:0;background:#f7f5ff;border:1px solid #e2dcf4;border-radius:12px;font-size:14px;line-height:1.9}
+.enemy-workspace #enemy-settings-loot h3,.enemy-workspace #enemy-settings-loot>.component-description,.enemy-workspace .enemy-loot-items,.enemy-workspace #enemy-settings-loot>.shared-setting{grid-column:1/-1;margin:0}
+.enemy-workspace .enemy-loot-items{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.enemy-workspace .enemy-loot-items>div{padding:10px;border:1px solid #e2dcf4;border-radius:10px;min-width:0}
+.enemy-workspace .enemy-loot-items>div>.field{padding:0;margin-bottom:8px;border:0;background:none}
+.enemy-workspace .enemy-loot-items>div>button{width:100%;font-size:12px}
+.enemy-workspace .enemy-loot-items>button{min-height:48px}
+@media(max-width:700px){.enemy-workspace>header{grid-template-columns:minmax(0,1fr) auto auto}.enemy-workspace>header h2{grid-column:1/-1}.enemy-workspace .enemy-settings-tabs{grid-template-columns:repeat(3,minmax(0,1fr))}.enemy-workspace [role=tabpanel],.enemy-workspace #enemy-settings-notice>.enemy-routine-step,.enemy-workspace #enemy-settings-lost>.enemy-routine-step,.enemy-workspace .enemy-loot-items{grid-template-columns:1fr}}
