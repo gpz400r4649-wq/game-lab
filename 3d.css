@@ -311,3 +311,7 @@ aside>#group-tools3{padding:0;margin:0;border:0;background:transparent;border-ra
 #group-nudge3{margin:0;padding:0;border:0}#group-nudge3>summary{border:1px solid #ded7ec;border-radius:9px;padding:8px 10px;background:#faf8ff;min-height:44px;font-size:12px;color:#6f559a}
 .group-nudge-buttons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding-top:8px}
 #group-tools3 .group-nudge-buttons button{min-height:44px;padding:8px 4px;font-size:12px}
+
+#rotate-selected3{position:absolute;right:16px;bottom:74px;z-index:3;min-height:48px;padding:10px 14px;background:#fffffff0;color:#7050b0;border:1px solid #b9a2dc;box-shadow:0 2px 8px #30405518;font-size:13px;touch-action:manipulation}
+#rotate-selected3[hidden],main.range-editing #rotate-selected3,main.common-preview #rotate-selected3{display:none}
+@media(max-width:700px){#rotate-selected3{right:12px;bottom:70px;min-height:46px}}

@@ -1,25 +1,25 @@
-import {sharedKeys,synchronizeCharacterDefaults,useCharacterDefaults,inheritNewCharacter,writeCharacterDefaults} from './character-defaults3d.js?v=20261111f';
-import {copyEnemySettings,ENEMY_COPY_GROUPS} from './enemy-batch3d.js?v=20261111f';
-import {ACTOR_HATS} from './actor3d.js?v=20261111f';
-import {allyAttackDistance} from './ally3d.js?v=20261111f';
-import {makeTool} from './building3d.js?v=20261111f';
-import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261111f';
-import {openWaypointEditor} from './waypoint-ui3d.js?v=20261111f';
-import {openPatrolEditor} from './patrol-ui3d.js?v=20261111f';
-import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261111f';
-import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261111f';
-import {inGridRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261111f';
-import {closeLiveRangeEditor,renderEnemyRange as renderEnemyRangeBase} from './enemy-range-ui3d.js?v=20261111f';
-import {gunPreviewSVG} from './appearance3d.js?v=20261111f';
-import {DOOR_PRESETS} from './doors3d.js?v=20261111f';
-import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261111f';
-import {coordinateLimit} from './world3d.js?v=20261111f';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261111f';
-import {actionsFor} from './events3d.js?v=20261111f';
-import {renderEventEditor} from './event-editor3d.js?v=20261111f';
-import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261111f';
-import {rotatePiece,alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261111f';
-import {part,ENEMY_SCALES,PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261111f';
+import {sharedKeys,synchronizeCharacterDefaults,useCharacterDefaults,inheritNewCharacter,writeCharacterDefaults} from './character-defaults3d.js?v=20261111g';
+import {copyEnemySettings,ENEMY_COPY_GROUPS} from './enemy-batch3d.js?v=20261111g';
+import {ACTOR_HATS} from './actor3d.js?v=20261111g';
+import {allyAttackDistance} from './ally3d.js?v=20261111g';
+import {makeTool} from './building3d.js?v=20261111g';
+import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261111g';
+import {openWaypointEditor} from './waypoint-ui3d.js?v=20261111g';
+import {openPatrolEditor} from './patrol-ui3d.js?v=20261111g';
+import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261111g';
+import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261111g';
+import {inGridRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261111g';
+import {closeLiveRangeEditor,renderEnemyRange as renderEnemyRangeBase} from './enemy-range-ui3d.js?v=20261111g';
+import {gunPreviewSVG} from './appearance3d.js?v=20261111g';
+import {DOOR_PRESETS} from './doors3d.js?v=20261111g';
+import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261111g';
+import {coordinateLimit} from './world3d.js?v=20261111g';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261111g';
+import {actionsFor} from './events3d.js?v=20261111g';
+import {renderEventEditor} from './event-editor3d.js?v=20261111g';
+import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261111g';
+import {alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261111g';
+import {part,ENEMY_SCALES,PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261111g';
 
 const ICONS={actor:'💬',plate:'▣',ally:'🛡',weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
 const DESCRIPTIONS={actor:'名前とせりふを書こう。交換する品を置くとお店になるよ。',plate:'踏んでいる間、えらんだドアが開くよ。',ally:'近くで「ついてきて」と呼ぶと、一緒に戦うよ。',weapon:'地面に置いて、ふれると拾える銃。持ちもの・銃づくりで用意した銃をえらぼう。',ramp:'低いほうから歩くと、そのまま登れるスロープ。回して好きな向きにつなげよう。',wall:'家を囲う壁。向きを変えてつなげよう。',floor:'家の床と天井に使える板。壁の内側にぴったり合うよ。',roof:'壁の上にのせる三角屋根。向きを変えて家を仕上げよう。',
@@ -170,7 +170,7 @@ export function createWorkshop(api){
     const el=$('#inspector3');
     partContent.replaceChildren(...[...el.children].filter(node=>!node.classList.contains('inspector-back')&&!node.classList.contains('inspector-heading')&&!node.classList.contains('placement-controls')));
   }
-  let inspectedId=null,enemyPage='movement',enemyPageOwner=null;
+  let enemyPage='movement',enemyPageOwner=null;
   function inspect(){
     synchronizeCharacterDefaults(getProject());
     const aside=$('aside'),el=$('#inspector3'),top=aside.scrollTop,pageX=window.scrollX,pageY=window.scrollY,min=el.style.minHeight,active=document.activeElement,focusLabel=el.contains(active)?active.getAttribute('aria-label'):null;
@@ -182,9 +182,6 @@ export function createWorkshop(api){
     if(enemyContent.children.length)el.append(...enemyContent.children);
     el.style.minHeight=el.getBoundingClientRect().height+'px';
     try{inspectContent();presentEnemyEditor();presentGoalEditor();presentPartEditor();}finally{el.style.minHeight=min;aside.scrollTop=top;window.scrollTo(pageX,pageY);if(focusLabel){const replacement=[...el.querySelectorAll('[aria-label]')].find(n=>n.getAttribute('aria-label')===focusLabel);replacement?.focus({preventScroll:true});}aside.scrollTop=top;
-      const id=getSelected();
-
-      inspectedId=id;
     }
   }
   function inspectContent(){
@@ -193,7 +190,6 @@ export function createWorkshop(api){
     if(!commonObject)advancedInspector();const loop=el.querySelector('.loop');el.replaceChildren();
     const p=getProject(),o=p.objects.find(o=>o.id===getSelected());
     if(!o){sharedObject=null;return;}
-    const back=document.createElement('button');back.className='inspector-back';setReadingText(back,'← パーツをえらぶ');back.onclick=()=>{inspectedId=null;$('aside').scrollTop=0;};el.append(back);
     const title=document.createElement('h2');title.className='inspector-heading';setReadingText(title,`${ICONS[o.type]} ${PARTS[o.type]}`);
     const description=document.createElement('p');description.className='component-description';setReadingText(description,DESCRIPTIONS[o.type]);el.append(title,description);
     sharedObject=sharedKeys(o.type).length?o:null;
@@ -367,11 +363,8 @@ export function createWorkshop(api){
     for(const [key,name,min,max] of [['x','横 X',-coordinateLimit(p),coordinateLimit(p)],['y','高さ Y',0,MAX_BUILD_Y],['z','奥行 Z',-coordinateLimit(p),coordinateLimit(p)]])field(positions,name,o[key],min,max,gridStep(o,key),n=>{o[key]=n;alignPiece(o,p);return o[key];});fine.append(positions);
     if(['box','platform','moving','door','bounce','hazard','wall','floor','roof','ramp'].includes(o.type))for(const [key,name] of [['w','はば'],['h','たかさ'],['d','おくゆき']])field(fine,name,o[key],['wall','floor','roof','bounce','hazard'].includes(o.type)?.2:.5,10,.5,n=>o[key]=n);
     const positionDetails=details('位置・大きさを数字でちょうせい',[fine]);positionDetails.className='placement-controls';if(!commonObject)el.append(positionDetails);
-    if(['wall','floor','roof','ramp','door'].includes(o.type)){const rotate=document.createElement('button');rotate.className='placement-controls';setReadingText(rotate,'↻ 90° 回す');rotate.onclick=()=>{rotatePiece(o,p);save();rebuild();inspect();};el.append(rotate);}
-    const actions=document.createElement('div');actions.className='object-actions placement-controls';
     const copy=document.createElement('button');setReadingText(copy,'＋ 同じパーツをもう１つ');copy.onclick=()=>{if(p.objects.length>=MAX_PARTS){api.toast('パーツは2000個まで置けます');return;}const duplicate=structuredClone(o);duplicate.id=crypto.randomUUID();for(const a of duplicate.events||[])if(a.target===o.id)a.target=duplicate.id;let found=false;for(const [dx,dz] of [[Math.max(4,Math.ceil(o.w/4)*4),0],[0,Math.max(4,Math.ceil(o.d/4)*4)],[-Math.max(4,Math.ceil(o.w/4)*4),0],[0,-Math.max(4,Math.ceil(o.d/4)*4)]]){duplicate.x=o.x+dx;duplicate.z=o.z+dz;if(!GRID_PARTS.has(o.type)){duplicate.x=clamp(o.x+2,-coordinateLimit(p),coordinateLimit(p));duplicate.z=o.z;found=true;break;}alignPiece(duplicate,p);if(!editorPlacementReason(duplicate,p.objects,p.spawn)){found=true;break;}}if(!found){api.toast('隣のマスが空いていません');return;}p.objects.push(duplicate);select(duplicate.id);save();rebuild();api.objectList();inspect();};
     if(!commonObject){duplicateSelected=copy.onclick;duplicateButton.disabled=p.objects.length>=MAX_PARTS;}
-    const del=document.createElement('button');setReadingText(del,'削除');del.className='danger';del.onclick=()=>{p.objects=p.objects.filter(x=>x.id!==o.id);select(null);save();rebuild();api.objectList();inspect();};actions.append(del);if(!commonObject)el.append(actions);
   }
   function weapons(){if(api.renderLoadout){api.renderLoadout();return;}
     advancedWeaponFields();const el=$('#weapon3'),advanced=[...el.childNodes];el.replaceChildren();const p=getProject();
