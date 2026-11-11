@@ -35,3 +35,11 @@ test('いどうボタンは敵・味方・その他の選択に合わせた設�
  const wall=part('wall',12,2);c.project.objects.push(wall);c.selected=wall.id;c.syncSelectedPartActions();assert.equal(launcher.parentElement,nodes.get('#part-launch-row3'));assert.equal(panel.hidden,false);
  c.selected=null;c.syncSelectedPartActions();assert.equal(launcher.hidden,true);assert.equal(panel.hidden,true);
 });
+
+test('敵・味方のいどうから開いても、パーツの設定欄を基準とした同じ位置に出す',()=>{
+ const {c,nodes}=setup('enemy');c.$('#part-launch-row3').getBoundingClientRect=()=>({left:900,top:420,width:280,height:48});
+ for(const [type,top]of [['enemy',180],['ally',240],['wall',420]]){
+  const object=part(type,0,0);c.project.objects.push(object);c.selected=object.id;c.syncSelectedPartActions();const launcher=nodes.get('#placement-open3');launcher.getBoundingClientRect=()=>({left:1150,top,width:64,height:48});
+  c.closePlacementPanel();launcher.onclick();assert.equal(nodes.get('#placement-panel3').style.top,'420px');assert.equal(nodes.get('#placement-panel3').style.left,'608px');
+ }
+});

@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.min.js';
-import {doorDimensions} from './doors3d.js?v=20261111m';
+import {doorDimensions} from './doors3d.js?v=20261111n';
 const cube=new T.BoxGeometry(1,1,1);
 const arrowShape=new T.Shape();arrowShape.moveTo(-.55,-.07);arrowShape.lineTo(.14,-.07);arrowShape.lineTo(.14,-.24);arrowShape.lineTo(.55,0);arrowShape.lineTo(.14,.24);arrowShape.lineTo(.14,.07);arrowShape.lineTo(-.55,.07);arrowShape.closePath();
 const arrowGeometry=new T.ExtrudeGeometry(arrowShape,{depth:.02,bevelEnabled:false});arrowGeometry.translate(0,0,-.01);
