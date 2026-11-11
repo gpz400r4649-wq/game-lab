@@ -357,3 +357,6 @@ aside>#group-tools3{padding:0;margin:0;border:0;background:transparent;border-ra
 .viewport-top{align-items:flex-start}
 .viewport-top-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;margin-left:auto}
 .viewport-top-right>#multi-select3{margin-left:0}
+
+.viewport-top-left{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.viewport-top-left>#multi-select3{margin-left:0}
