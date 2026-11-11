@@ -1,36 +1,36 @@
-import {groupSteps,groupCandidate,commitGroup,copyGroupNearby} from './group-edit3d.js?v=20261111g';
-import {initializeCharacterDefaults,synchronizeCharacterDefaults,inheritNewCharacter} from './character-defaults3d.js?v=20261111g';
-import {nearbyActor,trade,companionsAt} from './actor3d.js?v=20261111g';
-import {giveAllyGun,giftableGun,recruitTarget,allyAttackDistance} from './ally3d.js?v=20261111g';
-import {createEditHistory} from './history3d.js?v=20261111g';
-import {makeDoorModel,updateDoorModel} from './door-model3d.js?v=20261111g';
-import {enemyEditHeight,createFloorRangeView} from './floor-edit3d.js?v=20261111g';
-import {createPatrolOverlay} from './patrol-ui3d.js?v=20261111g';
-import {stageRangePointer} from './stage-range3d.js?v=20261111g';
-import {createEnemyMessages} from './enemy-messages3d.js?v=20261111g';
-import {createPlayRanges} from './play-ranges3d.js?v=20261111g';
-import {closeLiveRangeEditor,isLiveRangeEditing} from './enemy-range-ui3d.js?v=20261111g';
-import {dragCandidate} from './editor-drag3d.js?v=20261111g';
-import {rangeWorldCells,enemyYaw,defaultEnemyRanges,MOVE_MAX_CELLS} from './enemy-range3d.js?v=20261111g';
-import {ROBOT_BARREL,TPS_GUN_MOUNT} from './muzzle3d.js?v=20261111g';
-import {configureDoor,nearbyDoor} from './doors3d.js?v=20261111g';
-import {appearanceFor} from './appearance3d.js?v=20261111g';
-import {makeGunModel,applyFPSGunPose,worldGunMuzzle} from './gun-model3d.js?v=20261111g';
-import {editorViewFromPlay,moveEditorCamera,createEditorNavigation} from './editor-camera3d.js?v=20261111g';
-import {createStructureRenderer,BATCH_TYPES} from './structure-render3d.js?v=20261111g';
-import {MAX_PROJECT_BYTES,MAX_BUILD_Y} from './limits3d.js?v=20261111g';
-import {worldSize,coordinateLimit} from './world3d.js?v=20261111g';
-import {createWorldUI} from './world-ui3d.js?v=20261111g';
-import {configureNumericInput} from './numeric3d.js?v=20261111g';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261111g';
-import {installGameTouchGuard,bindHeldButton,bindGameAction,createGamePageMode} from './input3d.js?v=20261111g';
-import {actionsFor} from './events3d.js?v=20261111g';
-import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261111g';
-import {rotatePiece,BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,editorPlacementReason,blockPlacement} from './building3d.js?v=20261111g';
-import {createToolsUI} from './tools3d.js?v=20261111g';
+import {groupSteps,groupCandidate,commitGroup,copyGroupNearby} from './group-edit3d.js?v=20261111i';
+import {initializeCharacterDefaults,synchronizeCharacterDefaults,inheritNewCharacter} from './character-defaults3d.js?v=20261111i';
+import {nearbyActor,trade,companionsAt} from './actor3d.js?v=20261111i';
+import {giveAllyGun,giftableGun,recruitTarget,allyAttackDistance} from './ally3d.js?v=20261111i';
+import {createEditHistory} from './history3d.js?v=20261111i';
+import {makeDoorModel,updateDoorModel} from './door-model3d.js?v=20261111i';
+import {enemyEditHeight,createFloorRangeView} from './floor-edit3d.js?v=20261111i';
+import {createPatrolOverlay} from './patrol-ui3d.js?v=20261111i';
+import {stageRangePointer} from './stage-range3d.js?v=20261111i';
+import {createEnemyMessages} from './enemy-messages3d.js?v=20261111i';
+import {createPlayRanges} from './play-ranges3d.js?v=20261111i';
+import {closeLiveRangeEditor,isLiveRangeEditing} from './enemy-range-ui3d.js?v=20261111i';
+import {dragCandidate} from './editor-drag3d.js?v=20261111i';
+import {rangeWorldCells,enemyYaw,defaultEnemyRanges,MOVE_MAX_CELLS} from './enemy-range3d.js?v=20261111i';
+import {ROBOT_BARREL,TPS_GUN_MOUNT} from './muzzle3d.js?v=20261111i';
+import {configureDoor,nearbyDoor} from './doors3d.js?v=20261111i';
+import {appearanceFor} from './appearance3d.js?v=20261111i';
+import {makeGunModel,applyFPSGunPose,worldGunMuzzle} from './gun-model3d.js?v=20261111i';
+import {editorViewFromPlay,moveEditorCamera,createEditorNavigation} from './editor-camera3d.js?v=20261111i';
+import {createStructureRenderer,BATCH_TYPES} from './structure-render3d.js?v=20261111i';
+import {MAX_PROJECT_BYTES,MAX_BUILD_Y} from './limits3d.js?v=20261111i';
+import {worldSize,coordinateLimit} from './world3d.js?v=20261111i';
+import {createWorldUI} from './world-ui3d.js?v=20261111i';
+import {configureNumericInput} from './numeric3d.js?v=20261111i';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261111i';
+import {installGameTouchGuard,bindHeldButton,bindGameAction,createGamePageMode} from './input3d.js?v=20261111i';
+import {actionsFor} from './events3d.js?v=20261111i';
+import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261111i';
+import {rotatePiece,BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,editorPlacementReason,blockPlacement} from './building3d.js?v=20261111i';
+import {createToolsUI} from './tools3d.js?v=20261111i';
 import * as T from './vendor/three.module.min.js';
-import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet} from './engine3d.js?v=20261111g';
-import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261111g';
+import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet} from './engine3d.js?v=20261111i';
+import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261111i';
 const $=s=>document.querySelector(s),view=$('#viewport'),KEY='tsukuru-lab-3d-v1';
 let enemyRangeView='attackRange';
 let project=fresh3D(),selected=null,tool='select',doorPreset='key',weaponPresetId='',mode='edit',perspective='tps',game=null,yaw=0,pitch=-.05,editYaw=.55,editPitch=.7,editDistance=30,editTarget=new T.Vector3(0,0,0),stick={x:0,z:0},keys=new Set(),fireHeld=false,firePressed=false,jumpPressed=false,doorPressed=false,look=null,saveTimer,toastTimer,lastTime=0;
@@ -232,7 +232,18 @@ function finishEditorDrag(commit){const drag=look?.drag;if(!drag)return;if(drag.
 function canRotateSelectedPart(){
  const piece=editedObject();return mode==='edit'&&!multiSelect&&!commonPreview&&!isLiveRangeEditing()&&!!piece&&['wall','floor','roof','ramp','door'].includes(piece.type);
 }
-function syncSelectedPartActions(){$('#rotate-selected3').hidden=!canRotateSelectedPart();}
+function syncSelectedPartActions(){
+ $('#rotate-selected3').hidden=!canRotateSelectedPart();const available=mode==='edit'&&!multiSelect&&!commonPreview&&!isLiveRangeEditing()&&!!editedObject();$('#placement-open3').hidden=!available;if(!available)closePlacementPanel();
+}
+function closePlacementPanel(){$('#placement-panel3').hidden=true;$('#placement-open3').setAttribute('aria-expanded','false');}
+function positionPlacementPanel(){
+ const panel=$('#placement-panel3');if(panel.hidden)return;const anchor=$('#placement-open3').getBoundingClientRect(),box=panel.getBoundingClientRect(),gap=12;
+ panel.style.left=Math.max(gap,Math.min(window.innerWidth-box.width-gap,$('aside').getBoundingClientRect().left-box.width-gap))+'px';
+ panel.style.top=Math.max(gap,Math.min(anchor.top,window.innerHeight-box.height-gap))+'px';
+}
+$('#placement-open3').onclick=()=>{const panel=$('#placement-panel3');if(!panel.hidden){closePlacementPanel();return;}panel.hidden=false;$('#placement-open3').setAttribute('aria-expanded','true');positionPlacementPanel();};
+$('#placement-close3').onclick=closePlacementPanel;
+$('#placement-panel3').addEventListener('toggle',positionPlacementPanel,true);window.addEventListener('resize',positionPlacementPanel);
 function rotateSelectedPart(){
  if(!canRotateSelectedPart())return;resetInput();const piece=editedObject(),candidate=structuredClone(piece);rotatePiece(candidate,project);
  const reason=editorPlacementReason(candidate,project.objects.filter(object=>object.id!==piece.id),project.spawn,project);
@@ -396,7 +407,7 @@ const workshop=createWorkshop({setCommonPreview:object=>{
  else if(commonCamera){editTarget.copy(commonCamera.target);editYaw=commonCamera.yaw;editPitch=commonCamera.pitch;editDistance=commonCamera.distance;commonCamera=null;}
  rebuild();
 },previewPatrol:route=>{const o=editedObject();patrolOverlay.show(route,o?.y||0,enemyRangeView==='waypoints'&&(o?.routeEnd||'loop')==='loop');},lookFromAbove:({facing=false}={})=>{const o=editedObject();if(o){editTarget.set(o.x,enemyEditHeight(o),o.z);editYaw=facing?(o.facing||0)*Math.PI/180:0;editPitch=1.4;editDistance=38;}},getToolSelection:()=>({type:tool}),getRangeView:()=>enemyRangeView,showRange:key=>{enemyRangeView=key;updateSelection();},refreshRange:updateSelection,renderLoadout:()=>toolsUI.renderLauncher(),$,getProject:()=>project,getSelected:()=>selected,select:id=>{resetGroupSelection();selected=id;},save,rebuild,field,advancedInspector,advancedWeaponFields,loadProject,toast,objectList,setTool:(id,preset)=>{resetGroupSelection();if(preset&&id==='door')doorPreset=preset;if(preset&&id==='weapon')weaponPresetId=preset;if(mode==='play')setMode('edit');tool=id;placementLook=false;editorPointer=null;syncPlacementUI();document.querySelectorAll('[data-part]').forEach(x=>{const active=x.dataset.part===id;x.classList.toggle('active',active);x.setAttribute('aria-pressed',String(active));});}});
-function inspector(){closeLiveRangeEditor();workshop.inspect();}
+function inspector(){closeLiveRangeEditor();workshop.inspect();positionPlacementPanel();}
 $('#common-preview-back3').onclick=()=>workshop.resumeBasic();$('#common-preview-done3').onclick=()=>workshop.finishBasic();
 function renderPlayerRules(){
  const root=$('#player-rules3');root.replaceChildren();

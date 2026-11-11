@@ -316,14 +316,19 @@ aside>#group-tools3{padding:0;margin:0;border:0;background:transparent;border-ra
 #rotate-selected3[hidden],main.range-editing #rotate-selected3,main.common-preview #rotate-selected3{display:none}
 @media(max-width:700px){#rotate-selected3{right:12px;bottom:70px;min-height:46px}}
 
-/* Put selected-part placement controls before the general settings launchers. */
-aside>#inspector3:empty{display:none}
-aside>#inspector3>.inspector-heading{font-size:13px;line-height:1.5;margin:4px 0}
-aside>#inspector3>.small-heading.placement-controls{margin:6px 0;color:#7050ad;font-size:12px}
-aside>#inspector3>.nudge-grid{margin:0 0 6px;gap:5px}
-aside>#inspector3>.nudge-grid button{min-height:44px;padding:7px 5px;font-size:12px}
-aside>#inspector3>details.placement-controls{margin:4px 0 8px;padding-top:0;border-top:0}
-aside>#inspector3>details.placement-controls>summary{min-height:40px;padding:7px 0;font-size:11px}
 
-aside>#inspector3:has(.placement-controls){position:sticky;top:0;z-index:9;background:white;padding:4px 0 6px;border-bottom:1px solid #e8e0f1}
-aside:has(#inspector3 .placement-controls)>.workshop-launchers{position:static}
+/* Placement tools float beside their launcher and do not push settings down. */
+.placement-launch-row{display:flex;gap:6px;align-items:stretch;min-width:0}
+.placement-launch-row>#part-open3{flex:1;min-width:0;width:auto}
+#placement-open3{flex:none;min-width:64px;min-height:48px;padding:8px 9px;font-size:12px}
+#placement-open3[hidden],#placement-panel3[hidden]{display:none}
+#placement-open3[aria-expanded=true]{background:#6847c1;box-shadow:0 0 0 2px #c7b5eb}
+#placement-panel3{position:fixed;z-index:30;width:280px;max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px);overflow:auto;background:white;border:1px solid #bda9df;border-radius:13px;padding:12px;box-shadow:0 8px 28px #30405530}
+.placement-panel-header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.placement-panel-header strong{font-size:12px;color:#7050ad}.placement-panel-header button{min-height:42px;padding:7px 10px;font-size:12px}
+#placement-panel3 #inspector3>.inspector-heading{font-size:13px;line-height:1.5;margin:4px 0}
+#placement-panel3 #inspector3>.small-heading.placement-controls{display:none}
+#placement-panel3 #inspector3>.nudge-grid{margin:4px 0 8px;gap:5px}
+#placement-panel3 .nudge-grid button{min-height:44px;padding:7px 5px;font-size:12px}
+#placement-panel3 #inspector3>details.placement-controls{margin:4px 0 0;padding-top:0;border-top:0}
+#placement-panel3 #inspector3>details.placement-controls>summary{min-height:40px;padding:7px 0;font-size:11px}

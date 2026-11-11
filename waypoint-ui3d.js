@@ -1,8 +1,8 @@
-import {mountLiveRangeEditor} from './range-panel3d.js?v=20261111g';
-import {setStageRangePainter} from './stage-range3d.js?v=20261111g';
-import {worldSize,coordinateLimit} from './world3d.js?v=20261111g';
-import {validWaypoints,MAX_WAYPOINTS,placeAtRouteStart} from './patrol-route3d.js?v=20261111g';
-import {setReadingText} from './readings3d.js?v=20261111g';
+import {mountLiveRangeEditor} from './range-panel3d.js?v=20261111i';
+import {setStageRangePainter} from './stage-range3d.js?v=20261111i';
+import {worldSize,coordinateLimit} from './world3d.js?v=20261111i';
+import {validWaypoints,MAX_WAYPOINTS,placeAtRouteStart} from './patrol-route3d.js?v=20261111i';
+import {setReadingText} from './readings3d.js?v=20261111i';
 export function openWaypointEditor(o,{getProject,save,rebuild,lookFromAbove,preview,onClose}){
  const panel=document.createElement('section'),heading=document.createElement('div'),title=document.createElement('h2'),close=document.createElement('button'),note=document.createElement('p'),toolbar=document.createElement('div'),list=document.createElement('div'),status=document.createElement('p');panel.className='range-live-panel';panel.setAttribute('role','region');panel.setAttribute('aria-label','コースをつくる');heading.className='range-live-heading';title.tabIndex=-1;setReadingText(title,'コースをつくる');setReadingText(close,'できた・設定にもどる');close.className='primary';heading.append(title,close);setReadingText(note,'通る場所を順番にタップしよう。①→②→③と線にそって歩くよ。最大16か所。壁があると止まるよ。');toolbar.className='stage-range-tools';list.className='stage-range-tools';
  let draft=structuredClone(o.waypoints||[]),selected=-1,camera=false,pointer=null;
