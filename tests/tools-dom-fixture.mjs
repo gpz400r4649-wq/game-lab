@@ -8,7 +8,7 @@ export function toolsDOM(){
   for(const item of selector.matchAll(/\[([\w-]+)(?:=["']?([^"'\]]+)["']?)?\]/g)){const actual=node.getAttribute(item[1]);if(actual===null||(item[2]!==undefined&&actual!==item[2]))return false;}
   return true;
  }
- function matches(node,selector){return selector.split(',').some(part=>{const bits=part.trim().split(/\s+/);if(!simple(node,bits.pop()))return false;let parent=node.parentElement;while(bits.length){const next=bits.pop();while(parent&&!simple(parent,next))parent=parent.parentElement;if(!parent)return false;parent=parent.parentElement;}return true;});}
+ function matches(node,selector){return selector.split(',').some(part=>{const bits=part.trim().match(/(?:\[[^\]]*\]|[^\s\[])+/g)||[];if(!simple(node,bits.pop()))return false;let parent=node.parentElement;while(bits.length){const next=bits.pop();while(parent&&!simple(parent,next))parent=parent.parentElement;if(!parent)return false;parent=parent.parentElement;}return true;});}
  class Element extends EventTarget{
   constructor(tag){super();this.tagName=tag;this.ownerDocument=doc;this.children=[];this.className='';this.dataset={};this.attributes={};this.style={setProperty(key,value){this[key]=value;}};this.value='';this.scrollTop=0;this.hidden=false;this.classList={toggle:(name,on)=>{const classes=new Set(this.className.split(/\s+/).filter(Boolean));if(on)classes.add(name);else classes.delete(name);this.className=[...classes].join(' ');},contains:name=>this.className.split(/\s+/).includes(name)};}
   append(...nodes){for(let n of nodes){if(typeof n==='string')n=doc.createTextNode(n);n.remove?.();n.parentElement=this;this.children.push(n);}}
