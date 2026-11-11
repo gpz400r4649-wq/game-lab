@@ -24,3 +24,7 @@ test('選びなおす、通常ツールへの切替、もどすで消えたIDが
  const {c,nodes}=setup();c.setMultiSelect(true);c.groupIds.add(c.project.objects[0].id);c.updateGroupSelection();nodes.get('#group-clear3').onclick();assert.equal(c.groupIds.size,0);assert.equal(nodes.get('#group-move3').disabled,true);
  c.groupIds.add('removed-id');c.updateGroupSelection();assert.equal(c.groupIds.size,0);c.groupIds.add(c.project.objects[0].id);c.updateGroupSelection();c.resetGroupSelection();assert.equal(c.groupOutline.visible,false);assert.equal(nodes.get('#group-tools3').hidden,true);
 });
+
+test('ドラッグ中に別の操作を押すと未確定の移動を取り消してから操作する',()=>{
+ const {c,nodes}=setup();c.setMultiSelect(true);c.project.objects.forEach(o=>c.groupIds.add(o.id));c.updateGroupSelection();let cancelled=0;c.look={drag:{group:[...c.groupIds]}};c.finishEditorDrag=commit=>{assert.equal(commit,false);cancelled++;c.look.drag=null;};nodes.get('#group-copy3').onclick();assert.equal(cancelled,1);assert.equal(c.look,null);assert.equal(c.project.objects[0].x,0);assert.equal(c.project.objects.length,4);
+});
