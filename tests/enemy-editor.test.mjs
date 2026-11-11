@@ -74,3 +74,9 @@ test('味方の射程と銃を変えると、同じ縮尺のプレビューに�
  // Defaults use the same preview and do not alter a placed ally by opening alone.
  initializeCharacterDefaults(p,part);ui.inspect();document.querySelector('.ally-settings-controls').children.find(n=>n.tagName==='button').onclick();choose('射程（マス）','4');assert.ok(preview().querySelector('.ally-range-summary').textContent.includes('4マス'));assert.equal(p.characterDefaults.ally.allyRangeCells,4);assert.ok(validate3D(p));
 });
+
+test('ブロックのぜんたい設定から、配置済みの体力をまとめてそろえられる',t=>{
+ const {p,setPart,$,ui}=setup(t),floor=setPart('floor');floor.hp=75;initializeCharacterDefaults(p,part);ui.inspect();$('#block-open3').onclick();
+ const hp=document.querySelectorAll('[aria-label="ブロックの体力"]').find(n=>n.closest('.enemy-dialog-content'));hp.value='100';hp.onchange();assert.equal(p.characterDefaults.block.hp,100);assert.equal(floor.hp,75);
+ document.querySelector('.block-defaults-apply').onclick();assert.equal(floor.hp,100);assert.equal(floor.characterOverrides.length,0);assert.ok(validate3D(p));
+});

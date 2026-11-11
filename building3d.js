@@ -1,7 +1,7 @@
-import {validAppearance} from './appearance3d.js?v=20261111u';
-import {MAX_PARTS,MAX_BUILD_Y,MAX_BUILD_LEVEL} from './limits3d.js?v=20261111u';
-import {worldHalf,coordinateLimit} from './world3d.js?v=20261111u';
-import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261111u';
+import {validAppearance} from './appearance3d.js?v=20261111v';
+import {MAX_PARTS,MAX_BUILD_Y,MAX_BUILD_LEVEL} from './limits3d.js?v=20261111v';
+import {worldHalf,coordinateLimit} from './world3d.js?v=20261111v';
+import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261111v';
 // Shared by editor, gameplay and placement preview. No browser dependency.
 export const BUILD_TYPES={wall:'壁',floor:'床',roof:'屋根',ramp:'スロープ'};
 export const GRID={cell:4,layer:3,size:60};
@@ -135,7 +135,7 @@ export function placeStructure(g,p,input){
 }
 export function undoStructure(g){const o=g.buildings.at(-1);if(!o)return false;if(o.fromBlockItem&&!giveBlock(g,blockTemplate(o))){g.message='ブロックの持ちものがいっぱいです';g.messageId++;return false;}g.buildings.pop();g.objects=g.objects.filter(x=>x.id!==o.id);g.message='最後の建築をもどしたよ';g.messageId++;return true;}
 export function keepStructures(p,g){
-  const ids=new Set(p.objects.map(o=>o.id)),available=Math.max(0,MAX_PARTS-p.objects.length),pieces=g.buildings.filter(o=>!ids.has(o.id)).slice(0,available).map(o=>{const {built,origin,maxHp,hitUntil,fromBlockItem,...piece}=o;if(maxHp)piece.hp=maxHp;return structuredClone(piece);});
+  const ids=new Set(p.objects.map(o=>o.id)),available=Math.max(0,MAX_PARTS-p.objects.length),pieces=g.buildings.filter(o=>!ids.has(o.id)).slice(0,available).map(o=>{const {built,origin,maxHp,hitUntil,fromBlockItem,...piece}=o;if(maxHp)piece.hp=maxHp;if(p.characterDefaults?.block)piece.characterOverrides=['hp','destructible'];return structuredClone(piece);});
   p.objects.push(...pieces);return pieces.length;
 }
 

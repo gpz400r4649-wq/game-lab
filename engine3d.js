@@ -1,21 +1,21 @@
-import {initializeCharacterDefaults,synchronizeCharacterDefaults,sharedKeys} from './character-defaults3d.js?v=20261111u';
-import {companionsAt,updatePlates,validCharacterSettings} from './actor3d.js?v=20261111u';
-import {stepAllies} from './ally3d.js?v=20261111u';
-import {validEnemyLoot} from './enemy-loot3d.js?v=20261111u';
-import {validPatrolRoute,validWaypoints} from './patrol-route3d.js?v=20261111u';
-import {validLibrary} from './assets3d.js?v=20261111u';
-import {moveEnemy,canEnemyEnter,validEnemyMovement} from './enemy-ai3d.js?v=20261111u';
-import {worldMoveRange,validMoveRange,validAttackRange,inAttackRange,enemyYaw,defaultEnemyRanges} from './enemy-range3d.js?v=20261111u';
-import {enemyGunMuzzle,playerGunMuzzle,finitePoint} from './muzzle3d.js?v=20261111u';
-import {doorFrameSolids,validDoor,nearbyDoor,doorwayOccupied,animateDoors} from './doors3d.js?v=20261111u';
-import {nearbyObjects} from './spatial3d.js?v=20261111u';
-import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261111u';
-import {worldSize,worldHalf,coordinateLimit,WORLD_SIZES} from './world3d.js?v=20261111u';
-import {settleLoot} from './loot3d.js?v=20261111u';
-import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261111u';
-import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261111u';
-import {shootVolley,updateCombat,resolveShotOrigin} from './combat3d.js?v=20261111u';
-import {BUILD_TYPES,constructionPart,topAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261111u';
+import {initializeCharacterDefaults,synchronizeCharacterDefaults,sharedKeys} from './character-defaults3d.js?v=20261111v';
+import {companionsAt,updatePlates,validCharacterSettings} from './actor3d.js?v=20261111v';
+import {stepAllies} from './ally3d.js?v=20261111v';
+import {validEnemyLoot} from './enemy-loot3d.js?v=20261111v';
+import {validPatrolRoute,validWaypoints} from './patrol-route3d.js?v=20261111v';
+import {validLibrary} from './assets3d.js?v=20261111v';
+import {moveEnemy,canEnemyEnter,validEnemyMovement} from './enemy-ai3d.js?v=20261111v';
+import {worldMoveRange,validMoveRange,validAttackRange,inAttackRange,enemyYaw,defaultEnemyRanges} from './enemy-range3d.js?v=20261111v';
+import {enemyGunMuzzle,playerGunMuzzle,finitePoint} from './muzzle3d.js?v=20261111v';
+import {doorFrameSolids,validDoor,nearbyDoor,doorwayOccupied,animateDoors} from './doors3d.js?v=20261111v';
+import {nearbyObjects} from './spatial3d.js?v=20261111v';
+import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261111v';
+import {worldSize,worldHalf,coordinateLimit,WORLD_SIZES} from './world3d.js?v=20261111v';
+import {settleLoot} from './loot3d.js?v=20261111v';
+import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261111v';
+import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261111v';
+import {shootVolley,updateCombat,resolveShotOrigin} from './combat3d.js?v=20261111v';
+import {BUILD_TYPES,constructionPart,topAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261111v';
 export const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export const ENEMY_SCALES=Array.from({length:19},(_,i)=>1+i/2);
 export const PARTS={actor:'役者キャラクター',plate:'床スイッチ',ally:'味方ロボット',weapon:'銃アイテム',ramp:'スロープ',wall:'壁',floor:'床',roof:'屋根',box:'ブロック',platform:'足場',moving:'動く足場',bounce:'ジャンプ台',enemy:'敵ロボット',star:'星',key:'カギ',door:'ドア',heal:'回復',checkpoint:'セーブポイント',hazard:'ダメージ床',goal:'ゴール'};
@@ -64,10 +64,10 @@ export function validate3D(data,skipShared=false){
   for(const ally of allies)delete ally.playerHitsAlly;
   if(p.characterDefaults!==undefined&&!skipShared){
     if(!p.characterDefaults||typeof p.characterDefaults!=='object')throw Error('ぜんたい設定を確認してください');
-    for(const type of ['enemy','ally']){
+    for(const type of ['enemy','ally',...(p.characterDefaults.block!==undefined?['block']:[])]){
       const base=p.characterDefaults[type];
       if(!base||typeof base!=='object'||Object.keys(base).some(key=>!sharedKeys(type).includes(key)))throw Error('ぜんたい設定を確認してください');
-      const template={...part(type,0,0),...structuredClone(base)};
+      const template={...part(type==='block'?'box':type,0,0),...structuredClone(base)};
       if(template.enemyScale)template.w=template.h=template.d=2*template.enemyScale;
       validate3D({...p,objects:[template],characterDefaults:undefined},true);
     }

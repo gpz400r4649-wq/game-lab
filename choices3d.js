@@ -1,4 +1,4 @@
-import {setReadingText} from './readings3d.js?v=20261111u';
+import {setReadingText} from './readings3d.js?v=20261111v';
 
 // A visible single-choice control. Programmatic value changes never save settings.
 export function createChoiceControl(){return enhanceChoiceControl(document.createElement('div'));}
