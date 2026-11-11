@@ -7,7 +7,7 @@ import {rotatePiece,editorPlacementReason} from '../building3d.js';
 import {createEditHistory} from '../history3d.js';
 const source=readFileSync(new URL('../app3d.js',import.meta.url),'utf8'),code=source.slice(source.indexOf('function canRotateSelectedPart('),source.indexOf('function resetGroupSelection('));
 function setup(type='wall'){
- const project=fresh3D();project.worldSize=240;project.spawn.z=80;const piece=part(type,0,type==='wall'?2:0);project.objects=[piece];const history=createEditHistory(project),nodes=new Map(),errors=[];const node=()=>({hidden:true,style:{},setAttribute(name,value){this[name]=value;},addEventListener(){},getBoundingClientRect(){return {left:900,top:420,width:280,height:250};}});const button=node();nodes.set('#rotate-selected3',button);
+ const project=fresh3D();project.worldSize=240;project.spawn.z=80;const piece=part(type,0,type==='wall'?2:0);project.objects=[piece];const history=createEditHistory(project),nodes=new Map(),errors=[];const node=()=>({hidden:true,style:{},children:[],append(child){if(child.parentElement)child.parentElement.children=child.parentElement.children.filter(c=>c!==child);this.children.push(child);child.parentElement=this;},setAttribute(name,value){this[name]=value;},addEventListener(){},getBoundingClientRect(){return {left:900,top:420,width:280,height:250};}});const button=node();nodes.set('#rotate-selected3',button);
  const c={project,mode:'edit',multiSelect:false,commonPreview:null,liveRange:false,editedObject:()=>project.objects.find(o=>o.id===c.selected),selected:piece.id,isLiveRangeEditing:()=>c.liveRange,$:id=>{if(!nodes.has(id))nodes.set(id,node());return nodes.get(id);},window:{innerWidth:1280,innerHeight:720,addEventListener(){}},structuredClone,rotatePiece,editorPlacementReason,resetInput(){},save(){history.record(project);},rebuild(){c.syncSelectedPartActions();},inspector(){},toast:message=>errors.push(message)};vm.createContext(c);vm.runInContext(code,c);return {c,piece,button,history,errors,nodes};
 }
 test('壁・床・屋根・階段・ドアを選んだ時にだけ回転ボタンを表示する',()=>{
@@ -27,4 +27,11 @@ test('位置調整は必要な時だけ開き、右側の設定を押し下げ�
  const {c,nodes}=setup();c.syncSelectedPartActions();const open=nodes.get('#placement-open3'),panel=nodes.get('#placement-panel3');assert.equal(open.hidden,false);assert.equal(panel.hidden,true);open.onclick();assert.equal(panel.hidden,false);assert.equal(open['aria-expanded'],'true');assert.equal(panel.style.left,'608px');assert.equal(panel.style.top,'420px');
  c.window.innerHeight=400;c.positionPlacementPanel();assert.equal(panel.style.top,'138px');nodes.get('#placement-close3').onclick();assert.equal(panel.hidden,true);assert.equal(open['aria-expanded'],'false');
  open.onclick();c.selected=null;c.syncSelectedPartActions();assert.equal(panel.hidden,true);assert.equal(open.hidden,true);
+});
+
+test('いどうボタンは敵・味方・その他の選択に合わせた設定ボタンの横へ移り、同じパネルを使う',()=>{
+ const {c,nodes}=setup('enemy');c.syncSelectedPartActions();const launcher=nodes.get('#placement-open3');assert.equal(launcher.parentElement,nodes.get('#enemy-launch-row3'));assert.equal(launcher.hidden,false);launcher.onclick();const panel=nodes.get('#placement-panel3');assert.equal(panel.hidden,false);
+ const ally=part('ally',8,0);c.project.objects.push(ally);c.selected=ally.id;c.syncSelectedPartActions();assert.equal(launcher.parentElement,nodes.get('#ally-launch-row3'));assert.equal(panel.hidden,false);assert.equal(nodes.get('#enemy-launch-row3').children.length,0);
+ const wall=part('wall',12,2);c.project.objects.push(wall);c.selected=wall.id;c.syncSelectedPartActions();assert.equal(launcher.parentElement,nodes.get('#part-launch-row3'));assert.equal(panel.hidden,false);
+ c.selected=null;c.syncSelectedPartActions();assert.equal(launcher.hidden,true);assert.equal(panel.hidden,true);
 });

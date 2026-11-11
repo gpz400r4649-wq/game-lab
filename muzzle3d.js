@@ -1,4 +1,4 @@
-import {gunLayout} from './appearance3d.js?v=20261111j';
+import {gunLayout} from './appearance3d.js?v=20261111m';
 export const TPS_GUN_MOUNT=Object.freeze({x:.45,y:1,z:-.25,scale:.6});
 export const ROBOT_BARREL=Object.freeze({x:.45,y:1,z:-.34,width:.15,height:.17,length:.65});
 function worldPoint(body,x,y,z,yaw){

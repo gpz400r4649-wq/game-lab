@@ -360,3 +360,5 @@ aside>#group-tools3{padding:0;margin:0;border:0;background:transparent;border-ra
 
 .viewport-top-left{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
 .viewport-top-left>#multi-select3{margin-left:0}
+
+.placement-launch-row>#enemy-open3,.placement-launch-row>#ally-open3{flex:1;min-width:0;width:auto}
