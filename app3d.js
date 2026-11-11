@@ -1,35 +1,35 @@
-import {initializeCharacterDefaults,synchronizeCharacterDefaults,inheritNewCharacter} from './character-defaults3d.js?v=20261111a';
-import {nearbyActor,trade,companionsAt} from './actor3d.js?v=20261111a';
-import {giveAllyGun,giftableGun,recruitTarget,allyAttackDistance} from './ally3d.js?v=20261111a';
-import {createEditHistory} from './history3d.js?v=20261111a';
-import {makeDoorModel,updateDoorModel} from './door-model3d.js?v=20261111a';
-import {enemyEditHeight,createFloorRangeView} from './floor-edit3d.js?v=20261111a';
-import {createPatrolOverlay} from './patrol-ui3d.js?v=20261111a';
-import {stageRangePointer} from './stage-range3d.js?v=20261111a';
-import {createEnemyMessages} from './enemy-messages3d.js?v=20261111a';
-import {createPlayRanges} from './play-ranges3d.js?v=20261111a';
-import {closeLiveRangeEditor,isLiveRangeEditing} from './enemy-range-ui3d.js?v=20261111a';
-import {dragCandidate} from './editor-drag3d.js?v=20261111a';
-import {rangeWorldCells,enemyYaw,defaultEnemyRanges,MOVE_MAX_CELLS} from './enemy-range3d.js?v=20261111a';
-import {ROBOT_BARREL,TPS_GUN_MOUNT} from './muzzle3d.js?v=20261111a';
-import {configureDoor,nearbyDoor} from './doors3d.js?v=20261111a';
-import {appearanceFor} from './appearance3d.js?v=20261111a';
-import {makeGunModel,applyFPSGunPose,worldGunMuzzle} from './gun-model3d.js?v=20261111a';
-import {editorViewFromPlay,moveEditorCamera,createEditorNavigation} from './editor-camera3d.js?v=20261111a';
-import {createStructureRenderer,BATCH_TYPES} from './structure-render3d.js?v=20261111a';
-import {MAX_PROJECT_BYTES,MAX_BUILD_Y} from './limits3d.js?v=20261111a';
-import {worldSize,coordinateLimit} from './world3d.js?v=20261111a';
-import {createWorldUI} from './world-ui3d.js?v=20261111a';
-import {configureNumericInput} from './numeric3d.js?v=20261111a';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261111a';
-import {installGameTouchGuard,bindHeldButton,bindGameAction,createGamePageMode} from './input3d.js?v=20261111a';
-import {actionsFor} from './events3d.js?v=20261111a';
-import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261111a';
-import {BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,editorPlacementReason,blockPlacement} from './building3d.js?v=20261111a';
-import {createToolsUI} from './tools3d.js?v=20261111a';
+import {initializeCharacterDefaults,synchronizeCharacterDefaults,inheritNewCharacter} from './character-defaults3d.js?v=20261111b';
+import {nearbyActor,trade,companionsAt} from './actor3d.js?v=20261111b';
+import {giveAllyGun,giftableGun,recruitTarget,allyAttackDistance} from './ally3d.js?v=20261111b';
+import {createEditHistory} from './history3d.js?v=20261111b';
+import {makeDoorModel,updateDoorModel} from './door-model3d.js?v=20261111b';
+import {enemyEditHeight,createFloorRangeView} from './floor-edit3d.js?v=20261111b';
+import {createPatrolOverlay} from './patrol-ui3d.js?v=20261111b';
+import {stageRangePointer} from './stage-range3d.js?v=20261111b';
+import {createEnemyMessages} from './enemy-messages3d.js?v=20261111b';
+import {createPlayRanges} from './play-ranges3d.js?v=20261111b';
+import {closeLiveRangeEditor,isLiveRangeEditing} from './enemy-range-ui3d.js?v=20261111b';
+import {dragCandidate} from './editor-drag3d.js?v=20261111b';
+import {rangeWorldCells,enemyYaw,defaultEnemyRanges,MOVE_MAX_CELLS} from './enemy-range3d.js?v=20261111b';
+import {ROBOT_BARREL,TPS_GUN_MOUNT} from './muzzle3d.js?v=20261111b';
+import {configureDoor,nearbyDoor} from './doors3d.js?v=20261111b';
+import {appearanceFor} from './appearance3d.js?v=20261111b';
+import {makeGunModel,applyFPSGunPose,worldGunMuzzle} from './gun-model3d.js?v=20261111b';
+import {editorViewFromPlay,moveEditorCamera,createEditorNavigation} from './editor-camera3d.js?v=20261111b';
+import {createStructureRenderer,BATCH_TYPES} from './structure-render3d.js?v=20261111b';
+import {MAX_PROJECT_BYTES,MAX_BUILD_Y} from './limits3d.js?v=20261111b';
+import {worldSize,coordinateLimit} from './world3d.js?v=20261111b';
+import {createWorldUI} from './world-ui3d.js?v=20261111b';
+import {configureNumericInput} from './numeric3d.js?v=20261111b';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261111b';
+import {installGameTouchGuard,bindHeldButton,bindGameAction,createGamePageMode} from './input3d.js?v=20261111b';
+import {actionsFor} from './events3d.js?v=20261111b';
+import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261111b';
+import {BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,editorPlacementReason,blockPlacement} from './building3d.js?v=20261111b';
+import {createToolsUI} from './tools3d.js?v=20261111b';
 import * as T from './vendor/three.module.min.js';
-import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet} from './engine3d.js?v=20261111a';
-import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261111a';
+import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet} from './engine3d.js?v=20261111b';
+import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261111b';
 const $=s=>document.querySelector(s),view=$('#viewport'),KEY='tsukuru-lab-3d-v1';
 let enemyRangeView='attackRange';
 let project=fresh3D(),selected=null,tool='select',doorPreset='key',weaponPresetId='',mode='edit',perspective='tps',game=null,yaw=0,pitch=-.05,editYaw=.55,editPitch=.7,editDistance=30,editTarget=new T.Vector3(0,0,0),stick={x:0,z:0},keys=new Set(),fireHeld=false,firePressed=false,jumpPressed=false,doorPressed=false,look=null,saveTimer,toastTimer,lastTime=0;
@@ -225,9 +225,21 @@ function pointOnDragPlane(event,height){hits(event,[]);return ray.ray.intersectP
 function beginEditorDrag(drag){if(drag.started)return;drag.started=true;const source=meshes.get(drag.original.id),copy=source.clone(true);copy.position.set(0,0,0);copy.visible=true;copy.traverse(child=>{child.layers.set(0);if(child.isMesh)child.material=ghostMaterial;});dragPreview.clear();dragPreview.add(copy);source.visible=false;structureRenderer.sync(project.objects.map(o=>o.id===drag.original.id?{...o,hidden:true}:o),meshes);surface.classList.add('is-object-dragging');}
 function updateEditorDrag(event,drag){const point=pointOnDragPlane(event,drag.height),candidate=dragCandidate(drag.original,drag.grab,point,project.objects,project.spawn,project);if(!candidate)return;drag.candidate=candidate;beginEditorDrag(drag);dragPreview.position.set(candidate.piece.x,candidate.piece.y,candidate.piece.z);ghostMaterial.color.set(candidate.reason?0xee8592:0x53d9b4);dragPreview.visible=true;dragPreview.updateMatrixWorld(true);selectionBox.setFromObject(dragPreview);if(drag.original.type==='enemy'){if(drag.original[enemyRangeView]?.space!=='world')rangeOverlay.position.set(candidate.piece.x-drag.original.x,0,candidate.piece.z-drag.original.z);}}
 function finishEditorDrag(commit){const drag=look?.drag;if(!drag)return;const result=drag.candidate,o=project.objects.find(o=>o.id===drag.original.id);if(commit&&drag.started&&result&&!result.reason&&o){o.x=result.piece.x;o.z=result.piece.z;save();}else if(commit&&result?.reason)toast(result.reason);const source=meshes.get(drag.original.id);if(source){source.visible=true;if(o)source.position.set(o.x,o.y,o.z);}dragPreview.clear();dragPreview.visible=false;rangeOverlay.position.set(0,0,0);surface.classList.remove('is-object-dragging');structureRenderer.sync(project.objects,meshes);if(look)look.drag=null;updateSelection();if(commit&&drag.started){rebuild();objectList();inspector();}}
+function showTappedCharacterRange(event){
+ if(mode!=='play'||!game)return false;
+ positionCamera();const hit=hits(event,[objectsGroup]).find(visibleHit);
+ if(!hit)return false;
+ const character=game.objects.find(object=>object.id===objectId(hit.object));
+ if(!character||character.hidden||character.hp<=0)return false;
+ if(character.type==='enemy')return playRanges.showTarget(character.id);
+ if(character.type==='ally'){
+  allyRangeTarget.value=character.id;allyRangeEnabled.checked=true;allyRangeEnabled.onchange();allyRangePanel.open=false;return true;
+ }
+ return false;
+}
 surface.onpointerdown=e=>{if(mode==='edit'&&stageRangePointer('start',e.pointerId,pointOnDragPlane(e,enemyEditHeight(editedObject())))){e.preventDefault();surface.setPointerCapture(e.pointerId);surface.focus({preventScroll:true});return;}if(mode==='edit'&&(!look||look.id===e.pointerId))editorPointer={clientX:e.clientX,clientY:e.clientY};e.preventDefault();if(look)return;surface.setPointerCapture(e.pointerId);look={id:e.pointerId,x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY,moved:false,placing:mode==='edit'&&!isLiveRangeEditing()&&GRID_PARTS.has(tool)&&!placementLook,viewOnly:mode==='edit'&&GRID_PARTS.has(tool)&&placementLook};if(mode==='edit'&&!isLiveRangeEditing()&&tool==='select'&&selected){const hit=hits(e,[objectsGroup]).find(visibleHit);if(hit&&objectId(hit.object)===selected){const original=editedObject();look.drag={original:{...original},grab:{x:hit.point.x,z:hit.point.z},height:hit.point.y,started:false,candidate:null};}}};
 surface.onpointermove=e=>{if(mode==='edit'&&stageRangePointer('move',e.pointerId,pointOnDragPlane(e,enemyEditHeight(editedObject()))))return;if(mode==='edit'&&(!look||look.id===e.pointerId))editorPointer={clientX:e.clientX,clientY:e.clientY};if(!look||look.id!==e.pointerId)return;const dx=e.clientX-look.x,dy=e.clientY-look.y;look.x=e.clientX;look.y=e.clientY;if(Math.hypot(e.clientX-look.startX,e.clientY-look.startY)>6)look.moved=true;if(look.placing){updateEditorGhost();return;}if(mode==='edit'&&look.drag){if(look.moved)updateEditorDrag(e,look.drag);return;}if(mode==='play'){yaw-=dx*.005;pitch=clamp(pitch-dy*.004,-1.2,1.15);}else{editYaw-=dx*.006;editPitch=clamp(editPitch+dy*.004,.18,1.4);}};
-surface.onpointerup=e=>{if(stageRangePointer('end',e.pointerId,null))return;if(!look||look.id!==e.pointerId)return;if(look.drag&&look.moved){updateEditorDrag(e,look.drag);finishEditorDrag(true);look=null;return;}const click=!look.viewOnly&&(look.placing||!look.moved)&&withinSurface(e);look=null;if(mode!=='edit'||!click||isLiveRangeEditing()||commonPreview)return;const intersect=hits(e,[objectsGroup]);if(tool==='select'||tool==='erase'){const id=intersect.length?objectId(intersect[0].object):null;if(tool==='erase'&&id){project.objects=project.objects.filter(o=>o.id!==id);if(selected===id)selected=null;save();rebuild();}else selected=id;updateSelection();objectList();inspector();}else{const candidate=editorCandidate(e);if(!candidate){toast('ステージの面をタップしよう');return;}if(candidate.reason){toast(candidate.reason);return;}const o=inheritNewCharacter(project,candidate.piece);project.objects.push(o);selected=o.id;save();rebuild();objectList();inspector();toast(PARTS[tool]+'を追加したよ！');}};
+surface.onpointerup=e=>{if(stageRangePointer('end',e.pointerId,null))return;if(!look||look.id!==e.pointerId)return;if(look.drag&&look.moved){updateEditorDrag(e,look.drag);finishEditorDrag(true);look=null;return;}const click=!look.viewOnly&&(look.placing||!look.moved)&&withinSurface(e)&&(mode!=='play'||Math.hypot(e.clientX-look.startX,e.clientY-look.startY)<=6);look=null;if(mode==='play'){if(click)showTappedCharacterRange(e);return;}if(mode!=='edit'||!click||isLiveRangeEditing()||commonPreview)return;const intersect=hits(e,[objectsGroup]);if(tool==='select'||tool==='erase'){const id=intersect.length?objectId(intersect[0].object):null;if(tool==='erase'&&id){project.objects=project.objects.filter(o=>o.id!==id);if(selected===id)selected=null;save();rebuild();}else selected=id;updateSelection();objectList();inspector();}else{const candidate=editorCandidate(e);if(!candidate){toast('ステージの面をタップしよう');return;}if(candidate.reason){toast(candidate.reason);return;}const o=inheritNewCharacter(project,candidate.piece);project.objects.push(o);selected=o.id;save();rebuild();objectList();inspector();toast(PARTS[tool]+'を追加したよ！');}};
 surface.onpointerleave=()=>{if(!look)editorPointer=null;};surface.onpointercancel=surface.onlostpointercapture=e=>{if(stageRangePointer('end',e.pointerId,null))return;if(look?.id===e.pointerId){finishEditorDrag(false);look=null;editorPointer=null;ghost.visible=false;}};surface.onwheel=e=>{if(mode==='edit'&&!look?.drag){e.preventDefault();editDistance=clamp(editDistance+e.deltaY*.025,5,65);}};surface.addEventListener('wheel',e=>e.preventDefault(),{passive:false});
 
 document.querySelectorAll('[data-orbit]').forEach(b=>b.onclick=()=>{const k=b.dataset.orbit;if(k==='left')editYaw+=.3;if(k==='right')editYaw-=.3;if(k==='in')editDistance=clamp(editDistance-4,5,65);if(k==='out')editDistance=clamp(editDistance+4,5,65);});

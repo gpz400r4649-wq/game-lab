@@ -22,6 +22,7 @@ test('オン・オフと編集モードで表示を切り替え、倒れたら�
  master.checked=false;master.onchange();ui.update(game,true,165);assert.ok(scene.children.every(m=>!m.visible));
  checks[2].onchange();assert.equal(master.checked,true);ui.update(game,true,166);assert.equal(scene.children.filter(m=>m.isInstancedMesh)[2].visible,true);
  ui.update(game,false,170);assert.ok(scene.children.every(m=>!m.visible));assert.equal(panel.hidden,true);
- e.hp=0;ui.update(game,true,230);assert.ok(scene.children.every(m=>!m.visible));
+ checks.forEach(check=>check.checked=false);master.checked=false;assert.equal(ui.showTarget('e'),true);assert.ok(checks.every(check=>check.checked));assert.equal(master.checked,true);assert.equal(select.value,'e');assert.equal(ui.getTarget(),'e');ui.update(game,true,220);assert.ok(scene.children.some(m=>m.visible));
+ e.hp=0;ui.update(game,true,280);assert.ok(scene.children.every(m=>!m.visible));
  }finally{globalThis.document=previous;}
 });
