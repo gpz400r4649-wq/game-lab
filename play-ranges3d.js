@@ -1,8 +1,8 @@
-import {createPatrolOverlay} from './patrol-ui3d.js?v=20261111b';
-import {usesPatrolRoute,usesWaypoints,activeRoute} from './patrol-route3d.js?v=20261111b';
+import {createPatrolOverlay} from './patrol-ui3d.js?v=20261111c';
+import {usesPatrolRoute,usesWaypoints,activeRoute} from './patrol-route3d.js?v=20261111c';
 import * as T from './vendor/three.module.min.js';
-import {rangeWorldCells,MOVE_MAX_CELLS} from './enemy-range3d.js?v=20261111b';
-import {setReadingText} from './readings3d.js?v=20261111b';
+import {rangeWorldCells,MOVE_MAX_CELLS} from './enemy-range3d.js?v=20261111c';
+import {setReadingText} from './readings3d.js?v=20261111c';
 export function playRangeCells(enemy,key){
  if(!enemy||enemy.hp<=0||enemy.hidden||!enemy[key])return [];
  return rangeWorldCells(enemy[key],key==='moveRange'?(enemy.origin||enemy):enemy).slice(0,MOVE_MAX_CELLS);
@@ -30,10 +30,10 @@ export function createPlayRanges(scene){
   const text=!enemy?'敵を置くと、はんいを見られるよ。':enemy.hidden||enemy.hp<=0?'この敵は、今はステージにいないよ。':missing.length?missing.join('・')+'マスは未設定。つくる画面でマスを設定してね。':!show?'「はんいを表示する」をオンにしよう。':'紫の輪の敵を表示中。青＝うごく・黄＝気づく・赤＝こうげき。';
   if(text!==stamp){setReadingText(note,text);stamp=text;}
  }
- function showTarget(id){
-  if(!id)return false;target=id;select.value=id;
-  if(!checks.some(check=>check.checked))checks.forEach(check=>check.checked=true);
-  if(enabledControl)enabledControl.checked=true;panel.open=false;last=0;syncToggle();return true;
+ function showTarget(id,{toggle=false}={}){
+  if(!id)return false;const turnOff=toggle&&target===id&&enabledControl?.checked&&checks.some(check=>check.checked);target=id;select.value=id;
+  if(!turnOff&&!checks.some(check=>check.checked))checks.forEach(check=>check.checked=true);
+  if(enabledControl)enabledControl.checked=!turnOff;panel.open=false;last=0;syncToggle();return true;
  }
  return {start,update,showTarget,getTarget:()=>target};
 }

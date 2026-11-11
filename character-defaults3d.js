@@ -1,5 +1,5 @@
-import {coordinateLimit,worldSize} from './world3d.js?v=20261111b';
-import {rangeCell} from './enemy-range3d.js?v=20261111b';
+import {coordinateLimit,worldSize} from './world3d.js?v=20261111c';
+import {rangeCell} from './enemy-range3d.js?v=20261111c';
 const ENEMY_KEYS=['startsHidden','hp','enemyScale','movementSpeed','program','routine','chaseMode','chaseGraceSeconds','attackEnabled','attackSpeed','enemyWeaponId','searchRange','attackRange','moveRange','patrolRoute','waypoints','routeEnd','dropHeldWeapon','enemyDrops'];
 const ALLY_KEYS=['hp','allyGun','allyAttack','allyRangeCells'];
 const snapshots=new WeakMap();

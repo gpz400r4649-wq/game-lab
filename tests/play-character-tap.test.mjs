@@ -15,3 +15,12 @@ test('手前の壁越し、役者、空白、倒された敵や出現待ちで�
  const {c,calls}=setup();c.hits=()=>[];assert.equal(c.showTappedCharacterRange({}),false);c.mode='edit';assert.equal(c.showTappedCharacterRange({}),false);assert.deepEqual(calls,[]);
 });
 test('見えないパーツの判定を除いてから、画面上のキャラクターを選ぶ',()=>{const {c,calls}=setup();c.hits=()=>[{object:{id:'wall'},visible:false},{object:{id:'enemy'}}];assert.equal(c.showTappedCharacterRange({}),true);assert.deepEqual(calls,['enemy']);});
+
+test('同じ味方を続けてタップするとオン・オフ・オンになり、別の味方ではオンに切り替える',()=>{
+ const {c,objects}=setup();c.hits=()=>[{object:{id:'ally'}}];
+ c.showTappedCharacterRange({});assert.equal(c.allyRangeEnabled.checked,true);
+ c.showTappedCharacterRange({});assert.equal(c.allyRangeEnabled.checked,false);
+ c.showTappedCharacterRange({});assert.equal(c.allyRangeEnabled.checked,true);
+ objects.push({id:'ally2',type:'ally',hp:3});c.hits=()=>[{object:{id:'ally2'}}];c.showTappedCharacterRange({});assert.equal(c.allyRangeEnabled.checked,true);assert.equal(c.allyRangeTarget.value,'ally2');
+ c.allyRangeEnabled.checked=false;c.showTappedCharacterRange({});assert.equal(c.allyRangeEnabled.checked,true);
+});

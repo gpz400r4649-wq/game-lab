@@ -23,6 +23,10 @@ test('オン・オフと編集モードで表示を切り替え、倒れたら�
  checks[2].onchange();assert.equal(master.checked,true);ui.update(game,true,166);assert.equal(scene.children.filter(m=>m.isInstancedMesh)[2].visible,true);
  ui.update(game,false,170);assert.ok(scene.children.every(m=>!m.visible));assert.equal(panel.hidden,true);
  checks.forEach(check=>check.checked=false);master.checked=false;assert.equal(ui.showTarget('e'),true);assert.ok(checks.every(check=>check.checked));assert.equal(master.checked,true);assert.equal(select.value,'e');assert.equal(ui.getTarget(),'e');ui.update(game,true,220);assert.ok(scene.children.some(m=>m.visible));
- e.hp=0;ui.update(game,true,280);assert.ok(scene.children.every(m=>!m.visible));
+ ui.showTarget('e',{toggle:true});ui.update(game,true,221);assert.equal(master.checked,false);assert.ok(scene.children.every(m=>!m.visible));
+ ui.showTarget('e',{toggle:true});ui.update(game,true,222);assert.equal(master.checked,true);assert.ok(scene.children.some(m=>m.visible));
+ ui.showTarget('other',{toggle:true});assert.equal(master.checked,true);assert.equal(ui.getTarget(),'other');
+ master.checked=false;ui.showTarget('other',{toggle:true});assert.equal(master.checked,true);
+ ui.showTarget('e');e.hp=0;ui.update(game,true,280);assert.ok(scene.children.every(m=>!m.visible));
  }finally{globalThis.document=previous;}
 });
