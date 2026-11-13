@@ -1,5 +1,5 @@
-import {allyAttackDistance} from './ally3d.js?v=20261111v';
-import {setReadingText} from './readings3d.js?v=20261111v';
+import {allyAttackDistance} from './ally3d.js?v=20261113a';
+import {setReadingText} from './readings3d.js?v=20261113a';
 
 export function renderAllyRangePreview(parent,ally,catalog){
  const selected=ally.allyRangeCells??5,actual=allyAttackDistance(ally,catalog)/4,limited=actual<selected;

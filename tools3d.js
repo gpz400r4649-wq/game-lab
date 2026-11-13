@@ -1,11 +1,11 @@
-import {createChoiceControl} from './choices3d.js?v=20261111v';
-import {MAX_BUILD_LEVEL} from './limits3d.js?v=20261111v';
-import {appearanceFor,GUN_SHAPES,GUN_COLORS,gunPreviewSVG} from './appearance3d.js?v=20261111v';
-import {bindGameAction} from './input3d.js?v=20261111v';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261111v';
-import {LIMITS,PROJECTILES,IMPACTS,impactEffects,weaponPresetKey,SHOT_PATTERNS,cadenceHandling} from './weapons3d.js?v=20261111v';
-import {buildChoices,activeBuildTool,cycleBuildType,facingBuildRotation,makeTool,TOOL_EFFECTS,BUILD_TYPES,equipTool,keepStructures,equipBlock} from './building3d.js?v=20261111v';
-import {WEAPON_PRESETS,PARTS} from './engine3d.js?v=20261111v';
+import {createChoiceControl} from './choices3d.js?v=20261113a';
+import {MAX_BUILD_LEVEL} from './limits3d.js?v=20261113a';
+import {appearanceFor,GUN_SHAPES,GUN_COLORS,gunPreviewSVG} from './appearance3d.js?v=20261113a';
+import {bindGameAction} from './input3d.js?v=20261113a';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261113a';
+import {LIMITS,PROJECTILES,IMPACTS,impactEffects,weaponPresetKey,SHOT_PATTERNS,cadenceHandling} from './weapons3d.js?v=20261113a';
+import {buildChoices,activeBuildTool,cycleBuildType,facingBuildRotation,makeTool,TOOL_EFFECTS,BUILD_TYPES,equipTool,keepStructures,equipBlock} from './building3d.js?v=20261113a';
+import {WEAPON_PRESETS,PARTS} from './engine3d.js?v=20261113a';
 export function createToolsUI(api){
   const {$,getProject,getGame,getMode,field,save,refresh,finishBuilding}=api;
   let editing=0,rotation=0,level=0,activePage='basic';
@@ -68,7 +68,7 @@ export function createToolsUI(api){
       const choices=document.createElement('fieldset'),legend=document.createElement('legend');choices.className='impact-choices';setReadingText(legend,'この銃で切り替えられるブロック');choices.append(legend);
       for(const [type,label] of Object.entries(BUILD_TYPES)){const row=document.createElement('label'),check=document.createElement('input'),caption=document.createElement('span');check.type='checkbox';check.checked=buildChoices(tool).includes(type);check.setAttribute('aria-label',label+'を切り替えに入れる');setReadingText(caption,label);row.append(check,caption);choices.append(row);check.onchange=()=>{let values=buildChoices(tool).filter(t=>t!==type);if(check.checked)values.push(type);if(!values.length){check.checked=true;return;}tool.buildChoices=values;if(!values.includes(tool.effect))tool.effect=values[0];changed();renderEditor();};}
       const rule=document.createElement('p');setReadingText(rule,'① 切り替えボタンを押したら → ② 次にえらんだブロックを出す。２つ以上えらぶと、１つの銃で切り替えられるよ。チェック１つなら、そのブロックだけを出す銃だよ。');choices.append(rule);dialog.append(choices);
-      const d=document.createElement('div');d.className='weapon-settings';performanceField(d,'出すブロックの体力','structureHp',1,LIMITS.maxBlockHp,1,[['もろい',5],['ふつう',20],['かたい',100]]);dialog.append(d);const note=document.createElement('p');note.className='component-description';setReadingText(note,`狙った場所に${BUILD_TYPES[tool.effect]}を出す建築銃。緑のプレビューなら置けるよ。見る方向に合わせて向きがそろうよ。「90° 回す」で向きを変えることもできるよ。`);dialog.append(note);}
+      const shared=document.createElement('section'),sharedNote=document.createElement('p'),openShared=document.createElement('button');shared.className='build-global-settings';const defaults=p.characterDefaults?.block||{hp:20,destructible:true};setReadingText(sharedNote,`出すブロックは「ブロックのぜんたい設定」を使うよ。体力：${defaults.hp} ／ ${defaults.destructible===false?'こわれない':'体力がなくなるとこわれる'}`);setReadingText(openShared,'ブロックのぜんたい設定をひらく');openShared.onclick=()=>{dialog.close();api.openBlockSettings?.();};shared.append(sharedNote,openShared);dialog.append(shared);const note=document.createElement('p');note.className='component-description';setReadingText(note,`狙った場所に${BUILD_TYPES[tool.effect]}を出す建築銃。緑のプレビューなら置けるよ。見る方向に合わせて向きがそろうよ。「90° 回す」で向きを変えることもできるよ。`);dialog.append(note);}
     const addRow=document.createElement('div');addRow.className='new-tools';
     for(const [effect,label] of [['shoot','＋ 射撃の銃'],['wall','＋ 壁の銃'],['floor','＋ 床の銃'],['roof','＋ 屋根の銃'],['ramp','＋ スロープの銃']]){const b=document.createElement('button');setReadingText(b,label);b.disabled=p.loadout.length>=8;b.onclick=()=>{p.loadout.push(makeTool(effect));editing=p.loadout.length-1;changed();renderEditor();};addRow.append(b);}dialog.append(addRow);
     const del=document.createElement('button');setReadingText(del,'この持ちものをはずす');del.disabled=p.loadout.length===1;del.onclick=()=>{p.loadout.splice(editing,1);editing=Math.max(0,editing-1);changed();renderEditor();};
@@ -104,7 +104,7 @@ export function createToolsUI(api){
     const groups={
       barrel:'look',range:'power',damage:'power',size:'power',speed:'power',
       spread:'pattern',spreadAngle:'pattern',interval:'handling',recoil:'handling',aimJitter:'handling',
-      blastRadius:'impact',structureHp:'build'
+      blastRadius:'impact'
     };
     for(const row of dialog.querySelectorAll('.performance-field')){
       if(groups[row.dataset.tuningKey]==='look')lookControls.append(row);else pages.get(groups[row.dataset.tuningKey]).append(row);
@@ -118,7 +118,7 @@ export function createToolsUI(api){
       const impactNote=pages.get('impact').querySelector('.impact-choices p');if(impactNote)addHelp('impact','跳ね返る＋爆発のしくみ',[impactNote]);
       for(const [key,label,text]of [['power','数値での調整について','まるを選んでも、数値を入力しても調整できるよ。届く距離は、跳ね返った道のりも数えるよ。'],['pattern','弾の出かたと上限について','弾が２個以上だと、形や広がりのちがいがわかるよ。画面内の弾は96発までだよ。']]){const note=document.createElement('p');setReadingText(note,text);addHelp(key,label,[note]);}
     }else{
-      pages.get('build').prepend(dialog.querySelector('.impact-choices'));const rule=pages.get('build').querySelector('.impact-choices p');if(rule)addHelp('build','ブロック切り替えのしくみ',[rule]);
+      pages.get('build').prepend(dialog.querySelector('.impact-choices'));pages.get('build').append(dialog.querySelector('.build-global-settings'));const rule=pages.get('build').querySelector('.impact-choices p');if(rule)addHelp('build','ブロック切り替えのしくみ',[rule]);
     }
     function addHelp(key,label,notes){const help=document.createElement('details'),summary=document.createElement('summary');help.className='gun-help';help.dataset.gunHelp=key;help.open=openHelp.has(key);setReadingText(summary,'？ '+label);help.append(summary,...notes);pages.get(key).append(help);}
     const basicTip=document.createElement('p');basicTip.className='gun-page-brief';setReadingText(basicTip,'上のタブから、見た目や弾の力をつくろう。');pages.get('basic').append(basicTip);

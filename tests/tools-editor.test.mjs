@@ -6,10 +6,10 @@ import {createToolsUI} from '../tools3d.js';
 import {toolsDOM} from './tools-dom-fixture.mjs';
 function setup(t){
  const previous={document:globalThis.document,window:globalThis.window,Option:globalThis.Option},dom=toolsDOM();Object.assign(globalThis,{document:dom.doc,window:new EventTarget(),Option:dom.Option});t.after(()=>Object.assign(globalThis,previous));
- const p=fresh3D(),nodes=new Map();let saved=0;const $=id=>{if(!nodes.has(id)){const el=dom.doc.createElement('button');el.id=id.slice(1);dom.doc.body.append(el);nodes.set(id,el);}return nodes.get(id);};
+ const p=fresh3D(),nodes=new Map();let saved=0,openedBlockSettings=0;const $=id=>{if(!nodes.has(id)){const el=dom.doc.createElement('button');el.id=id.slice(1);dom.doc.body.append(el);nodes.set(id,el);}return nodes.get(id);};
  const field=(parent,label,value,min,max,step,change)=>{const row=dom.doc.createElement('label'),input=dom.doc.createElement('input');row.className='field';input.value=value;input.setAttribute('data-numeric','');input.setAttribute('aria-label',label);input.onchange=()=>{input.value=change(Number(input.value));saved++;};row.append(input);parent.append(row);return row;};
- const ui=createToolsUI({$,getProject:()=>p,getGame:()=>null,getMode:()=> 'edit',field,save:()=>saved++,refresh(){},finishBuilding(){}});$('#tools-open3').onclick();const dialog=dom.doc.querySelector('#tools-dialog3'),tab=key=>dialog.querySelectorAll('[role=tab]').find(n=>n.dataset.page===key).onclick(),page=key=>dialog.querySelector('#gun-page-'+key);
- return {p,dialog,tab,page,dom,$,ui,saved:()=>saved};
+ const ui=createToolsUI({openBlockSettings:()=>openedBlockSettings++,$,getProject:()=>p,getGame:()=>null,getMode:()=> 'edit',field,save:()=>saved++,refresh(){},finishBuilding(){}});$('#tools-open3').onclick();const dialog=dom.doc.querySelector('#tools-dialog3'),tab=key=>dialog.querySelectorAll('[role=tab]').find(n=>n.dataset.page===key).onclick(),page=key=>dialog.querySelector('#gun-page-'+key);
+ return {p,dialog,tab,page,dom,$,ui,openedBlockSettings:()=>openedBlockSettings,saved:()=>saved};
 }
 test('銃づくりの主な項目を6タブへ分け、管理操作や長い説明はページに積み重ねない',t=>{
  const {dialog,page,tab}=setup(t);assert.equal(dialog.querySelectorAll('[role=tab]').length,6);assert.equal(dialog.querySelectorAll('select').length,0);assert.equal(dialog.querySelector('.gun-catalog-field'),null);assert.equal(dialog.querySelector('.gun-catalog-list').children.length,1);assert.equal(dialog.querySelector('.gun-catalog-list').children[0].getAttribute('aria-pressed'),'true');assert.equal(page('basic').querySelectorAll('.field').length,4);assert.equal(page('basic').querySelector('.new-tools'),null);
@@ -32,9 +32,9 @@ test('上部から銃を追加・切り替え・削除でき、見た目と銃�
  tab('look');const preview=page('look').querySelector('.gun-preview'),before=preview.innerHTML,shape=page('look').querySelector('[aria-label="銃の形"]');shape.options.find(b=>b.value==='launcher').onclick();assert.equal(p.loadout[1].appearance.shape,'launcher');assert.notEqual(preview.innerHTML,before);
  dialog.querySelector('.gun-catalog-list').children[0].onclick();assert.equal(dialog.querySelector('[aria-selected="true"]').dataset.page,'look');assert.equal(dialog.querySelector('.gun-catalog-list').children[0].getAttribute('aria-pressed'),'true');dialog.querySelector('.gun-catalog-actions').children[1].onclick();assert.equal(p.loadout.length,1);assert.ok(validate3D(p));
 });
-test('建築銃でもブロック切替と体力を見渡せるページにまとめ、数値を保存する',t=>{
- const {p,page,tab,dialog}=setup(t);const effect=page('basic').querySelector('[aria-label="この銃から出るもの"]');effect.value='wall';effect.onchange();assert.equal(dialog.querySelectorAll('[role=tab]').length,3);tab('build');const choices=page('build').querySelectorAll('input').filter(n=>n.type==='checkbox');assert.equal(choices.length,4);choices[1].checked=true;choices[1].onchange();assert.deepEqual(p.loadout[0].buildChoices,['wall','floor']);
- const hp=page('build').querySelector('input[data-numeric]');hp.value='100';hp.onchange();assert.equal(p.loadout[0].structureHp,100);assert.equal(page('build').querySelector('.gun-help').open,false);assert.ok(validate3D(p));
+test('建築銃の切替は残し、体力は全体設定へ一本化してその画面を開ける',t=>{
+ const {p,page,tab,dialog,openedBlockSettings}=setup(t);const effect=page('basic').querySelector('[aria-label="この銃から出るもの"]');effect.value='wall';effect.onchange();assert.equal(dialog.querySelectorAll('[role=tab]').length,3);tab('build');const choices=page('build').querySelectorAll('input').filter(n=>n.type==='checkbox');assert.equal(choices.length,4);choices[1].checked=true;choices[1].onchange();assert.deepEqual(p.loadout[0].buildChoices,['wall','floor']);
+ assert.equal(page('build').querySelector('input[data-numeric]'),null);assert.ok(page('build').querySelector('.build-global-settings'));page('build').querySelector('.build-global-settings button').onclick();assert.equal(openedBlockSettings(),1);assert.equal(dialog.open,false);assert.equal(page('build').querySelector('.gun-help').open,false);assert.ok(validate3D(p));
 });
 
 test('8本の銃を常に一覧で表示し、タブを切り替えても選択を保ち、追加上限を守る',t=>{

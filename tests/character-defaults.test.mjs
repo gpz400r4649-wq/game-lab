@@ -1,4 +1,4 @@
-import {keepStructures} from '../building3d.js';
+import {makeTool,placeStructure,keepStructures} from '../building3d.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {part,fresh3D,validate3D,create3D} from '../engine3d.js';
@@ -58,6 +58,10 @@ test('旧ブロックの個別体力とイベント・場所を保ち、一括�
  const old=JSON.parse(JSON.stringify(p));delete old.characterDefaults.block;delete old.objects[0].characterOverrides;assert.ok(validate3D(old).characterDefaults.block);
  p.characterDefaults.block.hp=201;assert.throws(()=>validate3D(p));p.characterDefaults.block.hp=20;p.characterDefaults.block.destructible='no';assert.throws(()=>validate3D(p));
 });
-test('建築銃から作品に残す体力は個別設定として保ち、一括適用でそろえられる',()=>{
- const p=fresh3D();initializeCharacterDefaults(p,part);p.characterDefaults.block.hp=50;const built={...part('wall',0,0),built:true,hp:10,maxHp:80};assert.equal(keepStructures(p,{buildings:[built]}),1);synchronizeCharacterDefaults(p);assert.equal(p.objects[0].hp,80);assert.ok(p.objects[0].characterOverrides.includes('hp'));applyBlockDefaults(p);assert.equal(p.objects[0].hp,50);assert.ok(validate3D(p));
+test('建築銃から作品に残したブロックも、以後の全体設定の変更に追従する',()=>{
+ const p=fresh3D();initializeCharacterDefaults(p,part);p.characterDefaults.block.hp=50;const built={...part('wall',0,0),built:true,hp:10,maxHp:80};assert.equal(keepStructures(p,{buildings:[built]}),1);synchronizeCharacterDefaults(p);assert.equal(p.objects[0].hp,50);assert.deepEqual(p.objects[0].characterOverrides,[]);p.characterDefaults.block.hp=100;synchronizeCharacterDefaults(p);assert.equal(p.objects[0].hp,100);assert.ok(validate3D(p));
+});
+for(const type of ['wall','floor','roof','ramp'])test(type+'の建築銃は古い銃別の体力を使わず、全体設定の体力と壊れ方で配置する',()=>{
+ const p=fresh3D();initializeCharacterDefaults(p,part);p.characterDefaults.block.hp=80;p.characterDefaults.block.destructible=false;const tool=makeTool(type);tool.structureHp=5;p.loadout=[tool];const g=create3D(p);const result=placeStructure(g,p,{buildPoint:{x:0,y:0,z:0}});assert.ok(result.valid,result.reason);assert.equal(result.piece.hp,80);assert.equal(result.piece.maxHp,80);assert.equal(result.piece.destructible,false);assert.deepEqual(result.piece.characterOverrides,[]);
+ assert.equal(keepStructures(p,g),1);const saved=validate3D(JSON.parse(JSON.stringify(p)));saved.characterDefaults.block.hp=120;saved.characterDefaults.block.destructible=true;synchronizeCharacterDefaults(saved);assert.equal(saved.objects[0].hp,120);assert.equal(saved.objects[0].destructible,true);
 });

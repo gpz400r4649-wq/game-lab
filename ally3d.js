@@ -1,6 +1,6 @@
-import {nearbyObjects} from './spatial3d.js?v=20261111v';
-import {shootVolley} from './combat3d.js?v=20261111v';
-import {safeShot} from './weapons3d.js?v=20261111v';
+import {nearbyObjects} from './spatial3d.js?v=20261113a';
+import {shootVolley} from './combat3d.js?v=20261113a';
+import {safeShot} from './weapons3d.js?v=20261113a';
 
 export function recruitTarget(g,yaw){
  let best=null,score=0;

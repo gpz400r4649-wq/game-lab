@@ -523,3 +523,7 @@ aside>#group-tools3{padding:0;margin:0;border:0;background:transparent;border-ra
 .ally-settings-controls>button{grid-column:1/-1;order:-1}
 .ally-settings-controls>.ally-attack-setting .setting-choices{grid-template-columns:1fr}
 @media(max-width:700px){.ally-settings-layout{grid-template-columns:1fr}.ally-range-preview{position:static;max-width:380px;width:100%;margin:0 auto}.ally-settings-controls>.ally-gun-setting .setting-choices{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.build-global-settings{grid-column:1/-1;padding:12px;border:1px solid #ded5ec;border-radius:10px;background:#f8f5ff}
+.build-global-settings p{margin:0 0 10px;font-size:13px;line-height:1.8}
+.build-global-settings>button{min-height:44px;width:100%}

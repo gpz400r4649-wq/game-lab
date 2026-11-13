@@ -1,11 +1,11 @@
-import {createChoiceControl} from './choices3d.js?v=20261111v';
-import {openStageMoveRange} from './stage-range3d.js?v=20261111v';
-import {mountLiveRangeEditor} from './range-panel3d.js?v=20261111v';
-import {createMapStick,panMapCenter} from './map-stick3d.js?v=20261111v';
-import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261111v';
-import {MOVE_MAX_CELLS,RANGE_MAX,rangeCell,rangeCells,worldMoveRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261111v';
-import {moveGridWindow,moveGridPages} from './world3d.js?v=20261111v';
-import {setReadingText,kanaText} from './readings3d.js?v=20261111v';
+import {createChoiceControl} from './choices3d.js?v=20261113a';
+import {openStageMoveRange} from './stage-range3d.js?v=20261113a';
+import {mountLiveRangeEditor} from './range-panel3d.js?v=20261113a';
+import {createMapStick,panMapCenter} from './map-stick3d.js?v=20261113a';
+import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261113a';
+import {MOVE_MAX_CELLS,RANGE_MAX,rangeCell,rangeCells,worldMoveRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261113a';
+import {moveGridWindow,moveGridPages} from './world3d.js?v=20261113a';
+import {setReadingText,kanaText} from './readings3d.js?v=20261113a';
 export function openMoveMap(o,{getProject,save,rebuild,lookFromAbove,onClose,key='moveRange',config,renderMode}){
  const p=getProject(),limit=moveGridWindow(p).limit,d=document.createElement('section');d.dataset.rangeKey=key;d.className='enemy-range-dialog range-live-panel';d.setAttribute('role','region');d.setAttribute('aria-label',config?.title||'敵が動けるマス');d.style.setProperty('--range-color',config?.color||'#91c7ee');
  const current=o[key]?worldMoveRange(o[key],o):{space:'world',cells:[]};

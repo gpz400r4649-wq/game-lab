@@ -1,26 +1,26 @@
-import {renderAllyRangePreview} from './ally-range-preview3d.js?v=20261111v';
-import {createChoiceControl} from './choices3d.js?v=20261111v';
-import {sharedDefaultsType,applyBlockDefaults,sharedKeys,synchronizeCharacterDefaults,useCharacterDefaults,inheritNewCharacter,writeCharacterDefaults} from './character-defaults3d.js?v=20261111v';
-import {copyEnemySettings,ENEMY_COPY_GROUPS} from './enemy-batch3d.js?v=20261111v';
-import {ACTOR_HATS} from './actor3d.js?v=20261111v';
-import {makeTool} from './building3d.js?v=20261111v';
-import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261111v';
-import {openWaypointEditor} from './waypoint-ui3d.js?v=20261111v';
-import {openPatrolEditor} from './patrol-ui3d.js?v=20261111v';
-import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261111v';
-import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261111v';
-import {inGridRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261111v';
-import {closeLiveRangeEditor,renderEnemyRange as renderEnemyRangeBase} from './enemy-range-ui3d.js?v=20261111v';
-import {gunPreviewSVG} from './appearance3d.js?v=20261111v';
-import {DOOR_PRESETS} from './doors3d.js?v=20261111v';
-import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261111v';
-import {coordinateLimit} from './world3d.js?v=20261111v';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261111v';
-import {actionsFor} from './events3d.js?v=20261111v';
-import {renderEventEditor} from './event-editor3d.js?v=20261111v';
-import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261111v';
-import {alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261111v';
-import {part,ENEMY_SCALES,PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261111v';
+import {renderAllyRangePreview} from './ally-range-preview3d.js?v=20261113a';
+import {createChoiceControl} from './choices3d.js?v=20261113a';
+import {sharedDefaultsType,applyBlockDefaults,sharedKeys,synchronizeCharacterDefaults,useCharacterDefaults,inheritNewCharacter,writeCharacterDefaults} from './character-defaults3d.js?v=20261113a';
+import {copyEnemySettings,ENEMY_COPY_GROUPS} from './enemy-batch3d.js?v=20261113a';
+import {ACTOR_HATS} from './actor3d.js?v=20261113a';
+import {makeTool} from './building3d.js?v=20261113a';
+import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261113a';
+import {openWaypointEditor} from './waypoint-ui3d.js?v=20261113a';
+import {openPatrolEditor} from './patrol-ui3d.js?v=20261113a';
+import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261113a';
+import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261113a';
+import {inGridRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261113a';
+import {closeLiveRangeEditor,renderEnemyRange as renderEnemyRangeBase} from './enemy-range-ui3d.js?v=20261113a';
+import {gunPreviewSVG} from './appearance3d.js?v=20261113a';
+import {DOOR_PRESETS} from './doors3d.js?v=20261113a';
+import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261113a';
+import {coordinateLimit} from './world3d.js?v=20261113a';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261113a';
+import {actionsFor} from './events3d.js?v=20261113a';
+import {renderEventEditor} from './event-editor3d.js?v=20261113a';
+import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261113a';
+import {alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261113a';
+import {part,ENEMY_SCALES,PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261113a';
 
 const ICONS={actor:'💬',plate:'▣',ally:'🛡',weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
 const DESCRIPTIONS={actor:'名前とせりふを書こう。交換する品を置くとお店になるよ。',plate:'踏んでいる間、えらんだドアが開くよ。',ally:'近くで「ついてきて」と呼ぶと、一緒に戦うよ。',weapon:'地面に置いて、ふれると拾える銃。持ちもの・銃づくりで用意した銃をえらぼう。',ramp:'低いほうから歩くと、そのまま登れるスロープ。回して好きな向きにつなげよう。',wall:'家を囲う壁。向きを変えてつなげよう。',floor:'家の床と天井に使える板。壁の内側にぴったり合うよ。',roof:'壁の上にのせる三角屋根。向きを変えて家を仕上げよう。',
@@ -209,7 +209,7 @@ export function createWorkshop(api){
     }
     if(DESTRUCTIBLE_TYPES.has(o.type)){
       const note=document.createElement('p');note.className='component-description';
-      if(commonObject){setReadingText(note,'壁・床・屋根・スロープ・四角いブロック・足場・動く足場に共通の設定だよ。つくる画面でこれから置くブロックにも使うよ。建築銃の体力は銃づくりで決めるよ。');el.append(note);}else{const basic=document.createElement('button');setReadingText(basic,'ブロックのぜんたい設定へ');basic.onclick=()=>openBasic('box');el.append(basic);}
+      if(commonObject){setReadingText(note,'壁・床・屋根・スロープ・四角いブロック・足場・動く足場に共通の設定だよ。つくる画面で置くブロックも、建築銃から出すブロックも、この設定を使うよ。');el.append(note);}else{const basic=document.createElement('button');setReadingText(basic,'ブロックのぜんたい設定へ');basic.onclick=()=>openBasic('box');el.append(basic);}
       field(el,'ブロックの体力',o.hp,1,LIMITS.maxBlockHp,1,n=>o.hp=Math.round(n));selectField(el,'弾が当たったら',[['yes','体力がなくなると壊れる'],['no','こわれない']],o.destructible===false?'no':'yes',v=>o.destructible=v==='yes');
       if(commonObject){const apply=document.createElement('button'),hint=document.createElement('p');apply.className='primary block-defaults-apply';setReadingText(apply,'置いてあるブロックもそろえる');setReadingText(hint,'個別の体力や、建築銃で作ったブロックも、いまのぜんたい設定にそろえるよ。壊れたときのイベントと、置いた場所はそのままだよ。');hint.className='component-description';apply.onclick=()=>{save();const count=applyBlockDefaults(getActualProject());save();rebuild();api.toast(count+'このブロックをそろえたよ');};el.append(apply,hint);}
     }
