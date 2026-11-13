@@ -59,7 +59,7 @@ test('ぜんたい設定を参照する選択ボタンも、個別設定へ切�
 test('味方・ドア・役者・ゴールも、選択肢を見渡して直接設定できる',t=>{
  const {p,setPart,$}=setup(t);const choose=(label,value)=>{const group=document.querySelectorAll('.setting-choices').find(g=>g.getAttribute('aria-label')===label&&g.closest('.enemy-dialog-content'));assert.ok(group,label);const button=group.options.find(b=>b.value===value);assert.ok(button,value);button.onclick();};
  const ally=setPart('ally');choose('いつ撃つ？','assist');assert.equal(ally.allyAttack,'assist');choose('射程（マス）','10');assert.equal(ally.allyRangeCells,10);
- const door=setPart('door');choose('ドアの開き方','slide');assert.equal(door.doorStyle,'slide');choose('開く向き','-1');assert.equal(door.doorDirection,-1);
+ const door=setPart('door');choose('開く向き','-1');assert.equal(door.doorDirection,-1);choose('ドアの開き方','slide');assert.equal(door.doorStyle,'slide');
  const actor=setPart('actor');choose('ぼうし','none');assert.equal(actor.hat,'none');const preset=document.querySelectorAll('.setting-choices').find(g=>g.getAttribute('aria-label')==='せりふの見本をえらぶ');preset.options[0].onclick();assert.equal(actor.speech,'いらっしゃい！');
  const goal=setPart('goal');choose('② 条件','stars');assert.equal(goal.settings.condition,'stars');assert.equal(document.querySelectorAll('select').length,0);assert.ok(validate3D(p));
 });
