@@ -1,6 +1,6 @@
-import {DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261113i';
-import {coordinateLimit,worldSize} from './world3d.js?v=20261113i';
-import {rangeCell} from './enemy-range3d.js?v=20261113i';
+import {DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261113j';
+import {coordinateLimit,worldSize} from './world3d.js?v=20261113j';
+import {rangeCell} from './enemy-range3d.js?v=20261113j';
 const ENEMY_KEYS=['startsHidden','hp','enemyScale','movementSpeed','program','routine','chaseMode','chaseGraceSeconds','attackEnabled','attackSpeed','enemyWeaponId','searchRange','attackRange','moveRange','patrolRoute','waypoints','routeEnd','dropHeldWeapon','enemyDrops'];
 const ALLY_KEYS=['hp','allyGun','allyAttack','allyRangeCells'];
 const BLOCK_KEYS=['hp','destructible'];
@@ -54,7 +54,11 @@ export function initializeCharacterDefaults(project,factory){
    if(type==='enemy')project.characterDefaults[type].movementSpeed=2;
   }
   const defaults=project.characterDefaults[type];
-  for(const key of sharedKeys(type))if(!(key in defaults)&&original[key]!==undefined)defaults[key]=clone(original[key]);
+  for(const key of sharedKeys(type))if(!(key in defaults)&&original[key]!==undefined){
+   // A legacy global program already expresses its saved behaviour without a routine.
+   if(key==='routine'&&type==='enemy')continue;
+   defaults[key]=clone(original[key]);
+  }
   if(type==='enemy')defaults.movementSpeed??=2;
   for(const object of project.objects.filter(o=>sharedDefaultsType(o.type)===type)){
    if(!project.sharedRangeDefaults&&object.characterOverrides)for(const key of ['moveRange','patrolRoute','waypoints','routeEnd'])if(!equal(object[key],factory(object.type,object.x,object.z)[key])&&!object.characterOverrides.includes(key))object.characterOverrides.push(key);

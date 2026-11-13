@@ -1,9 +1,9 @@
-import {ROOF_SHELL_RATIO} from './architecture3d.js?v=20261113i';
-import {inheritNewCharacter} from './character-defaults3d.js?v=20261113i';
-import {validAppearance} from './appearance3d.js?v=20261113i';
-import {MAX_PARTS,MAX_BUILD_Y,MAX_BUILD_LEVEL} from './limits3d.js?v=20261113i';
-import {worldHalf,coordinateLimit} from './world3d.js?v=20261113i';
-import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261113i';
+import {ROOF_SHELL_RATIO} from './architecture3d.js?v=20261113j';
+import {inheritNewCharacter} from './character-defaults3d.js?v=20261113j';
+import {DEFAULT_APPEARANCE,validAppearance} from './appearance3d.js?v=20261113j';
+import {MAX_PARTS,MAX_BUILD_Y,MAX_BUILD_LEVEL} from './limits3d.js?v=20261113j';
+import {worldHalf,coordinateLimit} from './world3d.js?v=20261113j';
+import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261113j';
 // Shared by editor, gameplay and placement preview. No browser dependency.
 export const BUILD_TYPES={wall:'壁',floor:'床',roof:'屋根',ramp:'スロープ'};
 export const GRID={cell:4,layer:3,size:60};
@@ -97,7 +97,7 @@ export function editorPlacementReason(piece,objects,spawn,world=60){
 }
 export const TOOL_EFFECTS={shoot:'弾を撃つ',wall:'壁を出す',floor:'床を出す',roof:'屋根を出す',ramp:'スロープを出す'};
 const defaults={speed:24,interval:.25,damage:1,spread:1};
-export function makeTool(effect='shoot',name){return {id:crypto.randomUUID(),name:name||(effect==='shoot'?'ブラスター':BUILD_TYPES[effect]+'を出す建築銃'),effect,...defaults,...SHOT_DEFAULTS};}
+export function makeTool(effect='shoot',name){return {id:crypto.randomUUID(),name:name||(effect==='shoot'?'ブラスター':BUILD_TYPES[effect]+'を出す建築銃'),effect,...defaults,...SHOT_DEFAULTS,...(effect==='shoot'?{recoil:1,aimJitter:1,appearance:{...DEFAULT_APPEARANCE,suppressor:true}}:{})};}
 export function defaultLoadout(weapon=defaults){const gun=makeTool();Object.assign(gun,weapon);return [gun];}
 export function validTool(t){return !!t&&validAppearance(t.appearance)&&validBuildChoices(t)&&validHandling(t)&&(t.impacts===undefined||validImpacts(t.impacts))&&(t.pickupOnly===undefined||typeof t.pickupOnly==='boolean')&&typeof t.id==='string'&&typeof t.name==='string'&&t.name.trim().length>0&&t.name.length<=32&&Object.hasOwn(TOOL_EFFECTS,t.effect)&&Number.isFinite(t.speed)&&t.speed>=5&&t.speed<=60&&Number.isFinite(t.interval)&&t.interval>=LIMITS.minInterval&&t.interval<=2&&Number.isInteger(t.damage)&&t.damage>=1&&t.damage<=LIMITS.maxDamage&&Number.isInteger(t.spread)&&t.spread>=1&&t.spread<=LIMITS.pellets&&Object.hasOwn(PROJECTILES,t.projectile)&&Object.hasOwn(IMPACTS,t.impact)&&Number.isFinite(t.size)&&t.size>=LIMITS.minSize&&t.size<=LIMITS.maxSize&&Number.isFinite(t.spreadAngle)&&t.spreadAngle>=0&&t.spreadAngle<=45&&Number.isFinite(t.blastRadius)&&t.blastRadius>=1&&t.blastRadius<=6&&Number.isInteger(t.structureHp)&&t.structureHp>=1&&t.structureHp<=200;}
 export function constructionPart(type,x=0,z=0,y=0,rotation=0){
@@ -105,7 +105,7 @@ export function constructionPart(type,x=0,z=0,y=0,rotation=0){
   return {id:crypto.randomUUID(),type,x,y,z,rotation:type==='ramp'?rotation%360:turned?90:0,
     w:type==='wall'?(turned?.25:4):4,
     h:type==='wall'||type==='ramp'?3:type==='floor'?.25:1.5,
-    d:type==='wall'?(turned?4:.25):4,hp:20,destructible:true,program:[],
+    d:type==='wall'?(turned?4:.25):4,hp:20,destructible:true,destroyEvents:[{type:'dropSelf'}],program:[],
     settings:{axis:'x',distance:3,speed:2,value:1,condition:'touch',required:1}};
 }
 export function rotatePiece(o,world=60){if(o.wallHalf==='halfVertical'){const turned=o.rotation===90,cx=turned?o.x-2:snap(o.x),cz=turned?snap(o.z):o.z-2,offset=turned?-(o.z-cz):o.x-cx;[o.w,o.d]=[o.d,o.w];o.rotation=turned?0:90;o.x=turned?cx+offset:cx+2;o.z=turned?cz+2:cz-offset;alignPiece(o,world);return;}if(!Object.hasOwn(BUILD_TYPES,o.type)&&o.type!=='door')return;const anchor={x:o.x-(['wall','door'].includes(o.type)&&o.rotation===90?2:0),z:o.z-(['wall','door'].includes(o.type)&&o.rotation!==90?2:0)};[o.w,o.d]=[o.d,o.w];o.rotation=o.type==='ramp'||o.roofStyle==='slope'?((o.rotation||0)+90)%360:o.rotation===90?0:90;if(['wall','door'].includes(o.type)&&!(o.type==='door'&&Math.max(o.w,o.d)>=7.9)){o.x=anchor.x+(o.rotation===90?2:0);o.z=anchor.z+(o.rotation===0?2:0);}alignPiece(o,world);}

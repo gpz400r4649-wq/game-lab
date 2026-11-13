@@ -13,10 +13,10 @@ test('置いた銃にふれると、その銃を拾い持ち替える。編集�
  assert.ok(!g.inventory.includes(gun.id));tick(g,p,3);assert.ok(g.inventory.includes(gun.id));assert.equal(g.equipped,1);assert.ok(g.objects[0].collected);assert.equal(g.inventory.filter(id=>id===gun.id).length,1);assert.equal(JSON.stringify(p),before);
 });
 test('銃が未指定・削除済みの銃アイテムは勝手に消えない',()=>{
- const p=stage(part('weapon',0,8)),g=create3D(p);tick(g,p);assert.ok(!g.objects[0].collected);g.objects[0].weaponId='deleted';tick(g,p);assert.ok(!g.objects[0].collected);
+ const p=stage(part('weapon',0,8));p.objects[0].weaponId='';const g=create3D(p);tick(g,p);assert.ok(!g.objects[0].collected);g.objects[0].weaponId='deleted';tick(g,p);assert.ok(!g.objects[0].collected);
 });
-test('未設定の壁・床・屋根・スロープなどは壊れるだけで、アイテムを出さない',()=>{
- for(const type of ['wall','floor','roof','ramp','box','platform','moving']){const p=stage(part(type,0,0)),g=create3D(p);destroy(g,g.objects[0]);assert.equal(g.objects.length,0);assert.equal(g.drops.length,0);}
+test('明示的にイベントをなしにした壁・床・屋根・スロープなどは壊れるだけで、アイテムを出さない',()=>{
+ for(const type of ['wall','floor','roof','ramp','box','platform','moving']){const block=part(type,0,0);block.destroyEvents=[];const p=stage(block),g=create3D(p);destroy(g,g.objects[0]);assert.equal(g.objects.length,0);assert.equal(g.drops.length,0);}
 });
 test('アイテム化を設定したブロックは１回だけドロップし、形と元の体力を保つ',()=>{
  for(const type of ['wall','floor','roof','ramp','box','platform','moving']){const block=part(type,0,0);block.hp=7;block.destroyEvents=[{type:'dropSelf'}];const p=stage(block),g=create3D(p),before=JSON.stringify(p);destroy(g,g.objects[0]);updateCombat(g,.01);assert.equal(g.drops.length,1);assert.equal(g.drops[0].type,'blockItem');assert.equal(g.drops[0].blockTemplate.type,type);assert.equal(g.drops[0].blockTemplate.hp,7);assert.equal(JSON.stringify(p),before);}

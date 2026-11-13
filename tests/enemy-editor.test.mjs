@@ -8,7 +8,7 @@ import {toolsDOM} from './tools-dom-fixture.mjs';
 function setup(t,{idle='patrol',notice='near',lost='return'}={}){
  const previous={document:globalThis.document,window:globalThis.window,Option:globalThis.Option},dom=toolsDOM();
  Object.assign(globalThis,{document:dom.doc,window:Object.assign(new EventTarget(),{scrollX:0,scrollY:0,scrollTo(){}}),Option:dom.Option});t.after(()=>Object.assign(globalThis,previous));
- const p=fresh3D(),enemy=part('enemy',0,0);setEnemyRoutineChoice(enemy,{idle,notice,lost});p.objects.push(enemy);let selected=enemy.id,saves=0;const toolSelections=[];const nodes=new Map();
+ const p=fresh3D(),enemy=part('enemy',0,0);enemy.enemyDrops=[];setEnemyRoutineChoice(enemy,{idle,notice,lost});p.objects.push(enemy);let selected=enemy.id,saves=0;const toolSelections=[];const nodes=new Map();
  const $=id=>{if(!nodes.has(id)){const el=dom.doc.createElement(id==='aside'?'aside':'div');el.id=id.slice(1);dom.doc.body.append(el);nodes.set(id,el);}return nodes.get(id);};
  const field=(parent,label,value,min,max,step,change)=>{const row=dom.doc.createElement('label'),input=dom.doc.createElement('input');row.className='field';input.value=value;input.setAttribute('aria-label',label);input.onchange=()=>{change(Number(input.value));saves++;};row.append(input);parent.append(row);return row;};
  const ui=createWorkshop({$,getProject:()=>p,getSelected:()=>selected,select:id=>selected=id,save:()=>saves++,rebuild(){},field,advancedInspector(){},advancedWeaponFields(){},loadProject(){},setTool:(type,preset)=>toolSelections.push([type,preset]),toast(){}});

@@ -10,7 +10,7 @@ test('連射のレベルを上げるほど反動とブレの初期値も大き�
   let previous={recoil:-1,aimJitter:-1};for(const interval of [2,.8,.6,.4,.25,.2,.15,.08]){const next=cadenceHandling(interval);assert.ok(next.recoil>=previous.recoil);assert.ok(next.aimJitter>=previous.aimJitter);previous=next;}
 });
 test('弾の速さに関係なく設定した距離で消える',()=>{
-  for(const speed of [5,24,60]){const p=fresh3D(),g=create3D(p);shootVolley(g,origin,forward,{...makeTool(),speed,range:20});const bullet=g.bullets[0];for(let i=0;i<1000&&g.bullets.length;i++){g.time+=.01;updateCombat(g,.01);}assert.equal(g.bullets.length,0);assert.ok(Math.abs(bullet.z-20)<.00001);assert.ok(bullet.remaining<.00001);}
+  for(const speed of [5,24,60]){const p=fresh3D(),g=create3D(p);shootVolley(g,origin,forward,{...makeTool(),aimJitter:0,speed,range:20});const bullet=g.bullets[0];for(let i=0;i<1000&&g.bullets.length;i++){g.time+=.01;updateCombat(g,.01);}assert.equal(g.bullets.length,0);assert.ok(Math.abs(bullet.z-20)<.00001);assert.ok(bullet.remaining<.00001);}
 });
 test('跳ね返った後も残りの射程を使い、元の射程に戻らない',()=>{
   const p=fresh3D();p.objects=[constructionPart('wall',0,2),constructionPart('wall',0,-2)];p.objects.forEach(o=>o.destructible=false);const g=create3D(p);
@@ -19,7 +19,7 @@ test('跳ね返った後も残りの射程を使い、元の射程に戻らな�
   assert.equal(g.bullets.length,0);assert.equal(b.bounces,0);assert.ok(b.remaining<.00001);
 });
 test('横に広がる弾は同じ高さ、丸く広がる弾は上下にも広がる',()=>{
-  for(const pattern of ['fan','cone']){const g=create3D(fresh3D());shootVolley(g,origin,forward,{...makeTool(),spread:8,spreadAngle:40,pattern});assert.ok(g.bullets.every(b=>Math.abs(Math.hypot(b.vx,b.vy,b.vz)-24)<.000001));if(pattern==='fan')assert.ok(g.bullets.every(b=>b.vy===0));else assert.ok(g.bullets.some(b=>Math.abs(b.vy)>1));}
+  for(const pattern of ['fan','cone']){const g=create3D(fresh3D());shootVolley(g,origin,forward,{...makeTool(),aimJitter:0,spread:8,spreadAngle:40,pattern});assert.ok(g.bullets.every(b=>Math.abs(Math.hypot(b.vx,b.vy,b.vz)-24)<.000001));if(pattern==='fan')assert.ok(g.bullets.every(b=>b.vy===0));else assert.ok(g.bullets.some(b=>Math.abs(b.vy)>1));}
 });
 test('ブレなしでは正面に飛び、ブレありでも指定角度の範囲から出ない',()=>{
   const g=create3D(fresh3D());shootVolley(g,origin,forward,{...makeTool(),aimJitter:0});assert.equal(g.bullets[0].vx,0);assert.equal(g.bullets[0].vy,0);

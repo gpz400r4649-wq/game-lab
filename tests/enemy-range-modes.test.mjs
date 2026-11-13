@@ -28,7 +28,7 @@ test('動かない敵の前方だけで探索・攻撃し、背後のプレイ�
  const p=fresh3D();p.spawn={x:0,y:0,z:4};const e=part('enemy',0,0);e.attackRange=front();e.searchRange=front();e.facing=0;p.objects=[e];const original=structuredClone(p),g=create3D(p),robot=g.objects[0];assert.equal(detectsPlayer(robot,g.player),false);assert.equal(inAttackRange(robot,g.player),false);for(let i=0;i<20;i++)step3D(g,p,{},.02);assert.equal(g.bullets.length,0);assert.equal(robot.heading,0);g.player.z=-4;assert.equal(detectsPlayer(robot,g.player),true);step3D(g,p,{},.02);assert.ok(g.bullets.length>0);assert.deepEqual(p,original);
 });
 test('移動型の敵は実際の歩く方向へ向き、前方範囲も一緒に変わる',()=>{
- const p=fresh3D();p.spawn={x:0,y:0,z:20};const e=part('enemy',0,0);e.program=[{action:'patrol',speed:2}];e.searchRange=front();e.attackEnabled=false;p.objects=[e];const g=create3D(p);step3D(g,p,{},.02);const robot=g.objects[0];assert.ok(robot.x>0);assert.ok(Math.abs(robot.heading+Math.PI/2)<.001);assert.ok(detectsPlayer(robot,{x:4,z:0}));assert.equal(detectsPlayer(robot,{x:-4,z:0}),false);
+ const p=fresh3D();p.spawn={x:0,y:0,z:20};const e=part('enemy',0,0);delete e.routine;e.program=[{action:'patrol',speed:2}];e.searchRange=front();e.attackEnabled=false;p.objects=[e];const g=create3D(p);step3D(g,p,{},.02);const robot=g.objects[0];assert.ok(robot.x>0);assert.ok(Math.abs(robot.heading+Math.PI/2)<.001);assert.ok(detectsPlayer(robot,{x:4,z:0}));assert.equal(detectsPlayer(robot,{x:-4,z:0}),false);
 });
 test('マップ上の同じエリアで離れた敵も探索・攻撃を共有できる',()=>{
  const r={space:'world',cells:[[0,1]]};for(const x of [-12,12]){const e={x,z:0,attackRange:r,searchRange:r};assert.ok(detectsPlayer(e,{x:0,z:4}));assert.ok(inAttackRange(e,{x:0,z:4}));assert.equal(inAttackRange(e,{x:0,z:8}),false);}

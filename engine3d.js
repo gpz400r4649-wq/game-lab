@@ -1,34 +1,34 @@
-import {FALL_DEFAULTS,validFallDamage,updatePlayerFall,resetPlayerFall} from './fall-damage3d.js?v=20261113i';
-import {validArchitecture,fenceSolids} from './architecture3d.js?v=20261113i';
-import {initializeCharacterDefaults,synchronizeCharacterDefaults,sharedKeys} from './character-defaults3d.js?v=20261113i';
-import {companionsAt,updatePlates,validCharacterSettings} from './actor3d.js?v=20261113i';
-import {stepAllies} from './ally3d.js?v=20261113i';
-import {validEnemyLoot} from './enemy-loot3d.js?v=20261113i';
-import {validPatrolRoute,validWaypoints} from './patrol-route3d.js?v=20261113i';
-import {validLibrary} from './assets3d.js?v=20261113i';
-import {moveEnemy,canEnemyEnter,validEnemyMovement} from './enemy-ai3d.js?v=20261113i';
-import {worldMoveRange,validMoveRange,validAttackRange,inAttackRange,enemyYaw,defaultEnemyRanges} from './enemy-range3d.js?v=20261113i';
-import {enemyGunMuzzle,playerGunMuzzle,finitePoint} from './muzzle3d.js?v=20261113i';
-import {doorSolids,doorCanOpen,doorInteraction,prepareDoorPanels,setDoorPanelOpen,doorFrameSolids,validDoor,nearbyDoor,doorwayOccupied,animateDoors} from './doors3d.js?v=20261113i';
-import {nearbyObjects} from './spatial3d.js?v=20261113i';
-import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261113i';
-import {worldSize,worldHalf,coordinateLimit,WORLD_SIZES} from './world3d.js?v=20261113i';
-import {settleLoot} from './loot3d.js?v=20261113i';
-import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261113i';
-import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261113i';
-import {shootVolley,updateCombat,resolveShotOrigin} from './combat3d.js?v=20261113i';
-import {BUILD_TYPES,constructionPart,topAt,bottomAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261113i';
+import {FALL_DEFAULTS,validFallDamage,updatePlayerFall,resetPlayerFall} from './fall-damage3d.js?v=20261113j';
+import {validArchitecture,fenceSolids} from './architecture3d.js?v=20261113j';
+import {initializeCharacterDefaults,synchronizeCharacterDefaults,sharedKeys} from './character-defaults3d.js?v=20261113j';
+import {companionsAt,updatePlates,validCharacterSettings} from './actor3d.js?v=20261113j';
+import {stepAllies} from './ally3d.js?v=20261113j';
+import {validEnemyLoot} from './enemy-loot3d.js?v=20261113j';
+import {validPatrolRoute,validWaypoints} from './patrol-route3d.js?v=20261113j';
+import {validLibrary} from './assets3d.js?v=20261113j';
+import {moveEnemy,canEnemyEnter,validEnemyMovement} from './enemy-ai3d.js?v=20261113j';
+import {worldMoveRange,validMoveRange,validAttackRange,inAttackRange,enemyYaw,defaultEnemyRanges} from './enemy-range3d.js?v=20261113j';
+import {enemyGunMuzzle,playerGunMuzzle,finitePoint} from './muzzle3d.js?v=20261113j';
+import {doorSolids,doorCanOpen,doorInteraction,prepareDoorPanels,setDoorPanelOpen,doorFrameSolids,validDoor,nearbyDoor,doorwayOccupied,animateDoors} from './doors3d.js?v=20261113j';
+import {nearbyObjects} from './spatial3d.js?v=20261113j';
+import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261113j';
+import {worldSize,worldHalf,coordinateLimit,WORLD_SIZES} from './world3d.js?v=20261113j';
+import {settleLoot} from './loot3d.js?v=20261113j';
+import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261113j';
+import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261113j';
+import {shootVolley,updateCombat,resolveShotOrigin} from './combat3d.js?v=20261113j';
+import {BUILD_TYPES,constructionPart,topAt,bottomAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261113j';
 export const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export const ENEMY_SCALES=Array.from({length:19},(_,i)=>1+i/2);
 export const PARTS={actor:'役者キャラクター',plate:'床スイッチ',ally:'味方ロボット',weapon:'銃アイテム',ramp:'スロープ',wall:'壁',floor:'床',roof:'屋根',box:'ブロック',platform:'足場',moving:'動く足場',bounce:'ジャンプ台',enemy:'敵ロボット',star:'星',key:'カギ',door:'ドア',heal:'回復',checkpoint:'セーブポイント',hazard:'ダメージ床',goal:'ゴール'};
 export const BEHAVIORS={chase:'プレイヤーを追いかける',patrol:'行ったり来たり',search:'歩き回って探す'};
 export const ENEMY_PRESETS={chase:{name:'追いかける敵',program:[{action:'chase',speed:2}]},patrol:{name:'行ったり来たり',program:[{action:'patrol',speed:2}]},search:{name:'歩き回って探す',program:[{action:'search',speed:2}]},still:{name:'動かない',program:[]}};
-export const WEAPON_PRESETS={standard:{name:'ふつうのブラスター',speed:24,interval:.25,damage:1,spread:1,projectile:'ball',impact:'damage',size:.2,spreadAngle:20,blastRadius:3,range:60,recoil:0,aimJitter:0,pattern:'fan'},rapid:{name:'マシンガンのヒント',speed:40,interval:.08,damage:2,spread:1,projectile:'ball',impact:'damage',size:.15,spreadAngle:10,blastRadius:3,range:30,recoil:4,aimJitter:5,pattern:'fan'},spread:{name:'ひろがる弾のヒント',speed:22,interval:.5,damage:2,spread:5,projectile:'ball',impact:'damage',size:.2,spreadAngle:35,blastRadius:3,range:15,recoil:.6,aimJitter:.7,pattern:'cone'},power:{name:'パワーブラスター',speed:18,interval:.8,damage:10,spread:1,projectile:'ball',impact:'damage',size:.5,spreadAngle:20,blastRadius:3,range:40,recoil:.2,aimJitter:.3,pattern:'fan'},rocket:{name:'ロケットランチャーのヒント',speed:18,interval:.8,damage:20,spread:1,projectile:'rocket',impact:'explode',size:.5,spreadAngle:0,blastRadius:4,range:45,recoil:.2,aimJitter:.3,pattern:'fan'}};
+export const WEAPON_PRESETS={standard:{name:'ふつうのブラスター',speed:24,interval:.25,damage:1,spread:1,projectile:'ball',impact:'damage',size:.2,spreadAngle:20,blastRadius:3,range:60,recoil:1,aimJitter:1,pattern:'fan'},rapid:{name:'マシンガンのヒント',speed:40,interval:.08,damage:2,spread:1,projectile:'ball',impact:'damage',size:.15,spreadAngle:10,blastRadius:3,range:30,recoil:4,aimJitter:5,pattern:'fan'},spread:{name:'ひろがる弾のヒント',speed:22,interval:.5,damage:2,spread:5,projectile:'ball',impact:'damage',size:.2,spreadAngle:35,blastRadius:3,range:15,recoil:.6,aimJitter:.7,pattern:'cone'},power:{name:'パワーブラスター',speed:18,interval:.8,damage:10,spread:1,projectile:'ball',impact:'damage',size:.5,spreadAngle:20,blastRadius:3,range:40,recoil:.2,aimJitter:.3,pattern:'fan'},rocket:{name:'ロケットランチャーのヒント',speed:18,interval:.8,damage:20,spread:1,projectile:'rocket',impact:'explode',size:.5,spreadAngle:0,blastRadius:4,range:45,recoil:.2,aimJitter:.3,pattern:'fan'}};
 export const CONDITION_NAMES={allies:'仲間を連れてきたら',unset:'クリア条件をえらぶ',touch:'そのまま',stars:'星を集めたら',keys:'カギを集めたら',enemies:'敵を全員たおしたら'};
 const solidTypes=new Set(['box','platform','moving','door','wall','floor','roof','ramp']);
 export function settingsFor(type){return {axis:'x',distance:3,speed:2,value:type==='bounce'?11:type==='star'?5:1,condition:type==='goal'?'unset':type==='door'?'keys':'touch',required:1};}
-export function part(type,x=0,z=-5){if(Object.hasOwn(BUILD_TYPES,type))return constructionPart(type,x,z);return {id:crypto.randomUUID(),type,x,y:['platform','moving'].includes(type)?1:0,z,w:['box','platform','moving'].includes(type)?4:type==='door'?3:2,h:type==='box'?3:['platform','moving'].includes(type)?.5:['bounce','hazard'].includes(type)?.2:type==='door'?3:2,d:type==='door'?.6:['box','platform','moving'].includes(type)?4:2,hp:DESTRUCTIBLE_TYPES.has(type)?20:3,...(DESTRUCTIBLE_TYPES.has(type)?{destructible:true}:{}),program:[],settings:settingsFor(type),...(type==='weapon'?{weaponId:''}:{}),...(type==='enemy'?{attackEnabled:true,attackSpeed:3,...defaultEnemyRanges({x,z})}:{})};}
-export function fresh3D(){const weapon={speed:24,interval:.25,damage:1,spread:1};return {version:1,kind:'game-lab-3d',worldSize:60,playerHitsAlly:false,title:'わたしの3Dワールド',spawn:{x:0,y:0,z:8},weapon,loadout:defaultLoadout(weapon),objects:[]};}
+export function part(type,x=0,z=-5){if(Object.hasOwn(BUILD_TYPES,type))return constructionPart(type,x,z);return {id:crypto.randomUUID(),type,x,y:['platform','moving'].includes(type)?1:0,z,w:['box','platform','moving'].includes(type)?4:type==='door'?3:2,h:type==='box'?3:['platform','moving'].includes(type)?.5:['bounce','hazard'].includes(type)?.2:type==='door'?3:2,d:type==='door'?.6:['box','platform','moving'].includes(type)?4:2,hp:DESTRUCTIBLE_TYPES.has(type)?20:3,...(DESTRUCTIBLE_TYPES.has(type)?{destructible:true,destroyEvents:[{type:'dropSelf'}]}:{}),program:[],settings:settingsFor(type),...(type==='weapon'?{weaponId:'@random'}:{}),...(type==='enemy'?{attackEnabled:true,attackSpeed:3,program:[{action:'search',speed:2}],routine:{idle:'wait',notice:'near',lost:'return'},dropHeldWeapon:true,enemyDrops:[{type:'star'}],...defaultEnemyRanges({x,z})}:{})};}
+export function fresh3D(){const weapon={speed:24,interval:.25,damage:1,spread:1};return {version:1,kind:'game-lab-3d',worldSize:60,playerHitsAlly:true,title:'わたしの3Dワールド',spawn:{x:0,y:0,z:8},weapon,loadout:defaultLoadout(weapon),objects:[]};}
 export function validate3D(data,skipShared=false){
   const p=structuredClone(data),number=(v,a,b)=>Number.isFinite(v)&&v>=a&&v<=b;
   if(p?.worldSize!==undefined&&!WORLD_SIZES.includes(p.worldSize))throw Error('マップのひろさを確認してください');

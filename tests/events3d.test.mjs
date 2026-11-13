@@ -9,7 +9,7 @@ const tick=(g,p,n=1)=>{for(let i=0;i<n;i++)step3D(g,p,{},.02);};
 
 test('星を拾って、作った銃と待機中の敵を同時に有効にする',()=>{
   const item=part('star',0,0),enemy=part('enemy',7,0),gun=makeTool('shoot','ロケットくん');
-  enemy.startsHidden=true;enemy.program=[{action:'chase',speed:2}];gun.pickupOnly=true;
+  enemy.startsHidden=true;delete enemy.routine;enemy.program=[{action:'chase',speed:2}];gun.pickupOnly=true;
   item.events=[{type:'giveTool',target:gun.id},{type:'spawnEnemy',target:enemy.id}];
   const p=stage(item,enemy);p.loadout.push(gun);const original=JSON.stringify(p),g=create3D(p);
   assert.equal(equipTool(g,p,1),false);assert.ok(g.objects[1].hidden);
@@ -39,7 +39,7 @@ test('中間地点とゴールも役割を変えたりイベントを追加で�
   g.player.x=5;tick(g,p,20);assert.equal(g.keys,1);assert.equal(g.state,'playing');
 });
 test('待機中の敵は動かず攻撃もせず、直撃・爆発でも傷つかない',()=>{
-  const enemy=part('enemy',0,-3);enemy.startsHidden=true;enemy.program=[{action:'chase',speed:3},{action:'shoot',speed:3}];
+  const enemy=part('enemy',0,-3);enemy.startsHidden=true;delete enemy.routine;enemy.program=[{action:'chase',speed:3},{action:'shoot',speed:3}];
   const p=stage(enemy),g=create3D(p);tick(g,p,30);assert.equal(g.player.hp,5);assert.equal(g.objects[0].z,-3);assert.equal(g.bullets.length,0);
   for(const impact of ['damage','explode']){shootVolley(g,{x:0,y:1,z:0},{x:0,y:0,z:-1},{damage:30,impact,blastRadius:6});for(let i=0;i<40;i++)updateCombat(g,.02);}
   assert.equal(g.objects[0].hp,3);assert.ok(g.objects[0].hidden);

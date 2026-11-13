@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {part,fresh3D,create3D,step3D,validate3D,ENEMY_PRESETS,BEHAVIORS} from '../engine3d.js';
-function setup(program=[],on=true){const p=fresh3D();p.spawn={x:4,y:0,z:0};const e=part('enemy',0,0);e.program=structuredClone(program);e.attackEnabled=on;e.attackRange={shape:'custom',cross:4,circle:2,cells:[[1,0]]};p.objects=[e];return {p,g:create3D(p)};}
+function setup(program=[],on=true){const p=fresh3D();p.spawn={x:4,y:0,z:0};const e=part('enemy',0,0);delete e.routine;e.program=structuredClone(program);e.attackEnabled=on;e.attackRange={shape:'custom',cross:4,circle:2,cells:[[1,0]]};p.objects=[e];return {p,g:create3D(p)};}
 test('行動タイプは移動だけで、動かない敵も攻撃できる',()=>{
  assert.equal(ENEMY_PRESETS.guard,undefined);assert.equal(ENEMY_PRESETS.still.name,'動かない');assert.equal(BEHAVIORS.shoot,undefined);
  for(const preset of Object.values(ENEMY_PRESETS))for(const on of [true,false]){const {p,g}=setup(preset.program,on);const before=JSON.stringify(p);step3D(g,p,{},.02);assert.equal(g.bullets.length>0,on);assert.equal(g.objects[0].x!==0,preset.program.length>0);assert.equal(JSON.stringify(p),before);}
