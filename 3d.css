@@ -527,3 +527,13 @@ aside>#group-tools3{padding:0;margin:0;border:0;background:transparent;border-ra
 .build-global-settings{grid-column:1/-1;padding:12px;border:1px solid #ded5ec;border-radius:10px;background:#f8f5ff}
 .build-global-settings p{margin:0 0 10px;font-size:13px;line-height:1.8}
 .build-global-settings>button{min-height:44px;width:100%}
+
+.architecture-picker{max-width:900px;width:calc(100% - 28px);max-height:94dvh;padding:18px;overflow-y:auto}
+.architecture-picker h2{margin:0 0 8px}
+.architecture-picker>p{margin:0 0 12px;font-size:13px}
+.architecture-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.architecture-choices>button{display:flex;align-items:center;gap:8px;text-align:left;min-height:98px;padding:8px;font-size:13px;line-height:1.7;background:#faf8ff}
+.architecture-icon{display:block;width:80px;flex:none}
+.architecture-icon svg{display:block;width:100%;height:auto}
+.architecture-picker>button{width:100%;margin-top:12px;position:sticky;bottom:0}
+@media(max-width:700px){.architecture-choices{grid-template-columns:repeat(2,minmax(0,1fr))}.architecture-choices>button{flex-direction:column;align-items:stretch;font-size:12px}.architecture-icon{width:70px;margin:0 auto}}

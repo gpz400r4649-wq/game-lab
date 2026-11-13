@@ -1,21 +1,22 @@
-import {initializeCharacterDefaults,synchronizeCharacterDefaults,sharedKeys} from './character-defaults3d.js?v=20261113a';
-import {companionsAt,updatePlates,validCharacterSettings} from './actor3d.js?v=20261113a';
-import {stepAllies} from './ally3d.js?v=20261113a';
-import {validEnemyLoot} from './enemy-loot3d.js?v=20261113a';
-import {validPatrolRoute,validWaypoints} from './patrol-route3d.js?v=20261113a';
-import {validLibrary} from './assets3d.js?v=20261113a';
-import {moveEnemy,canEnemyEnter,validEnemyMovement} from './enemy-ai3d.js?v=20261113a';
-import {worldMoveRange,validMoveRange,validAttackRange,inAttackRange,enemyYaw,defaultEnemyRanges} from './enemy-range3d.js?v=20261113a';
-import {enemyGunMuzzle,playerGunMuzzle,finitePoint} from './muzzle3d.js?v=20261113a';
-import {doorFrameSolids,validDoor,nearbyDoor,doorwayOccupied,animateDoors} from './doors3d.js?v=20261113a';
-import {nearbyObjects} from './spatial3d.js?v=20261113a';
-import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261113a';
-import {worldSize,worldHalf,coordinateLimit,WORLD_SIZES} from './world3d.js?v=20261113a';
-import {settleLoot} from './loot3d.js?v=20261113a';
-import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261113a';
-import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261113a';
-import {shootVolley,updateCombat,resolveShotOrigin} from './combat3d.js?v=20261113a';
-import {BUILD_TYPES,constructionPart,topAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261113a';
+import {validArchitecture,fenceSolids} from './architecture3d.js?v=20261113b';
+import {initializeCharacterDefaults,synchronizeCharacterDefaults,sharedKeys} from './character-defaults3d.js?v=20261113b';
+import {companionsAt,updatePlates,validCharacterSettings} from './actor3d.js?v=20261113b';
+import {stepAllies} from './ally3d.js?v=20261113b';
+import {validEnemyLoot} from './enemy-loot3d.js?v=20261113b';
+import {validPatrolRoute,validWaypoints} from './patrol-route3d.js?v=20261113b';
+import {validLibrary} from './assets3d.js?v=20261113b';
+import {moveEnemy,canEnemyEnter,validEnemyMovement} from './enemy-ai3d.js?v=20261113b';
+import {worldMoveRange,validMoveRange,validAttackRange,inAttackRange,enemyYaw,defaultEnemyRanges} from './enemy-range3d.js?v=20261113b';
+import {enemyGunMuzzle,playerGunMuzzle,finitePoint} from './muzzle3d.js?v=20261113b';
+import {doorSolids,doorCanOpen,doorFrameSolids,validDoor,nearbyDoor,doorwayOccupied,animateDoors} from './doors3d.js?v=20261113b';
+import {nearbyObjects} from './spatial3d.js?v=20261113b';
+import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261113b';
+import {worldSize,worldHalf,coordinateLimit,WORLD_SIZES} from './world3d.js?v=20261113b';
+import {settleLoot} from './loot3d.js?v=20261113b';
+import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261113b';
+import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261113b';
+import {shootVolley,updateCombat,resolveShotOrigin} from './combat3d.js?v=20261113b';
+import {BUILD_TYPES,constructionPart,topAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261113b';
 export const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export const ENEMY_SCALES=Array.from({length:19},(_,i)=>1+i/2);
 export const PARTS={actor:'役者キャラクター',plate:'床スイッチ',ally:'味方ロボット',weapon:'銃アイテム',ramp:'スロープ',wall:'壁',floor:'床',roof:'屋根',box:'ブロック',platform:'足場',moving:'動く足場',bounce:'ジャンプ台',enemy:'敵ロボット',star:'星',key:'カギ',door:'ドア',heal:'回復',checkpoint:'セーブポイント',hazard:'ダメージ床',goal:'ゴール'};
@@ -48,9 +49,9 @@ export function validate3D(data,skipShared=false){
     if(o.movementSpeed!==undefined&&(o.type!=='enemy'||!number(o.movementSpeed,.5,8)))throw Error('敵の速さを確認してください');
     if(o.enemyScale!==undefined&&(o.type!=='enemy'||!ENEMY_SCALES.includes(o.enemyScale)))throw Error('敵の大きさを確認してください');
     if(!validCharacterSettings(o))throw Error('役者・スイッチ・回復の設定を確認してください');
-    if(!validDoor(o))throw Error('ドアの設定を確認してください');
+    if(!validDoor(o)||!validArchitecture(o))throw Error('ドアの設定を確認してください');
     if(!validEvents(o))throw Error('イベントの設定を確認してください');
-    const sizes=['w','h','d'].every(k=>number(o[k],['wall','floor','roof','ramp','bounce','hazard'].includes(o.type)?.2:.5,o.type==='enemy'?Math.max(10,2*(o.enemyScale||1)):10));
+    const sizes=['w','h','d'].every(k=>number(o[k],['wall','floor','roof','ramp','bounce','hazard','door'].includes(o.type)?.2:.5,o.type==='enemy'?Math.max(10,2*(o.enemyScale||1)):10));
     if(o.rotation!==undefined&&!(o.type==='ramp'?[0,90,180,270]:[0,90]).includes(o.rotation))throw Error('部品の向きを確認してください');
     if(!Object.hasOwn(PARTS,o.type)||typeof o.id!=='string'||ids.has(o.id)||!['x','z'].every(k=>number(o[k],-limit,limit))||!number(o.y,0,MAX_BUILD_Y)||!sizes||!Number.isInteger(o.hp)||!number(o.hp,1,o.type==='enemy'?500:DESTRUCTIBLE_TYPES.has(o.type)?200:20)||!Array.isArray(o.program)||o.program.length>8)throw Error('パーツの設定を確認してください');ids.add(o.id);if(DESTRUCTIBLE_TYPES.has(o.type)){if(o.destructible===undefined)o.destructible=true;if(typeof o.destructible!=='boolean')throw Error('ブロックの体力設定を確認してください');}
     for(const b of o.program)if((!Object.hasOwn(BEHAVIORS,b.action)&&b.action!=='shoot')||!number(b.speed,.5,8))throw Error('うごきの設定を確認してください');
@@ -76,7 +77,7 @@ export function validate3D(data,skipShared=false){
   }
   return p;
 }
-export const solids=objects=>objects.flatMap(o=>o.type==='door'?[...(!o.open?[o]:[]),...doorFrameSolids(o)]:solidTypes.has(o.type)&&!o.open?[o]:[]);
+export const solids=objects=>objects.flatMap(o=>o.type==='door'?doorSolids(o):o.wallStyle?fenceSolids(o):solidTypes.has(o.type)&&!o.open?[o]:[]);
 function overlaps(p,o){return Math.abs(p.x-o.x)<o.w/2+(p.type==='enemy'?.55*(p.enemyScale||1):.35)-.00001&&Math.abs(p.z-o.z)<o.d/2+(p.type==='enemy'?.55*(p.enemyScale||1):.35)-.00001&&p.y<topAt(o,p.x,p.z)-.001&&p.y+1.7*(p.enemyScale||1)>o.y+.001;}
 export function movePlayer(p,objects,dx,dz,dt,jump,world=60){
  const support=p.grounded?objects.find(o=>o.id===p.supportId):null,onSlope=!!support&&['roof','ramp'].includes(support.type),walls=solids(objects);let steppedOntoOther=false;
@@ -173,7 +174,7 @@ export function step3D(g,p,input,dt){
     if(o.type==='hazard'&&player.y<=o.y+o.h+.1&&player.invincible<=0){player.hp-=o.settings.value;player.invincible=1;}}
   g.drops=g.drops.filter(o=>!o.collected);
   // Items are collected before testing conditions. Each source fires once per test play.
-  for(const o of g.objects)if(!o.triggered&&((o.type==='door'&&!o.plateControlled&&!o.doorMode&&conditionMet(o,g))||(o.type==='checkpoint'&&nearby(o))||(o.type==='goal'&&nearby(o)&&conditionMet(o,g)&&player.hp>0)))fireEvents(g,p,o,tell);
+  for(const o of g.objects)if(!o.triggered&&((o.type==='door'&&doorCanOpen(o)&&!o.plateControlled&&!o.doorMode&&conditionMet(o,g))||(o.type==='checkpoint'&&nearby(o))||(o.type==='goal'&&nearby(o)&&conditionMet(o,g)&&player.hp>0)))fireEvents(g,p,o,tell);
   updatePlates(g);animateDoors(g,dt);
   if(player.hp<=0){if(g.checkpoint){Object.assign(player,{x:g.checkpoint.x,y:g.checkpoint.y,z:g.checkpoint.z,vy:0,hp:player.maxHp,invincible:2,grounded:false,supportId:null});g.bullets=[];tell('セーブポイントからもう一度！');}else g.state='lost';}
 }

@@ -1,10 +1,12 @@
-import {dropEnemyLoot} from './enemy-loot3d.js?v=20261113a';
-import {MAX_BUILD_Y} from './limits3d.js?v=20261113a';
-import {nearbyObjects} from './spatial3d.js?v=20261113a';
-import {worldHalf} from './world3d.js?v=20261113a';
-import {fireDestructionEvents} from './events3d.js?v=20261113a';
-import {topAt} from './building3d.js?v=20261113a';
-import {LIMITS,safeShot,DESTRUCTIBLE_TYPES,impactEffects} from './weapons3d.js?v=20261113a';
+import {fenceSolids} from './architecture3d.js?v=20261113b';
+import {doorSolids} from './doors3d.js?v=20261113b';
+import {dropEnemyLoot} from './enemy-loot3d.js?v=20261113b';
+import {MAX_BUILD_Y} from './limits3d.js?v=20261113b';
+import {nearbyObjects} from './spatial3d.js?v=20261113b';
+import {worldHalf} from './world3d.js?v=20261113b';
+import {fireDestructionEvents} from './events3d.js?v=20261113b';
+import {topAt} from './building3d.js?v=20261113b';
+import {LIMITS,safeShot,DESTRUCTIBLE_TYPES,impactEffects} from './weapons3d.js?v=20261113b';
 const solidType=o=>DESTRUCTIBLE_TYPES.has(o.type)||o.type==='door';
 const robot=o=>o.type==='enemy'||o.type==='ally';
 function canHitRobot(g,b,o){
@@ -39,11 +41,11 @@ function damageObject(g,o,damage){
 }
 function boxDistance(point,o){const w=robot(o)?1.3*(o.enemyScale||1):o.w,d=robot(o)?1.3*(o.enemyScale||1):o.d,h=robot(o)?1.8*(o.enemyScale||1):o.h;return Math.hypot(Math.max(0,Math.abs(point.x-o.x)-w/2),Math.max(o.y-point.y,point.y-o.y-h,0),Math.max(0,Math.abs(point.z-o.z)-d/2));}
 function explode(g,b){effect(g,b,b.blastRadius,'blast');for(const o of g.objects)if(!o.hidden&&alive(o)&&(canHitRobot(g,b,o)||DESTRUCTIBLE_TYPES.has(o.type))&&boxDistance(b,o)<=b.blastRadius)damageObject(g,o,b.damage);if(b.enemy&&g.player.invincible<=0&&boxDistance(b,{...g.player,type:'player',w:.7,d:.7,h:1.7})<=b.blastRadius){g.player.hp-=b.damage;g.player.invincible=1;}}
-function contains(b,o){const r=b.radius||.1;if(robot(o))return Math.hypot(b.x-o.x,b.z-o.z)<.65*(o.enemyScale||1)+r&&b.y>o.y-r&&b.y<o.y+1.8*(o.enemyScale||1)+r;return Math.abs(b.x-o.x)<o.w/2+r&&Math.abs(b.z-o.z)<o.d/2+r&&b.y>o.y-r&&b.y<topAt(o,b.x,b.z)+r;}
+function contains(b,o){if(o.wallStyle)return fenceSolids(o).some(solid=>contains(b,solid));if(o.type==='door')return doorSolids(o).some(solid=>contains(b,{...solid,type:'box'}));const r=b.radius||.1;if(robot(o))return Math.hypot(b.x-o.x,b.z-o.z)<.65*(o.enemyScale||1)+r&&b.y>o.y-r&&b.y<o.y+1.8*(o.enemyScale||1)+r;return Math.abs(b.x-o.x)<o.w/2+r&&Math.abs(b.z-o.z)<o.d/2+r&&b.y>o.y-r&&b.y<topAt(o,b.x,b.z)+r;}
 // Stop the firing origin at the first obstruction between the player and muzzle.
 // This prevents a long barrel from starting a bullet on the far side of a wall.
 export function resolveShotOrigin(g,start,muzzle,radius=.1,ignoreId=null){
- const distance=Math.hypot(muzzle.x-start.x,muzzle.y-start.y,muzzle.z-start.z),steps=Math.max(1,Math.min(96,Math.ceil(distance/.04))),targets=nearbyObjects(g,Math.min(start.x,muzzle.x)-radius,Math.min(start.z,muzzle.z)-radius,Math.max(start.x,muzzle.x)+radius,Math.max(start.z,muzzle.z)+radius).filter(o=>o.id!==ignoreId&&!o.hidden&&alive(o)&&(solidType(o)&&!o.open||o.type==='enemy'));
+ const distance=Math.hypot(muzzle.x-start.x,muzzle.y-start.y,muzzle.z-start.z),steps=Math.max(1,Math.min(96,Math.ceil(distance/.04))),targets=nearbyObjects(g,Math.min(start.x,muzzle.x)-radius,Math.min(start.z,muzzle.z)-radius,Math.max(start.x,muzzle.x)+radius,Math.max(start.z,muzzle.z)+radius).filter(o=>o.id!==ignoreId&&!o.hidden&&alive(o)&&(solidType(o)&&(!o.open||o.type==='door')||o.type==='enemy'));
  for(let i=0;i<=steps;i++){const t=i/steps,p={x:start.x+(muzzle.x-start.x)*t,y:start.y+(muzzle.y-start.y)*t,z:start.z+(muzzle.z-start.z)*t,radius};if(targets.some(o=>contains(p,o)))return {x:p.x,y:p.y,z:p.z};}return {x:muzzle.x,y:muzzle.y,z:muzzle.z};
 }
 function nearbySweep(b,end,o){const r=b.radius||.1,w=robot(o)?1.3*(o.enemyScale||1):o.w,h=robot(o)?1.8*(o.enemyScale||1):o.h,d=robot(o)?1.3*(o.enemyScale||1):o.d;return Math.min(b.x,end.x)-r<=o.x+w/2&&Math.max(b.x,end.x)+r>=o.x-w/2&&Math.min(b.z,end.z)-r<=o.z+d/2&&Math.max(b.z,end.z)+r>=o.z-d/2&&Math.min(b.y,end.y)-r<=o.y+h&&Math.max(b.y,end.y)+r>=o.y;}
@@ -53,7 +55,7 @@ export function updateCombat(g,dt){
 
   for(const b of g.bullets){
     b.remaining??=60;b.radius??=.1;b.impact??='damage';b.bounces??=2;const impacts=impactEffects(b);
-    const end={x:b.x+b.vx*dt,y:b.y+b.vy*dt,z:b.z+b.vz*dt},targets=nearbyObjects(g,Math.min(b.x,end.x)-(b.radius||.1),Math.min(b.z,end.z)-(b.radius||.1),Math.max(b.x,end.x)+(b.radius||.1),Math.max(b.z,end.z)+(b.radius||.1)).filter(o=>(solidType(o)&&!o.open||canHitRobot(g,b,o))&&!o.hidden&&alive(o)&&nearbySweep(b,end,o));
+    const end={x:b.x+b.vx*dt,y:b.y+b.vy*dt,z:b.z+b.vz*dt},targets=nearbyObjects(g,Math.min(b.x,end.x)-(b.radius||.1),Math.min(b.z,end.z)-(b.radius||.1),Math.max(b.x,end.x)+(b.radius||.1),Math.max(b.z,end.z)+(b.radius||.1)).filter(o=>(solidType(o)&&(!o.open||o.type==='door')||canHitRobot(g,b,o))&&!o.hidden&&alive(o)&&nearbySweep(b,end,o));
     const steps=Math.min(24,Math.max(1,Math.ceil(Math.hypot(b.vx,b.vy,b.vz)*dt/.15)));
     for(let i=0;i<steps&&b.life>0;i++){
       const speed=Math.hypot(b.vx,b.vy,b.vz),travel=Math.min(speed*dt/steps,b.remaining);if(travel<=.000001){b.life=0;break;}const fraction=travel/(speed||1);b.x+=b.vx*fraction;b.y+=b.vy*fraction;b.z+=b.vz*fraction;b.remaining-=travel;

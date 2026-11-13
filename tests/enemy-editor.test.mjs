@@ -8,14 +8,14 @@ import {toolsDOM} from './tools-dom-fixture.mjs';
 function setup(t,{idle='patrol',notice='near',lost='return'}={}){
  const previous={document:globalThis.document,window:globalThis.window,Option:globalThis.Option},dom=toolsDOM();
  Object.assign(globalThis,{document:dom.doc,window:Object.assign(new EventTarget(),{scrollX:0,scrollY:0,scrollTo(){}}),Option:dom.Option});t.after(()=>Object.assign(globalThis,previous));
- const p=fresh3D(),enemy=part('enemy',0,0);setEnemyRoutineChoice(enemy,{idle,notice,lost});p.objects.push(enemy);let selected=enemy.id,saves=0;const nodes=new Map();
+ const p=fresh3D(),enemy=part('enemy',0,0);setEnemyRoutineChoice(enemy,{idle,notice,lost});p.objects.push(enemy);let selected=enemy.id,saves=0;const toolSelections=[];const nodes=new Map();
  const $=id=>{if(!nodes.has(id)){const el=dom.doc.createElement(id==='aside'?'aside':'div');el.id=id.slice(1);dom.doc.body.append(el);nodes.set(id,el);}return nodes.get(id);};
  const field=(parent,label,value,min,max,step,change)=>{const row=dom.doc.createElement('label'),input=dom.doc.createElement('input');row.className='field';input.value=value;input.setAttribute('aria-label',label);input.onchange=()=>{change(Number(input.value));saves++;};row.append(input);parent.append(row);return row;};
- const ui=createWorkshop({$,getProject:()=>p,getSelected:()=>selected,select:id=>selected=id,save:()=>saves++,rebuild(){},field,advancedInspector(){},advancedWeaponFields(){},loadProject(){},setTool(){},toast(){}});
+ const ui=createWorkshop({$,getProject:()=>p,getSelected:()=>selected,select:id=>selected=id,save:()=>saves++,rebuild(){},field,advancedInspector(){},advancedWeaponFields(){},loadProject(){},setTool:(type,preset)=>toolSelections.push([type,preset]),toast(){}});
  ui.inspect();$('#enemy-open3').onclick();const dialog=dom.doc.querySelector('.enemy-workspace'),page=key=>dialog.querySelector('#enemy-settings-'+key),tab=key=>dialog.querySelectorAll('[role=tab]').find(b=>b.dataset.page===key).onclick();
  const choose=(key,label,value)=>{tab(key);const control=page(key).querySelector(`[aria-label="${label}"]`);assert.ok(control,label);const button=control.children.find(b=>b.value===value);assert.ok(button,value);button.onclick();};
  const setPart=type=>{const object=part(type,8,0);p.objects.push(object);selected=object.id;ui.inspect();return object;};
- return {p,enemy,dialog,page,tab,choose,ui,$,setPart,saves:()=>saves};
+ return {p,enemy,dialog,page,tab,choose,ui,$,setPart,toolSelections,saves:()=>saves};
 }
 test('敵の動きの流れを6つのタブで見渡せて、設定を変えても同じタブに戻る',t=>{
  const {p,dialog,page,tab,choose}=setup(t);assert.equal(dialog.querySelectorAll('[role=tab]').length,6);assert.equal(dialog.querySelector('.enemy-settings-tabs').parentElement.tagName,'header');assert.equal(dialog.querySelector('.enemy-behavior-flow').parentElement.tagName,'header');
@@ -79,4 +79,11 @@ test('ブロックのぜんたい設定から、配置済みの体力をまと�
  const {p,setPart,$,ui}=setup(t),floor=setPart('floor');floor.hp=75;initializeCharacterDefaults(p,part);ui.inspect();$('#block-open3').onclick();
  const hp=document.querySelectorAll('[aria-label="ブロックの体力"]').find(n=>n.closest('.enemy-dialog-content'));hp.value='100';hp.onchange();assert.equal(p.characterDefaults.block.hp,100);assert.equal(floor.hp,75);
  document.querySelector('.block-defaults-apply').onclick();assert.equal(floor.hp,100);assert.equal(floor.characterOverrides.length,0);assert.ok(validate3D(p));
+});
+
+test('ドア・窓・柵・角スロープを、絵付きの種類一覧から選べる',t=>{
+ const {$,toolSelections}=setup(t);
+ for(const [type,key,expectedType]of [['door','fusuma','door'],['door','doubleSlide','door'],['wall','windowSwing','door'],['wall','fenceHalf','wall'],['ramp','inner','ramp'],['ramp','outer','ramp']]){
+  $('#palette3').children.find(b=>b.dataset.part===type).onclick();const picker=document.querySelector('.architecture-picker');assert.ok(picker);const button=picker.querySelectorAll('button').find(b=>b.dataset.preset===key);assert.ok(button,key);assert.ok(button.querySelector('.architecture-icon'));button.onclick();assert.deepEqual(toolSelections.at(-1),[expectedType,key]);assert.equal(document.querySelector('.architecture-picker'),null);
+ }
 });
