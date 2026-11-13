@@ -1,5 +1,5 @@
-import {makeTool} from './building3d.js?v=20261113j';
-import {dropPickup} from './loot3d.js?v=20261113j';
+import {makeTool} from './building3d.js?v=20261113k';
+import {dropPickup} from './loot3d.js?v=20261113k';
 export function validEnemyLoot(o){return (o.dropHeldWeapon===undefined||o.type==='enemy'&&typeof o.dropHeldWeapon==='boolean')&&(o.enemyDrops===undefined||o.type==='enemy'&&Array.isArray(o.enemyDrops)&&o.enemyDrops.length<=6&&o.enemyDrops.every(d=>d&&['weapon','experience','key','star','heal'].includes(d.type)&&(d.type!=='weapon'||typeof d.weaponId==='string'&&d.weaponId.length<=100)));}
 export function dropEnemyLoot(g,o){
  if(o.lootDropped)return;o.lootDropped=true;const entries=[...(o.dropHeldWeapon?[{type:'weapon',weaponId:o.enemyWeaponId}]:[]),...(o.enemyDrops||[])];

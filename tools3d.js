@@ -1,11 +1,11 @@
-import {createChoiceControl} from './choices3d.js?v=20261113j';
-import {MAX_BUILD_LEVEL} from './limits3d.js?v=20261113j';
-import {appearanceFor,GUN_SHAPES,GUN_COLORS,gunPreviewSVG} from './appearance3d.js?v=20261113j';
-import {bindGameAction} from './input3d.js?v=20261113j';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261113j';
-import {LIMITS,PROJECTILES,IMPACTS,impactEffects,weaponPresetKey,SHOT_PATTERNS,cadenceHandling} from './weapons3d.js?v=20261113j';
-import {buildChoices,activeBuildTool,cycleBuildType,facingBuildRotation,makeTool,TOOL_EFFECTS,BUILD_TYPES,equipTool,keepStructures,equipBlock} from './building3d.js?v=20261113j';
-import {WEAPON_PRESETS,PARTS} from './engine3d.js?v=20261113j';
+import {createChoiceControl} from './choices3d.js?v=20261113k';
+import {MAX_BUILD_LEVEL} from './limits3d.js?v=20261113k';
+import {appearanceFor,GUN_SHAPES,GUN_COLORS,gunPreviewSVG} from './appearance3d.js?v=20261113k';
+import {bindGameAction} from './input3d.js?v=20261113k';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261113k';
+import {LIMITS,PROJECTILES,IMPACTS,impactEffects,weaponPresetKey,SHOT_PATTERNS,cadenceHandling} from './weapons3d.js?v=20261113k';
+import {buildChoices,activeBuildTool,cycleBuildType,facingBuildRotation,makeTool,TOOL_EFFECTS,BUILD_TYPES,equipTool,keepStructures,equipBlock} from './building3d.js?v=20261113k';
+import {WEAPON_PRESETS,PARTS} from './engine3d.js?v=20261113k';
 export function createToolsUI(api){
   const {$,getProject,getGame,getMode,field,save,refresh,finishBuilding}=api;
   let editing=0,rotation=0,level=0,activePage='basic';
@@ -70,7 +70,7 @@ export function createToolsUI(api){
       const rule=document.createElement('p');setReadingText(rule,'① 切り替えボタンを押したら → ② 次にえらんだブロックを出す。２つ以上えらぶと、１つの銃で切り替えられるよ。チェック１つなら、そのブロックだけを出す銃だよ。');choices.append(rule);dialog.append(choices);
       const shared=document.createElement('section'),sharedNote=document.createElement('p'),openShared=document.createElement('button');shared.className='build-global-settings';const defaults=p.characterDefaults?.block||{hp:20,destructible:true};setReadingText(sharedNote,`出すブロックは「ブロックのぜんたい設定」を使うよ。体力：${defaults.hp} ／ ${defaults.destructible===false?'こわれない':'体力がなくなるとこわれる'}`);setReadingText(openShared,'ブロックのぜんたい設定をひらく');openShared.onclick=()=>{dialog.close();api.openBlockSettings?.();};shared.append(sharedNote,openShared);dialog.append(shared);const note=document.createElement('p');note.className='component-description';setReadingText(note,`狙った場所に${BUILD_TYPES[tool.effect]}を出す建築銃。緑のプレビューなら置けるよ。見る方向に合わせて向きがそろうよ。「90° 回す」で向きを変えることもできるよ。`);dialog.append(note);}
     const addRow=document.createElement('div');addRow.className='new-tools';
-    for(const [effect,label] of [['shoot','＋ 射撃の銃'],['wall','＋ 壁の銃'],['floor','＋ 床の銃'],['roof','＋ 屋根の銃'],['ramp','＋ スロープの銃']]){const b=document.createElement('button');setReadingText(b,label);b.disabled=p.loadout.length>=8;b.onclick=()=>{p.loadout.push(makeTool(effect));editing=p.loadout.length-1;changed();renderEditor();};addRow.append(b);}dialog.append(addRow);
+    for(const [effect,label] of [['shoot','＋ 射撃の銃'],['wall','＋ 壁の銃'],['diagonal','＋ ななめの壁の銃'],['floor','＋ 床の銃'],['roof','＋ 屋根の銃'],['ramp','＋ スロープの銃']]){const b=document.createElement('button');setReadingText(b,label);b.disabled=p.loadout.length>=8;b.onclick=()=>{p.loadout.push(makeTool(effect));editing=p.loadout.length-1;changed();renderEditor();};addRow.append(b);}dialog.append(addRow);
     const del=document.createElement('button');setReadingText(del,'この持ちものをはずす');del.disabled=p.loadout.length===1;del.onclick=()=>{p.loadout.splice(editing,1);editing=Math.max(0,editing-1);changed();renderEditor();};
     const close=document.createElement('button');setReadingText(close,'とじる');close.setAttribute('aria-label','銃づくりの設定をとじる');close.className='primary gun-editor-close';close.onclick=()=>{dialog.close();renderLauncher();};dialog.append(del,close);
     const header=document.createElement('div');

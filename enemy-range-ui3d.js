@@ -1,12 +1,12 @@
-import {createChoiceControl} from './choices3d.js?v=20261113j';
-import {renderFanControls} from './fan-controls3d.js?v=20261113j';
-import {openStageMoveRange} from './stage-range3d.js?v=20261113j';
-import {closeLiveRangeEditor,mountLiveRangeEditor} from './range-panel3d.js?v=20261113j';
-export {closeLiveRangeEditor,isLiveRangeEditing} from './range-panel3d.js?v=20261113j';
-import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261113j';
-import {openMoveMap} from './move-map-ui3d.js?v=20261113j';
-import {RANGE_MAX,rangeCells,convertRangeSpace} from './enemy-range3d.js?v=20261113j';
-import {setReadingText,kanaText} from './readings3d.js?v=20261113j';
+import {createChoiceControl} from './choices3d.js?v=20261113k';
+import {renderFanControls} from './fan-controls3d.js?v=20261113k';
+import {openStageMoveRange} from './stage-range3d.js?v=20261113k';
+import {closeLiveRangeEditor,mountLiveRangeEditor} from './range-panel3d.js?v=20261113k';
+export {closeLiveRangeEditor,isLiveRangeEditing} from './range-panel3d.js?v=20261113k';
+import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261113k';
+import {openMoveMap} from './move-map-ui3d.js?v=20261113k';
+import {RANGE_MAX,rangeCells,convertRangeSpace} from './enemy-range3d.js?v=20261113k';
+import {setReadingText,kanaText} from './readings3d.js?v=20261113k';
 const RANGE_UI={
  attackRange:{label:'弾を撃つ',title:'敵が弾を撃つマス',note:'色のついたマスに入ったら → 弾を撃つ。',empty:'これまでの近くに来たら撃つ設定',center:'敵のいるマスが中心。敵と一緒に動くよ。',color:'#ef9aae'},
  moveRange:{label:'動ける',title:'敵が動けるマス',note:'色のついたマスの中だけを歩けるよ。つながっていないマスには行けないよ。',empty:'制限なし',center:'敵を置いたマスが中心。ゲーム中もこの場所に固定だよ。',color:'#91c7ee'},

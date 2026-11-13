@@ -1,6 +1,7 @@
-import {nearbyObjects} from './spatial3d.js?v=20261113j';
-import {shootVolley} from './combat3d.js?v=20261113j';
-import {safeShot} from './weapons3d.js?v=20261113j';
+import {isDiagonal,diagonalContains} from './architecture3d.js?v=20261113k';
+import {nearbyObjects} from './spatial3d.js?v=20261113k';
+import {shootVolley} from './combat3d.js?v=20261113k';
+import {safeShot} from './weapons3d.js?v=20261113k';
 
 export function recruitTarget(g,yaw){
  let best=null,score=0;
@@ -38,7 +39,7 @@ function obstructed(g,start,end,y){
  const steps=Math.max(1,Math.ceil(distance/.5));
  for(const o of objects){
   if(!['wall','door','box','platform','floor'].includes(o.type)||o.open||o.hidden||o.y>=y+1.7||o.y+o.h<=y+.35)continue;
-  for(let i=1;i<=steps;i++){const t=i/steps;if(Math.abs(start.x+(end.x-start.x)*t-o.x)<o.w/2+.35&&Math.abs(start.z+(end.z-start.z)*t-o.z)<o.d/2+.35)return true;}
+  for(let i=1;i<=steps;i++){const t=i/steps;if((!isDiagonal(o)||diagonalContains(o,start.x+(end.x-start.x)*t,start.z+(end.z-start.z)*t,.35))&&Math.abs(start.x+(end.x-start.x)*t-o.x)<o.w/2+.35&&Math.abs(start.z+(end.z-start.z)*t-o.z)<o.d/2+.35)return true;}
  }
  return false;
 }

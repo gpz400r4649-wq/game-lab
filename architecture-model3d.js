@@ -1,4 +1,4 @@
-import {ROOF_SHELL_RATIO} from './architecture3d.js?v=20261113j';
+import {ROOF_SHELL_RATIO,diagonalPolygon} from './architecture3d.js?v=20261113k';
 import * as T from './vendor/three.module.min.js';
 const cube=new T.BoxGeometry(1,1,1);
 export function makeCornerRampGeometry(style){
@@ -28,3 +28,10 @@ function heightPrism(topHeight,bottomHeight=()=>0){
 }
 export function makeRoofSlopeGeometry(){return heightPrism((x,z)=>.5-z,(x,z)=>(.5-z)*(1-ROOF_SHELL_RATIO));}
 export function makeGableGeometry(style){return heightPrism(x=>style==='gableLeft'?.5+x:.5-x);}
+
+export function makeDiagonalWallGeometry(){
+ const polygon=diagonalPolygon({x:0,z:0,w:4,d:4,rotation:0}).map(([x,z])=>[x/4,z/4]),vertices=[],add=(a,b,c)=>vertices.push(...a,...b,...c),top=polygon.map(([x,z])=>[x,1,z]),bottom=polygon.map(([x,z])=>[x,0,z]);
+ for(let i=1;i<polygon.length-1;i++){add(top[0],top[i],top[i+1]);add(bottom[0],bottom[i+1],bottom[i]);}
+ for(let i=0;i<polygon.length;i++){const j=(i+1)%polygon.length;add(bottom[i],top[i],top[j]);add(bottom[i],top[j],bottom[j]);}
+ const geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.Float32BufferAttribute(vertices,3));geometry.computeVertexNormals();geometry.computeBoundingBox();return geometry;
+}

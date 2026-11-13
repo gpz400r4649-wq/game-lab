@@ -1,23 +1,23 @@
-import {FALL_DEFAULTS,validFallDamage,updatePlayerFall,resetPlayerFall} from './fall-damage3d.js?v=20261113j';
-import {validArchitecture,fenceSolids} from './architecture3d.js?v=20261113j';
-import {initializeCharacterDefaults,synchronizeCharacterDefaults,sharedKeys} from './character-defaults3d.js?v=20261113j';
-import {companionsAt,updatePlates,validCharacterSettings} from './actor3d.js?v=20261113j';
-import {stepAllies} from './ally3d.js?v=20261113j';
-import {validEnemyLoot} from './enemy-loot3d.js?v=20261113j';
-import {validPatrolRoute,validWaypoints} from './patrol-route3d.js?v=20261113j';
-import {validLibrary} from './assets3d.js?v=20261113j';
-import {moveEnemy,canEnemyEnter,validEnemyMovement} from './enemy-ai3d.js?v=20261113j';
-import {worldMoveRange,validMoveRange,validAttackRange,inAttackRange,enemyYaw,defaultEnemyRanges} from './enemy-range3d.js?v=20261113j';
-import {enemyGunMuzzle,playerGunMuzzle,finitePoint} from './muzzle3d.js?v=20261113j';
-import {doorSolids,doorCanOpen,doorInteraction,prepareDoorPanels,setDoorPanelOpen,doorFrameSolids,validDoor,nearbyDoor,doorwayOccupied,animateDoors} from './doors3d.js?v=20261113j';
-import {nearbyObjects} from './spatial3d.js?v=20261113j';
-import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261113j';
-import {worldSize,worldHalf,coordinateLimit,WORLD_SIZES} from './world3d.js?v=20261113j';
-import {settleLoot} from './loot3d.js?v=20261113j';
-import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261113j';
-import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261113j';
-import {shootVolley,updateCombat,resolveShotOrigin} from './combat3d.js?v=20261113j';
-import {BUILD_TYPES,constructionPart,topAt,bottomAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261113j';
+import {FALL_DEFAULTS,validFallDamage,updatePlayerFall,resetPlayerFall} from './fall-damage3d.js?v=20261113k';
+import {validArchitecture,fenceSolids,isDiagonal,diagonalContains,diagonalInterval} from './architecture3d.js?v=20261113k';
+import {initializeCharacterDefaults,synchronizeCharacterDefaults,sharedKeys} from './character-defaults3d.js?v=20261113k';
+import {companionsAt,updatePlates,validCharacterSettings} from './actor3d.js?v=20261113k';
+import {stepAllies} from './ally3d.js?v=20261113k';
+import {validEnemyLoot} from './enemy-loot3d.js?v=20261113k';
+import {validPatrolRoute,validWaypoints} from './patrol-route3d.js?v=20261113k';
+import {validLibrary} from './assets3d.js?v=20261113k';
+import {moveEnemy,canEnemyEnter,validEnemyMovement} from './enemy-ai3d.js?v=20261113k';
+import {worldMoveRange,validMoveRange,validAttackRange,inAttackRange,enemyYaw,defaultEnemyRanges} from './enemy-range3d.js?v=20261113k';
+import {enemyGunMuzzle,playerGunMuzzle,finitePoint} from './muzzle3d.js?v=20261113k';
+import {doorSolids,doorCanOpen,doorInteraction,prepareDoorPanels,setDoorPanelOpen,doorFrameSolids,validDoor,nearbyDoor,doorwayOccupied,animateDoors} from './doors3d.js?v=20261113k';
+import {nearbyObjects} from './spatial3d.js?v=20261113k';
+import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261113k';
+import {worldSize,worldHalf,coordinateLimit,WORLD_SIZES} from './world3d.js?v=20261113k';
+import {settleLoot} from './loot3d.js?v=20261113k';
+import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261113k';
+import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261113k';
+import {shootVolley,updateCombat,resolveShotOrigin} from './combat3d.js?v=20261113k';
+import {BUILD_TYPES,constructionPart,topAt,bottomAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261113k';
 export const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export const ENEMY_SCALES=Array.from({length:19},(_,i)=>1+i/2);
 export const PARTS={actor:'役者キャラクター',plate:'床スイッチ',ally:'味方ロボット',weapon:'銃アイテム',ramp:'スロープ',wall:'壁',floor:'床',roof:'屋根',box:'ブロック',platform:'足場',moving:'動く足場',bounce:'ジャンプ台',enemy:'敵ロボット',star:'星',key:'カギ',door:'ドア',heal:'回復',checkpoint:'セーブポイント',hazard:'ダメージ床',goal:'ゴール'};
@@ -78,8 +78,8 @@ export function validate3D(data,skipShared=false){
   }
   return p;
 }
-export const solids=objects=>objects.flatMap(o=>o.type==='door'?doorSolids(o):o.wallStyle?fenceSolids(o):solidTypes.has(o.type)&&!o.open?[o]:[]);
-function overlaps(p,o){return Math.abs(p.x-o.x)<o.w/2+(p.type==='enemy'?.55*(p.enemyScale||1):.35)-.00001&&Math.abs(p.z-o.z)<o.d/2+(p.type==='enemy'?.55*(p.enemyScale||1):.35)-.00001&&p.y<topAt(o,p.x,p.z)-.001&&p.y+1.7*(p.enemyScale||1)>bottomAt(o,p.x,p.z)+.001;}
+export const solids=objects=>objects.flatMap(o=>o.type==='door'?doorSolids(o):o.wallStyle&&!isDiagonal(o)?fenceSolids(o):solidTypes.has(o.type)&&!o.open?[o]:[]);
+function overlaps(p,o){return (!isDiagonal(o)||diagonalContains(o,p.x,p.z,p.type==='enemy'?.55*(p.enemyScale||1):.35))&&Math.abs(p.x-o.x)<o.w/2+(p.type==='enemy'?.55*(p.enemyScale||1):.35)-.00001&&Math.abs(p.z-o.z)<o.d/2+(p.type==='enemy'?.55*(p.enemyScale||1):.35)-.00001&&p.y<topAt(o,p.x,p.z)-.001&&p.y+1.7*(p.enemyScale||1)>bottomAt(o,p.x,p.z)+.001;}
 export function movePlayer(p,objects,dx,dz,dt,jump,world=60){
  const support=p.grounded?objects.find(o=>o.id===p.supportId):null,onSlope=!!support&&['roof','ramp'].includes(support.type),walls=solids(objects);let steppedOntoOther=false;
  const canStep=(o,top)=>{
@@ -92,7 +92,7 @@ export function movePlayer(p,objects,dx,dz,dt,jump,world=60){
   if(!amount)return;const start=p[axis];p[axis]=clamp(start+amount,-worldHalf(world)+1,worldHalf(world)-1);
   for(const o of walls){if(!overlaps(p,o))continue;const top=topAt(o,p.x,p.z);
    if(canStep(o,top)){p.y=top;if(!['roof','ramp'].includes(o.type))steppedOntoOther=true;continue;}
-   const extent=(axis==='x'?o.w:o.d)/2+(p.type==='enemy'?.55*(p.enemyScale||1):.35),lo=o[axis]-extent,hi=o[axis]+extent;
+   const radius=p.type==='enemy'?.55*(p.enemyScale||1):.35,extent=(axis==='x'?o.w:o.d)/2+radius,[lo,hi]=isDiagonal(o)?diagonalInterval(o,axis,p[axis==='x'?'z':'x'],radius):[o[axis]-extent,o[axis]+extent];
    // Resolve only the crossed face. A corner overlap must never send the
    // player to the opposite end of a long wall.
    if(amount>0&&start<=lo+.00001)p[axis]=Math.min(p[axis],lo);
@@ -104,7 +104,7 @@ export function movePlayer(p,objects,dx,dz,dt,jump,world=60){
  if(!steppedOntoOther&&onSlope&&Math.abs(p.x-support.x)<=support.w/2&&Math.abs(p.z-support.z)<=support.d/2){const top=topAt(support,p.x,p.z);if(Math.abs(top-p.y)<.4)p.y=top;}
  if(jump&&p.grounded){p.vy=p.jumpSpeed??7;p.grounded=false;}const before=p.y;p.vy-=19*dt;p.y+=p.vy*dt;p.grounded=false;p.supportId=null;
  let landing=null;
- for(const o of walls){if(Math.abs(p.x-o.x)>=o.w/2+(p.type==='enemy'?.55*(p.enemyScale||1):.35)||Math.abs(p.z-o.z)>=o.d/2+(p.type==='enemy'?.55*(p.enemyScale||1):.35))continue;
+ for(const o of walls){if(isDiagonal(o)&&!diagonalContains(o,p.x,p.z,p.type==='enemy'?.55*(p.enemyScale||1):.35))continue;if(Math.abs(p.x-o.x)>=o.w/2+(p.type==='enemy'?.55*(p.enemyScale||1):.35)||Math.abs(p.z-o.z)>=o.d/2+(p.type==='enemy'?.55*(p.enemyScale||1):.35))continue;
   const top=topAt(o,p.x,p.z);
   if(p.vy<=0&&before>=top-.02&&p.y<=top&&(!landing||top>landing.top))landing={o,top};
   else if(p.vy>0&&before+1.7*(p.enemyScale||1)<=bottomAt(o,p.x,p.z)+.02&&p.y+1.7*(p.enemyScale||1)>=bottomAt(o,p.x,p.z)){p.y=bottomAt(o,p.x,p.z)-1.7*(p.enemyScale||1);p.vy=0;}
