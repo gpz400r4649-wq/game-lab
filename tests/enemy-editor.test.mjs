@@ -83,7 +83,7 @@ test('ブロックのぜんたい設定から、配置済みの体力をまと�
 
 test('ドア・窓・柵・角スロープを、絵付きの種類一覧から選べる',t=>{
  const {$,toolSelections}=setup(t);
- for(const [type,key,expectedType]of [['door','fusuma','door'],['door','doubleSlide','door'],['wall','windowSwing','door'],['wall','fenceHalf','wall'],['ramp','inner','ramp'],['ramp','outer','ramp']]){
+ for(const [type,key,expectedType]of [['door','fusuma','door'],['door','doubleSlide','door'],['wall','windowSwing','door'],['wall','fenceHalf','wall'],['wall','halfVertical','wall'],['wall','halfHorizontal','wall'],['ramp','inner','ramp'],['ramp','outer','ramp']]){
   $('#palette3').children.find(b=>b.dataset.part===type).onclick();const picker=document.querySelector('.architecture-picker');assert.ok(picker);const button=picker.querySelectorAll('button').find(b=>b.dataset.preset===key);assert.ok(button,key);assert.ok(button.querySelector('.architecture-icon'));button.onclick();assert.deepEqual(toolSelections.at(-1),[expectedType,key]);assert.equal(document.querySelector('.architecture-picker'),null);
  }
 });

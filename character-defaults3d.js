@@ -1,6 +1,6 @@
-import {DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261113e';
-import {coordinateLimit,worldSize} from './world3d.js?v=20261113e';
-import {rangeCell} from './enemy-range3d.js?v=20261113e';
+import {DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261113f';
+import {coordinateLimit,worldSize} from './world3d.js?v=20261113f';
+import {rangeCell} from './enemy-range3d.js?v=20261113f';
 const ENEMY_KEYS=['startsHidden','hp','enemyScale','movementSpeed','program','routine','chaseMode','chaseGraceSeconds','attackEnabled','attackSpeed','enemyWeaponId','searchRange','attackRange','moveRange','patrolRoute','waypoints','routeEnd','dropHeldWeapon','enemyDrops'];
 const ALLY_KEYS=['hp','allyGun','allyAttack','allyRangeCells'];
 const BLOCK_KEYS=['hp','destructible'];

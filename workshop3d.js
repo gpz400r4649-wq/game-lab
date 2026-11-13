@@ -1,27 +1,27 @@
-import {RAMP_PRESETS,FENCE_PRESETS,architectureIcon} from './architecture3d.js?v=20261113e';
-import {renderAllyRangePreview} from './ally-range-preview3d.js?v=20261113e';
-import {createChoiceControl} from './choices3d.js?v=20261113e';
-import {sharedDefaultsType,applyBlockDefaults,sharedKeys,synchronizeCharacterDefaults,useCharacterDefaults,inheritNewCharacter,writeCharacterDefaults} from './character-defaults3d.js?v=20261113e';
-import {copyEnemySettings,ENEMY_COPY_GROUPS} from './enemy-batch3d.js?v=20261113e';
-import {ACTOR_HATS} from './actor3d.js?v=20261113e';
-import {makeTool} from './building3d.js?v=20261113e';
-import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261113e';
-import {openWaypointEditor} from './waypoint-ui3d.js?v=20261113e';
-import {openPatrolEditor} from './patrol-ui3d.js?v=20261113e';
-import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261113e';
-import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261113e';
-import {inGridRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261113e';
-import {closeLiveRangeEditor,renderEnemyRange as renderEnemyRangeBase} from './enemy-range-ui3d.js?v=20261113e';
-import {gunPreviewSVG} from './appearance3d.js?v=20261113e';
-import {DOOR_PRESETS,doorCanOpen,isSlidingDoor,doorDimensions} from './doors3d.js?v=20261113e';
-import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261113e';
-import {coordinateLimit} from './world3d.js?v=20261113e';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261113e';
-import {actionsFor} from './events3d.js?v=20261113e';
-import {renderEventEditor} from './event-editor3d.js?v=20261113e';
-import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261113e';
-import {alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261113e';
-import {part,ENEMY_SCALES,PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261113e';
+import {RAMP_PRESETS,FENCE_PRESETS,architectureIcon} from './architecture3d.js?v=20261113f';
+import {renderAllyRangePreview} from './ally-range-preview3d.js?v=20261113f';
+import {createChoiceControl} from './choices3d.js?v=20261113f';
+import {sharedDefaultsType,applyBlockDefaults,sharedKeys,synchronizeCharacterDefaults,useCharacterDefaults,inheritNewCharacter,writeCharacterDefaults} from './character-defaults3d.js?v=20261113f';
+import {copyEnemySettings,ENEMY_COPY_GROUPS} from './enemy-batch3d.js?v=20261113f';
+import {ACTOR_HATS} from './actor3d.js?v=20261113f';
+import {makeTool} from './building3d.js?v=20261113f';
+import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261113f';
+import {openWaypointEditor} from './waypoint-ui3d.js?v=20261113f';
+import {openPatrolEditor} from './patrol-ui3d.js?v=20261113f';
+import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261113f';
+import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261113f';
+import {inGridRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261113f';
+import {closeLiveRangeEditor,renderEnemyRange as renderEnemyRangeBase} from './enemy-range-ui3d.js?v=20261113f';
+import {gunPreviewSVG} from './appearance3d.js?v=20261113f';
+import {DOOR_PRESETS,doorCanOpen,isSlidingDoor,doorDimensions} from './doors3d.js?v=20261113f';
+import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261113f';
+import {coordinateLimit} from './world3d.js?v=20261113f';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261113f';
+import {actionsFor} from './events3d.js?v=20261113f';
+import {renderEventEditor} from './event-editor3d.js?v=20261113f';
+import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261113f';
+import {alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261113f';
+import {part,ENEMY_SCALES,PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261113f';
 
 const ICONS={actor:'💬',plate:'▣',ally:'🛡',weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
 const DESCRIPTIONS={actor:'名前とせりふを書こう。交換する品を置くとお店になるよ。',plate:'踏んでいる間、えらんだドアが開くよ。',ally:'近くで「ついてきて」と呼ぶと、一緒に戦うよ。',weapon:'地面に置いて、ふれると拾える銃。持ちもの・銃づくりで用意した銃をえらぼう。',ramp:'低いほうから歩くと、そのまま登れるスロープ。回して好きな向きにつなげよう。',wall:'家を囲う壁。向きを変えてつなげよう。',floor:'家の床と天井に使える板。壁の内側にぴったり合うよ。',roof:'壁の上にのせる三角屋根。向きを変えて家を仕上げよう。',
@@ -174,7 +174,7 @@ export function createWorkshop(api){
     partOpen.disabled=!isOtherPart(selected)||selected.type==='ally';
     setReadingText(partOpen,'えらんだパーツのせってい');
     if(!isOtherPart(selected))return;
-    partOwner=selected.id;setReadingText(partTitle,commonObject?(selected.type==='ally'?'味方のぜんたい設定':'ブロックのぜんたい設定'):(DOOR_PRESETS[selected.doorVariant]?.name||FENCE_PRESETS[selected.wallStyle]||RAMP_PRESETS[selected.rampStyle]||PARTS[selected.type])+'のせってい');
+    partOwner=selected.id;setReadingText(partTitle,commonObject?(selected.type==='ally'?'味方のぜんたい設定':'ブロックのぜんたい設定'):(DOOR_PRESETS[selected.doorVariant]?.name||FENCE_PRESETS[selected.wallHalf]||FENCE_PRESETS[selected.wallStyle]||RAMP_PRESETS[selected.rampStyle]||PARTS[selected.type])+'のせってい');
     const el=$('#inspector3');
     partContent.replaceChildren(...[...el.children].filter(node=>!node.classList.contains('inspector-back')&&!node.classList.contains('inspector-heading')&&!node.classList.contains('placement-controls')&&!(selected.type==='ally'&&node.classList.contains('component-description'))));
   }
@@ -198,8 +198,8 @@ export function createWorkshop(api){
     if(!commonObject)advancedInspector();const loop=el.querySelector('.loop');el.replaceChildren();
     const p=getProject(),o=p.objects.find(o=>o.id===getSelected());
     if(!o){sharedObject=null;return;}
-    const title=document.createElement('h2');title.className='inspector-heading';setReadingText(title,`${ICONS[o.type]} ${DOOR_PRESETS[o.doorVariant]?.name||FENCE_PRESETS[o.wallStyle]||RAMP_PRESETS[o.rampStyle]||PARTS[o.type]}`);
-    const description=document.createElement('p');description.className='component-description';setReadingText(description,o.doorVariant==='frame'?'ドアの枠だけのパーツ。中央をそのまま通れるよ。':o.doorVariant==='windowFrame'?'窓の枠だけのパーツ。窓のあいた部分にはガラスがないよ。':o.doorVariant==='windowGlass'?'ガラスの入った窓。開け閉めしない窓だよ。':o.doorVariant==='windowSwing'?'左右に開く窓。近づいて「あける」を押そう。':isSlidingDoor(o)?'近くの扉が、隣の扉に重なって開くよ。半マス分が通り道になるよ。１枚ずつ開け閉めできるよ。':o.type==='door'&&doorDimensions(o).single?'扉は半マスの幅。残りの半分は壁だよ。扉を左右どちらに置くかもえらべるよ。':o.rampStyle?'角に合わせて回すスロープ。低いほうから登れるよ。':o.wallStyle?'柵のパーツ。半分の高さと、壁と同じ高さを選べるよ。':DESCRIPTIONS[o.type]);el.append(title,description);
+    const title=document.createElement('h2');title.className='inspector-heading';setReadingText(title,`${ICONS[o.type]} ${DOOR_PRESETS[o.doorVariant]?.name||FENCE_PRESETS[o.wallHalf]||FENCE_PRESETS[o.wallStyle]||RAMP_PRESETS[o.rampStyle]||PARTS[o.type]}`);
+    const description=document.createElement('p');description.className='component-description';setReadingText(description,o.doorVariant==='frame'?'ドアの枠だけのパーツ。中央をそのまま通れるよ。':o.doorVariant==='windowFrame'?'窓の枠だけのパーツ。窓のあいた部分にはガラスがないよ。':o.doorVariant==='windowGlass'?'ガラスの入った窓。開け閉めしない窓だよ。':o.doorVariant==='windowSwing'?'左右に開く窓。近づいて「あける」を押そう。':isSlidingDoor(o)?'近くの扉が、隣の扉に重なって開くよ。半マス分が通り道になるよ。１枚ずつ開け閉めできるよ。':o.type==='door'&&doorDimensions(o).single?'扉は半マスの幅。残りの半分は壁だよ。扉を左右どちらに置くかもえらべるよ。':o.rampStyle?'角に合わせて回すスロープ。低いほうから登れるよ。':o.wallHalf==='halfVertical'?'幅が半分の壁。２枚を横に並べると壁１枚分になるよ。':o.wallHalf==='halfHorizontal'?'高さが半分の壁。２枚を上下に積むと壁１枚分になるよ。':o.wallStyle?'柵のパーツ。半分の高さと、壁と同じ高さを選べるよ。':DESCRIPTIONS[o.type]);el.append(title,description);
     sharedObject=sharedKeys(o.type).length?o:null;
     const s=o.settings;
     if(o.type==='weapon'){

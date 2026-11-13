@@ -1,16 +1,19 @@
-import {inheritNewCharacter} from './character-defaults3d.js?v=20261113e';
-import {validAppearance} from './appearance3d.js?v=20261113e';
-import {MAX_PARTS,MAX_BUILD_Y,MAX_BUILD_LEVEL} from './limits3d.js?v=20261113e';
-import {worldHalf,coordinateLimit} from './world3d.js?v=20261113e';
-import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261113e';
+import {inheritNewCharacter} from './character-defaults3d.js?v=20261113f';
+import {validAppearance} from './appearance3d.js?v=20261113f';
+import {MAX_PARTS,MAX_BUILD_Y,MAX_BUILD_LEVEL} from './limits3d.js?v=20261113f';
+import {worldHalf,coordinateLimit} from './world3d.js?v=20261113f';
+import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261113f';
 // Shared by editor, gameplay and placement preview. No browser dependency.
 export const BUILD_TYPES={wall:'壁',floor:'床',roof:'屋根',ramp:'スロープ'};
 export const GRID={cell:4,layer:3,size:60};
 export const GRID_PARTS=new Set(['box','platform','moving','bounce','hazard','door','wall','floor','roof','ramp']);
 const snap=(value,step=GRID.cell,offset=0)=>Math.round((value-offset)/step)*step+offset;
-function boundedGrid(value,extent,offset=0,world=60){extent=Math.max(2,extent);const lo=Math.ceil((-worldHalf(world)+extent-offset)/4)*4+offset,hi=Math.floor((worldHalf(world)-extent-offset)/4)*4+offset;return Math.max(lo,Math.min(hi,snap(value,4,offset)));}
-export function alignPiece(o,world=60){if(!GRID_PARTS.has(o.type))return o;const bordered=['wall','door'].includes(o.type),turned=bordered&&o.rotation===90,longOffset=o.type==='door'&&(turned?o.d:o.w)>=7.9?2:0;o.x=boundedGrid(o.x,o.w/2,turned?2:longOffset,world);o.z=boundedGrid(o.z,o.d/2,bordered&&!turned?2:longOffset,world);return o;}
-export function gridStep(o,axis){return GRID_PARTS.has(o.type)?axis==='y'?(['box','wall','floor','roof','ramp','door'].includes(o.type)?3:.5):4:axis==='y'?.5:1;}
+function boundedGrid(value,extent,offset=0,world=60,step=4){extent=Math.max(step/2,extent);const lo=Math.ceil((-worldHalf(world)+extent-offset)/step)*step+offset,hi=Math.floor((worldHalf(world)-extent-offset)/step)*step+offset;return Math.max(lo,Math.min(hi,snap(value,step,offset)));}
+export function alignPiece(o,world=60){
+ if(!GRID_PARTS.has(o.type))return o;const bordered=['wall','door'].includes(o.type),turned=bordered&&o.rotation===90,half=o.wallHalf==='halfVertical',longOffset=half?1:o.type==='door'&&(turned?o.d:o.w)>=7.9?2:0;
+ o.x=boundedGrid(o.x,o.w/2,turned?2:longOffset,world,half&&!turned?2:4);o.z=boundedGrid(o.z,o.d/2,bordered&&!turned?2:longOffset,world,half&&turned?2:4);return o;
+}
+export function gridStep(o,axis){if(o.wallHalf==='halfVertical'&&axis===(o.rotation===90?'z':'x'))return 2;if(o.wallHalf==='halfHorizontal'&&axis==='y')return 1.5;return GRID_PARTS.has(o.type)?axis==='y'?(['box','wall','floor','roof','ramp','door'].includes(o.type)?3:.5):4:axis==='y'?.5:1;}
 const borderPart=o=>o&&['wall','door'].includes(o.type);
 function orientBorder(o,rotation){if((o.rotation||0)!==rotation)[o.w,o.d]=[o.d,o.w];o.rotation=rotation;}
 function rampFloorAnchor(ramp,normal,floor){
@@ -92,7 +95,7 @@ export function constructionPart(type,x=0,z=0,y=0,rotation=0){
     d:type==='wall'?(turned?4:.25):4,hp:20,destructible:true,program:[],
     settings:{axis:'x',distance:3,speed:2,value:1,condition:'touch',required:1}};
 }
-export function rotatePiece(o,world=60){if(!Object.hasOwn(BUILD_TYPES,o.type)&&o.type!=='door')return;const anchor={x:o.x-(['wall','door'].includes(o.type)&&o.rotation===90?2:0),z:o.z-(['wall','door'].includes(o.type)&&o.rotation!==90?2:0)};[o.w,o.d]=[o.d,o.w];o.rotation=o.type==='ramp'?((o.rotation||0)+90)%360:o.rotation===90?0:90;if(['wall','door'].includes(o.type)&&!(o.type==='door'&&Math.max(o.w,o.d)>=7.9)){o.x=anchor.x+(o.rotation===90?2:0);o.z=anchor.z+(o.rotation===0?2:0);}alignPiece(o,world);}
+export function rotatePiece(o,world=60){if(o.wallHalf==='halfVertical'){const turned=o.rotation===90,cx=turned?o.x-2:snap(o.x),cz=turned?snap(o.z):o.z-2,offset=turned?-(o.z-cz):o.x-cx;[o.w,o.d]=[o.d,o.w];o.rotation=turned?0:90;o.x=turned?cx+offset:cx+2;o.z=turned?cz+2:cz-offset;alignPiece(o,world);return;}if(!Object.hasOwn(BUILD_TYPES,o.type)&&o.type!=='door')return;const anchor={x:o.x-(['wall','door'].includes(o.type)&&o.rotation===90?2:0),z:o.z-(['wall','door'].includes(o.type)&&o.rotation!==90?2:0)};[o.w,o.d]=[o.d,o.w];o.rotation=o.type==='ramp'?((o.rotation||0)+90)%360:o.rotation===90?0:90;if(['wall','door'].includes(o.type)&&!(o.type==='door'&&Math.max(o.w,o.d)>=7.9)){o.x=anchor.x+(o.rotation===90?2:0);o.z=anchor.z+(o.rotation===0?2:0);}alignPiece(o,world);}
 export function topAt(o,x,z){
   if(o.type==='ramp'){const angle=(o.rotation||0)*Math.PI/180,localZ=Math.sin(angle)*(x-o.x)+Math.cos(angle)*(z-o.z),localX=Math.cos(angle)*(x-o.x)-Math.sin(angle)*(z-o.z),turned=(o.rotation||0)%180===90,depth=turned?o.w:o.d,width=turned?o.d:o.w,u=Math.max(0,Math.min(1,.5-localZ/depth)),v=Math.max(0,Math.min(1,.5-localX/width));return o.y+o.h*(o.rampStyle==='inner'?Math.max(u,v):o.rampStyle==='outer'?Math.min(u,v):u);}if(o.type!=='roof')return o.y+o.h;
   const turned=o.rotation===90,offset=turned?z-o.z:x-o.x,width=turned?o.d:o.w;
@@ -150,7 +153,7 @@ export function keepStructures(p,g){
 
 export function blockTemplate(o){
  const turned=(o.rotation||0)%180===90;
- return {type:o.type,w:turned?o.d:o.w,h:o.h,d:turned?o.w:o.d,rotation:0,...(o.rampStyle?{rampStyle:o.rampStyle}:{}),...(o.wallStyle?{wallStyle:o.wallStyle}:{}),hp:Math.max(1,Math.min(200,o.maxHp||o.hp||1)),destructible:o.destructible!==false,program:structuredClone(o.program||[]),settings:structuredClone(o.settings),destroyEvents:structuredClone(o.destroyEvents||[])};
+ return {type:o.type,w:turned?o.d:o.w,h:o.h,d:turned?o.w:o.d,rotation:0,...(o.rampStyle?{rampStyle:o.rampStyle}:{}),...(o.wallStyle?{wallStyle:o.wallStyle}:{}),...(o.wallHalf?{wallHalf:o.wallHalf}:{}),hp:Math.max(1,Math.min(200,o.maxHp||o.hp||1)),destructible:o.destructible!==false,program:structuredClone(o.program||[]),settings:structuredClone(o.settings),destroyEvents:structuredClone(o.destroyEvents||[])};
 }
 export function giveBlock(g,template){
  g.blockInventory??=[];const key=JSON.stringify(template);let stack=g.blockInventory.find(s=>s.key===key);
@@ -167,6 +170,7 @@ export function blockPlacement(g,point,rotation=0,level=0){
  if(Object.hasOwn(BUILD_TYPES,t.type)){
   const result=placement(g,{effect:t.type},point,rotation,level);if(!result.piece)return result;
   const turned=rotation%180!==0;piece={...structuredClone(t),id:crypto.randomUUID(),x:result.piece.x,y:result.piece.y,z:result.piece.z,rotation:result.piece.rotation,w:turned?t.d:t.w,d:turned?t.w:t.d};
+  if(t.wallHalf){if(t.wallHalf==='halfVertical')piece[rotation%180===90?'z':'x']=point[rotation%180===90?'z':'x'];else{const surface=point.surface,onTop=surface&&point.normal?.y>.5;piece.y=(onTop?(surface.type==='floor'?surface.y:topAt(surface,point.x,point.z)):Math.floor((Math.max(0,point.y)+.08)/1.5)*1.5)+level*1.5;}alignPiece(piece,g);}
  }else{
   piece=snapEditorPiece({...structuredClone(t),id:crypto.randomUUID(),x:0,y:0,z:0},point,point.surface,point.normal,g);piece.y+=level*3;
   if(rotation%180!==0)[piece.w,piece.d]=[piece.d,piece.w];piece.rotation=rotation%180;
