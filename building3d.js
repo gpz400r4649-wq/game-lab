@@ -1,8 +1,8 @@
-import {inheritNewCharacter} from './character-defaults3d.js?v=20261113d';
-import {validAppearance} from './appearance3d.js?v=20261113d';
-import {MAX_PARTS,MAX_BUILD_Y,MAX_BUILD_LEVEL} from './limits3d.js?v=20261113d';
-import {worldHalf,coordinateLimit} from './world3d.js?v=20261113d';
-import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261113d';
+import {inheritNewCharacter} from './character-defaults3d.js?v=20261113e';
+import {validAppearance} from './appearance3d.js?v=20261113e';
+import {MAX_PARTS,MAX_BUILD_Y,MAX_BUILD_LEVEL} from './limits3d.js?v=20261113e';
+import {worldHalf,coordinateLimit} from './world3d.js?v=20261113e';
+import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261113e';
 // Shared by editor, gameplay and placement preview. No browser dependency.
 export const BUILD_TYPES={wall:'壁',floor:'床',roof:'屋根',ramp:'スロープ'};
 export const GRID={cell:4,layer:3,size:60};
@@ -11,6 +11,8 @@ const snap=(value,step=GRID.cell,offset=0)=>Math.round((value-offset)/step)*step
 function boundedGrid(value,extent,offset=0,world=60){extent=Math.max(2,extent);const lo=Math.ceil((-worldHalf(world)+extent-offset)/4)*4+offset,hi=Math.floor((worldHalf(world)-extent-offset)/4)*4+offset;return Math.max(lo,Math.min(hi,snap(value,4,offset)));}
 export function alignPiece(o,world=60){if(!GRID_PARTS.has(o.type))return o;const bordered=['wall','door'].includes(o.type),turned=bordered&&o.rotation===90,longOffset=o.type==='door'&&(turned?o.d:o.w)>=7.9?2:0;o.x=boundedGrid(o.x,o.w/2,turned?2:longOffset,world);o.z=boundedGrid(o.z,o.d/2,bordered&&!turned?2:longOffset,world);return o;}
 export function gridStep(o,axis){return GRID_PARTS.has(o.type)?axis==='y'?(['box','wall','floor','roof','ramp','door'].includes(o.type)?3:.5):4:axis==='y'?.5:1;}
+const borderPart=o=>o&&['wall','door'].includes(o.type);
+function orientBorder(o,rotation){if((o.rotation||0)!==rotation)[o.w,o.d]=[o.d,o.w];o.rotation=rotation;}
 function rampFloorAnchor(ramp,normal,floor){
  const angle=(ramp.rotation||0)*Math.PI/180,high={x:-Math.sin(angle),z:-Math.cos(angle)},dot=(normal?.x||0)*high.x+(normal?.z||0)*high.z,side=normal&&Math.abs(normal.y)<.5;
  const low=side&&dot<-.5,dir=side&&Math.abs(dot)<.5?normal:low?{x:-high.x,z:-high.z}:high;
@@ -23,15 +25,21 @@ export function snapEditorPiece(o,point,target=null,normal=null,world=60){
     const dx=point.x-target.x,dz=point.z-target.z,edgeX=Math.abs(dx)/ (target.w/2),edgeZ=Math.abs(dz)/(target.d/2);
     if(Math.max(edgeX,edgeZ)>=.5){o.x=target.x;o.z=target.z;o.y=target.y;if(edgeX>edgeZ)o.x+=Math.sign(dx)*(target.w+o.w)/2;else o.z+=Math.sign(dz)*(target.d+o.d)/2;return alignPiece(o,world);}
   }
-  // Stacked walls inherit the wall below, including when its thin top is tapped near an end.
-  if(o.type==='wall'&&target?.type==='wall'&&normal?.y>.5){o.x=target.x;o.z=target.z;o.y=Math.min(MAX_BUILD_Y,target.y+target.h);o.rotation=target.rotation||0;o.w=o.rotation===90?.25:4;o.d=o.rotation===90?4:.25;return alignPiece(o,world);}
+  // Walls, doors and windows share the same edge of the grid.
+  // Use the existing piece's orientation instead of guessing from a thin frame's hit point.
+  if(borderPart(o)&&borderPart(target)&&normal&&Math.abs(normal.y)>.5){
+    orientBorder(o,target.rotation||0);const axis=o.rotation===90?'z':'x',other=axis==='x'?'z':'x',room=Math.max(0,(target[axis==='x'?'w':'d']-o[axis==='x'?'w':'d'])/2);
+    o[axis]=target[axis]+Math.max(-room,Math.min(room,point[axis]-target[axis]));o[other]=target[other];o.y=Math.max(0,Math.min(MAX_BUILD_Y,normal.y>0?target.y+target.h:target.y-o.h));return alignPiece(o,world);
+  }
+  if(borderPart(o)&&borderPart(target)&&normal&&Math.abs(normal.y)<.5){
+    orientBorder(o,target.rotation||0);const axis=o.rotation===90?'z':'x',other=axis==='x'?'z':'x',size=axis==='x'?'w':'d',direction=Math.abs(normal[axis])>.5?Math.sign(normal[axis]):Math.sign(point[axis]-target[axis])||1;
+    o[axis]=target[axis]+direction*(target[size]+o[size])/2;o[other]=target[other];o.y=target.y;return alignPiece(o,world);
+  }
   if(o.type==='floor'&&target?.type==='ramp'){Object.assign(o,rampFloorAnchor(target,normal,o));return alignPiece(o,world);}
   if(!GRID_PARTS.has(o.type)){o.x=Math.max(-coordinateLimit(world),Math.min(coordinateLimit(world),Math.round(o.x)));o.z=Math.max(-coordinateLimit(world),Math.min(coordinateLimit(world),Math.round(o.z)));if(target&&normal?.y>.5)o.y=Math.max(0,Math.min(MAX_BUILD_Y,topAt(target,point.x,point.z)));return o;}
   const side=target&&normal&&Math.abs(normal.y)<.5;
-  if(o.type==='door'){const turned=o.rotation===90,width=turned?o.d:o.w,depth=turned?o.w:o.d;o.rotation=Math.abs(point.x-snap(point.x,4,2))<Math.abs(point.z-snap(point.z,4,2))?90:0;o.w=o.rotation===90?depth:width;o.d=o.rotation===90?width:depth;}
-  if(o.type==='wall'){
-    o.rotation=side?(Math.abs(normal.x)>.5?90:0):Math.abs(point.x-snap(point.x,4,2))<Math.abs(point.z-snap(point.z,4,2))?90:0;
-    o.w=o.rotation===90?.25:4;o.d=o.rotation===90?4:.25;
+  if(borderPart(o)){
+    orientBorder(o,side?(Math.abs(normal.x)>.5?90:0):Math.abs(point.x-snap(point.x,4,2))<Math.abs(point.z-snap(point.z,4,2))?90:0);
     if(side){o.x=target.x+normal.x*target.w/2;o.z=target.z+normal.z*target.d/2;}
   }else if(side){
     if(Math.abs(normal.x)>.5)o.x=target.x+normal.x*(target.w+o.w)/2;
@@ -48,8 +56,8 @@ export function snapEditorPiece(o,point,target=null,normal=null,world=60){
 }
 function joins(a,b){
   if(!intersects(a,b))return true;
-  if(a.type==='wall'&&b.type==='wall'&&a.rotation!==(b.rotation||0))return (a.w+b.w)/2-Math.abs(a.x-b.x)<=.26&&(a.d+b.d)/2-Math.abs(a.z-b.z)<=.26;
-  const wall=a.type==='wall'?a:b.type==='wall'?b:null,other=wall===a?b:a;
+  if(borderPart(a)&&borderPart(b)&&(a.rotation||0)!==(b.rotation||0)){const tx=a.rotation===90?a.w:b.w,tz=a.rotation===90?b.d:a.d;return (a.w+b.w)/2-Math.abs(a.x-b.x)<=Math.max(.26,tx/2+.02)&&(a.d+b.d)/2-Math.abs(a.z-b.z)<=Math.max(.26,tz/2+.02);}
+  const wall=borderPart(a)?a:borderPart(b)?b:null,other=wall===a?b:a;
   if((wall||a.type==='door'||b.type==='door')&&(a.type==='floor'||b.type==='floor')&&Math.abs(a.y-b.y)<.02)return true;
   if(wall&&other.type==='ramp'){
     // Walls occupy the border of a cell; a ramp may fill that cell's interior.
@@ -59,7 +67,7 @@ function joins(a,b){
   }
   const ramp=a.type==='ramp'?a:b.type==='ramp'?b:null,floor=ramp===a?b:a;
   if(ramp&&floor.type==='floor'&&Math.abs(ramp.y-floor.y)<.02)return true;
-  if(wall&&other.type==='box'){const penetration=wall.rotation===90?(wall.w+other.w)/2-Math.abs(wall.x-other.x):(wall.d+other.d)/2-Math.abs(wall.z-other.z);if(penetration<=.15)return true;}
+  if(wall&&other.type==='box'){const penetration=wall.rotation===90?(wall.w+other.w)/2-Math.abs(wall.x-other.x):(wall.d+other.d)/2-Math.abs(wall.z-other.z);const thickness=wall.rotation===90?wall.w:wall.d;if(penetration<=Math.max(.15,thickness/2+.02))return true;}
   return false;
 }
 export function editorPlacementReason(piece,objects,spawn,world=60){

@@ -1,6 +1,6 @@
-import {MAX_BUILD_Y} from './limits3d.js?v=20261113d';
-import {worldHalf} from './world3d.js?v=20261113d';
-import {bindHeldButton} from './input3d.js?v=20261113d';
+import {MAX_BUILD_Y} from './limits3d.js?v=20261113e';
+import {worldHalf} from './world3d.js?v=20261113e';
+import {bindHeldButton} from './input3d.js?v=20261113e';
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 // Resume editing near the player's floor, with the same horizontal direction.
 export function editorViewFromPlay(player,yaw,pitch,world){

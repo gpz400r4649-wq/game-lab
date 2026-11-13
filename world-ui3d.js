@@ -1,7 +1,7 @@
-import {createChoiceControl} from './choices3d.js?v=20261113d';
-import {MAX_PARTS} from './limits3d.js?v=20261113d';
-import {worldSize,coordinateLimit,WORLD_SIZES,resizeReason,spawnReason} from './world3d.js?v=20261113d';
-import {setReadingText} from './readings3d.js?v=20261113d';
+import {createChoiceControl} from './choices3d.js?v=20261113e';
+import {MAX_PARTS} from './limits3d.js?v=20261113e';
+import {worldSize,coordinateLimit,WORLD_SIZES,resizeReason,spawnReason} from './world3d.js?v=20261113e';
+import {setReadingText} from './readings3d.js?v=20261113e';
 export function createWorldUI(api){
  const dialog=document.createElement('dialog');dialog.id='world-dialog3';
  const title=document.createElement('h2'),label=document.createElement('div'),sizes=createChoiceControl(),note=document.createElement('p'),canvas=document.createElement('canvas'),status=document.createElement('p'),actions=document.createElement('div');
