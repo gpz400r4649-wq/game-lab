@@ -1,7 +1,7 @@
 export const FALL_BLOCK_HEIGHT=3;
-export const FALL_DEFAULTS=Object.freeze({enabled:false,minBlocks:3,damage:1});
+export const FALL_DEFAULTS=Object.freeze({enabled:true,minBlocks:3,damage:1});
 export function validFallDamage(rule){return rule===undefined||!!rule&&typeof rule==='object'&&typeof rule.enabled==='boolean'&&Number.isInteger(rule.minBlocks)&&rule.minBlocks>=1&&rule.minBlocks<=20&&Number.isInteger(rule.damage)&&rule.damage>=1&&rule.damage<=10;}
-export function fallDamageForDistance(distance,rule){
+export function fallDamageForDistance(distance,rule=FALL_DEFAULTS){
  if(!rule?.enabled||!Number.isFinite(distance)||distance+1e-6<rule.minBlocks*FALL_BLOCK_HEIGHT)return 0;
  return Math.min(100,rule.damage*(1+Math.floor((distance-rule.minBlocks*FALL_BLOCK_HEIGHT+1e-6)/FALL_BLOCK_HEIGHT)));
 }

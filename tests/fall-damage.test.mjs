@@ -5,7 +5,9 @@ import {topAt} from '../building3d.js';
 import {fallDamageForDistance,FALL_DEFAULTS} from '../fall-damage3d.js';
 function stage(fall={enabled:true,minBlocks:3,damage:1}){const p=fresh3D();p.playerRules={hp:100,speed:5,jumpHeight:49/38,fallDamage:{...fall}};return p;}
 function drop(p,height){const g=create3D(p);g.player.y=height;g.player.grounded=false;for(let i=0;i<500&&!g.player.grounded&&g.state==='playing';i++)step3D(g,p,{},.02);return g;}
-test('以前の作品とオフの設定では高い所から落ちても体力が減らない',()=>{for(const p of [fresh3D(),stage({...FALL_DEFAULTS})]){const before=JSON.stringify(p),g=drop(p,60);assert.equal(g.player.hp,g.player.maxHp);assert.equal(g.state,'playing');assert.equal(JSON.stringify(p),before);}});
+test('未設定の作品では初めから落下ダメージがあり、作品データを書き換えない',()=>{for(const p of [fresh3D(),stage()]){if(p.playerRules)delete p.playerRules.fallDamage;const before=JSON.stringify(p),g=drop(p,9);assert.equal(g.player.hp,g.player.maxHp-1);assert.equal(g.state,'playing');assert.equal(JSON.stringify(p),before);}assert.equal(FALL_DEFAULTS.enabled,true);assert.equal(fallDamageForDistance(9),1);});
+test('自分でなしを保存した作品は、読み直しても落下ダメージなしを保つ',()=>{const p=validate3D(JSON.parse(JSON.stringify(stage({...FALL_DEFAULTS,enabled:false})))),before=JSON.stringify(p),g=drop(p,60);assert.equal(g.player.hp,g.player.maxHp);assert.equal(g.state,'playing');assert.equal(JSON.stringify(p),before);});
+test('未設定でもジャンプ台への着地は落下ダメージを受けない',()=>{const p=fresh3D();p.objects=[part('bounce',0,0)];p.spawn.z=0;const g=drop(p,30);assert.equal(g.player.hp,g.player.maxHp);assert.equal(g.state,'playing');});
 test('高さの境界を正確に判定し、高さと設定値に応じたダメージを着地時に１回だけ与える',()=>{
  for(const [height,damage]of [[8.99,0],[9,1],[11.99,1],[12,2],[18,4]]){const p=stage(),before=JSON.stringify(p),g=drop(p,height);assert.equal(g.player.hp,100-damage);for(let i=0;i<100;i++)step3D(g,p,{},.02);assert.equal(g.player.hp,100-damage);assert.equal(JSON.stringify(p),before);}
  const p=stage({enabled:true,minBlocks:2,damage:2}),g=drop(p,9);assert.equal(g.player.hp,96);assert.equal(fallDamageForDistance(1000,{enabled:true,minBlocks:1,damage:10}),100);
