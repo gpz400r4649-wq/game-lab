@@ -1,8 +1,8 @@
 import * as T from './vendor/three.module.min.js';
-import {MAX_PARTS} from './limits3d.js?v=20261113f';
+import {MAX_PARTS} from './limits3d.js?v=20261113g';
 export const BATCH_TYPES=new Set(['wall','floor','roof','ramp','box','platform']);
 export const isBatchedStructure=o=>BATCH_TYPES.has(o.type);
-const batchKey=o=>o.rampStyle?'ramp:'+o.rampStyle:o.wallStyle?'wall:'+o.wallStyle:o.type;
+const batchKey=o=>o.roofStyle?'roof:'+o.roofStyle:o.wallGable?'wall:'+o.wallGable:o.rampStyle?'ramp:'+o.rampStyle:o.wallStyle?'wall:'+o.wallStyle:o.type;
 // Logical meshes remain available for precise selection and raycasts on layer 1.
 // Visible copies share a draw call per shape on layer 2, independent of part count.
 export function createStructureRenderer(scene,materials,geometries){

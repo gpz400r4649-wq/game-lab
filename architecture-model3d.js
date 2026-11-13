@@ -1,3 +1,4 @@
+import {ROOF_SHELL_RATIO} from './architecture3d.js?v=20261113g';
 import * as T from './vendor/three.module.min.js';
 const cube=new T.BoxGeometry(1,1,1);
 export function makeCornerRampGeometry(style){
@@ -19,3 +20,11 @@ export function makeFenceModel(o,material){
  const root=new T.Group(),turned=o.rotation===90,w=turned?o.d:o.w,d=turned?o.w:o.d;root.rotation.y=(o.rotation||0)*Math.PI/180;
  const mesh=new T.Mesh(fenceGeometry(o.wallStyle==='fenceHalf'?1.5:3),material);mesh.scale.set(w,o.h,d);root.add(mesh);return root;
 }
+
+function heightPrism(topHeight,bottomHeight=()=>0){
+ const vertices=[],add=(a,b,c)=>vertices.push(...a,...b,...c),corners=[[-.5,-.5],[.5,-.5],[.5,.5],[-.5,.5]],top=corners.map(([x,z])=>[x,topHeight(x,z),z]),bottom=corners.map(([x,z])=>[x,bottomHeight(x,z),z]);
+ add(top[0],top[2],top[1]);add(top[0],top[3],top[2]);add(bottom[0],bottom[1],bottom[2]);add(bottom[0],bottom[2],bottom[3]);for(let i=0;i<4;i++){const j=(i+1)%4;add(bottom[i],top[i],top[j]);add(bottom[i],top[j],bottom[j]);}
+ const geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.Float32BufferAttribute(vertices,3));geometry.computeVertexNormals();geometry.computeBoundingBox();return geometry;
+}
+export function makeRoofSlopeGeometry(){return heightPrism((x,z)=>.5-z,(x,z)=>(.5-z)*(1-ROOF_SHELL_RATIO));}
+export function makeGableGeometry(style){return heightPrism(x=>style==='gableLeft'?.5+x:.5-x);}
