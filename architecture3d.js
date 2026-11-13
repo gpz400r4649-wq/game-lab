@@ -1,18 +1,21 @@
+export const FLOOR_PRESETS={floor:'ふつうの床・１マス',floorHalf:'ハーフの床・半マス'};
 export const ROOF_SHELL_RATIO=1/12;
 export const ROOF_PRESETS={roof:'小さな三角屋根・１マス',roofSlope:'ななめの屋根',gableLeft:'屋根の三角かべ・左がひくい',gableRight:'屋根の三角かべ・右がひくい'};
 export const RAMP_PRESETS={ramp:'まっすぐのスロープ',inner:'角のスロープ・うちがわ',outer:'角のスロープ・そとがわ'};
 export const FENCE_PRESETS={wall:'ふつうのかべ',diagonal:'ななめのかべ・１マス',halfVertical:'たてハーフ・はばが半分',halfHorizontal:'よこハーフ・高さが半分',fence:'さく・かべと同じ高さ',fenceHalf:'さく・半分の高さ'};
 export function configureBuildingPart(o,key){
+ if(o.type==='floor'){const half=key==='floorHalf',turned=o.rotation===90;if(half)o.floorHalf=true;else delete o.floorHalf;o.w=half&&!turned?2:4;o.d=half&&turned?2:4;}
  if(o.type==='ramp'){if(key==='inner'||key==='outer')o.rampStyle=key;else delete o.rampStyle;}
  if(o.type==='roof'){if(key==='roofSlope'){o.roofStyle='slope';o.h=3;}else delete o.roofStyle;}
  if(o.type==='wall'){delete o.wallStyle;delete o.wallHalf;delete o.wallGable;const turned=o.rotation===90,width=key==='halfVertical'?2:4;o.w=turned?.25:width;o.d=turned?width:.25;o.h=['fenceHalf','halfHorizontal'].includes(key)?1.5:3;
   if(key==='diagonal'){o.wallStyle='diagonal';o.w=o.d=4;}if(key==='fence'||key==='fenceHalf')o.wallStyle=key;if(key==='halfVertical'||key==='halfHorizontal')o.wallHalf=key;if(['gableLeft','gableRight'].includes(key))o.wallGable=key;
  }return o;
 }
-export function validArchitecture(o){return (o.rampStyle===undefined||o.type==='ramp'&&['inner','outer'].includes(o.rampStyle))&&(o.wallStyle===undefined||o.type==='wall'&&['fence','fenceHalf','diagonal'].includes(o.wallStyle)&&!(o.wallStyle==='diagonal'&&(o.wallHalf!==undefined||o.wallGable!==undefined||Math.abs(o.w-4)>.001||Math.abs(o.d-4)>.001)))&&(o.roofStyle===undefined||o.type==='roof'&&o.roofStyle==='slope')&&(o.wallGable===undefined||o.type==='wall'&&['gableLeft','gableRight'].includes(o.wallGable)&&o.wallStyle===undefined&&o.wallHalf===undefined)&&(o.wallHalf===undefined||o.type==='wall'&&['halfVertical','halfHorizontal'].includes(o.wallHalf)&&o.wallStyle===undefined);}
+export function validArchitecture(o){return (o.floorHalf===undefined||o.type==='floor'&&o.floorHalf===true&&Math.abs(o.w-(o.rotation===90?4:2))<.001&&Math.abs(o.d-(o.rotation===90?2:4))<.001)&&(o.rampStyle===undefined||o.type==='ramp'&&['inner','outer'].includes(o.rampStyle))&&(o.wallStyle===undefined||o.type==='wall'&&['fence','fenceHalf','diagonal'].includes(o.wallStyle)&&!(o.wallStyle==='diagonal'&&(o.wallHalf!==undefined||o.wallGable!==undefined||Math.abs(o.w-4)>.001||Math.abs(o.d-4)>.001)))&&(o.roofStyle===undefined||o.type==='roof'&&o.roofStyle==='slope')&&(o.wallGable===undefined||o.type==='wall'&&['gableLeft','gableRight'].includes(o.wallGable)&&o.wallStyle===undefined&&o.wallHalf===undefined)&&(o.wallHalf===undefined||o.type==='wall'&&['halfVertical','halfHorizontal'].includes(o.wallHalf)&&o.wallStyle===undefined);}
 export function architectureIcon(key){
  let shape='';
- if(key==='roofSlope')shape='<path d="M10 48L59 12L75 23L26 59Z" fill="#ac8270"/><path d="M10 48V54L26 64V59M26 64L75 28V23"/>';
+ if(key==='floor'||key==='floorHalf')shape=key==='floor'?'<path d="M8 40L42 18L76 40L42 62Z" fill="#c99d6c"/><path d="M8 40V46L42 68L76 46V40M42 62V68"/>':'<path d="M8 40L42 18L76 40L42 62Z" stroke-dasharray="4 3" stroke="#b9af9f"/><path d="M8 40L25 29L59 51L42 62Z" fill="#c99d6c"/><path d="M8 40V46L42 68L59 57V51M42 62V68"/>';
+ else if(key==='roofSlope')shape='<path d="M10 48L59 12L75 23L26 59Z" fill="#ac8270"/><path d="M10 48V54L26 64V59M26 64L75 28V23"/>';
  else if(key==='roof')shape='<path d="M10 48L42 12L74 48Z" fill="#ac8270"/>';
  else if(key==='gableLeft'||key==='gableRight')shape=key==='gableLeft'?'<path d="M10 58L74 12V58Z" fill="#d8b587"/>':'<path d="M10 12L74 58H10Z" fill="#d8b587"/>';
  else if(key==='diagonal')shape='<path d="M12 52L64 12L72 17L20 57Z" fill="#d8b587"/><path d="M12 52V25L64 0V12M20 57V30L72 5V17"/><path d="M12 25L20 30L72 5L64 0Z" fill="#eed5ae"/>';

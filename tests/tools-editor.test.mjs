@@ -33,7 +33,7 @@ test('上部から銃を追加・切り替え・削除でき、見た目と銃�
  dialog.querySelector('.gun-catalog-list').children[0].onclick();assert.equal(dialog.querySelector('[aria-selected="true"]').dataset.page,'look');assert.equal(dialog.querySelector('.gun-catalog-list').children[0].getAttribute('aria-pressed'),'true');dialog.querySelector('.gun-catalog-actions').children[1].onclick();assert.equal(p.loadout.length,1);assert.ok(validate3D(p));
 });
 test('建築銃の切替は残し、体力は全体設定へ一本化してその画面を開ける',t=>{
- const {p,page,tab,dialog,openedBlockSettings}=setup(t);const effect=page('basic').querySelector('[aria-label="この銃から出るもの"]');effect.value='wall';effect.onchange();assert.equal(dialog.querySelectorAll('[role=tab]').length,3);tab('build');const choices=page('build').querySelectorAll('input').filter(n=>n.type==='checkbox');assert.equal(choices.length,5);choices[1].checked=true;choices[1].onchange();assert.deepEqual(p.loadout[0].buildChoices,['wall','floor']);
+ const {p,page,tab,dialog,openedBlockSettings}=setup(t);const effect=page('basic').querySelector('[aria-label="この銃から出るもの"]');effect.value='wall';effect.onchange();assert.equal(dialog.querySelectorAll('[role=tab]').length,3);tab('build');const choices=page('build').querySelectorAll('input').filter(n=>n.type==='checkbox');assert.equal(choices.length,6);choices[1].checked=true;choices[1].onchange();assert.deepEqual(p.loadout[0].buildChoices,['wall','floor']);
  assert.equal(page('build').querySelector('input[data-numeric]'),null);assert.ok(page('build').querySelector('.build-global-settings'));page('build').querySelector('.build-global-settings button').onclick();assert.equal(openedBlockSettings(),1);assert.equal(dialog.open,false);assert.equal(page('build').querySelector('.gun-help').open,false);assert.ok(validate3D(p));
 });
 
