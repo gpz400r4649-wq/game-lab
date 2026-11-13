@@ -18,7 +18,7 @@ for(const key of ['double','doubleSlide','fusuma','frame','windowFrame','windowG
 test('中央開きは左右へ開き、ふすまは固定した片側へ重なり、逆向きにも対応する',()=>{
  for(const key of ['double','doubleSlide','fusuma','windowSwing'])for(const rotation of [0,90]){const o=configureDoor(part('door'),key);if(rotation)rotatePiece(o);const model=makeDoorModel(o,materials),leaves=model.userData.variantLeaves;o.doorAmount=1;updateDoorModel(model,o);
  if(o.doorStyle==='doubleSwing')assert.equal(leaves[0].hinge.rotation.y,-leaves[1].hinge.rotation.y);
- if(key==='doubleSlide'){assert.ok(leaves[0].hinge.position.x<leaves[0].startX);assert.ok(leaves[1].hinge.position.x>leaves[1].startX);}
+ if(key==='doubleSlide'){assert.equal(leaves[0].hinge.position.x,leaves[1].hinge.position.x);}
  if(key==='fusuma'){assert.equal(leaves[0].hinge.position.x,leaves[1].hinge.position.x);o.doorDirection=-1;updateDoorModel(model,o);assert.equal(leaves[0].hinge.position.x,leaves[1].hinge.position.x);}
  }
 });
@@ -27,7 +27,7 @@ test('枠だけのドアは最初から通れ、窓枠は上下の壁が残り�
  const window=configureDoor(part('door',0,0),'windowFrame');assert.equal(doorSolids(window).length,4);assert.ok(doorSolids(window).some(s=>s.y===0&&Math.abs(s.h-.8)<1e-8));const glass=configureDoor(part('door'),'windowGlass');assert.equal(doorSolids(glass).length,5);
 });
 test('ふすまは開けても固定した半分は残り、回転後も見た目と当たり判定が一致する',()=>{
- for(const direction of [1,-1])for(const rotation of [0,90]){const o=configureDoor(part('door',2,2),'fusuma');o.doorDirection=direction;if(rotation)rotatePiece(o);o.open=true;o.doorAmount=1;const fixed=doorSolids(o).find(s=>s.id.endsWith('fixed-panel'));const model=makeDoorModel(o,materials);model.position.set(o.x,o.y,o.z);model.updateMatrixWorld(true);const leaf=model.userData.variantLeaves.find(l=>l.sign===direction),world=leaf.hinge.getWorldPosition(new T.Vector3());assert.ok(Math.abs(fixed.x-world.x)<1e-8);assert.ok(Math.abs(fixed.z-world.z)<1e-8);}
+ for(const direction of [1,-1])for(const rotation of [0,90]){const o=configureDoor(part('door',2,2),'fusuma');o.doorDirection=direction;if(rotation)rotatePiece(o);o.open=true;o.doorAmount=1;const fixed=doorSolids(o).find(s=>s.id.endsWith('fixed-panel'));const model=makeDoorModel(o,materials);model.position.set(o.x,o.y,o.z);model.updateMatrixWorld(true);const leaf=model.userData.variantLeaves.find(l=>l.sign===direction),world=leaf.hinge.getWorldPosition(new T.Vector3());assert.ok(Math.abs(rotation?fixed.z-world.z:fixed.x-world.x)<1e-8);assert.ok(Math.abs(rotation?fixed.x-world.x:fixed.z-world.z)<=doorDimensions(o).depth/2);}
 });
 for(const style of ['inner','outer'])test(style+': 角スロープの実際の三角形と歩ける高さが４方向で一致する',()=>{
  const geometry=makeCornerRampGeometry(style);for(const rotation of [0,90,180,270]){const o=configureBuildingPart(part('ramp',0,0),style);o.rotation=rotation;const mesh=new T.Mesh(geometry,mat);mesh.rotation.y=rotation*Math.PI/180;mesh.scale.set(4,3,4);mesh.updateMatrixWorld(true);
@@ -55,4 +55,24 @@ test('柵を多数置いても、見える描画は形ごとにまとめられ�
  const scene=new T.Scene(),geometry=fenceGeometry(3),render=createStructureRenderer(scene,{wall:mat,floor:mat,roof:mat,ramp:mat,box:mat,platform:mat},{box:new T.BoxGeometry(1,1,1),'wall:fence':geometry,'wall:fenceHalf':fenceGeometry(1.5),'ramp:inner':makeCornerRampGeometry('inner'),'ramp:outer':makeCornerRampGeometry('outer')}),objects=Array.from({length:100},(_,i)=>configureBuildingPart(part('wall',i*4,2),'fence')),meshes=new Map();
  for(const o of objects){const mesh=makeFenceModel(o,mat);mesh.position.set(o.x,o.y,o.z);render.mark(mesh);meshes.set(o.id,mesh);}
  render.sync(objects,meshes);const active=scene.children.filter(m=>m.count>0);assert.equal(active.length,1);assert.equal(active[0].count,100);assert.equal(active[0].geometry,geometry);assert.ok([...meshes.values()].every(m=>m.layers.mask===2));render.sync(objects.slice(0,40),meshes);assert.equal(active[0].count,40);
+});
+
+test('スライドする２枚の扉は開閉の途中もブロックの幅を超えず、重ねる面を分ける',()=>{
+ for(const preset of ['slide','keyslide','doubleSlide','fusuma'])for(const rotation of [0,90])for(const direction of [1,-1]){
+  const o=configureDoor(part('door'),preset);if(rotation)rotatePiece(o);o.doorDirection=direction;const model=makeDoorModel(o,materials),leaves=model.userData.variantLeaves;
+  assert.equal(leaves.length,2);assert.notEqual(leaves[0].hinge.position.z,leaves[1].hinge.position.z);
+  for(const amount of [0,.1,.25,.5,.75,1]){o.doorAmount=amount;updateDoorModel(model,o);const size=sizeOf(model);assert.ok((rotation?size.z:size.x)<=doorDimensions(o).outerWidth+1e-8);}
+  assert.equal(leaves[0].hinge.position.x,leaves[1].hinge.position.x);
+ }
+});
+test('１マスのふすまは開いた半分を通れ、残る半分は通れず、逆向き・90度回転にも対応する',()=>{
+ for(const rotation of [0,90])for(const direction of [1,-1])for(const clear of [true,false]){
+  const door=configureDoor(part('door',0,0),'doubleSlide');door.rotation=rotation;if(rotation)[door.w,door.d]=[door.d,door.w];door.doorDirection=direction;door.open=true;const side=(clear?-direction:direction)*doorDimensions(door).opening/4;
+  const player={x:rotation?1.5:side,y:0,z:rotation?-side:1.5,vy:0,grounded:true};for(let i=0;i<30;i++)movePlayer(player,[door],rotation?-.1:0,rotation?0:-.1,.02,false);
+  assert.equal((rotation?player.x:player.z)<-.5,clear);
+ }
+});
+test('以前のスライドドアも、幅と場所を変えずに中で重なる方式で表示する',()=>{
+ const o=part('door',8,2);o.doorStyle='slide';o.doorMode='free';const before=[o.x,o.z,o.w,o.d],model=makeDoorModel(o,materials);o.doorAmount=1;o.open=true;updateDoorModel(model,o);assert.equal(model.userData.variantLeaves.length,2);assert.ok(sizeOf(model).x<=4);assert.deepEqual([o.x,o.z,o.w,o.d],before);assert.ok(doorSolids(o).some(s=>s.id.endsWith('fixed-panel')));
+ const p=fresh3D();p.objects=[o];assert.ok(validate3D(p));
 });

@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.min.js';
-import {detectsPlayer} from './enemy-ai3d.js?v=20261113b';
+import {detectsPlayer} from './enemy-ai3d.js?v=20261113c';
 export function enemyMessageState(enemy,player){
  const observes=enemy.routine?enemy.routine.notice==='near':enemy.program.some(b=>['search','chase'].includes(b.action))&&(enemy.chaseMode||'always')!=='always';
  const action=enemy.program.length?(enemy.debugAction||'wait'):'wait';

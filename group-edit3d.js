@@ -1,9 +1,9 @@
-import {GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261113b';
-import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261113b';
-import {coordinateLimit} from './world3d.js?v=20261113b';
-import {rangeCell,validMoveRange,validAttackRange} from './enemy-range3d.js?v=20261113b';
-import {validPatrolRoute,validWaypoints} from './patrol-route3d.js?v=20261113b';
-import {validate3D} from './engine3d.js?v=20261113b';
+import {GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261113c';
+import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261113c';
+import {coordinateLimit} from './world3d.js?v=20261113c';
+import {rangeCell,validMoveRange,validAttackRange} from './enemy-range3d.js?v=20261113c';
+import {validPatrolRoute,validWaypoints} from './patrol-route3d.js?v=20261113c';
+import {validate3D} from './engine3d.js?v=20261113c';
 export function groupSteps(objects){return {horizontal:objects.some(o=>GRID_PARTS.has(o.type)||[o.moveRange,o.searchRange,o.attackRange].some(r=>r?.space==='world'))?4:1,vertical:objects.some(o=>['wall','floor','roof','ramp','box','door'].includes(o.type))?3:.5};}
 export function groupCandidate(project,ids,delta,{copy=false}={}){
  const chosen=new Set(ids),sources=project.objects.filter(o=>chosen.has(o.id));
