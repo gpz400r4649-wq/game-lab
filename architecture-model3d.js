@@ -1,4 +1,4 @@
-import {ROOF_SHELL_RATIO,diagonalPolygon} from './architecture3d.js?v=20261114c';
+import {ROOF_SHELL_RATIO,diagonalPolygon} from './architecture3d.js?v=20261114d';
 import * as T from './vendor/three.module.min.js';
 const cube=new T.BoxGeometry(1,1,1);
 export function makeCornerRampGeometry(style){
@@ -17,7 +17,7 @@ export function fenceGeometry(height=3,width=4){
  const geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.Float32BufferAttribute(positions,3));geometry.computeVertexNormals();geometry.computeBoundingBox();fenceGeometries.set(key,geometry);return geometry;
 }
 export function makeFenceModel(o,material){
- const root=new T.Group(),turned=o.rotation===90,w=turned?o.d:o.w,d=turned?o.w:o.d;root.rotation.y=(o.rotation||0)*Math.PI/180;
+ const root=new T.Group(),turned=(o.rotation||0)%180===90,w=turned?o.d:o.w,d=turned?o.w:o.d;root.rotation.y=(o.rotation||0)*Math.PI/180;
  const mesh=new T.Mesh(fenceGeometry(o.wallStyle==='fenceHalf'?1.5:3,w),material);mesh.scale.set(w,o.h,d);root.add(mesh);return root;
 }
 

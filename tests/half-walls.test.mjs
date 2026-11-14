@@ -15,8 +15,8 @@ test('縦ハーフ２枚を左右に並べると、１マスの壁になり、�
 test('横ハーフ２枚を上下に積むと普通の壁と同じ高さになり、回しても高さは変わらない',()=>{
  const lower=half('halfHorizontal'),upper=snapEditorPiece(half('halfHorizontal'),{x:1.8,y:1.5,z:2.1},lower,{x:0,y:1,z:0});assert.deepEqual([lower.w,lower.h,upper.y,upper.h],[4,1.5,1.5,1.5]);assert.equal(upper.y+upper.h,3);assert.equal(editorPlacementReason(upper,[lower],spawn),'');assert.equal(gridStep(upper,'y'),1.5);rotatePiece(upper);assert.equal(upper.h,1.5);assert.equal(upper.d,4);
 });
-test('縦ハーフの左右を90度回しても区別し、戻すと元の位置になる',()=>{
- const pieces=[half('halfVertical',-1),half('halfVertical',1)],before=pieces.map(o=>[o.x,o.z,o.w,o.d]);for(const o of pieces)rotatePiece(o);assert.deepEqual(pieces.map(o=>[o.x,o.z]),[[2,1],[2,-1]]);assert.ok(pieces.every(o=>o.w===.25&&o.d===2));assert.equal(editorPlacementReason(pieces[1],[pieces[0]],spawn),'');assert.equal(gridStep(pieces[0],'z'),2);for(const o of pieces)rotatePiece(o);assert.deepEqual(pieces.map(o=>[o.x,o.z,o.w,o.d]),before);
+test('縦ハーフの左右を90度回しても区別し、４回で元の位置になる',()=>{
+ const pieces=[half('halfVertical',-1),half('halfVertical',1)],before=pieces.map(o=>[o.x,o.z,o.w,o.d]);for(const o of pieces)rotatePiece(o);assert.deepEqual(pieces.map(o=>[o.x,o.z]),[[2,1],[2,-1]]);assert.ok(pieces.every(o=>o.w===.25&&o.d===2));assert.equal(editorPlacementReason(pieces[1],[pieces[0]],spawn),'');assert.equal(gridStep(pieces[0],'z'),2);for(let i=0;i<3;i++)for(const o of pieces)rotatePiece(o);assert.deepEqual(pieces.map(o=>[o.x,o.z,o.w,o.d]),before);
 });
 test('ハーフ壁は通常の壁の隣や真上でもグリッドにそろう',()=>{
  const wall=constructionPart('wall',0,2);for(const sign of [-1,1]){const next=snapEditorPiece(half('halfVertical'),{x:sign*1.8,y:1,z:2.125},wall,{x:0,y:0,z:1});assert.equal(next.x,sign*3);assert.equal(editorPlacementReason(next,[wall],spawn),'');const top=snapEditorPiece(half('halfVertical'),{x:sign*.8,y:3,z:2},wall,{x:0,y:1,z:0});assert.equal(top.x,sign);assert.equal(top.y,3);}

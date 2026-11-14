@@ -1,9 +1,9 @@
-import {halfFloorMask,ROOF_SHELL_RATIO,isDiagonal,diagonalContains,footprintsIntersect} from './architecture3d.js?v=20261114c';
-import {inheritNewCharacter} from './character-defaults3d.js?v=20261114c';
-import {DEFAULT_APPEARANCE,validAppearance} from './appearance3d.js?v=20261114c';
-import {MAX_PARTS,MAX_BUILD_Y,MAX_BUILD_LEVEL} from './limits3d.js?v=20261114c';
-import {worldHalf,coordinateLimit} from './world3d.js?v=20261114c';
-import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261114c';
+import {halfFloorMask,ROOF_SHELL_RATIO,isDiagonal,diagonalContains,footprintsIntersect} from './architecture3d.js?v=20261114d';
+import {inheritNewCharacter} from './character-defaults3d.js?v=20261114d';
+import {DEFAULT_APPEARANCE,validAppearance} from './appearance3d.js?v=20261114d';
+import {MAX_PARTS,MAX_BUILD_Y,MAX_BUILD_LEVEL} from './limits3d.js?v=20261114d';
+import {worldHalf,coordinateLimit} from './world3d.js?v=20261114d';
+import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261114d';
 // Shared by editor, gameplay and placement preview. No browser dependency.
 export const BUILD_TYPES={wall:'壁',floor:'床',roof:'屋根',ramp:'スロープ',diagonal:'ななめの壁',halfFloor:'ハーフの床'};
 export const GRID={cell:4,layer:3,size:60};
@@ -11,12 +11,17 @@ export const GRID_PARTS=new Set(['box','platform','moving','bounce','hazard','do
 const snap=(value,step=GRID.cell,offset=0)=>Math.round((value-offset)/step)*step+offset;
 function boundedGrid(value,extent,offset=0,world=60,step=4){extent=Math.max(step/2,extent);const lo=Math.ceil((-worldHalf(world)+extent-offset)/step)*step+offset,hi=Math.floor((worldHalf(world)-extent-offset)/step)*step+offset;return Math.max(lo,Math.min(hi,snap(value,step,offset)));}
 export function alignPiece(o,world=60){
- if(!GRID_PARTS.has(o.type))return o;if(o.floorHalf){const turned=o.rotation===90;o.x=boundedGrid(o.x,o.w/2,turned?0:1,world,turned?4:2);o.z=boundedGrid(o.z,o.d/2,turned?1:0,world,turned?2:4);return o;}const bordered=['wall','door'].includes(o.type)&&!isDiagonal(o),turned=bordered&&o.rotation===90,half=o.wallHalf==='halfVertical',longOffset=half?1:o.type==='door'&&(turned?o.d:o.w)>=7.9?2:0;
+ if(!GRID_PARTS.has(o.type))return o;if(o.floorHalf){const turned=(o.rotation||0)%180===90;o.x=boundedGrid(o.x,o.w/2,turned?0:1,world,turned?4:2);o.z=boundedGrid(o.z,o.d/2,turned?1:0,world,turned?2:4);return o;}const bordered=['wall','door'].includes(o.type)&&!isDiagonal(o),turned=bordered&&(o.rotation||0)%180===90,half=o.wallHalf==='halfVertical',longOffset=half?1:o.type==='door'&&(turned?o.d:o.w)>=7.9?2:0;
  o.x=boundedGrid(o.x,o.w/2,turned?(o.wallHalf?0:2):longOffset,world,o.wallHalf?2:4);o.z=boundedGrid(o.z,o.d/2,bordered&&!turned?(o.wallHalf?0:2):longOffset,world,o.wallHalf?2:4);return o;
 }
-export function gridStep(o,axis){if(o.wallHalf&&axis===(o.rotation===90?'x':'z'))return 2;if(o.floorHalf&&axis===(o.rotation===90?'z':'x'))return 2;if(o.wallHalf==='halfVertical'&&axis===(o.rotation===90?'z':'x'))return 2;if(o.wallHalf==='halfHorizontal'&&axis==='y')return 1.5;return GRID_PARTS.has(o.type)?axis==='y'?(['box','wall','floor','roof','ramp','door'].includes(o.type)?3:.5):4:axis==='y'?.5:1;}
+export function gridStep(o,axis){if(o.wallHalf&&axis===((o.rotation||0)%180===90?'x':'z'))return 2;if(o.floorHalf&&axis===((o.rotation||0)%180===90?'z':'x'))return 2;if(o.wallHalf==='halfVertical'&&axis===((o.rotation||0)%180===90?'z':'x'))return 2;if(o.wallHalf==='halfHorizontal'&&axis==='y')return 1.5;return GRID_PARTS.has(o.type)?axis==='y'?(['box','wall','floor','roof','ramp','door'].includes(o.type)?3:.5):4:axis==='y'?.5:1;}
 const borderPart=o=>o&&['wall','door'].includes(o.type)&&!isDiagonal(o);
-function orientBorder(o,rotation){if((o.rotation||0)!==rotation)[o.w,o.d]=[o.d,o.w];o.rotation=rotation;}
+function orientBorder(o,rotation){const phase=o.type==='door'||o.wallHalf?rotation:rotation%180;if((o.rotation||0)%180!==phase%180)[o.w,o.d]=[o.d,o.w];o.rotation=phase;}
+function borderAnchor(o){
+ const phase=o.rotation||0,turned=phase%180===90,positive=phase<180,thin=turned?o.x:o.z;
+ const mid=o.wallHalf?(positive?Math.floor((thin+1.99999)/4)*4:Math.ceil((thin-1.99999)/4)*4):thin-(positive?2:-2),long=turned?o.z:o.x,along=o.wallHalf==='halfVertical'?snap(long):long;
+ return turned?{x:mid,z:along}:{x:along,z:mid};
+}
 function rampFloorAnchor(ramp,normal,floor,point=null){
  const angle=(ramp.rotation||0)*Math.PI/180,high={x:-Math.sin(angle),z:-Math.cos(angle)},dot=(normal?.x||0)*high.x+(normal?.z||0)*high.z,side=normal&&Math.abs(normal.y)<.5;
  const low=side&&dot<-.5,dir=side&&Math.abs(dot)<.5?normal:low?{x:-high.x,z:-high.z}:high;
@@ -25,7 +30,7 @@ function rampFloorAnchor(ramp,normal,floor,point=null){
 export function snapEditorPiece(o,point,target=null,normal=null,world=60){
   o.x=point.x;o.z=point.z;
   if(isDiagonal(o)){
-   if(isDiagonal(target)){o.rotation=target.rotation||0;if(normal?.y>.5||normal?.y<-.5){o.x=target.x;o.z=target.z;o.y=normal.y>0?target.y+target.h:Math.max(0,target.y-o.h);}else{const sign=target.rotation===90?-1:1,direction=Math.sign(point.x-target.x+sign*(point.z-target.z))||1;o.x=target.x+direction*4;o.z=target.z+direction*sign*4;o.y=target.y;}}
+   if(isDiagonal(target)){o.rotation=target.rotation||0;if(normal?.y>.5||normal?.y<-.5){o.x=target.x;o.z=target.z;o.y=normal.y>0?target.y+target.h:Math.max(0,target.y-o.h);}else{const sign=(target.rotation||0)%180===90?-1:1,direction=Math.sign(point.x-target.x+sign*(point.z-target.z))||1;o.x=target.x+direction*4;o.z=target.z+direction*sign*4;o.y=target.y;}}
    else o.y=target&&normal?.y>.5?Math.round(topAt(target,point.x,point.z)/3)*3:target?.y||0;
    return alignPiece(o,world);
   }
@@ -35,7 +40,7 @@ export function snapEditorPiece(o,point,target=null,normal=null,world=60){
     const angle=(target.rotation||0)*Math.PI/180,rise=acrossX?-Math.sin(angle):Math.cos(angle);o.wallGable=rise>0?'gableLeft':'gableRight';return alignPiece(o,world);
   }
   if(o.roofStyle==='slope'&&target?.wallGable){
-    o.x=target.x-(target.rotation===90?2:0);o.z=target.z-(target.rotation===90?0:2);o.y=target.y;o.h=target.h;o.rotation=target.rotation===90?(target.wallGable==='gableLeft'?0:180):(target.wallGable==='gableLeft'?270:90);return alignPiece(o,world);
+    o.x=target.x-((target.rotation||0)%180===90?2:0);o.z=target.z-((target.rotation||0)%180===90?0:2);o.y=target.y;o.h=target.h;o.rotation=(target.rotation||0)%180===90?(target.wallGable==='gableLeft'?0:180):(target.wallGable==='gableLeft'?270:90);return alignPiece(o,world);
   }
   if(o.roofStyle==='slope'&&target?.roofStyle==='slope'){
     const dx=point.x-target.x,dz=point.z-target.z,axis=Math.abs(dx)/(target.w/2)>Math.abs(dz)/(target.d/2)?'x':'z',offset=point[axis]-target[axis],extent=target[axis==='x'?'w':'d']/2;
@@ -50,11 +55,11 @@ export function snapEditorPiece(o,point,target=null,normal=null,world=60){
   // Walls, doors and windows share the same edge of the grid.
   // Use the existing piece's orientation instead of guessing from a thin frame's hit point.
   if(borderPart(o)&&borderPart(target)&&normal&&Math.abs(normal.y)>.5){
-    orientBorder(o,target.rotation||0);const axis=o.rotation===90?'z':'x',other=axis==='x'?'z':'x',room=Math.max(0,(target[axis==='x'?'w':'d']-o[axis==='x'?'w':'d'])/2);
+    orientBorder(o,target.rotation||0);const axis=(o.rotation||0)%180===90?'z':'x',other=axis==='x'?'z':'x',room=Math.max(0,(target[axis==='x'?'w':'d']-o[axis==='x'?'w':'d'])/2);
     o[axis]=target[axis]+Math.max(-room,Math.min(room,point[axis]-target[axis]));o[other]=target[other];o.y=Math.max(0,Math.min(MAX_BUILD_Y,normal.y>0?target.y+target.h:target.y-o.h));return alignPiece(o,world);
   }
   if(borderPart(o)&&borderPart(target)&&normal&&Math.abs(normal.y)<.5){
-    orientBorder(o,target.rotation||0);const axis=o.rotation===90?'z':'x',other=axis==='x'?'z':'x',size=axis==='x'?'w':'d',direction=Math.abs(normal[axis])>.5?Math.sign(normal[axis]):Math.sign(point[axis]-target[axis])||1;
+    orientBorder(o,target.rotation||0);const axis=(o.rotation||0)%180===90?'z':'x',other=axis==='x'?'z':'x',size=axis==='x'?'w':'d',direction=Math.abs(normal[axis])>.5?Math.sign(normal[axis]):Math.sign(point[axis]-target[axis])||1;
     o[axis]=target[axis]+direction*(target[size]+o[size])/2;o[other]=target[other];o.y=target.y;return alignPiece(o,world);
   }
   if(o.type==='floor'&&target?.type==='ramp'){Object.assign(o,rampFloorAnchor(target,normal,o,point));return alignPiece(o,world);}
@@ -68,7 +73,7 @@ export function snapEditorPiece(o,point,target=null,normal=null,world=60){
     if(Math.abs(normal.z)>.5)o.z=target.z+normal.z*(target.d+o.d)/2;
   }
   if(target&&normal?.y>.5){
-    if(borderPart(target)&&['floor','roof'].includes(o.type)){o.x=target.x-(target.rotation===90?2:0);o.z=target.z-(target.rotation!==90?2:0);}
+    if(borderPart(target)&&['floor','roof'].includes(o.type))Object.assign(o,borderAnchor(target));
     const top=topAt(target,point.x,point.z);
     o.y=o.type==='wall'&&target.type==='ramp'?Math.floor((target.y+.05)/3)*3:o.type==='roof'?(target.type==='floor'?snap(target.y,3)+3:Math.ceil((top-.02)/3)*3):['wall','floor','door'].includes(o.type)?snap(top,3):top;
   }else if(target&&normal?.y<-.5)o.y=Math.max(0,target.y-o.h);
@@ -82,21 +87,21 @@ function joins(a,b){
   if(isDiagonal(a)||isDiagonal(b)){
    if((a.type==='floor'||b.type==='floor')&&Math.abs(a.y-b.y)<.02)return true;
    const diagonal=isDiagonal(a)?a:b,other=diagonal===a?b:a;
-   if(borderPart(other)){const turned=other.rotation===90,axis=turned?'x':'z',extent=turned?diagonal.w:diagonal.d;if(Math.abs(other[axis]-diagonal[axis])>=extent/2-.02)return true;}
+   if(borderPart(other)){const turned=(other.rotation||0)%180===90,axis=turned?'x':'z',extent=turned?diagonal.w:diagonal.d;if(Math.abs(other[axis]-diagonal[axis])>=extent/2-.02)return true;}
    return !footprintsIntersect(a,b);
   }
-  if(borderPart(a)&&borderPart(b)&&(a.rotation||0)!==(b.rotation||0)){const tx=a.rotation===90?a.w:b.w,tz=a.rotation===90?b.d:a.d;return (a.w+b.w)/2-Math.abs(a.x-b.x)<=Math.max(.26,tx/2+.02)&&(a.d+b.d)/2-Math.abs(a.z-b.z)<=Math.max(.26,tz/2+.02);}
+  if(borderPart(a)&&borderPart(b)&&(a.rotation||0)%180!==(b.rotation||0)%180){const tx=(a.rotation||0)%180===90?a.w:b.w,tz=(a.rotation||0)%180===90?b.d:a.d;return (a.w+b.w)/2-Math.abs(a.x-b.x)<=Math.max(.26,tx/2+.02)&&(a.d+b.d)/2-Math.abs(a.z-b.z)<=Math.max(.26,tz/2+.02);}
   const wall=borderPart(a)?a:borderPart(b)?b:null,other=wall===a?b:a;
   if((wall||a.type==='door'||b.type==='door')&&(a.type==='floor'||b.type==='floor')&&Math.abs(a.y-b.y)<.02)return true;
   if(wall&&(other.type==='ramp'||other.roofStyle==='slope')){
     // Walls occupy the border of a cell; a ramp may fill that cell's interior.
-    const thickness=wall.rotation===90?wall.w:wall.d;
-    const penetration=wall.rotation===90?(wall.w+other.w)/2-Math.abs(wall.x-other.x):(wall.d+other.d)/2-Math.abs(wall.z-other.z);
+    const thickness=(wall.rotation||0)%180===90?wall.w:wall.d;
+    const penetration=(wall.rotation||0)%180===90?(wall.w+other.w)/2-Math.abs(wall.x-other.x):(wall.d+other.d)/2-Math.abs(wall.z-other.z);
     if(penetration<=thickness/2+.02)return true;
   }
   const ramp=a.type==='ramp'?a:b.type==='ramp'?b:null,floor=ramp===a?b:a;
   if(ramp&&floor.type==='floor'&&Math.abs(ramp.y-floor.y)<.02)return true;
-  if(wall&&other.type==='box'){const penetration=wall.rotation===90?(wall.w+other.w)/2-Math.abs(wall.x-other.x):(wall.d+other.d)/2-Math.abs(wall.z-other.z);const thickness=wall.rotation===90?wall.w:wall.d;if(penetration<=Math.max(.15,thickness/2+.02))return true;}
+  if(wall&&other.type==='box'){const penetration=(wall.rotation||0)%180===90?(wall.w+other.w)/2-Math.abs(wall.x-other.x):(wall.d+other.d)/2-Math.abs(wall.z-other.z);const thickness=(wall.rotation||0)%180===90?wall.w:wall.d;if(penetration<=Math.max(.15,thickness/2+.02))return true;}
   return false;
 }
 export function editorPlacementReason(piece,objects,spawn,world=60){
@@ -124,12 +129,21 @@ export function constructionPart(type,x=0,z=0,y=0,rotation=0){
     d:type==='wall'?(turned?4:.25):4,hp:20,destructible:true,destroyEvents:[{type:'dropSelf'}],program:[],
     settings:{axis:'x',distance:3,speed:2,value:1,condition:'touch',required:1}};
 }
-export function rotatePiece(o,world=60){if(o.floorHalf){const turned=o.rotation===90,cx=turned?o.x:snap(o.x),cz=turned?snap(o.z):o.z,dx=o.x-cx,dz=o.z-cz;o.x=cx+dz;o.z=cz-dx;[o.w,o.d]=[o.d,o.w];o.rotation=turned?0:90;alignPiece(o,world);return;}if(isDiagonal(o)){o.rotation=o.rotation===90?0:90;alignPiece(o,world);return;}if(o.wallHalf==='halfVertical'){const turned=o.rotation===90,cell=v=>Math.floor((v+1.99999)/4)*4,cx=turned?cell(o.x):snap(o.x),cz=turned?snap(o.z):cell(o.z),thin=turned?o.x-cx:o.z-cz,offset=turned?-(o.z-cz):o.x-cx;[o.w,o.d]=[o.d,o.w];o.rotation=turned?0:90;o.x=turned?cx+offset:cx+thin;o.z=turned?cz+thin:cz-offset;alignPiece(o,world);return;}if(!Object.hasOwn(BUILD_TYPES,o.type)&&o.type!=='door')return;const anchor={x:o.x-(['wall','door'].includes(o.type)&&o.rotation===90?2:0),z:o.z-(['wall','door'].includes(o.type)&&o.rotation!==90?2:0)};[o.w,o.d]=[o.d,o.w];o.rotation=o.type==='ramp'||o.roofStyle==='slope'?((o.rotation||0)+90)%360:o.rotation===90?0:90;if(['wall','door'].includes(o.type)&&!(o.type==='door'&&Math.max(o.w,o.d)>=7.9)){o.x=anchor.x+(o.rotation===90?2:0);o.z=anchor.z+(o.rotation===0?2:0);}alignPiece(o,world);}
+export function rotatePiece(o,world=60){
+ if(o.floorHalf){const turned=(o.rotation||0)%180===90,cx=turned?o.x:snap(o.x),cz=turned?snap(o.z):o.z,dx=o.x-cx,dz=o.z-cz;o.x=cx+dz;o.z=cz-dx;[o.w,o.d]=[o.d,o.w];o.rotation=turned?0:90;alignPiece(o,world);return;}
+ if(isDiagonal(o)){o.rotation=o.rotation===90?0:90;alignPiece(o,world);return;}
+ if(o.wallHalf||o.type==='door'){
+  const wide=o.type==='door'&&Math.max(o.w,o.d)>=7.9,anchor=wide?{x:o.x,z:o.z}:borderAnchor(o),dx=o.x-anchor.x,dz=o.z-anchor.z;
+  o.x=anchor.x+dz;o.z=anchor.z-dx;[o.w,o.d]=[o.d,o.w];o.rotation=((o.rotation||0)+90)%360;alignPiece(o,world);return;
+ }
+ if(!Object.hasOwn(BUILD_TYPES,o.type))return;
+ const anchor={x:o.x-(o.type==='wall'&&o.rotation===90?2:0),z:o.z-(o.type==='wall'&&o.rotation!==90?2:0)};[o.w,o.d]=[o.d,o.w];o.rotation=o.type==='ramp'||o.roofStyle==='slope'?((o.rotation||0)+90)%360:o.rotation===90?0:90;if(o.type==='wall'){o.x=anchor.x+(o.rotation===90?2:0);o.z=anchor.z+(o.rotation===0?2:0);}alignPiece(o,world);
+}
 export function topAt(o,x,z){
   if(o.roofStyle==='slope'){const angle=(o.rotation||0)*Math.PI/180,localZ=Math.sin(angle)*(x-o.x)+Math.cos(angle)*(z-o.z),depth=(o.rotation||0)%180===90?o.w:o.d;return o.y+o.h*Math.max(0,Math.min(1,.5-localZ/depth));}
   if(o.wallGable){const angle=(o.rotation||0)*Math.PI/180,localX=Math.cos(angle)*(x-o.x)-Math.sin(angle)*(z-o.z),width=(o.rotation||0)%180===90?o.d:o.w;return o.y+o.h*Math.max(0,Math.min(1,.5+(o.wallGable==='gableLeft'?1:-1)*localX/width));}
   if(o.type==='ramp'){const angle=(o.rotation||0)*Math.PI/180,localZ=Math.sin(angle)*(x-o.x)+Math.cos(angle)*(z-o.z),localX=Math.cos(angle)*(x-o.x)-Math.sin(angle)*(z-o.z),turned=(o.rotation||0)%180===90,depth=turned?o.w:o.d,width=turned?o.d:o.w,u=Math.max(0,Math.min(1,.5-localZ/depth)),v=Math.max(0,Math.min(1,.5-localX/width));return o.y+o.h*(o.rampStyle==='inner'?Math.max(u,v):o.rampStyle==='outer'?Math.min(u,v):u);}if(o.type!=='roof')return o.y+o.h;
-  const turned=o.rotation===90,offset=turned?z-o.z:x-o.x,width=turned?o.d:o.w;
+  const turned=(o.rotation||0)%180===90,offset=turned?z-o.z:x-o.x,width=turned?o.d:o.w;
   return o.y+o.h*Math.max(0,1-Math.abs(offset)/(width/2));
 }
 export function bottomAt(o,x,z){return o.roofStyle==='slope'?o.y+(topAt(o,x,z)-o.y)*(1-ROOF_SHELL_RATIO):o.y;}
@@ -145,12 +159,12 @@ export function placement(g,tool,point,rotation=0,level=0){
   if(!tool||!Object.hasOwn(BUILD_TYPES,tool.effect)||!point||!['x','y','z'].every(k=>Number.isFinite(point[k]))||![0,90,180,270].includes(rotation)||!Number.isInteger(level)||Math.abs(level)>MAX_BUILD_LEVEL)return {piece:null,valid:false,reason:'建築する場所をえらぼう'};
   const rotated=rotation%180!==0;
   let x=Math.round(point.x/4)*4,z=Math.round(point.z/4)*4;
-  if(point.surface?.type==='wall'&&point.normal?.y>.5&&['floor','halfFloor','roof'].includes(tool.effect)){x=point.surface.x-(point.surface.rotation===90?2:0);z=point.surface.z-(point.surface.rotation!==90?2:0);}
+  if(borderPart(point.surface)&&point.normal?.y>.5&&['floor','halfFloor','roof'].includes(tool.effect)){const anchor=borderAnchor(point.surface);x=anchor.x;z=anchor.z;}
   if(tool.effect==='halfFloor'){if(rotated)z=snap(point.z,2,1);else x=snap(point.x,2,1);}
   // Rotate around the aimed cell, including the opposite two edges.
   if(tool.effect==='wall'){if(rotated)x+=rotation===90?2:-2;else z+=rotation===0?2:-2;}
   const base=tool.effect==='wall'&&point.surface?.type==='ramp'?Math.floor((point.surface.y+.05)/3)*3:Math.floor((Math.max(0,point.y)+.08)/3)*3;
-  const roofOffset=tool.effect==='roof'&&!(point.surface?.type==='wall'&&point.normal?.y>.5)?3:0;
+  const roofOffset=tool.effect==='roof'&&!(borderPart(point.surface)&&point.normal?.y>.5)?3:0;
   const rampBase=tool.effect==='ramp'&&point.surface?.type==='floor'&&point.normal?.y>.5?point.surface.y+point.surface.h:base;
   let y=rampBase+level*3+roofOffset;
   if(['floor','halfFloor'].includes(tool.effect)&&point.surface?.type==='ramp'){const anchor=rampFloorAnchor(point.surface,point.normal,{w:tool.effect==='halfFloor'&&!rotated?2:4,d:tool.effect==='halfFloor'&&rotated?2:4},point);x=anchor.x;z=anchor.z;y=anchor.y+level*3;}
@@ -205,7 +219,7 @@ export function blockPlacement(g,point,rotation=0,level=0){
   const result=placement(g,{effect:isDiagonal(t)?'diagonal':t.floorHalf?'halfFloor':t.type},point,rotation,level);if(!result.piece)return result;
   const turned=rotation%180!==0;piece={...structuredClone(t),id:crypto.randomUUID(),x:result.piece.x,y:result.piece.y,z:result.piece.z,rotation:result.piece.rotation,w:turned?t.d:t.w,d:turned?t.w:t.d};
   if(t.roofStyle==='slope')piece.rotation=rotation;
-  if(t.wallHalf){piece[rotation%180===90?'x':'z']=snap(point[rotation%180===90?'x':'z'],2);if(t.wallHalf==='halfVertical')piece[rotation%180===90?'z':'x']=point[rotation%180===90?'z':'x'];else{const surface=point.surface,onTop=surface&&point.normal?.y>.5;piece.y=(onTop?(surface.type==='floor'?surface.y:topAt(surface,point.x,point.z)):Math.floor((Math.max(0,point.y)+.08)/1.5)*1.5)+level*1.5;}alignPiece(piece,g);}
+  if(t.wallHalf){piece.rotation=rotation;piece[rotation%180===90?'x':'z']=snap(point[rotation%180===90?'x':'z'],2);if(t.wallHalf==='halfVertical')piece[rotation%180===90?'z':'x']=point[rotation%180===90?'z':'x'];else{const surface=point.surface,onTop=surface&&point.normal?.y>.5;piece.y=(onTop?(surface.type==='floor'?surface.y:topAt(surface,point.x,point.z)):Math.floor((Math.max(0,point.y)+.08)/1.5)*1.5)+level*1.5;}alignPiece(piece,g);}
  }else{
   piece=snapEditorPiece({...structuredClone(t),id:crypto.randomUUID(),x:0,y:0,z:0},point,point.surface,point.normal,g);piece.y+=level*3;
   if(rotation%180!==0)[piece.w,piece.d]=[piece.d,piece.w];piece.rotation=rotation%180;

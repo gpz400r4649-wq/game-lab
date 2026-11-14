@@ -10,7 +10,7 @@ const spawn={x:20,y:0,z:20};
 function halfWall(x=-1,z=0){return configureBuildingPart(part('wall',x,z),'halfVertical');}
 function floors(y=0){return [constructionPart('halfFloor',-1,0,y),constructionPart('halfFloor',0,1,y,90)];}
 test('ハーフ壁を１マス中央へ置き、90度回して同じマス内にL字でつなげる',()=>{
- const a=snapEditorPiece(halfWall(),{x:-.8,y:0,z:.1}),b=structuredClone(a);b.id=crypto.randomUUID();assert.deepEqual([a.x,a.z],[-1,0]);rotatePiece(b);assert.deepEqual([b.x,b.z,b.rotation],[0,1,90]);assert.equal(editorPlacementReason(b,[a],spawn),'');assert.equal(gridStep(a,'z'),2);assert.equal(gridStep(b,'x'),2);rotatePiece(b);assert.deepEqual([b.x,b.z],[-1,0]);assert.notEqual(editorPlacementReason(b,[a],spawn),'');
+ const a=snapEditorPiece(halfWall(),{x:-.8,y:0,z:.1}),b=structuredClone(a);b.id=crypto.randomUUID();assert.deepEqual([a.x,a.z],[-1,0]);rotatePiece(b);assert.deepEqual([b.x,b.z,b.rotation],[0,1,90]);assert.equal(editorPlacementReason(b,[a],spawn),'');assert.equal(gridStep(a,'z'),2);assert.equal(gridStep(b,'x'),2);for(let i=0;i<3;i++)rotatePiece(b);assert.deepEqual([b.x,b.z],[-1,0]);assert.notEqual(editorPlacementReason(b,[a],spawn),'');
 });
 test('中央と外周のハーフ壁を混ぜられ、通常の壁の位置は変わらない',()=>{
  const center=halfWall(),edge=halfWall(-1,2);assert.equal(editorPlacementReason(edge,[center],spawn),'');const regular=snapEditorPiece(part('wall'),{x:-.8,y:0,z:.1});assert.equal(Math.abs(regular[regular.rotation===90?'x':'z']),2);const p=fresh3D();p.objects=[center,edge];assert.ok(validate3D(p));

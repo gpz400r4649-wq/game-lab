@@ -4,14 +4,14 @@ export const ROOF_PRESETS={roof:'小さな三角屋根・１マス',roofSlope:'�
 export const RAMP_PRESETS={ramp:'まっすぐのスロープ',inner:'角のスロープ・うちがわ',outer:'角のスロープ・そとがわ'};
 export const FENCE_PRESETS={wall:'ふつうのかべ',diagonal:'ななめのかべ・１マス',halfVertical:'たてハーフ・はばが半分',halfHorizontal:'よこハーフ・高さが半分',fence:'さく・かべと同じ高さ',fenceHalf:'さく・半分の高さ',fenceHalfWidth:'ハーフのさく・はばが半分',fenceHalfWidthLow:'ひくいハーフのさく・はばが半分'};
 export function configureBuildingPart(o,key){
- if(o.type==='floor'){const half=key==='floorHalf',turned=o.rotation===90;if(half)o.floorHalf=true;else delete o.floorHalf;o.w=half&&!turned?2:4;o.d=half&&turned?2:4;}
+ if(o.type==='floor'){const half=key==='floorHalf',turned=(o.rotation||0)%180===90;if(half)o.floorHalf=true;else delete o.floorHalf;o.w=half&&!turned?2:4;o.d=half&&turned?2:4;}
  if(o.type==='ramp'){if(key==='inner'||key==='outer')o.rampStyle=key;else delete o.rampStyle;}
  if(o.type==='roof'){if(key==='roofSlope'){o.roofStyle='slope';o.h=3;}else delete o.roofStyle;}
- if(o.type==='wall'){delete o.wallStyle;delete o.wallHalf;delete o.wallGable;const turned=o.rotation===90,width=['halfVertical','fenceHalfWidth','fenceHalfWidthLow'].includes(key)?2:4;o.w=turned?.25:width;o.d=turned?width:.25;o.h=['fenceHalf','halfHorizontal','fenceHalfWidthLow'].includes(key)?1.5:3;
+ if(o.type==='wall'){delete o.wallStyle;delete o.wallHalf;delete o.wallGable;const turned=(o.rotation||0)%180===90,width=['halfVertical','fenceHalfWidth','fenceHalfWidthLow'].includes(key)?2:4;o.w=turned?.25:width;o.d=turned?width:.25;o.h=['fenceHalf','halfHorizontal','fenceHalfWidthLow'].includes(key)?1.5:3;
   if(key==='fenceHalfWidth'||key==='fenceHalfWidthLow'){o.wallStyle=key==='fenceHalfWidthLow'?'fenceHalf':'fence';o.wallHalf='halfVertical';}if(key==='diagonal'){o.wallStyle='diagonal';o.w=o.d=4;}if(key==='fence'||key==='fenceHalf')o.wallStyle=key;if(key==='halfVertical'||key==='halfHorizontal')o.wallHalf=key;if(['gableLeft','gableRight'].includes(key))o.wallGable=key;
  }return o;
 }
-export function validArchitecture(o){return (o.floorHalf===undefined||o.type==='floor'&&o.floorHalf===true&&Math.abs(o.w-(o.rotation===90?4:2))<.001&&Math.abs(o.d-(o.rotation===90?2:4))<.001)&&(o.rampStyle===undefined||o.type==='ramp'&&['inner','outer'].includes(o.rampStyle))&&(o.wallStyle===undefined||o.type==='wall'&&['fence','fenceHalf','diagonal'].includes(o.wallStyle)&&!(o.wallStyle==='diagonal'&&(o.wallHalf!==undefined||o.wallGable!==undefined||Math.abs(o.w-4)>.001||Math.abs(o.d-4)>.001)))&&(o.roofStyle===undefined||o.type==='roof'&&o.roofStyle==='slope')&&(o.wallGable===undefined||o.type==='wall'&&['gableLeft','gableRight'].includes(o.wallGable)&&o.wallStyle===undefined&&o.wallHalf===undefined)&&(o.wallHalf===undefined||o.type==='wall'&&['halfVertical','halfHorizontal'].includes(o.wallHalf)&&(o.wallStyle===undefined||o.wallHalf==='halfVertical'&&['fence','fenceHalf'].includes(o.wallStyle)));}
+export function validArchitecture(o){return (o.floorHalf===undefined||o.type==='floor'&&o.floorHalf===true&&Math.abs(o.w-((o.rotation||0)%180===90?4:2))<.001&&Math.abs(o.d-((o.rotation||0)%180===90?2:4))<.001)&&(o.rampStyle===undefined||o.type==='ramp'&&['inner','outer'].includes(o.rampStyle))&&(o.wallStyle===undefined||o.type==='wall'&&['fence','fenceHalf','diagonal'].includes(o.wallStyle)&&!(o.wallStyle==='diagonal'&&(o.wallHalf!==undefined||o.wallGable!==undefined||Math.abs(o.w-4)>.001||Math.abs(o.d-4)>.001)))&&(o.roofStyle===undefined||o.type==='roof'&&o.roofStyle==='slope')&&(o.wallGable===undefined||o.type==='wall'&&['gableLeft','gableRight'].includes(o.wallGable)&&o.wallStyle===undefined&&o.wallHalf===undefined)&&(o.wallHalf===undefined||o.type==='wall'&&['halfVertical','halfHorizontal'].includes(o.wallHalf)&&(o.wallStyle===undefined||o.wallHalf==='halfVertical'&&['fence','fenceHalf'].includes(o.wallStyle)));}
 export function architectureIcon(key){
  let shape='';
  if(key==='floor'||key==='floorHalf')shape=key==='floor'?'<path d="M8 40L42 18L76 40L42 62Z" fill="#c99d6c"/><path d="M8 40V46L42 68L76 46V40M42 62V68"/>':'<path d="M8 40L42 18L76 40L42 62Z" stroke-dasharray="4 3" stroke="#b9af9f"/><path d="M8 40L25 29L59 51L42 62Z" fill="#c99d6c"/><path d="M8 40V46L42 68L59 57V51M42 62V68"/>';
@@ -29,19 +29,19 @@ export function architectureIcon(key){
 }
 
 export function fenceSolids(o){
- const turned=o.rotation===90,width=turned?o.d:o.w,depth=turned?o.w:o.d,parts=[];
- const add=(x,y,w,h)=>parts.push({...o,type:'box',id:o.id+':bar:'+parts.length,sourceBlockId:o.id,wallStyle:undefined,open:false,x:o.x+(turned?0:x),z:o.z+(turned?-x:0),y:o.y+y,w:turned?depth:w,d:turned?w:depth,h});
+ const turned=(o.rotation||0)%180===90,width=turned?o.d:o.w,depth=turned?o.w:o.d,parts=[];
+ const add=(x,y,w,h)=>parts.push({...o,type:'box',id:o.id+':bar:'+parts.length,sourceBlockId:o.id,wallStyle:undefined,open:false,x:o.x+Math.round(Math.cos((o.rotation||0)*Math.PI/180))*x,z:o.z-Math.round(Math.sin((o.rotation||0)*Math.PI/180))*x,y:o.y+y,w:turned?depth:w,d:turned?w:depth,h});
  const count=Math.max(1,Math.round(width/.5));for(let i=0;i<=count;i++)add(-width/2+.1+(width-.2)*i/count,0,.16,o.h);for(const y of [.25,.75])add(0,o.h*y-.07,width,.14);return parts;
 }
 
 export const DIAGONAL_THICKNESS=.25;
 export const isDiagonal=o=>o?.type==='wall'&&o.wallStyle==='diagonal';
 export function diagonalPolygon(o){
- const t=DIAGONAL_THICKNESS/Math.SQRT2/4,points=[[-.5,-.5],[-.5,-.5+t],[.5-t,.5],[.5,.5],[.5,.5-t],[-.5+t,-.5]],turned=o.rotation===90;
+ const t=DIAGONAL_THICKNESS/Math.SQRT2/4,points=[[-.5,-.5],[-.5,-.5+t],[.5-t,.5],[.5,.5],[.5,.5-t],[-.5+t,-.5]],turned=(o.rotation||0)%180===90;
  return points.map(([x,z])=>[o.x+(turned?z:x)*o.w,o.z+(turned?-x:z)*o.d]);
 }
 export function diagonalInterval(o,axis,other,radius=0){
- const sign=o.rotation===90?-1:1,otherKey=axis==='x'?'z':'x',center=o[axis]+sign*(other-o[otherKey]),band=DIAGONAL_THICKNESS/Math.SQRT2+Math.SQRT2*radius;
+ const sign=(o.rotation||0)%180===90?-1:1,otherKey=axis==='x'?'z':'x',center=o[axis]+sign*(other-o[otherKey]),band=DIAGONAL_THICKNESS/Math.SQRT2+Math.SQRT2*radius;
  if(Math.abs(other-o[otherKey])>(otherKey==='x'?o.w:o.d)/2+radius)return [Infinity,-Infinity];
  const half=(axis==='x'?o.w:o.d)/2+radius;return [Math.max(o[axis]-half,center-band),Math.min(o[axis]+half,center+band)];
 }
@@ -56,7 +56,7 @@ export function footprintsIntersect(a,b,margin=.015){
 }
 
 // Each half floor covers two quarter-cell tiles. Earlier parts own shared faces.
-export function halfFloorTiles(o){return [-1,1].map((side,index)=>({index,x:o.x+(o.rotation===90?side:0),z:o.z+(o.rotation===90?0:side)}));}
+export function halfFloorTiles(o){return [-1,1].map((side,index)=>({index,x:o.x+((o.rotation||0)%180===90?side:0),z:o.z+((o.rotation||0)%180===90?0:side)}));}
 const floorTileKey=(o,t)=>[Math.round(t.x),Math.round(t.z),Math.round(o.y*1000),Math.round(o.h*1000)].join(':');
 export function halfFloorMasks(objects){
  const occupied=new Set(),masks=new Map();
