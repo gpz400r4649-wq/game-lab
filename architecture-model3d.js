@@ -1,4 +1,4 @@
-import {ROOF_SHELL_RATIO,diagonalPolygon} from './architecture3d.js?v=20261114b';
+import {ROOF_SHELL_RATIO,diagonalPolygon} from './architecture3d.js?v=20261114c';
 import * as T from './vendor/three.module.min.js';
 const cube=new T.BoxGeometry(1,1,1);
 export function makeCornerRampGeometry(style){

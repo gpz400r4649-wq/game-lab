@@ -1,9 +1,9 @@
-import {halfFloorMask,ROOF_SHELL_RATIO,isDiagonal,diagonalContains,footprintsIntersect} from './architecture3d.js?v=20261114b';
-import {inheritNewCharacter} from './character-defaults3d.js?v=20261114b';
-import {DEFAULT_APPEARANCE,validAppearance} from './appearance3d.js?v=20261114b';
-import {MAX_PARTS,MAX_BUILD_Y,MAX_BUILD_LEVEL} from './limits3d.js?v=20261114b';
-import {worldHalf,coordinateLimit} from './world3d.js?v=20261114b';
-import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261114b';
+import {halfFloorMask,ROOF_SHELL_RATIO,isDiagonal,diagonalContains,footprintsIntersect} from './architecture3d.js?v=20261114c';
+import {inheritNewCharacter} from './character-defaults3d.js?v=20261114c';
+import {DEFAULT_APPEARANCE,validAppearance} from './appearance3d.js?v=20261114c';
+import {MAX_PARTS,MAX_BUILD_Y,MAX_BUILD_LEVEL} from './limits3d.js?v=20261114c';
+import {worldHalf,coordinateLimit} from './world3d.js?v=20261114c';
+import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261114c';
 // Shared by editor, gameplay and placement preview. No browser dependency.
 export const BUILD_TYPES={wall:'壁',floor:'床',roof:'屋根',ramp:'スロープ',diagonal:'ななめの壁',halfFloor:'ハーフの床'};
 export const GRID={cell:4,layer:3,size:60};
