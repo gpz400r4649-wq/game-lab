@@ -12,7 +12,7 @@ test('ほかの部品やスタートに重なる候補は無効になり、元�
 test('マップの外へのドラッグは部品の大きさも含めて端で止まる',()=>{
  const o=part('floor',0,0);const r=dragCandidate(o,{x:0,z:0},{x:999,z:-999},[o],null,240);assert.ok(Math.abs(r.piece.x)+o.w/2<=120);assert.ok(Math.abs(r.piece.z)+o.d/2<=120);assert.equal(r.reason,'');
 });
-test('2000部品の上限でも、追加ではなく既存部品の移動ならできる',()=>{
+test('8000部品の上限でも、追加ではなく既存部品の移動ならできる',()=>{
  const o=part('floor',0,0),objects=[o,...Array.from({length:MAX_PARTS-1},()=>part('star',20,20))],r=dragCandidate(o,{x:0,z:0},{x:8,z:0},objects,null,60);assert.equal(r.reason,'');assert.equal(objects.length,MAX_PARTS);assert.equal(o.x,0);
 });
 test('投影できない位置やキャンセル用の空の位置では候補を作らない',()=>{

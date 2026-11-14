@@ -1,15 +1,15 @@
-import {GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261114d';
-import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261114d';
-import {coordinateLimit} from './world3d.js?v=20261114d';
-import {rangeCell,validMoveRange,validAttackRange} from './enemy-range3d.js?v=20261114d';
-import {validPatrolRoute,validWaypoints} from './patrol-route3d.js?v=20261114d';
-import {validate3D} from './engine3d.js?v=20261114d';
+import {GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261114e';
+import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261114e';
+import {coordinateLimit} from './world3d.js?v=20261114e';
+import {rangeCell,validMoveRange,validAttackRange} from './enemy-range3d.js?v=20261114e';
+import {validPatrolRoute,validWaypoints} from './patrol-route3d.js?v=20261114e';
+import {validate3D} from './engine3d.js?v=20261114e';
 export function groupSteps(objects){return {horizontal:objects.some(o=>GRID_PARTS.has(o.type)||[o.moveRange,o.searchRange,o.attackRange].some(r=>r?.space==='world'))?4:1,vertical:objects.some(o=>['wall','floor','roof','ramp','box','door'].includes(o.type))?3:.5};}
 export function groupCandidate(project,ids,delta,{copy=false}={}){
  const chosen=new Set(ids),sources=project.objects.filter(o=>chosen.has(o.id));
  if(!sources.length)return {pieces:[],reason:'パーツをえらぼう'};
  if(!['x','y','z'].every(key=>Number.isFinite(delta[key])))return {pieces:[],reason:'動かす場所をえらぼう'};
- if(copy&&project.objects.length+sources.length>MAX_PARTS)return {pieces:[],reason:'コピーすると2000個をこえます'};
+ if(copy&&project.objects.length+sources.length>MAX_PARTS)return {pieces:[],reason:`コピーすると${MAX_PARTS}個をこえます`};
  const steps=groupSteps(sources),dx=Math.round(delta.x/steps.horizontal)*steps.horizontal,dz=Math.round(delta.z/steps.horizontal)*steps.horizontal,dy=Math.round(delta.y/steps.vertical)*steps.vertical,limit=coordinateLimit(project);
  const pieces=sources.map(source=>{
   const next=structuredClone(source);next.x+=dx;next.y+=dy;next.z+=dz;

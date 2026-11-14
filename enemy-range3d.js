@@ -1,5 +1,5 @@
-import {coordinateLimit} from './world3d.js?v=20261114d';
-import {GRID} from './building3d.js?v=20261114d';
+import {coordinateLimit} from './world3d.js?v=20261114e';
+import {GRID} from './building3d.js?v=20261114e';
 export const RANGE_MAX=8;
 export const rangeCell=value=>Math.floor((value+GRID.cell/2)/GRID.cell);
 export function rangeCells(shape,cross=4,circle=2){

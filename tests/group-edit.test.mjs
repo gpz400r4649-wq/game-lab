@@ -26,9 +26,9 @@ test('敵と一緒に個別の移動エリア・探す場所・コースも移�
  p.characterDefaults.enemy.attackSpeed=5;synchronizeCharacterDefaults(p);assert.equal(e.attackSpeed,5);assert.ok(validate3D(p));
 });
 test('コースがマップからはみ出す時は全部の移動を取り消す',()=>{const p=project(),e=part('enemy',110,0);e.patrolRoute=[{x:110,z:0},{x:118,z:0}];p.objects=[e];const before=JSON.stringify(p);assert.throws(()=>commitGroup(p,[e.id],{x:4,y:0,z:0}));assert.equal(JSON.stringify(p),before);});
-test('コピー先が近くで見つかり、2000個までの制限と空の選択を守る',()=>{
+test('コピー先が近くで見つかり、8000個までの制限と空の選択を守る',()=>{
  const p=project(),a=part('box',0,0),b=part('box',4,0);p.objects=[a,b];const ids=copyGroupNearby(p,[a.id,b.id]);assert.equal(ids.length,2);assert.equal(p.objects.length,4);assert.equal(p.objects[3].x-p.objects[2].x,4);
- p.objects=Array.from({length:2000},(_,i)=>part('star',i%20,Math.floor(i/20)%20));const before=JSON.stringify(p);assert.throws(()=>copyGroupNearby(p,[p.objects[0].id]));assert.equal(JSON.stringify(p),before);assert.throws(()=>commitGroup(p,[],{x:4,y:0,z:0}));
+ p.objects=Array.from({length:8000},(_,i)=>part('star',i%20,Math.floor(i/20)%20));const before=JSON.stringify(p);assert.throws(()=>copyGroupNearby(p,[p.objects[0].id]));assert.equal(JSON.stringify(p),before);assert.throws(()=>commitGroup(p,[],{x:4,y:0,z:0}));
 });
 test('一度の移動・コピー・削除を、それぞれ一度のもどす・すすむで扱える',()=>{
  const p=project();p.objects=[part('floor',0,0),part('wall',0,2)];const initial=JSON.stringify(p),history=createEditHistory(p);commitGroup(p,p.objects.map(o=>o.id),{x:8,y:0,z:0});history.record(p);const moved=JSON.stringify(p);copyGroupNearby(p,p.objects.map(o=>o.id));history.record(p);const copied=JSON.stringify(p);p.objects=p.objects.slice(0,2);history.record(p);assert.equal(JSON.stringify(history.undo()),copied);assert.equal(JSON.stringify(history.undo()),moved);assert.equal(JSON.stringify(history.undo()),initial);assert.equal(JSON.stringify(history.redo()),moved);

@@ -1,28 +1,28 @@
-import {prepareEnemyDropWeapon} from './enemy-loot3d.js?v=20261114d';
-import {fencePresetKey,FLOOR_PRESETS,RAMP_PRESETS,FENCE_PRESETS,ROOF_PRESETS,architectureIcon} from './architecture3d.js?v=20261114d';
-import {renderAllyRangePreview} from './ally-range-preview3d.js?v=20261114d';
-import {createChoiceControl} from './choices3d.js?v=20261114d';
-import {sharedDefaultsType,applyBlockDefaults,sharedKeys,synchronizeCharacterDefaults,useCharacterDefaults,inheritNewCharacter,writeCharacterDefaults} from './character-defaults3d.js?v=20261114d';
-import {copyEnemySettings,ENEMY_COPY_GROUPS} from './enemy-batch3d.js?v=20261114d';
-import {ACTOR_HATS} from './actor3d.js?v=20261114d';
-import {makeTool} from './building3d.js?v=20261114d';
-import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261114d';
-import {openWaypointEditor} from './waypoint-ui3d.js?v=20261114d';
-import {openPatrolEditor} from './patrol-ui3d.js?v=20261114d';
-import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261114d';
-import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261114d';
-import {inGridRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261114d';
-import {closeLiveRangeEditor,renderEnemyRange as renderEnemyRangeBase} from './enemy-range-ui3d.js?v=20261114d';
-import {gunPreviewSVG} from './appearance3d.js?v=20261114d';
-import {DOOR_PRESETS,doorUsesGlass,doorCanOpen,isSlidingDoor,doorDimensions} from './doors3d.js?v=20261114d';
-import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261114d';
-import {coordinateLimit} from './world3d.js?v=20261114d';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261114d';
-import {actionsFor} from './events3d.js?v=20261114d';
-import {renderEventEditor} from './event-editor3d.js?v=20261114d';
-import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261114d';
-import {alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261114d';
-import {part,ENEMY_SCALES,PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261114d';
+import {prepareEnemyDropWeapon} from './enemy-loot3d.js?v=20261114e';
+import {fencePresetKey,FLOOR_PRESETS,RAMP_PRESETS,FENCE_PRESETS,ROOF_PRESETS,architectureIcon} from './architecture3d.js?v=20261114e';
+import {renderAllyRangePreview} from './ally-range-preview3d.js?v=20261114e';
+import {createChoiceControl} from './choices3d.js?v=20261114e';
+import {sharedDefaultsType,applyBlockDefaults,sharedKeys,synchronizeCharacterDefaults,useCharacterDefaults,inheritNewCharacter,writeCharacterDefaults} from './character-defaults3d.js?v=20261114e';
+import {copyEnemySettings,ENEMY_COPY_GROUPS} from './enemy-batch3d.js?v=20261114e';
+import {ACTOR_HATS} from './actor3d.js?v=20261114e';
+import {makeTool} from './building3d.js?v=20261114e';
+import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261114e';
+import {openWaypointEditor} from './waypoint-ui3d.js?v=20261114e';
+import {openPatrolEditor} from './patrol-ui3d.js?v=20261114e';
+import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261114e';
+import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261114e';
+import {inGridRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261114e';
+import {closeLiveRangeEditor,renderEnemyRange as renderEnemyRangeBase} from './enemy-range-ui3d.js?v=20261114e';
+import {gunPreviewSVG} from './appearance3d.js?v=20261114e';
+import {DOOR_PRESETS,doorUsesGlass,doorCanOpen,isSlidingDoor,doorDimensions} from './doors3d.js?v=20261114e';
+import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261114e';
+import {coordinateLimit} from './world3d.js?v=20261114e';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261114e';
+import {actionsFor} from './events3d.js?v=20261114e';
+import {renderEventEditor} from './event-editor3d.js?v=20261114e';
+import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261114e';
+import {alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261114e';
+import {part,ENEMY_SCALES,PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261114e';
 
 const ICONS={actor:'💬',plate:'▣',ally:'🛡',weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
 const DESCRIPTIONS={actor:'名前とせりふを書こう。交換する品を置くとお店になるよ。',plate:'踏んでいる間、えらんだドアが開くよ。',ally:'近くで「ついてきて」と呼ぶと、一緒に戦うよ。',weapon:'地面に置いて、ふれると拾える銃。持ちもの・銃づくりで用意した銃をえらぼう。',ramp:'低いほうから歩くと、そのまま登れるスロープ。回して好きな向きにつなげよう。',wall:'家を囲う壁。向きを変えてつなげよう。',floor:'家の床と天井に使える板。壁の内側にぴったり合うよ。',roof:'壁の上にのせる三角屋根。向きを変えて家を仕上げよう。',
@@ -383,7 +383,7 @@ export function createWorkshop(api){
     for(const [key,name,min,max] of [['x','横 X',-coordinateLimit(p),coordinateLimit(p)],['y','高さ Y',0,MAX_BUILD_Y],['z','奥行 Z',-coordinateLimit(p),coordinateLimit(p)]])field(positions,name,o[key],min,max,gridStep(o,key),n=>{o[key]=n;alignPiece(o,p);return o[key];});fine.append(positions);
     if(['box','platform','moving','door','bounce','hazard','wall','floor','roof','ramp'].includes(o.type))for(const [key,name] of [['w','はば'],['h','たかさ'],['d','おくゆき']])field(fine,name,o[key],['wall','floor','roof','bounce','hazard'].includes(o.type)?.2:.5,10,.5,n=>o[key]=n);
     const positionDetails=details('位置・大きさを数字でちょうせい',[fine]);positionDetails.className='placement-controls';if(!commonObject)el.append(positionDetails);
-    const copy=document.createElement('button');setReadingText(copy,'＋ 同じパーツをもう１つ');copy.onclick=()=>{if(p.objects.length>=MAX_PARTS){api.toast('パーツは2000個まで置けます');return;}const duplicate=structuredClone(o);duplicate.id=crypto.randomUUID();for(const a of duplicate.events||[])if(a.target===o.id)a.target=duplicate.id;let found=false;for(const [dx,dz] of [[Math.max(4,Math.ceil(o.w/4)*4),0],[0,Math.max(4,Math.ceil(o.d/4)*4)],[-Math.max(4,Math.ceil(o.w/4)*4),0],[0,-Math.max(4,Math.ceil(o.d/4)*4)]]){duplicate.x=o.x+dx;duplicate.z=o.z+dz;if(!GRID_PARTS.has(o.type)){duplicate.x=clamp(o.x+2,-coordinateLimit(p),coordinateLimit(p));duplicate.z=o.z;found=true;break;}alignPiece(duplicate,p);if(!editorPlacementReason(duplicate,p.objects,p.spawn)){found=true;break;}}if(!found){api.toast('隣のマスが空いていません');return;}p.objects.push(duplicate);select(duplicate.id);save();rebuild();api.objectList();inspect();};
+    const copy=document.createElement('button');setReadingText(copy,'＋ 同じパーツをもう１つ');copy.onclick=()=>{if(p.objects.length>=MAX_PARTS){api.toast(`パーツは${MAX_PARTS}個まで置けます`);return;}const duplicate=structuredClone(o);duplicate.id=crypto.randomUUID();for(const a of duplicate.events||[])if(a.target===o.id)a.target=duplicate.id;let found=false;for(const [dx,dz] of [[Math.max(4,Math.ceil(o.w/4)*4),0],[0,Math.max(4,Math.ceil(o.d/4)*4)],[-Math.max(4,Math.ceil(o.w/4)*4),0],[0,-Math.max(4,Math.ceil(o.d/4)*4)]]){duplicate.x=o.x+dx;duplicate.z=o.z+dz;if(!GRID_PARTS.has(o.type)){duplicate.x=clamp(o.x+2,-coordinateLimit(p),coordinateLimit(p));duplicate.z=o.z;found=true;break;}alignPiece(duplicate,p);if(!editorPlacementReason(duplicate,p.objects,p.spawn)){found=true;break;}}if(!found){api.toast('隣のマスが空いていません');return;}p.objects.push(duplicate);select(duplicate.id);save();rebuild();api.objectList();inspect();};
     if(!commonObject){duplicateSelected=copy.onclick;duplicateButton.disabled=p.objects.length>=MAX_PARTS;}
   }
   function weapons(){if(api.renderLoadout){api.renderLoadout();return;}

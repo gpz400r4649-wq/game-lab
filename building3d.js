@@ -1,9 +1,9 @@
-import {halfFloorMask,ROOF_SHELL_RATIO,isDiagonal,diagonalContains,footprintsIntersect} from './architecture3d.js?v=20261114d';
-import {inheritNewCharacter} from './character-defaults3d.js?v=20261114d';
-import {DEFAULT_APPEARANCE,validAppearance} from './appearance3d.js?v=20261114d';
-import {MAX_PARTS,MAX_BUILD_Y,MAX_BUILD_LEVEL} from './limits3d.js?v=20261114d';
-import {worldHalf,coordinateLimit} from './world3d.js?v=20261114d';
-import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261114d';
+import {halfFloorMask,ROOF_SHELL_RATIO,isDiagonal,diagonalContains,footprintsIntersect} from './architecture3d.js?v=20261114e';
+import {inheritNewCharacter} from './character-defaults3d.js?v=20261114e';
+import {DEFAULT_APPEARANCE,validAppearance} from './appearance3d.js?v=20261114e';
+import {MAX_PARTS,MAX_BUILD_Y,MAX_BUILD_LEVEL} from './limits3d.js?v=20261114e';
+import {worldHalf,coordinateLimit} from './world3d.js?v=20261114e';
+import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261114e';
 // Shared by editor, gameplay and placement preview. No browser dependency.
 export const BUILD_TYPES={wall:'壁',floor:'床',roof:'屋根',ramp:'スロープ',diagonal:'ななめの壁',halfFloor:'ハーフの床'};
 export const GRID={cell:4,layer:3,size:60};
@@ -105,7 +105,7 @@ function joins(a,b){
   return false;
 }
 export function editorPlacementReason(piece,objects,spawn,world=60){
-  if(objects.length>=MAX_PARTS)return '部品は2000個まで置けます';
+  if(objects.length>=MAX_PARTS)return `部品は${MAX_PARTS}個まで置けます`;
   if(!Number.isFinite(piece.y)||piece.y<0||piece.y>MAX_BUILD_Y)return `高さは0〜${MAX_BUILD_Y}mの中に置こう`;
   if(!GRID_PARTS.has(piece.type))return '';
   if(Math.abs(piece.x)>coordinateLimit(world)||Math.abs(piece.z)>coordinateLimit(world)||Math.abs(piece.x)+piece.w/2>worldHalf(world)||Math.abs(piece.z)+piece.d/2>worldHalf(world))return 'ステージの中に置こう';
@@ -170,7 +170,7 @@ export function placement(g,tool,point,rotation=0,level=0){
   if(['floor','halfFloor'].includes(tool.effect)&&point.surface?.type==='ramp'){const anchor=rampFloorAnchor(point.surface,point.normal,{w:tool.effect==='halfFloor'&&!rotated?2:4,d:tool.effect==='halfFloor'&&rotated?2:4},point);x=anchor.x;z=anchor.z;y=anchor.y+level*3;}
   const piece=constructionPart(tool.effect,x,z,y,tool.effect==='ramp'?rotation:rotated?90:0);
   const no=reason=>({piece,valid:false,reason});
-  if(g.objects.length>=MAX_PARTS)return no('部品は全部で2000個まで置けます');
+  if(g.objects.length>=MAX_PARTS)return no(`部品は全部で${MAX_PARTS}個まで置けます`);
   if(Math.abs(x)>coordinateLimit(g)||Math.abs(z)>coordinateLimit(g)||Math.abs(x)+piece.w/2>worldHalf(g)||Math.abs(z)+piece.d/2>worldHalf(g)||y<0||y>MAX_BUILD_Y)return no('ステージの中に置こう');
   if(Math.hypot(x-g.player.x,y-g.player.y,z-g.player.z)>12)return no('もう少し近づこう');
   const p=g.player;if((!isDiagonal(piece)||diagonalContains(piece,p.x,p.z,.35))&&Math.abs(x-p.x)<piece.w/2+.35&&Math.abs(z-p.z)<piece.d/2+.35&&p.y<y+piece.h&&p.y+1.7>y)return no('自分に重ならない場所に置こう');

@@ -1,12 +1,12 @@
-import {fenceSolids,isDiagonal,diagonalDistance} from './architecture3d.js?v=20261114d';
-import {doorSolids} from './doors3d.js?v=20261114d';
-import {dropEnemyLoot} from './enemy-loot3d.js?v=20261114d';
-import {MAX_BUILD_Y} from './limits3d.js?v=20261114d';
-import {nearbyObjects} from './spatial3d.js?v=20261114d';
-import {worldHalf} from './world3d.js?v=20261114d';
-import {fireDestructionEvents} from './events3d.js?v=20261114d';
-import {topAt,bottomAt} from './building3d.js?v=20261114d';
-import {LIMITS,safeShot,DESTRUCTIBLE_TYPES,impactEffects} from './weapons3d.js?v=20261114d';
+import {fenceSolids,isDiagonal,diagonalDistance} from './architecture3d.js?v=20261114e';
+import {doorSolids} from './doors3d.js?v=20261114e';
+import {dropEnemyLoot} from './enemy-loot3d.js?v=20261114e';
+import {MAX_BUILD_Y} from './limits3d.js?v=20261114e';
+import {nearbyObjects} from './spatial3d.js?v=20261114e';
+import {worldHalf} from './world3d.js?v=20261114e';
+import {fireDestructionEvents} from './events3d.js?v=20261114e';
+import {topAt,bottomAt} from './building3d.js?v=20261114e';
+import {LIMITS,safeShot,DESTRUCTIBLE_TYPES,impactEffects} from './weapons3d.js?v=20261114e';
 const solidType=o=>DESTRUCTIBLE_TYPES.has(o.type)||o.type==='door';
 const robot=o=>o.type==='enemy'||o.type==='ally';
 function canHitRobot(g,b,o){
@@ -72,5 +72,5 @@ export function updateCombat(g,dt){
       }b.life=0;break;
     }b.life-=dt;if(b.remaining<=.000001)b.life=0;
   }
-  g.bullets=g.bullets.filter(b=>b.life>0);for(const o of g.objects)if(DESTRUCTIBLE_TYPES.has(o.type)&&o.hp<=0&&o.destructible!==false)fireDestructionEvents(g,o);for(const o of g.objects)if(o.type==='enemy'&&o.hp<=0)dropEnemyLoot(g,o);g.objects=g.objects.filter(alive);if(g.allies?.some(a=>a.hp<=0))g.allies=g.allies.filter(alive);const ids=new Set(g.objects.map(o=>o.id));g.buildings=g.buildings.filter(o=>ids.has(o.id));
+  g.bullets=g.bullets.filter(b=>b.life>0);for(const o of g.objects)if(DESTRUCTIBLE_TYPES.has(o.type)&&o.hp<=0&&o.destructible!==false)fireDestructionEvents(g,o);for(const o of g.objects)if(o.type==='enemy'&&o.hp<=0)dropEnemyLoot(g,o);if(g.objects.some(o=>!alive(o)))g.objects=g.objects.filter(alive);if(g.allies?.some(a=>a.hp<=0))g.allies=g.allies.filter(alive);if(g.buildings.length){const ids=new Set(g.objects.map(o=>o.id));g.buildings=g.buildings.filter(o=>ids.has(o.id));}
 }
