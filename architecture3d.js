@@ -53,3 +53,16 @@ export function footprintsIntersect(a,b,margin=.015){
  const polygon=o=>isDiagonal(o)?diagonalPolygon(o):[[o.x-o.w/2,o.z-o.d/2],[o.x+o.w/2,o.z-o.d/2],[o.x+o.w/2,o.z+o.d/2],[o.x-o.w/2,o.z+o.d/2]],pa=polygon(a),pb=polygon(b);
  for(const p of [pa,pb])for(let i=0;i<p.length;i++){const next=p[(i+1)%p.length],dx=next[0]-p[i][0],dz=next[1]-p[i][1],len=Math.hypot(dx,dz),project=q=>(q[0]*dz-q[1]*dx)/len,aa=pa.map(project),bb=pb.map(project);if(Math.min(...aa)>=Math.max(...bb)-margin||Math.min(...bb)>=Math.max(...aa)-margin)return false;}return true;
 }
+
+// Each half floor covers two quarter-cell tiles. Earlier parts own shared faces.
+export function halfFloorTiles(o){return [-1,1].map((side,index)=>({index,x:o.x+(o.rotation===90?side:0),z:o.z+(o.rotation===90?0:side)}));}
+const floorTileKey=(o,t)=>[Math.round(t.x),Math.round(t.z),Math.round(o.y*1000),Math.round(o.h*1000)].join(':');
+export function halfFloorMasks(objects){
+ const occupied=new Set(),masks=new Map();
+ for(const o of objects){if(!o.floorHalf||o.hidden||o.collected)continue;let mask=0;for(const tile of halfFloorTiles(o)){const key=floorTileKey(o,tile);if(!occupied.has(key))mask|=1<<tile.index;occupied.add(key);}masks.set(o.id,mask);}return masks;
+}
+export function halfFloorMask(o,objects){
+ const index=objects.findIndex(p=>p.id===o.id),earlier=index<0?objects:objects.slice(0,index),occupied=new Set();
+ for(const p of earlier)if(p.floorHalf&&!p.hidden&&!p.collected)for(const tile of halfFloorTiles(p))occupied.add(floorTileKey(p,tile));
+ return halfFloorTiles(o).reduce((mask,tile)=>mask|(occupied.has(floorTileKey(o,tile))?0:1<<tile.index),0);
+}

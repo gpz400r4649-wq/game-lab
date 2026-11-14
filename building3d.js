@@ -1,9 +1,9 @@
-import {ROOF_SHELL_RATIO,isDiagonal,diagonalContains,footprintsIntersect} from './architecture3d.js?v=20261113m';
-import {inheritNewCharacter} from './character-defaults3d.js?v=20261113m';
-import {DEFAULT_APPEARANCE,validAppearance} from './appearance3d.js?v=20261113m';
-import {MAX_PARTS,MAX_BUILD_Y,MAX_BUILD_LEVEL} from './limits3d.js?v=20261113m';
-import {worldHalf,coordinateLimit} from './world3d.js?v=20261113m';
-import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261113m';
+import {halfFloorMask,ROOF_SHELL_RATIO,isDiagonal,diagonalContains,footprintsIntersect} from './architecture3d.js?v=20261114a';
+import {inheritNewCharacter} from './character-defaults3d.js?v=20261114a';
+import {DEFAULT_APPEARANCE,validAppearance} from './appearance3d.js?v=20261114a';
+import {MAX_PARTS,MAX_BUILD_Y,MAX_BUILD_LEVEL} from './limits3d.js?v=20261114a';
+import {worldHalf,coordinateLimit} from './world3d.js?v=20261114a';
+import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261114a';
 // Shared by editor, gameplay and placement preview. No browser dependency.
 export const BUILD_TYPES={wall:'壁',floor:'床',roof:'屋根',ramp:'スロープ',diagonal:'ななめの壁',halfFloor:'ハーフの床'};
 export const GRID={cell:4,layer:3,size:60};
@@ -12,9 +12,9 @@ const snap=(value,step=GRID.cell,offset=0)=>Math.round((value-offset)/step)*step
 function boundedGrid(value,extent,offset=0,world=60,step=4){extent=Math.max(step/2,extent);const lo=Math.ceil((-worldHalf(world)+extent-offset)/step)*step+offset,hi=Math.floor((worldHalf(world)-extent-offset)/step)*step+offset;return Math.max(lo,Math.min(hi,snap(value,step,offset)));}
 export function alignPiece(o,world=60){
  if(!GRID_PARTS.has(o.type))return o;if(o.floorHalf){const turned=o.rotation===90;o.x=boundedGrid(o.x,o.w/2,turned?0:1,world,turned?4:2);o.z=boundedGrid(o.z,o.d/2,turned?1:0,world,turned?2:4);return o;}const bordered=['wall','door'].includes(o.type)&&!isDiagonal(o),turned=bordered&&o.rotation===90,half=o.wallHalf==='halfVertical',longOffset=half?1:o.type==='door'&&(turned?o.d:o.w)>=7.9?2:0;
- o.x=boundedGrid(o.x,o.w/2,turned?2:longOffset,world,half&&!turned?2:4);o.z=boundedGrid(o.z,o.d/2,bordered&&!turned?2:longOffset,world,half&&turned?2:4);return o;
+ o.x=boundedGrid(o.x,o.w/2,turned?(o.wallHalf?0:2):longOffset,world,o.wallHalf?2:4);o.z=boundedGrid(o.z,o.d/2,bordered&&!turned?(o.wallHalf?0:2):longOffset,world,o.wallHalf?2:4);return o;
 }
-export function gridStep(o,axis){if(o.floorHalf&&axis===(o.rotation===90?'z':'x'))return 2;if(o.wallHalf==='halfVertical'&&axis===(o.rotation===90?'z':'x'))return 2;if(o.wallHalf==='halfHorizontal'&&axis==='y')return 1.5;return GRID_PARTS.has(o.type)?axis==='y'?(['box','wall','floor','roof','ramp','door'].includes(o.type)?3:.5):4:axis==='y'?.5:1;}
+export function gridStep(o,axis){if(o.wallHalf&&axis===(o.rotation===90?'x':'z'))return 2;if(o.floorHalf&&axis===(o.rotation===90?'z':'x'))return 2;if(o.wallHalf==='halfVertical'&&axis===(o.rotation===90?'z':'x'))return 2;if(o.wallHalf==='halfHorizontal'&&axis==='y')return 1.5;return GRID_PARTS.has(o.type)?axis==='y'?(['box','wall','floor','roof','ramp','door'].includes(o.type)?3:.5):4:axis==='y'?.5:1;}
 const borderPart=o=>o&&['wall','door'].includes(o.type)&&!isDiagonal(o);
 function orientBorder(o,rotation){if((o.rotation||0)!==rotation)[o.w,o.d]=[o.d,o.w];o.rotation=rotation;}
 function rampFloorAnchor(ramp,normal,floor,point=null){
@@ -41,6 +41,7 @@ export function snapEditorPiece(o,point,target=null,normal=null,world=60){
     const dx=point.x-target.x,dz=point.z-target.z,axis=Math.abs(dx)/(target.w/2)>Math.abs(dz)/(target.d/2)?'x':'z',offset=point[axis]-target[axis],extent=target[axis==='x'?'w':'d']/2;
     if(Math.abs(offset)>=extent*.5){const direction=Math.sign(offset)||1,angle=(target.rotation||0)*Math.PI/180,high=axis==='x'?-Math.sin(angle):-Math.cos(angle),alongSlope=Math.abs(high)>.5,atPeak=alongSlope&&direction*high>0;o.x=target.x;o.z=target.z;o[axis]+=direction*(target[axis==='x'?'w':'d']+o[axis==='x'?'w':'d'])/2;o.y=target.y-(alongSlope&&!atPeak?target.h:0);o.rotation=atPeak?((target.rotation||0)+180)%360:target.rotation||0;return alignPiece(o,world);}
   }
+  if(o.floorHalf&&target?.floorHalf&&normal?.y>.5&&(o.rotation||0)!==(target.rotation||0)){o.y=target.y;return alignPiece(o,world);}
   // A floor's broad top edge is easier to aim at than its 25 cm side.
   if(o.type==='floor'&&target?.type==='floor'&&normal?.y>.5){
     const dx=point.x-target.x,dz=point.z-target.z,edgeX=Math.abs(dx)/ (target.w/2),edgeZ=Math.abs(dz)/(target.d/2);
@@ -60,7 +61,7 @@ export function snapEditorPiece(o,point,target=null,normal=null,world=60){
   if(!GRID_PARTS.has(o.type)){o.x=Math.max(-coordinateLimit(world),Math.min(coordinateLimit(world),Math.round(o.x)));o.z=Math.max(-coordinateLimit(world),Math.min(coordinateLimit(world),Math.round(o.z)));if(target&&normal?.y>.5)o.y=Math.max(0,Math.min(MAX_BUILD_Y,topAt(target,point.x,point.z)));return o;}
   const side=target&&normal&&Math.abs(normal.y)<.5;
   if(borderPart(o)){
-    orientBorder(o,side?(Math.abs(normal.x)>.5?90:0):Math.abs(point.x-snap(point.x,4,2))<Math.abs(point.z-snap(point.z,4,2))?90:0);
+    orientBorder(o,side?(Math.abs(normal.x)>.5?90:0):Math.abs(point.x-snap(point.x,o.wallHalf?2:4,o.wallHalf?0:2))<Math.abs(point.z-snap(point.z,o.wallHalf?2:4,o.wallHalf?0:2))?90:0);
     if(side){o.x=target.x+normal.x*target.w/2;o.z=target.z+normal.z*target.d/2;}
   }else if(side){
     if(Math.abs(normal.x)>.5)o.x=target.x+normal.x*(target.w+o.w)/2;
@@ -77,6 +78,7 @@ export function snapEditorPiece(o,point,target=null,normal=null,world=60){
 }
 function joins(a,b){
   if(!intersects(a,b))return true;
+  if(a.floorHalf&&b.floorHalf&&Math.abs(a.y-b.y)<.001&&Math.abs(a.h-b.h)<.001&&(a.rotation||0)!==(b.rotation||0))return true;
   if(isDiagonal(a)||isDiagonal(b)){
    if((a.type==='floor'||b.type==='floor')&&Math.abs(a.y-b.y)<.02)return true;
    const diagonal=isDiagonal(a)?a:b,other=diagonal===a?b:a;
@@ -103,6 +105,7 @@ export function editorPlacementReason(piece,objects,spawn,world=60){
   if(!GRID_PARTS.has(piece.type))return '';
   if(Math.abs(piece.x)>coordinateLimit(world)||Math.abs(piece.z)>coordinateLimit(world)||Math.abs(piece.x)+piece.w/2>worldHalf(world)||Math.abs(piece.z)+piece.d/2>worldHalf(world))return 'ステージの中に置こう';
   if(spawn&&(!isDiagonal(piece)||diagonalContains(piece,spawn.x,spawn.z,.35))&&Math.abs(piece.x-spawn.x)<piece.w/2+.35&&Math.abs(piece.z-spawn.z)<piece.d/2+.35&&piece.y<spawn.y+1.7&&piece.y+piece.h>spawn.y)return 'スタートに重ならない場所に置こう';
+  if(piece.floorHalf&&halfFloorMask(piece,objects)===0)return 'ここには床があるよ。空いている半分に置こう';
   if(objects.some(o=>['wall','floor','roof','box','platform','moving','door','ramp'].includes(o.type)&&!joins(piece,o)))return '部品が重なるよ。別の面やマスをえらぼう';
   return '';
 }
@@ -121,7 +124,7 @@ export function constructionPart(type,x=0,z=0,y=0,rotation=0){
     d:type==='wall'?(turned?4:.25):4,hp:20,destructible:true,destroyEvents:[{type:'dropSelf'}],program:[],
     settings:{axis:'x',distance:3,speed:2,value:1,condition:'touch',required:1}};
 }
-export function rotatePiece(o,world=60){if(o.floorHalf){const turned=o.rotation===90,cx=turned?o.x:snap(o.x),cz=turned?snap(o.z):o.z,dx=o.x-cx,dz=o.z-cz;o.x=cx+dz;o.z=cz-dx;[o.w,o.d]=[o.d,o.w];o.rotation=turned?0:90;alignPiece(o,world);return;}if(isDiagonal(o)){o.rotation=o.rotation===90?0:90;alignPiece(o,world);return;}if(o.wallHalf==='halfVertical'){const turned=o.rotation===90,cx=turned?o.x-2:snap(o.x),cz=turned?snap(o.z):o.z-2,offset=turned?-(o.z-cz):o.x-cx;[o.w,o.d]=[o.d,o.w];o.rotation=turned?0:90;o.x=turned?cx+offset:cx+2;o.z=turned?cz+2:cz-offset;alignPiece(o,world);return;}if(!Object.hasOwn(BUILD_TYPES,o.type)&&o.type!=='door')return;const anchor={x:o.x-(['wall','door'].includes(o.type)&&o.rotation===90?2:0),z:o.z-(['wall','door'].includes(o.type)&&o.rotation!==90?2:0)};[o.w,o.d]=[o.d,o.w];o.rotation=o.type==='ramp'||o.roofStyle==='slope'?((o.rotation||0)+90)%360:o.rotation===90?0:90;if(['wall','door'].includes(o.type)&&!(o.type==='door'&&Math.max(o.w,o.d)>=7.9)){o.x=anchor.x+(o.rotation===90?2:0);o.z=anchor.z+(o.rotation===0?2:0);}alignPiece(o,world);}
+export function rotatePiece(o,world=60){if(o.floorHalf){const turned=o.rotation===90,cx=turned?o.x:snap(o.x),cz=turned?snap(o.z):o.z,dx=o.x-cx,dz=o.z-cz;o.x=cx+dz;o.z=cz-dx;[o.w,o.d]=[o.d,o.w];o.rotation=turned?0:90;alignPiece(o,world);return;}if(isDiagonal(o)){o.rotation=o.rotation===90?0:90;alignPiece(o,world);return;}if(o.wallHalf==='halfVertical'){const turned=o.rotation===90,cell=v=>Math.floor((v+1.99999)/4)*4,cx=turned?cell(o.x):snap(o.x),cz=turned?snap(o.z):cell(o.z),thin=turned?o.x-cx:o.z-cz,offset=turned?-(o.z-cz):o.x-cx;[o.w,o.d]=[o.d,o.w];o.rotation=turned?0:90;o.x=turned?cx+offset:cx+thin;o.z=turned?cz+thin:cz-offset;alignPiece(o,world);return;}if(!Object.hasOwn(BUILD_TYPES,o.type)&&o.type!=='door')return;const anchor={x:o.x-(['wall','door'].includes(o.type)&&o.rotation===90?2:0),z:o.z-(['wall','door'].includes(o.type)&&o.rotation!==90?2:0)};[o.w,o.d]=[o.d,o.w];o.rotation=o.type==='ramp'||o.roofStyle==='slope'?((o.rotation||0)+90)%360:o.rotation===90?0:90;if(['wall','door'].includes(o.type)&&!(o.type==='door'&&Math.max(o.w,o.d)>=7.9)){o.x=anchor.x+(o.rotation===90?2:0);o.z=anchor.z+(o.rotation===0?2:0);}alignPiece(o,world);}
 export function topAt(o,x,z){
   if(o.roofStyle==='slope'){const angle=(o.rotation||0)*Math.PI/180,localZ=Math.sin(angle)*(x-o.x)+Math.cos(angle)*(z-o.z),depth=(o.rotation||0)%180===90?o.w:o.d;return o.y+o.h*Math.max(0,Math.min(1,.5-localZ/depth));}
   if(o.wallGable){const angle=(o.rotation||0)*Math.PI/180,localX=Math.cos(angle)*(x-o.x)-Math.sin(angle)*(z-o.z),width=(o.rotation||0)%180===90?o.d:o.w;return o.y+o.h*Math.max(0,Math.min(1,.5+(o.wallGable==='gableLeft'?1:-1)*localX/width));}
@@ -157,6 +160,7 @@ export function placement(g,tool,point,rotation=0,level=0){
   if(Math.abs(x)>coordinateLimit(g)||Math.abs(z)>coordinateLimit(g)||Math.abs(x)+piece.w/2>worldHalf(g)||Math.abs(z)+piece.d/2>worldHalf(g)||y<0||y>MAX_BUILD_Y)return no('ステージの中に置こう');
   if(Math.hypot(x-g.player.x,y-g.player.y,z-g.player.z)>12)return no('もう少し近づこう');
   const p=g.player;if((!isDiagonal(piece)||diagonalContains(piece,p.x,p.z,.35))&&Math.abs(x-p.x)<piece.w/2+.35&&Math.abs(z-p.z)<piece.d/2+.35&&p.y<y+piece.h&&p.y+1.7>y)return no('自分に重ならない場所に置こう');
+  if(piece.floorHalf&&halfFloorMask(piece,g.objects)===0)return no('ここには床があるよ。空いている半分に置こう');
   for(const o of g.objects){
     if(o.open||!['wall','floor','roof','box','platform','moving','door','ramp'].includes(o.type)||joins(piece,o))continue;
     // Perpendicular wall ends can join to form a house corner.
@@ -201,7 +205,7 @@ export function blockPlacement(g,point,rotation=0,level=0){
   const result=placement(g,{effect:isDiagonal(t)?'diagonal':t.floorHalf?'halfFloor':t.type},point,rotation,level);if(!result.piece)return result;
   const turned=rotation%180!==0;piece={...structuredClone(t),id:crypto.randomUUID(),x:result.piece.x,y:result.piece.y,z:result.piece.z,rotation:result.piece.rotation,w:turned?t.d:t.w,d:turned?t.w:t.d};
   if(t.roofStyle==='slope')piece.rotation=rotation;
-  if(t.wallHalf){if(t.wallHalf==='halfVertical')piece[rotation%180===90?'z':'x']=point[rotation%180===90?'z':'x'];else{const surface=point.surface,onTop=surface&&point.normal?.y>.5;piece.y=(onTop?(surface.type==='floor'?surface.y:topAt(surface,point.x,point.z)):Math.floor((Math.max(0,point.y)+.08)/1.5)*1.5)+level*1.5;}alignPiece(piece,g);}
+  if(t.wallHalf){piece[rotation%180===90?'x':'z']=snap(point[rotation%180===90?'x':'z'],2);if(t.wallHalf==='halfVertical')piece[rotation%180===90?'z':'x']=point[rotation%180===90?'z':'x'];else{const surface=point.surface,onTop=surface&&point.normal?.y>.5;piece.y=(onTop?(surface.type==='floor'?surface.y:topAt(surface,point.x,point.z)):Math.floor((Math.max(0,point.y)+.08)/1.5)*1.5)+level*1.5;}alignPiece(piece,g);}
  }else{
   piece=snapEditorPiece({...structuredClone(t),id:crypto.randomUUID(),x:0,y:0,z:0},point,point.surface,point.normal,g);piece.y+=level*3;
   if(rotation%180!==0)[piece.w,piece.d]=[piece.d,piece.w];piece.rotation=rotation%180;

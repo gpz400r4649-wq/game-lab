@@ -1,4 +1,4 @@
-import {ROOF_SHELL_RATIO,diagonalPolygon} from './architecture3d.js?v=20261113m';
+import {ROOF_SHELL_RATIO,diagonalPolygon} from './architecture3d.js?v=20261114a';
 import * as T from './vendor/three.module.min.js';
 const cube=new T.BoxGeometry(1,1,1);
 export function makeCornerRampGeometry(style){
@@ -35,3 +35,5 @@ export function makeDiagonalWallGeometry(){
  for(let i=0;i<polygon.length;i++){const j=(i+1)%polygon.length;add(bottom[i],top[i],top[j]);add(bottom[i],top[j],bottom[j]);}
  const geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.Float32BufferAttribute(vertices,3));geometry.computeVertexNormals();geometry.computeBoundingBox();return geometry;
 }
+
+export function makeHalfFloorGeometries(){return {'floor:halfLow':new T.BoxGeometry(1,1,.5).translate(0,0,-.25),'floor:halfHigh':new T.BoxGeometry(1,1,.5).translate(0,0,.25)};}

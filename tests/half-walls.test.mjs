@@ -9,7 +9,7 @@ const spawn={x:20,y:0,z:20};
 function half(key,x=0,z=2){return configureBuildingPart(part('wall',x,z),key);}
 test('縦ハーフ２枚を左右に並べると、１マスの壁になり、同じマスには重ねられない',()=>{
  const floor=constructionPart('floor'),left=snapEditorPiece(half('halfVertical'),{x:-.8,y:.25,z:1.9},floor,{x:0,y:1,z:0}),right=snapEditorPiece(half('halfVertical'),{x:.8,y:.25,z:1.9},floor,{x:0,y:1,z:0});
- assert.deepEqual([left.x,right.x,left.w,right.w,left.h],[-1,1,2,2,3]);assert.equal(right.x-right.w/2,left.x+left.w/2);assert.equal(editorPlacementReason(right,[left,floor],spawn),'');assert.notEqual(editorPlacementReason({...left,id:'copy'},[left],spawn),'');assert.equal(gridStep(left,'x'),2);assert.equal(gridStep(left,'z'),4);
+ assert.deepEqual([left.x,right.x,left.w,right.w,left.h],[-1,1,2,2,3]);assert.equal(right.x-right.w/2,left.x+left.w/2);assert.equal(editorPlacementReason(right,[left,floor],spawn),'');assert.notEqual(editorPlacementReason({...left,id:'copy'},[left],spawn),'');assert.equal(gridStep(left,'x'),2);assert.equal(gridStep(left,'z'),2);
  const moved=dragCandidate(left,{x:left.x,z:left.z},{x:left.x+2,z:left.z},[],spawn,60);assert.equal(moved.piece.x,right.x);assert.equal(moved.reason,'');
 });
 test('横ハーフ２枚を上下に積むと普通の壁と同じ高さになり、回しても高さは変わらない',()=>{

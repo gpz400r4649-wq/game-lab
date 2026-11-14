@@ -1,42 +1,42 @@
-import {isDiagonal} from './architecture3d.js?v=20261113m';
-import {prepareEnemyDropWeapon} from './enemy-loot3d.js?v=20261113m';
-import {createPlayerRulesUI} from './player-rules-ui3d.js?v=20261113m';
-import {FLOOR_PRESETS,configureBuildingPart,FENCE_PRESETS,RAMP_PRESETS,ROOF_PRESETS} from './architecture3d.js?v=20261113m';
-import {makeDiagonalWallGeometry,makeCornerRampGeometry,makeFenceModel,fenceGeometry,makeRoofSlopeGeometry,makeGableGeometry} from './architecture-model3d.js?v=20261113m';
-import {createChoiceControl,enhanceChoiceControl} from './choices3d.js?v=20261113m';
-import {groupSteps,groupCandidate,commitGroup,copyGroupNearby} from './group-edit3d.js?v=20261113m';
-import {initializeCharacterDefaults,synchronizeCharacterDefaults,inheritNewCharacter} from './character-defaults3d.js?v=20261113m';
-import {nearbyActor,trade,companionsAt} from './actor3d.js?v=20261113m';
-import {giveAllyGun,giftableGun,recruitTarget,allyAttackDistance} from './ally3d.js?v=20261113m';
-import {createEditHistory} from './history3d.js?v=20261113m';
-import {makeDoorModel,updateDoorModel} from './door-model3d.js?v=20261113m';
-import {enemyEditHeight,createFloorRangeView} from './floor-edit3d.js?v=20261113m';
-import {createPatrolOverlay} from './patrol-ui3d.js?v=20261113m';
-import {stageRangePointer} from './stage-range3d.js?v=20261113m';
-import {createEnemyMessages} from './enemy-messages3d.js?v=20261113m';
-import {createPlayRanges} from './play-ranges3d.js?v=20261113m';
-import {closeLiveRangeEditor,isLiveRangeEditing} from './enemy-range-ui3d.js?v=20261113m';
-import {dragCandidate} from './editor-drag3d.js?v=20261113m';
-import {rangeWorldCells,enemyYaw,defaultEnemyRanges,MOVE_MAX_CELLS} from './enemy-range3d.js?v=20261113m';
-import {ROBOT_BARREL,TPS_GUN_MOUNT} from './muzzle3d.js?v=20261113m';
-import {DOOR_PRESETS,configureDoor,doorInteraction,isSlidingDoor,nearbyDoor} from './doors3d.js?v=20261113m';
-import {appearanceFor} from './appearance3d.js?v=20261113m';
-import {makeGunModel,applyFPSGunPose,worldGunMuzzle} from './gun-model3d.js?v=20261113m';
-import {editorViewFromPlay,moveEditorCamera,createEditorNavigation} from './editor-camera3d.js?v=20261113m';
-import {createStructureRenderer,isBatchedStructure} from './structure-render3d.js?v=20261113m';
-import {MAX_PROJECT_BYTES,MAX_BUILD_Y} from './limits3d.js?v=20261113m';
-import {worldSize,coordinateLimit} from './world3d.js?v=20261113m';
-import {createWorldUI} from './world-ui3d.js?v=20261113m';
-import {configureNumericInput} from './numeric3d.js?v=20261113m';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261113m';
-import {installGameTouchGuard,bindHeldButton,bindGameAction,createGamePageMode} from './input3d.js?v=20261113m';
-import {actionsFor} from './events3d.js?v=20261113m';
-import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261113m';
-import {rotatePiece,BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,editorPlacementReason,blockPlacement} from './building3d.js?v=20261113m';
-import {createToolsUI} from './tools3d.js?v=20261113m';
+import {halfFloorMask,isDiagonal} from './architecture3d.js?v=20261114a';
+import {prepareEnemyDropWeapon} from './enemy-loot3d.js?v=20261114a';
+import {createPlayerRulesUI} from './player-rules-ui3d.js?v=20261114a';
+import {FLOOR_PRESETS,configureBuildingPart,FENCE_PRESETS,RAMP_PRESETS,ROOF_PRESETS} from './architecture3d.js?v=20261114a';
+import {makeHalfFloorGeometries,makeDiagonalWallGeometry,makeCornerRampGeometry,makeFenceModel,fenceGeometry,makeRoofSlopeGeometry,makeGableGeometry} from './architecture-model3d.js?v=20261114a';
+import {createChoiceControl,enhanceChoiceControl} from './choices3d.js?v=20261114a';
+import {groupSteps,groupCandidate,commitGroup,copyGroupNearby} from './group-edit3d.js?v=20261114a';
+import {initializeCharacterDefaults,synchronizeCharacterDefaults,inheritNewCharacter} from './character-defaults3d.js?v=20261114a';
+import {nearbyActor,trade,companionsAt} from './actor3d.js?v=20261114a';
+import {giveAllyGun,giftableGun,recruitTarget,allyAttackDistance} from './ally3d.js?v=20261114a';
+import {createEditHistory} from './history3d.js?v=20261114a';
+import {makeDoorModel,updateDoorModel} from './door-model3d.js?v=20261114a';
+import {enemyEditHeight,createFloorRangeView} from './floor-edit3d.js?v=20261114a';
+import {createPatrolOverlay} from './patrol-ui3d.js?v=20261114a';
+import {stageRangePointer} from './stage-range3d.js?v=20261114a';
+import {createEnemyMessages} from './enemy-messages3d.js?v=20261114a';
+import {createPlayRanges} from './play-ranges3d.js?v=20261114a';
+import {closeLiveRangeEditor,isLiveRangeEditing} from './enemy-range-ui3d.js?v=20261114a';
+import {dragCandidate} from './editor-drag3d.js?v=20261114a';
+import {rangeWorldCells,enemyYaw,defaultEnemyRanges,MOVE_MAX_CELLS} from './enemy-range3d.js?v=20261114a';
+import {ROBOT_BARREL,TPS_GUN_MOUNT} from './muzzle3d.js?v=20261114a';
+import {DOOR_PRESETS,configureDoor,doorInteraction,isSlidingDoor,nearbyDoor} from './doors3d.js?v=20261114a';
+import {appearanceFor} from './appearance3d.js?v=20261114a';
+import {makeGunModel,applyFPSGunPose,worldGunMuzzle} from './gun-model3d.js?v=20261114a';
+import {editorViewFromPlay,moveEditorCamera,createEditorNavigation} from './editor-camera3d.js?v=20261114a';
+import {createStructureRenderer,isBatchedStructure} from './structure-render3d.js?v=20261114a';
+import {MAX_PROJECT_BYTES,MAX_BUILD_Y} from './limits3d.js?v=20261114a';
+import {worldSize,coordinateLimit} from './world3d.js?v=20261114a';
+import {createWorldUI} from './world-ui3d.js?v=20261114a';
+import {configureNumericInput} from './numeric3d.js?v=20261114a';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261114a';
+import {installGameTouchGuard,bindHeldButton,bindGameAction,createGamePageMode} from './input3d.js?v=20261114a';
+import {actionsFor} from './events3d.js?v=20261114a';
+import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261114a';
+import {rotatePiece,BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,editorPlacementReason,blockPlacement} from './building3d.js?v=20261114a';
+import {createToolsUI} from './tools3d.js?v=20261114a';
 import * as T from './vendor/three.module.min.js';
-import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet} from './engine3d.js?v=20261113m';
-import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261113m';
+import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet} from './engine3d.js?v=20261114a';
+import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261114a';
 document.querySelectorAll('.setting-choices').forEach(enhanceChoiceControl);
 const $=s=>document.querySelector(s),view=$('#viewport'),KEY='tsukuru-lab-3d-v1';
 let enemyRangeView='attackRange';
@@ -98,10 +98,11 @@ Object.assign(materials,{glass:new T.MeshStandardMaterial({color:'#b5e2ef',trans
 const roofShape=new T.Shape();roofShape.moveTo(-.5,0);roofShape.lineTo(.5,0);roofShape.lineTo(0,1);roofShape.closePath();const roofGeometry=new T.ExtrudeGeometry(roofShape,{depth:1,bevelEnabled:false});roofGeometry.translate(0,0,-.5);
 const rampShape=new T.Shape();rampShape.moveTo(-.5,0);rampShape.lineTo(.5,0);rampShape.lineTo(-.5,1);rampShape.closePath();const rampGeometry=new T.ExtrudeGeometry(rampShape,{depth:1,bevelEnabled:false});rampGeometry.translate(0,0,-.5);rampGeometry.rotateY(-Math.PI/2);const rocketGeometry=new T.ConeGeometry(1,2,6);
 const roofSlopeGeometry=makeRoofSlopeGeometry(),gableGeometries={gableLeft:makeGableGeometry('gableLeft'),gableRight:makeGableGeometry('gableRight')};
+const halfFloorGeometries=makeHalfFloorGeometries();
 const diagonalWallGeometry=makeDiagonalWallGeometry();
 const cornerRampGeometries={inner:makeCornerRampGeometry('inner'),outer:makeCornerRampGeometry('outer')};
-function structureModel(o,override){if(o.wallStyle&&!isDiagonal(o))return makeFenceModel(o,override||materials.wall);const g=new T.Group(),turned=(o.rotation||0)%180===90,w=turned?o.d:o.w,d=turned?o.w:o.d,mat=override||materials[o.type];g.rotation.y=(o.rotation||0)*Math.PI/180;if(isDiagonal(o)||o.type==='roof'||o.type==='ramp'||o.wallGable){const m=new T.Mesh(isDiagonal(o)?diagonalWallGeometry:o.type==='ramp'?(cornerRampGeometries[o.rampStyle]||rampGeometry):o.wallGable?gableGeometries[o.wallGable]:o.roofStyle==='slope'?roofSlopeGeometry:roofGeometry,mat);m.scale.set(w,o.h,d);g.add(m);}else box(g,mat,0,o.h/2,0,w,o.h,d);return g;}
-const structureRenderer=createStructureRenderer(scene,materials,{box:unitBox,'wall:diagonal':diagonalWallGeometry,roof:roofGeometry,ramp:rampGeometry,'ramp:inner':cornerRampGeometries.inner,'ramp:outer':cornerRampGeometries.outer,'wall:fence':fenceGeometry(3),'wall:fenceHalf':fenceGeometry(1.5),'roof:slope':roofSlopeGeometry,'wall:gableLeft':gableGeometries.gableLeft,'wall:gableRight':gableGeometries.gableRight});camera.layers.enable(2);
+function structureModel(o,override){if(o.wallStyle&&!isDiagonal(o))return makeFenceModel(o,override||materials.wall);const g=new T.Group(),turned=(o.rotation||0)%180===90,w=turned?o.d:o.w,d=turned?o.w:o.d,mat=override||materials[o.type];g.rotation.y=(o.rotation||0)*Math.PI/180;if(isDiagonal(o)||o.type==='roof'||o.type==='ramp'||o.wallGable){const m=new T.Mesh(isDiagonal(o)?diagonalWallGeometry:o.type==='ramp'?(cornerRampGeometries[o.rampStyle]||rampGeometry):o.wallGable?gableGeometries[o.wallGable]:o.roofStyle==='slope'?roofSlopeGeometry:roofGeometry,mat);m.scale.set(w,o.h,d);g.add(m);}else {const shape=box(g,mat,0,o.h/2,0,w,o.h,d);if(o.floorHalf&&override){const mask=halfFloorMask(o,mode==='play'?game?.objects||[]:project.objects);shape.geometry=mask===1?halfFloorGeometries['floor:halfLow']:mask===2?halfFloorGeometries['floor:halfHigh']:shape.geometry;shape.visible=mask!==0;}}return g;}
+const structureRenderer=createStructureRenderer(scene,materials,{...halfFloorGeometries,box:unitBox,'wall:diagonal':diagonalWallGeometry,roof:roofGeometry,ramp:rampGeometry,'ramp:inner':cornerRampGeometries.inner,'ramp:outer':cornerRampGeometries.outer,'wall:fence':fenceGeometry(3),'wall:fenceHalf':fenceGeometry(1.5),'roof:slope':roofSlopeGeometry,'wall:gableLeft':gableGeometries.gableLeft,'wall:gableRight':gableGeometries.gableRight});camera.layers.enable(2);
 const dragPreview=new T.Group();scene.add(dragPreview);
 const ghost=new T.Group(),ghostMaterial=new T.MeshBasicMaterial({color:0x67d8bd,transparent:true,opacity:.42,depthWrite:false});scene.add(ghost);let ghostShape='',buildCount=-1,editorPointer=null;
 const portalGeometry=new T.TorusGeometry(.9,.12,8,24),keyGeometry=new T.TorusGeometry(.23,.08,6,16);
@@ -402,7 +403,7 @@ const effectPool=[],bulletPool=[];function syncGameMeshes(){
  if(game.messageId!==lastMessageId){lastMessageId=game.messageId;toast(game.message);}
 }
 function editorCandidate(event){if(tool==='select'||tool==='erase')return null;const hit=hits(event,[objectsGroup,ground]).find(visibleHit);if(!hit)return null;const target=project.objects.find(o=>o.id===objectId(hit.object))||null,normal=hit.face?hit.face.normal.clone().transformDirection(hit.object.matrixWorld):null,piece=snapEditorPiece(tool==='door'?configureDoor(part(tool),doorPreset):tool==='weapon'?{...part(tool),weaponId:weaponPresetId}:configureBuildingPart(part(tool),piecePresets[tool]),hit.point,target,normal,project);if(piece.type==='enemy')Object.assign(piece,defaultEnemyRanges(piece));return {piece,reason:editorPlacementReason(piece,project.objects,project.spawn,project)};}
-function showGhost(o,valid){const shape=[o.type,o.roofStyle||'',o.wallGable||'',o.doorVariant||'',o.wallStyle||'',o.rampStyle||'',o.rotation||0,o.w,o.h,o.d].join(':');if(shape!==ghostShape){ghost.clear();if(Object.hasOwn(BUILD_TYPES,o.type))ghost.add(structureModel(o,ghostMaterial));else if(o.type==='door')ghost.add(makeDoorModel(o,{door:ghostMaterial,wall:ghostMaterial,dark:ghostMaterial,star:ghostMaterial,glass:ghostMaterial,white:ghostMaterial}));else box(ghost,ghostMaterial,0,o.h/2,0,o.w,o.h,o.d);ghostShape=shape;}ghost.position.set(o.x,o.y,o.z);ghostMaterial.color.set(valid?0x53d9b4:0xee8592);ghost.visible=true;}
+function showGhost(o,valid){const shape=[o.type,o.roofStyle||'',o.wallGable||'',o.doorVariant||'',o.wallStyle||'',o.rampStyle||'',o.rotation||0,o.w,o.h,o.d,o.floorHalf?halfFloorMask(o,mode==='play'?game?.objects||[]:project.objects):3].join(':');if(shape!==ghostShape){ghost.clear();if(Object.hasOwn(BUILD_TYPES,o.type))ghost.add(structureModel(o,ghostMaterial));else if(o.type==='door')ghost.add(makeDoorModel(o,{door:ghostMaterial,wall:ghostMaterial,dark:ghostMaterial,star:ghostMaterial,glass:ghostMaterial,white:ghostMaterial}));else box(ghost,ghostMaterial,0,o.h/2,0,o.w,o.h,o.d);ghostShape=shape;}ghost.position.set(o.x,o.y,o.z);ghostMaterial.color.set(valid?0x53d9b4:0xee8592);ghost.visible=true;}
 function updateEditorGhost(){syncPlacementUI();if(placementLook||isLiveRangeEditing()||look?.drag){ghost.visible=false;return;}if(!editorPointer||!withinSurface(editorPointer)||!GRID_PARTS.has(tool)){ghost.visible=false;return;}const candidate=editorCandidate(editorPointer);if(!candidate){ghost.visible=false;return;}showGhost(candidate.piece,!candidate.reason);}
 function visibleHit(hit){let o=hit.object;while(o){if(!o.visible)return false;o=o.parent;}return true;}
 function buildTarget(){ray.setFromCamera(new T.Vector2(0,0),camera);const hit=ray.intersectObjects([...objectsGroup.children,ground],true).find(h=>h.point.distanceTo(new T.Vector3(game.player.x,game.player.y+1.35,game.player.z))<8&&visibleHit(h));if(hit){const p=hit.point.clone();if(hit.face)p.addScaledVector(hit.face.normal.clone().transformDirection(hit.object.matrixWorld),.03);const surface=game.objects.find(o=>o.id===objectId(hit.object))||null,normal=hit.face?hit.face.normal.clone().transformDirection(hit.object.matrixWorld):null;return {x:p.x,y:p.y,z:p.z,surface,normal};}const p=game.player;return {x:p.x-Math.sin(yaw)*6,y:Math.floor(p.y/3)*3,z:p.z-Math.cos(yaw)*6};}
