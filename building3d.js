@@ -1,9 +1,10 @@
-import {halfFloorMask,ROOF_SHELL_RATIO,isDiagonal,diagonalContains,footprintsIntersect} from './architecture3d.js?v=20261114e';
-import {inheritNewCharacter} from './character-defaults3d.js?v=20261114e';
-import {DEFAULT_APPEARANCE,validAppearance} from './appearance3d.js?v=20261114e';
-import {MAX_PARTS,MAX_BUILD_Y,MAX_BUILD_LEVEL} from './limits3d.js?v=20261114e';
-import {worldHalf,coordinateLimit} from './world3d.js?v=20261114e';
-import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261114e';
+import {isFurniture,isDesk,furnitureTopAt} from './furniture3d.js?v=20261117a';
+import {halfFloorMask,ROOF_SHELL_RATIO,isDiagonal,diagonalContains,footprintsIntersect} from './architecture3d.js?v=20261117a';
+import {inheritNewCharacter} from './character-defaults3d.js?v=20261117a';
+import {DEFAULT_APPEARANCE,validAppearance} from './appearance3d.js?v=20261117a';
+import {MAX_PARTS,MAX_BUILD_Y,MAX_BUILD_LEVEL} from './limits3d.js?v=20261117a';
+import {worldHalf,coordinateLimit} from './world3d.js?v=20261117a';
+import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261117a';
 // Shared by editor, gameplay and placement preview. No browser dependency.
 export const BUILD_TYPES={wall:'壁',floor:'床',roof:'屋根',ramp:'スロープ',diagonal:'ななめの壁',halfFloor:'ハーフの床'};
 export const GRID={cell:4,layer:3,size:60};
@@ -11,10 +12,10 @@ export const GRID_PARTS=new Set(['box','platform','moving','bounce','hazard','do
 const snap=(value,step=GRID.cell,offset=0)=>Math.round((value-offset)/step)*step+offset;
 function boundedGrid(value,extent,offset=0,world=60,step=4){extent=Math.max(step/2,extent);const lo=Math.ceil((-worldHalf(world)+extent-offset)/step)*step+offset,hi=Math.floor((worldHalf(world)-extent-offset)/step)*step+offset;return Math.max(lo,Math.min(hi,snap(value,step,offset)));}
 export function alignPiece(o,world=60){
- if(!GRID_PARTS.has(o.type))return o;if(o.floorHalf){const turned=(o.rotation||0)%180===90;o.x=boundedGrid(o.x,o.w/2,turned?0:1,world,turned?4:2);o.z=boundedGrid(o.z,o.d/2,turned?1:0,world,turned?2:4);return o;}const bordered=['wall','door'].includes(o.type)&&!isDiagonal(o),turned=bordered&&(o.rotation||0)%180===90,half=o.wallHalf==='halfVertical',longOffset=half?1:o.type==='door'&&(turned?o.d:o.w)>=7.9?2:0;
+ if(!GRID_PARTS.has(o.type))return o;if(isFurniture(o)){o.x=boundedGrid(o.x,o.w/2,1,world,2);o.z=boundedGrid(o.z,o.d/2,1,world,2);return o;}if(o.floorHalf){const turned=(o.rotation||0)%180===90;o.x=boundedGrid(o.x,o.w/2,turned?0:1,world,turned?4:2);o.z=boundedGrid(o.z,o.d/2,turned?1:0,world,turned?2:4);return o;}const bordered=['wall','door'].includes(o.type)&&!isDiagonal(o),turned=bordered&&(o.rotation||0)%180===90,half=o.wallHalf==='halfVertical',longOffset=half?1:o.type==='door'&&(turned?o.d:o.w)>=7.9?2:0;
  o.x=boundedGrid(o.x,o.w/2,turned?(o.wallHalf?0:2):longOffset,world,o.wallHalf?2:4);o.z=boundedGrid(o.z,o.d/2,bordered&&!turned?(o.wallHalf?0:2):longOffset,world,o.wallHalf?2:4);return o;
 }
-export function gridStep(o,axis){if(o.wallHalf&&axis===((o.rotation||0)%180===90?'x':'z'))return 2;if(o.floorHalf&&axis===((o.rotation||0)%180===90?'z':'x'))return 2;if(o.wallHalf==='halfVertical'&&axis===((o.rotation||0)%180===90?'z':'x'))return 2;if(o.wallHalf==='halfHorizontal'&&axis==='y')return 1.5;return GRID_PARTS.has(o.type)?axis==='y'?(['box','wall','floor','roof','ramp','door'].includes(o.type)?3:.5):4:axis==='y'?.5:1;}
+export function gridStep(o,axis){if(isFurniture(o))return axis==='y'?.25:2;if(o.wallHalf&&axis===((o.rotation||0)%180===90?'x':'z'))return 2;if(o.floorHalf&&axis===((o.rotation||0)%180===90?'z':'x'))return 2;if(o.wallHalf==='halfVertical'&&axis===((o.rotation||0)%180===90?'z':'x'))return 2;if(o.wallHalf==='halfHorizontal'&&axis==='y')return 1.5;return GRID_PARTS.has(o.type)?axis==='y'?(['box','wall','floor','roof','ramp','door'].includes(o.type)?3:.5):4:axis==='y'?.5:1;}
 const borderPart=o=>o&&['wall','door'].includes(o.type)&&!isDiagonal(o);
 function orientBorder(o,rotation){const phase=o.type==='door'||o.wallHalf?rotation:rotation%180;if((o.rotation||0)%180!==phase%180)[o.w,o.d]=[o.d,o.w];o.rotation=phase;}
 function borderAnchor(o){
@@ -29,6 +30,16 @@ function rampFloorAnchor(ramp,normal,floor,point=null){
 }
 export function snapEditorPiece(o,point,target=null,normal=null,world=60){
   o.x=point.x;o.z=point.z;
+  if(isFurniture(o)){
+   const side=target&&normal&&Math.abs(normal.y)<.5;
+   if(isDesk(o)&&isDesk(target)&&!point.keepFurnitureRotation){if((o.rotation||0)%180!==(target.rotation||0)%180)[o.w,o.d]=[o.d,o.w];o.rotation=target.rotation||0;}
+   if(isDesk(o)&&isDesk(target)&&(side||normal?.y>.5)){
+    const dx=point.x-target.x,dz=point.z-target.z,edgeX=Math.abs(dx)/(target.w/2),edgeZ=Math.abs(dz)/(target.d/2);
+    if(side||Math.max(edgeX,edgeZ)>=.5){const axis=side?(Math.abs(normal.x)>.5?'x':'z'):edgeX>edgeZ?'x':'z',size=axis==='x'?'w':'d',direction=side?Math.sign(normal[axis]):Math.sign(axis==='x'?dx:dz);o.x=target.x;o.z=target.z;o[axis]+=direction*(target[size]+o[size])/2;o.y=target.y;return alignPiece(o,world);}
+   }
+   if(side){if(Math.abs(normal.x)>.5)o.x=target.x+normal.x*(target.w+o.w)/2;if(Math.abs(normal.z)>.5)o.z=target.z+normal.z*(target.d+o.d)/2;}
+   o.y=target&&normal?.y>.5?topAt(target,point.x,point.z):target&&normal?.y<-.5?Math.max(0,target.y-o.h):side?target.y:Math.max(0,point.y||0);o.y=Math.min(MAX_BUILD_Y,o.y);return alignPiece(o,world);
+  }
   if(isDiagonal(o)){
    if(isDiagonal(target)){o.rotation=target.rotation||0;if(normal?.y>.5||normal?.y<-.5){o.x=target.x;o.z=target.z;o.y=normal.y>0?target.y+target.h:Math.max(0,target.y-o.h);}else{const sign=(target.rotation||0)%180===90?-1:1,direction=Math.sign(point.x-target.x+sign*(point.z-target.z))||1;o.x=target.x+direction*4;o.z=target.z+direction*sign*4;o.y=target.y;}}
    else o.y=target&&normal?.y>.5?Math.round(topAt(target,point.x,point.z)/3)*3:target?.y||0;
@@ -130,6 +141,7 @@ export function constructionPart(type,x=0,z=0,y=0,rotation=0){
     settings:{axis:'x',distance:3,speed:2,value:1,condition:'touch',required:1}};
 }
 export function rotatePiece(o,world=60){
+ if(isFurniture(o)){[o.w,o.d]=[o.d,o.w];o.rotation=((o.rotation||0)+90)%360;alignPiece(o,world);return;}
  if(o.floorHalf){const turned=(o.rotation||0)%180===90,cx=turned?o.x:snap(o.x),cz=turned?snap(o.z):o.z,dx=o.x-cx,dz=o.z-cz;o.x=cx+dz;o.z=cz-dx;[o.w,o.d]=[o.d,o.w];o.rotation=turned?0:90;alignPiece(o,world);return;}
  if(isDiagonal(o)){o.rotation=o.rotation===90?0:90;alignPiece(o,world);return;}
  if(o.wallHalf||o.type==='door'){
@@ -140,6 +152,7 @@ export function rotatePiece(o,world=60){
  const anchor={x:o.x-(o.type==='wall'&&o.rotation===90?2:0),z:o.z-(o.type==='wall'&&o.rotation!==90?2:0)};[o.w,o.d]=[o.d,o.w];o.rotation=o.type==='ramp'||o.roofStyle==='slope'?((o.rotation||0)+90)%360:o.rotation===90?0:90;if(o.type==='wall'){o.x=anchor.x+(o.rotation===90?2:0);o.z=anchor.z+(o.rotation===0?2:0);}alignPiece(o,world);
 }
 export function topAt(o,x,z){
+  if(isFurniture(o))return furnitureTopAt(o,x,z);
   if(o.roofStyle==='slope'){const angle=(o.rotation||0)*Math.PI/180,localZ=Math.sin(angle)*(x-o.x)+Math.cos(angle)*(z-o.z),depth=(o.rotation||0)%180===90?o.w:o.d;return o.y+o.h*Math.max(0,Math.min(1,.5-localZ/depth));}
   if(o.wallGable){const angle=(o.rotation||0)*Math.PI/180,localX=Math.cos(angle)*(x-o.x)-Math.sin(angle)*(z-o.z),width=(o.rotation||0)%180===90?o.d:o.w;return o.y+o.h*Math.max(0,Math.min(1,.5+(o.wallGable==='gableLeft'?1:-1)*localX/width));}
   if(o.type==='ramp'){const angle=(o.rotation||0)*Math.PI/180,localZ=Math.sin(angle)*(x-o.x)+Math.cos(angle)*(z-o.z),localX=Math.cos(angle)*(x-o.x)-Math.sin(angle)*(z-o.z),turned=(o.rotation||0)%180===90,depth=turned?o.w:o.d,width=turned?o.d:o.w,u=Math.max(0,Math.min(1,.5-localZ/depth)),v=Math.max(0,Math.min(1,.5-localX/width));return o.y+o.h*(o.rampStyle==='inner'?Math.max(u,v):o.rampStyle==='outer'?Math.min(u,v):u);}if(o.type!=='roof')return o.y+o.h;
@@ -201,7 +214,7 @@ export function keepStructures(p,g){
 
 export function blockTemplate(o){
  const turned=(o.rotation||0)%180===90;
- return {type:o.type,w:turned?o.d:o.w,h:o.h,d:turned?o.w:o.d,rotation:0,...(o.rampStyle?{rampStyle:o.rampStyle}:{}),...(o.wallStyle?{wallStyle:o.wallStyle}:{}),...(o.wallHalf?{wallHalf:o.wallHalf}:{}),...(o.floorHalf?{floorHalf:true}:{}),...(o.wallGable?{wallGable:o.wallGable}:{}),...(o.roofStyle?{roofStyle:o.roofStyle}:{}),hp:Math.max(1,Math.min(200,o.maxHp||o.hp||1)),destructible:o.destructible!==false,program:structuredClone(o.program||[]),settings:structuredClone(o.settings),destroyEvents:structuredClone(o.destroyEvents||[])};
+ return {type:o.type,w:turned?o.d:o.w,h:o.h,d:turned?o.w:o.d,rotation:0,...(o.furnitureKind?{furnitureKind:o.furnitureKind}:{}),...(o.rampStyle?{rampStyle:o.rampStyle}:{}),...(o.wallStyle?{wallStyle:o.wallStyle}:{}),...(o.wallHalf?{wallHalf:o.wallHalf}:{}),...(o.floorHalf?{floorHalf:true}:{}),...(o.wallGable?{wallGable:o.wallGable}:{}),...(o.roofStyle?{roofStyle:o.roofStyle}:{}),hp:Math.max(1,Math.min(200,o.maxHp||o.hp||1)),destructible:o.destructible!==false,program:structuredClone(o.program||[]),settings:structuredClone(o.settings),destroyEvents:structuredClone(o.destroyEvents||[])};
 }
 export function giveBlock(g,template){
  g.blockInventory??=[];const key=JSON.stringify(template);let stack=g.blockInventory.find(s=>s.key===key);
@@ -215,7 +228,7 @@ export function blockPlacement(g,point,rotation=0,level=0){
  if(!stack||stack.count<=0)return no('拾ったブロックがありません');
  if(!point||!['x','y','z'].every(k=>Number.isFinite(point[k]))||![0,90,180,270].includes(rotation)||!Number.isInteger(level)||Math.abs(level)>MAX_BUILD_LEVEL)return no('置く場所をえらぼう');
  const t=stack.template;let piece;
- if(Object.hasOwn(BUILD_TYPES,t.type)){
+ if(isFurniture(t)){const turned=rotation%180===90;piece=snapEditorPiece({...structuredClone(t),id:crypto.randomUUID(),rotation,w:turned?t.d:t.w,d:turned?t.w:t.d},{...point,keepFurnitureRotation:true},point.surface,point.normal,g);piece.y+=level*3;}else if(Object.hasOwn(BUILD_TYPES,t.type)){
   const result=placement(g,{effect:isDiagonal(t)?'diagonal':t.floorHalf?'halfFloor':t.type},point,rotation,level);if(!result.piece)return result;
   const turned=rotation%180!==0;piece={...structuredClone(t),id:crypto.randomUUID(),x:result.piece.x,y:result.piece.y,z:result.piece.z,rotation:result.piece.rotation,w:turned?t.d:t.w,d:turned?t.w:t.d};
   if(t.roofStyle==='slope')piece.rotation=rotation;

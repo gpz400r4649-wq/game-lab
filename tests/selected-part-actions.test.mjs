@@ -1,3 +1,4 @@
+import {configureFurniture,isFurniture} from '../furniture3d.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -8,7 +9,7 @@ import {createEditHistory} from '../history3d.js';
 const source=readFileSync(new URL('../app3d.js',import.meta.url),'utf8'),code=source.slice(source.indexOf('function canRotateSelectedPart('),source.indexOf('function resetGroupSelection('));
 function setup(type='wall'){
  const project=fresh3D();project.worldSize=240;project.spawn.z=80;const piece=part(type,0,type==='wall'?2:0);project.objects=[piece];const history=createEditHistory(project),nodes=new Map(),errors=[];const node=()=>({hidden:true,style:{},children:[],append(child){if(child.parentElement)child.parentElement.children=child.parentElement.children.filter(c=>c!==child);this.children.push(child);child.parentElement=this;},setAttribute(name,value){this[name]=value;},addEventListener(){},getBoundingClientRect(){return {left:900,top:420,width:280,height:250};}});const button=node();nodes.set('#rotate-selected3',button);
- const c={project,mode:'edit',multiSelect:false,commonPreview:null,liveRange:false,editedObject:()=>project.objects.find(o=>o.id===c.selected),selected:piece.id,isLiveRangeEditing:()=>c.liveRange,$:id=>{if(!nodes.has(id))nodes.set(id,node());return nodes.get(id);},window:{innerWidth:1280,innerHeight:720,addEventListener(){}},structuredClone,rotatePiece,editorPlacementReason,resetInput(){},save(){history.record(project);},rebuild(){c.syncSelectedPartActions();},inspector(){},toast:message=>errors.push(message)};vm.createContext(c);vm.runInContext(code,c);return {c,piece,button,history,errors,nodes};
+ const c={isFurniture,project,mode:'edit',multiSelect:false,commonPreview:null,liveRange:false,editedObject:()=>project.objects.find(o=>o.id===c.selected),selected:piece.id,isLiveRangeEditing:()=>c.liveRange,$:id=>{if(!nodes.has(id))nodes.set(id,node());return nodes.get(id);},window:{innerWidth:1280,innerHeight:720,addEventListener(){}},structuredClone,rotatePiece,editorPlacementReason,resetInput(){},save(){history.record(project);},rebuild(){c.syncSelectedPartActions();},inspector(){},toast:message=>errors.push(message)};vm.createContext(c);vm.runInContext(code,c);return {c,piece,button,history,errors,nodes};
 }
 test('壁・床・屋根・階段・ドアを選んだ時にだけ回転ボタンを表示する',()=>{
  for(const type of ['wall','floor','roof','ramp','door']){const {c,button}=setup(type);c.syncSelectedPartActions();assert.equal(button.hidden,false);c.selected=null;c.syncSelectedPartActions();assert.equal(button.hidden,true);}
@@ -42,4 +43,8 @@ test('敵・味方のいどうから開いても、パーツの設定欄を基�
   const object=part(type,0,0);c.project.objects.push(object);c.selected=object.id;c.syncSelectedPartActions();const launcher=nodes.get('#placement-open3');launcher.getBoundingClientRect=()=>({left:1150,top,width:64,height:48});
   c.closePlacementPanel();launcher.onclick();assert.equal(nodes.get('#placement-panel3').style.top,'420px');assert.equal(nodes.get('#placement-panel3').style.left,'608px');
  }
+});
+
+test('机といすを選んだときにも回転ボタンを表示し、４方向へ回せる',()=>{
+ const {c,piece,button}=setup('box');configureFurniture(piece,'longTable');piece.x=piece.z=1;c.save();c.syncSelectedPartActions();assert.equal(button.hidden,false);for(const phase of [90,180,270,0]){button.onclick();assert.equal(piece.rotation,phase);assert.deepEqual([piece.x,piece.z],[1,1]);}assert.deepEqual([piece.w,piece.d],[6,2]);
 });
