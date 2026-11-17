@@ -1,21 +1,23 @@
-import {isFurniture,isDesk,furnitureTopAt} from './furniture3d.js?v=20261117a';
-import {halfFloorMask,ROOF_SHELL_RATIO,isDiagonal,diagonalContains,footprintsIntersect} from './architecture3d.js?v=20261117a';
-import {inheritNewCharacter} from './character-defaults3d.js?v=20261117a';
-import {DEFAULT_APPEARANCE,validAppearance} from './appearance3d.js?v=20261117a';
-import {MAX_PARTS,MAX_BUILD_Y,MAX_BUILD_LEVEL} from './limits3d.js?v=20261117a';
-import {worldHalf,coordinateLimit} from './world3d.js?v=20261117a';
-import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261117a';
+import {isFurniture,isDesk,furnitureTopAt} from './furniture3d.js?v=20261117b';
+import {halfFloorMask,ROOF_SHELL_RATIO,isDiagonal,diagonalContains,footprintsIntersect} from './architecture3d.js?v=20261117b';
+import {inheritNewCharacter} from './character-defaults3d.js?v=20261117b';
+import {DEFAULT_APPEARANCE,validAppearance} from './appearance3d.js?v=20261117b';
+import {MAX_PARTS,MAX_BUILD_Y,MAX_BUILD_LEVEL} from './limits3d.js?v=20261117b';
+import {worldHalf,coordinateLimit} from './world3d.js?v=20261117b';
+import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261117b';
 // Shared by editor, gameplay and placement preview. No browser dependency.
 export const BUILD_TYPES={wall:'壁',floor:'床',roof:'屋根',ramp:'スロープ',diagonal:'ななめの壁',halfFloor:'ハーフの床'};
 export const GRID={cell:4,layer:3,size:60};
 export const GRID_PARTS=new Set(['box','platform','moving','bounce','hazard','door','wall','floor','roof','ramp']);
 const snap=(value,step=GRID.cell,offset=0)=>Math.round((value-offset)/step)*step+offset;
 function boundedGrid(value,extent,offset=0,world=60,step=4){extent=Math.max(step/2,extent);const lo=Math.ceil((-worldHalf(world)+extent-offset)/step)*step+offset,hi=Math.floor((worldHalf(world)-extent-offset)/step)*step+offset;return Math.max(lo,Math.min(hi,snap(value,step,offset)));}
+// Border pieces can start halfway along a tile, joining full windows to half walls.
+// Both horizontal axes use this lattice so rotating a shifted piece preserves its anchor.
 export function alignPiece(o,world=60){
  if(!GRID_PARTS.has(o.type))return o;if(isFurniture(o)){o.x=boundedGrid(o.x,o.w/2,1,world,2);o.z=boundedGrid(o.z,o.d/2,1,world,2);return o;}if(o.floorHalf){const turned=(o.rotation||0)%180===90;o.x=boundedGrid(o.x,o.w/2,turned?0:1,world,turned?4:2);o.z=boundedGrid(o.z,o.d/2,turned?1:0,world,turned?2:4);return o;}const bordered=['wall','door'].includes(o.type)&&!isDiagonal(o),turned=bordered&&(o.rotation||0)%180===90,half=o.wallHalf==='halfVertical',longOffset=half?1:o.type==='door'&&(turned?o.d:o.w)>=7.9?2:0;
- o.x=boundedGrid(o.x,o.w/2,turned?(o.wallHalf?0:2):longOffset,world,o.wallHalf?2:4);o.z=boundedGrid(o.z,o.d/2,bordered&&!turned?(o.wallHalf?0:2):longOffset,world,o.wallHalf?2:4);return o;
+ o.x=boundedGrid(o.x,o.w/2,turned?(o.wallHalf?0:2):longOffset,world,bordered?2:4);o.z=boundedGrid(o.z,o.d/2,bordered&&!turned?(o.wallHalf?0:2):longOffset,world,bordered?2:4);return o;
 }
-export function gridStep(o,axis){if(isFurniture(o))return axis==='y'?.25:2;if(o.wallHalf&&axis===((o.rotation||0)%180===90?'x':'z'))return 2;if(o.floorHalf&&axis===((o.rotation||0)%180===90?'z':'x'))return 2;if(o.wallHalf==='halfVertical'&&axis===((o.rotation||0)%180===90?'z':'x'))return 2;if(o.wallHalf==='halfHorizontal'&&axis==='y')return 1.5;return GRID_PARTS.has(o.type)?axis==='y'?(['box','wall','floor','roof','ramp','door'].includes(o.type)?3:.5):4:axis==='y'?.5:1;}
+export function gridStep(o,axis){if(axis!=='y'&&borderPart(o))return 2;if(isFurniture(o))return axis==='y'?.25:2;if(o.wallHalf&&axis===((o.rotation||0)%180===90?'x':'z'))return 2;if(o.floorHalf&&axis===((o.rotation||0)%180===90?'z':'x'))return 2;if(o.wallHalf==='halfVertical'&&axis===((o.rotation||0)%180===90?'z':'x'))return 2;if(o.wallHalf==='halfHorizontal'&&axis==='y')return 1.5;return GRID_PARTS.has(o.type)?axis==='y'?(['box','wall','floor','roof','ramp','door'].includes(o.type)?3:.5):4:axis==='y'?.5:1;}
 const borderPart=o=>o&&['wall','door'].includes(o.type)&&!isDiagonal(o);
 function orientBorder(o,rotation){const phase=o.type==='door'||o.wallHalf?rotation:rotation%180;if((o.rotation||0)%180!==phase%180)[o.w,o.d]=[o.d,o.w];o.rotation=phase;}
 function borderAnchor(o){
@@ -78,7 +80,7 @@ export function snapEditorPiece(o,point,target=null,normal=null,world=60){
   const side=target&&normal&&Math.abs(normal.y)<.5;
   if(borderPart(o)){
     orientBorder(o,side?(Math.abs(normal.x)>.5?90:0):Math.abs(point.x-snap(point.x,o.wallHalf?2:4,o.wallHalf?0:2))<Math.abs(point.z-snap(point.z,o.wallHalf?2:4,o.wallHalf?0:2))?90:0);
-    if(side){o.x=target.x+normal.x*target.w/2;o.z=target.z+normal.z*target.d/2;}
+    if(side){o.x=target.x+normal.x*target.w/2;o.z=target.z+normal.z*target.d/2;}else if(!o.wallHalf){const thin=(o.rotation||0)%180===90?'x':'z';o[thin]=snap(o[thin],4,2);}
   }else if(side){
     if(Math.abs(normal.x)>.5)o.x=target.x+normal.x*(target.w+o.w)/2;
     if(Math.abs(normal.z)>.5)o.z=target.z+normal.z*(target.d+o.d)/2;
