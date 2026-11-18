@@ -1,6 +1,6 @@
-import {GRID_PARTS,GRID,editorPlacementReason,topAt} from './building3d.js?v=20261118n';
-import {MAX_PARTS} from './limits3d.js?v=20261118n';
-import {coordinateLimit} from './world3d.js?v=20261118n';
+import {GRID_PARTS,GRID,editorPlacementReason,topAt} from './building3d.js?v=20261118o';
+import {MAX_PARTS} from './limits3d.js?v=20261118o';
+import {coordinateLimit} from './world3d.js?v=20261118o';
 
 export const MAX_ASSEMBLIES=24;
 export const MAX_ASSEMBLY_PARTS=128;

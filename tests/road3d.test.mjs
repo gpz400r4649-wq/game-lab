@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Scene} from '../vendor/three.module.min.js';
 import {createRoadView} from '../road-model3d.js';
-import {roadPoint,sampleRoad,validRoads} from '../road3d.js';
+import {roadPoint,roadGridSites,sampleRoad,validRoads} from '../road3d.js';
 import {fresh3D,validate3D} from '../engine3d.js';
 import {resizeReason} from '../world3d.js';
 
@@ -39,4 +39,21 @@ test('道幅がマップ端に達しても舗装が外へ出ず、編集中だ�
  }
  view.showDraft(road,1);assert.equal(model.visible,false);assert.equal(draft.children.length,3);
  view.showDraft(null);assert.equal(model.visible,true);assert.equal(draft.children.length,0);
+});
+
+
+test('１マスの四隅・辺のまんなか・中心の９点に道路が吸い付く',()=>{
+ const sites=roadGridSites({x:0,z:0},60);
+ assert.deepEqual(sites,[-2,0,2].flatMap(z=>[-2,0,2].map(x=>({x,z}))));
+ for(const site of sites)assert.deepEqual(roadPoint({x:site.x+.3,z:site.z-.2},60),site);
+ assert.deepEqual(roadPoint({x:5.9,z:1.2},60),{x:6,z:2});
+ const next=roadGridSites({x:3.5,z:0},60);
+ assert.deepEqual(next.filter(site=>site.x===2),sites.filter(site=>site.x===2));
+ assert.equal(roadGridSites({x:120,z:0},240).length,9);
+ assert.ok(roadGridSites({x:120,z:0},240).every(site=>site.x<=118));
+});
+
+test('以前に保存した道路のグリッドに合わない点は読み込み時に動かない',()=>{
+ const p=fresh3D('car');p.roads=[{id:'legacy',width:8,closed:false,points:[{x:3,z:7},{x:19,z:11}]}];
+ assert.deepEqual(validate3D(p).roads,p.roads);
 });

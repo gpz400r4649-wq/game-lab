@@ -1,6 +1,6 @@
-import {MAX_ROADS,MAX_ROAD_POINTS,ROAD_WIDTHS,roadPoint,roadPointsFit,validRoads} from './road3d.js?v=20261118n';
-import {mountLiveRangeEditor} from './range-panel3d.js?v=20261118n';
-import {setStageRangePainter} from './stage-range3d.js?v=20261118n';
+import {MAX_ROADS,MAX_ROAD_POINTS,ROAD_WIDTHS,roadPoint,roadGridSites,roadPointsFit,validRoads} from './road3d.js?v=20261118o';
+import {mountLiveRangeEditor} from './range-panel3d.js?v=20261118o';
+import {setStageRangePainter} from './stage-range3d.js?v=20261118o';
 
 export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,toast}){
  const dialog=$('#road-dialog3'),list=$('#road-list3'),add=$('#road-add3');
@@ -46,7 +46,7 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,toast
    if(!roadPointsFit(draft.points,draft.closed))draft.closed=false;
    refresh();
   });
-  const camera=button('カメラをうごかす',()=>{cameraMode=!cameraMode;refresh();});
+  const camera=button('カメラをうごかす',()=>{cameraMode=!cameraMode;view.showSnap([],null);refresh();});
   const done=button('できた',()=>{
    if(!validRoads([draft],getProject()))return;
    const project=getProject(),roads=project.roads||[];
@@ -58,7 +58,7 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,toast
   const help=document.createElement('span');help.className='road-editor-hint';help.setAttribute('role','status');
   controls.append(widthChoices,loop,undo,remove,camera,done,cancel,help);
   const finish=mountLiveRangeEditor(panel,()=>{
-   setStageRangePainter(null);view.showDraft(null);cameraRestore?.();
+   setStageRangePainter(null);view.showDraft(null);view.showSnap([],null);cameraRestore?.();
    if(returnToList){renderList();dialog.showModal();}
   },{showDetails:false});
   function remember(snapshot=draft){history.push(structuredClone(snapshot));if(history.length>40)history.shift();}
@@ -67,7 +67,7 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,toast
    loop.setAttribute('aria-pressed',String(draft.closed));camera.setAttribute('aria-pressed',String(cameraMode));
    loop.disabled=draft.points.length<3;undo.disabled=!history.length;remove.disabled=selected<0;
    done.disabled=!validRoads([draft],getProject());
-   const text=cameraMode?'ドラッグやスティックでカメラをうごかそう':selected>=0?'えらんだてんはドラッグでうごかせるよ':'みちがとおるばしょをタップしよう';
+   const text=cameraMode?'ドラッグやスティックでカメラをうごかそう':selected>=0?'えらんだてんはドラッグでうごかせるよ':'１マスの９つのてんからえらぼう';
    if(help.textContent!==text)help.textContent=text;
    view.showDraft(draft,selected);
   }
@@ -76,15 +76,18 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,toast
     if(pointer?.id!==id)return false;
     if(pointer.before){remember(pointer.before);refresh();}pointer=null;return true;
    }
-   if(kind==='move'&&pointer?.id!==id)return false;
+   if(cameraMode)return false;
+   if(kind==='move'&&pointer&&pointer.id!==id)return false;
    if(kind==='start'){
-    if(cameraMode)return false;
     if(pointer)return true;
     pointer={id,index:-1,before:null};
    }
-   const point=roadPoint(ground,getProject());if(!point)return true;
+   const project=getProject(),point=roadPoint(ground,project);
+   view.showSnap(roadGridSites(ground,project),point);
+   if(!point||!pointer)return !!pointer;
    if(kind==='start'){
-    selected=draft.points.findIndex(existing=>Math.hypot(existing.x-point.x,existing.z-point.z)<1.8);
+    selected=draft.points.findIndex(existing=>existing.x===point.x&&existing.z===point.z);
+    if(selected<0)selected=draft.points.findIndex(existing=>Math.hypot(existing.x-ground.x,existing.z-ground.z)<1);
     pointer.index=selected;
     if(selected>=0){refresh();return true;}
     if(draft.points.length>=MAX_ROAD_POINTS){toast('てんは64こまでおけるよ');return true;}

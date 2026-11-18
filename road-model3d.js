@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.min.js';
-import {sampleRoad} from './road3d.js?v=20261118n';
+import {sampleRoad} from './road3d.js?v=20261118o';
 
 const asphalt=new T.MeshStandardMaterial({color:0x333c4e,roughness:.98,side:T.DoubleSide});
 const edges=new T.MeshBasicMaterial({color:0xe2e6ef,side:T.DoubleSide});
@@ -59,7 +59,14 @@ function roadMesh(road,half,preview){
 }
 
 export function createRoadView(scene){
- const saved=new T.Group(),draft=new T.Group();scene.add(saved,draft);
+ const saved=new T.Group(),draft=new T.Group(),snapGuide=new T.Group();scene.add(saved,draft,snapGuide);
+ const snapDot=new T.SphereGeometry(.29,10,6);
+ const snapMaterial=new T.MeshBasicMaterial({color:0x4595a0,depthTest:false,depthWrite:false});
+ const activeMaterial=new T.MeshBasicMaterial({color:0x39e5d0,depthTest:false,depthWrite:false});
+ const dots=Array.from({length:9},()=>{
+  const dot=new T.Mesh(snapDot,snapMaterial);dot.renderOrder=5;snapGuide.add(dot);return dot;
+ });
+ snapGuide.visible=false;
  let stamp='',roads=[],half=30,draftId=null;
  function clear(group){for(const model of [...group.children]){group.remove(model);model.traverse(child=>{if(child.isMesh&&child.geometry!==pegShape)child.geometry.dispose();});}}
  function showSaved(){
@@ -70,6 +77,14 @@ export function createRoadView(scene){
   sync(next,extent){
    const key=JSON.stringify([next||[],extent]);if(key===stamp)return;
    stamp=key;roads=next||[];half=extent;showSaved();
+  },
+  showSnap(sites,point){
+   snapGuide.visible=sites.length>0;
+   for(const [index,dot] of dots.entries()){
+    const site=sites[index];dot.visible=!!site;if(!site)continue;
+    const active=site.x===point?.x&&site.z===point?.z;
+    dot.position.set(site.x,.25,site.z);dot.material=active?activeMaterial:snapMaterial;dot.scale.setScalar(active?1.7:1);
+   }
   },
   showDraft(road,selected=-1){
    clear(draft);draftId=road?.id||null;

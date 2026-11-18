@@ -1,5 +1,5 @@
-import {rangeCell} from './enemy-range3d.js?v=20261118n';
-import {validate3D} from './engine3d.js?v=20261118n';
+import {rangeCell} from './enemy-range3d.js?v=20261118o';
+import {validate3D} from './engine3d.js?v=20261118o';
 
 export const ENEMY_COPY_GROUPS={
  body:{label:'からだ・体力',keys:['hp','enemyScale','w','h','d']},

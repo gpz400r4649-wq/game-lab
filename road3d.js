@@ -1,9 +1,11 @@
-import {worldHalf,coordinateLimit} from './world3d.js?v=20261118n';
+import {GRID} from './building3d.js?v=20261118o';
+import {worldHalf,coordinateLimit} from './world3d.js?v=20261118o';
 
 export const ROAD_WIDTHS=[4,8,12];
 export const MAX_ROADS=16;
 export const MAX_ROAD_POINTS=64;
-const MIN_SPACING=2;
+const ROAD_GRID_STEP=GRID.cell/2;
+const MIN_SPACING=ROAD_GRID_STEP;
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 const lerp=(a,b,t)=>({x:a.x+(b.x-a.x)*t,z:a.z+(b.z-a.z)*t});
 
@@ -11,8 +13,18 @@ export function roadPoint(ground,world){
  if(!ground||!Number.isFinite(ground.x)||!Number.isFinite(ground.z))return null;
  const half=worldHalf(world);
  if(Math.abs(ground.x)>half||Math.abs(ground.z)>half)return null;
- const limit=coordinateLimit(world),snap=value=>Math.max(-limit,Math.min(limit,Math.round(value)));
+ const limit=coordinateLimit(world),snap=value=>Math.max(-limit,Math.min(limit,Math.round(value/ROAD_GRID_STEP)*ROAD_GRID_STEP))+0;
  return {x:snap(ground.x),z:snap(ground.z)};
+}
+
+export function roadGridSites(ground,world){
+ if(!roadPoint(ground,world))return [];
+ const limit=coordinateLimit(world);
+ // The visible cell edges are at 4n + 2, with one point on each half-cell.
+ const edge=value=>Math.max(-limit,Math.min(limit-GRID.cell,Math.floor((value+ROAD_GRID_STEP)/GRID.cell)*GRID.cell-ROAD_GRID_STEP));
+ const x=edge(ground.x),z=edge(ground.z);
+ const offsets=[0,ROAD_GRID_STEP,GRID.cell];
+ return offsets.flatMap(dz=>offsets.map(dx=>({x:x+dx,z:z+dz})));
 }
 
 export function roadPointsFit(points,closed){
