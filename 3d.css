@@ -583,7 +583,8 @@ aside>#group-tools3{padding:0;margin:0;border:0;background:transparent;border-ra
 @media(max-width:700px) { .toolbar-row>#stage-mode3 #try-here3 { min-width:0; padding-inline:5px; } }
 
 #range-actions3 .supply-route-steps button[aria-current="step"] { background:#7d62dd; color:white; }
-.template-link3 { display:block; text-align:center; width:100%; margin:4px 0 7px; }
+.edition-switch3 { display:flex; align-items:stretch; gap:6px; flex:none; }
+.edition-switch3 .link { display:inline-flex; align-items:center; justify-content:center; white-space:nowrap; }
 .car-workshop #tools-open3, .car-workshop #enemy-open3, .car-workshop #ally-open3, .car-workshop #rules-open3,
 .car-workshop #supply-open3, .car-workshop #perspective3, .car-workshop #play-ranges3, .car-workshop #ally-range-toggle3,
 .car-workshop #crosshair, .car-workshop #hotbar3, .car-workshop #keep-build3, .car-workshop #hp3,
