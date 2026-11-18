@@ -1,11 +1,11 @@
 import * as T from './vendor/three.module.min.js';
-import {defaultSupplyFlight,SUPPLY_REWARDS} from './supply3d.js?v=20261118i';
-import {coordinateLimit} from './world3d.js?v=20261118i';
-import {setReadingText} from './readings3d.js?v=20261118i';
-import {configureNumericInput} from './numeric3d.js?v=20261118i';
-import {createPatrolOverlay} from './patrol-ui3d.js?v=20261118i';
-import {mountLiveRangeEditor} from './range-panel3d.js?v=20261118i';
-import {setStageRangePainter} from './stage-range3d.js?v=20261118i';
+import {defaultSupplyFlight,SUPPLY_REWARDS} from './supply3d.js?v=20261118j';
+import {coordinateLimit} from './world3d.js?v=20261118j';
+import {setReadingText} from './readings3d.js?v=20261118j';
+import {configureNumericInput} from './numeric3d.js?v=20261118j';
+import {createPatrolOverlay} from './patrol-ui3d.js?v=20261118j';
+import {mountLiveRangeEditor} from './range-panel3d.js?v=20261118j';
+import {setStageRangePainter} from './stage-range3d.js?v=20261118j';
 
 export function createSupplyUI({$,getProject,save,scene,focusRoute,toast}){
  const dialog=$('#supply-dialog3'),routeOverlay=createPatrolOverlay(scene,{throughParts:true});

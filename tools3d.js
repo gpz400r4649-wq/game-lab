@@ -1,12 +1,12 @@
-import {FURNITURE_PRESETS} from './furniture3d.js?v=20261118i';
-import {createChoiceControl} from './choices3d.js?v=20261118i';
-import {MAX_BUILD_LEVEL} from './limits3d.js?v=20261118i';
-import {appearanceFor,GUN_SHAPES,GUN_COLORS,gunPreviewSVG} from './appearance3d.js?v=20261118i';
-import {bindGameAction} from './input3d.js?v=20261118i';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261118i';
-import {LIMITS,PROJECTILES,IMPACTS,impactEffects,weaponPresetKey,SHOT_PATTERNS,cadenceHandling} from './weapons3d.js?v=20261118i';
-import {buildChoices,activeBuildTool,cycleBuildType,facingBuildRotation,makeTool,TOOL_EFFECTS,BUILD_TYPES,equipTool,keepStructures,equipBlock} from './building3d.js?v=20261118i';
-import {WEAPON_PRESETS,PARTS} from './engine3d.js?v=20261118i';
+import {FURNITURE_PRESETS} from './furniture3d.js?v=20261118j';
+import {createChoiceControl} from './choices3d.js?v=20261118j';
+import {MAX_BUILD_LEVEL} from './limits3d.js?v=20261118j';
+import {appearanceFor,GUN_SHAPES,GUN_COLORS,gunPreviewSVG} from './appearance3d.js?v=20261118j';
+import {bindGameAction} from './input3d.js?v=20261118j';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261118j';
+import {LIMITS,PROJECTILES,IMPACTS,impactEffects,weaponPresetKey,SHOT_PATTERNS,cadenceHandling} from './weapons3d.js?v=20261118j';
+import {buildChoices,activeBuildTool,cycleBuildType,facingBuildRotation,makeTool,TOOL_EFFECTS,BUILD_TYPES,equipTool,keepStructures,equipBlock} from './building3d.js?v=20261118j';
+import {WEAPON_PRESETS,PARTS} from './engine3d.js?v=20261118j';
 export function createToolsUI(api){
   const {$,getProject,getGame,getMode,field,save,refresh,finishBuilding}=api;
   let editing=0,rotation=0,level=0,activePage='basic';
@@ -148,7 +148,12 @@ export function createToolsUI(api){
   function open(){renderEditor();dialog.showModal();}
   function renderLauncher(){const el=$('#weapon3');if(!el)return;el.replaceChildren();const note=document.createElement('p');note.className='component-description';setReadingText(note,`${getProject().loadout.length}個の持ちもの。射撃の銃も、部品を出す建築銃も追加できるよ。`);const b=document.createElement('button');setReadingText(b,'持ちもの・銃をつくる');b.className='primary';b.onclick=open;el.append(note,b);}
   function renderHotbar(){
-    const p=getProject(),g=getGame(),el=$('#hotbar3');el.replaceChildren();p.loadout.forEach((t,i)=>{const b=document.createElement('button');b.className='hot-slot';b.classList.toggle('active',g?.equipped===i);const locked=getMode()==='play'&&g?.inventory&&!g.inventory.includes(t.id);b.disabled=!!locked;setReadingText(b,`${i+1} ${locked?'🔒 拾って使う ':''}${t.effect==='shoot'?'✦':'▧'} ${t.name}${(g?.inventoryCounts?.[t.id]||0)>1?' ×'+g.inventoryCounts[t.id]:''}`);const icon=document.createElement('span');icon.className='hot-gun-icon';icon.innerHTML=gunPreviewSVG(t);b.prepend(icon);b.setAttribute('aria-label',`持ちもの ${i+1} ${t.name}`);b.onclick=()=>{if(g)equipTool(g,p,i);renderHotbar();};el.append(b);});
+    const p=getProject(),g=getGame(),el=$('#hotbar3');el.replaceChildren();
+    if(p.template==='car'){
+      for(const id of ['#hotbar3','#keep-build3','#rotate-build3','#buildbar3','#build-status3'])$(id).hidden=true;
+      setReadingText($('#fire3'),'ブレーキ');return;
+    }
+    p.loadout.forEach((t,i)=>{const b=document.createElement('button');b.className='hot-slot';b.classList.toggle('active',g?.equipped===i);const locked=getMode()==='play'&&g?.inventory&&!g.inventory.includes(t.id);b.disabled=!!locked;setReadingText(b,`${i+1} ${locked?'🔒 拾って使う ':''}${t.effect==='shoot'?'✦':'▧'} ${t.name}${(g?.inventoryCounts?.[t.id]||0)>1?' ×'+g.inventoryCounts[t.id]:''}`);const icon=document.createElement('span');icon.className='hot-gun-icon';icon.innerHTML=gunPreviewSVG(t);b.prepend(icon);b.setAttribute('aria-label',`持ちもの ${i+1} ${t.name}`);b.onclick=()=>{if(g)equipTool(g,p,i);renderHotbar();};el.append(b);});
     if(g)for(const stack of g.blockInventory||[]){if(stack.count<=0&&g.blockEquipped!==stack.id)continue;const b=document.createElement('button'),label=FURNITURE_PRESETS[stack.template.furnitureKind]||PARTS[stack.template.type];b.className='hot-slot';b.classList.toggle('active',g.blockEquipped===stack.id);setReadingText(b,'▧ '+label+' ×'+stack.count);b.setAttribute('aria-label','拾ったブロック '+label+' '+stack.count+'個');b.onclick=()=>{equipBlock(g,stack.id);renderHotbar();};el.append(b);}
     const tool=p.loadout[g?.equipped??0],building=getMode()==='play'&&(!!g?.blockEquipped||(!!tool&&tool.effect!=='shoot'));$('#keep-build3').hidden=!building;$('#rotate-build3').hidden=!building;$('#buildbar3').hidden=!building;$('#build-status3').hidden=!building;setReadingText($('#fire3'),building?'建てる ▧':tool?'発射 ✦':'銃をひろおう');setReadingText($('#build-level3'),`高さ ${level>=0?'+':''}${level} 段`);
     $('#keep-build3').disabled=!g?.buildings.length;const choices=buildChoices(tool),switcher=$('#switch-build3');switcher.hidden=!building||!!g?.blockEquipped||choices.length<2;setReadingText(switcher,'ブロック：'+(BUILD_TYPES[activeBuildTool(g,tool)?.effect]||'')+' ↻');
@@ -158,7 +163,7 @@ export function createToolsUI(api){
   bindGameAction($('#rotate-build3'),()=>setRotation((rotation+90)%360));
   $('#lower-build3').onclick=()=>{level=Math.max(-MAX_BUILD_LEVEL,level-1);renderHotbar();};$('#raise-build3').onclick=()=>{level=Math.min(MAX_BUILD_LEVEL,level+1);renderHotbar();};
   $('#keep-build3').onclick=()=>{const g=getGame();if(!g)return;const count=keepStructures(getProject(),g);save();finishBuilding(count);};
-  window.addEventListener('keydown',e=>{if(getMode()!=='play'||e.target.matches('input,select,textarea')||document.querySelector('dialog[open]'))return;
+  window.addEventListener('keydown',e=>{if(getMode()!=='play'||getProject().template==='car'||e.target.matches('input,select,textarea')||document.querySelector('dialog[open]'))return;
     if(/^[1-8]$/.test(e.key)){equipTool(getGame(),getProject(),Number(e.key)-1);renderHotbar();}
     if(e.key.toLowerCase()==='q'&&!e.repeat){e.preventDefault();if(cycleBuildType(getGame(),getProject()))renderHotbar();}
     if(e.key.toLowerCase()==='r'&&!e.repeat){e.preventDefault();setRotation((rotation+90)%360);}if(e.key==='[')$('#lower-build3').click();if(e.key===']')$('#raise-build3').click();

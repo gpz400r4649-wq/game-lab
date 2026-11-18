@@ -1,6 +1,6 @@
-import {makeFacingFan,RANGE_MAX} from './enemy-range3d.js?v=20261118i';
-import {setReadingText} from './readings3d.js?v=20261118i';
-import {configureNumericInput} from './numeric3d.js?v=20261118i';
+import {makeFacingFan,RANGE_MAX} from './enemy-range3d.js?v=20261118j';
+import {setReadingText} from './readings3d.js?v=20261118j';
+import {configureNumericInput} from './numeric3d.js?v=20261118j';
 export function fanSettings(range,preferred=120){
  if(!range||range.space==='world')return null;
  const stamp=cells=>cells.map(c=>c.join(',')).sort().join(';'),saved=stamp(range.cells);

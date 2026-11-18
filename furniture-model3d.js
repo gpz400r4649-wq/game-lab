@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.min.js';
-import {FURNITURE_SIZES,furniturePieces} from './furniture3d.js?v=20261118i';
+import {FURNITURE_SIZES,furniturePieces} from './furniture3d.js?v=20261118j';
 const cube=new T.BoxGeometry(1,1,1).toNonIndexed(),cache=new Map();
 export function furnitureGeometry(kind){
  if(cache.has(kind))return cache.get(kind);const size=FURNITURE_SIZES[kind],positions=[],colors=[],source=cube.getAttribute('position');
