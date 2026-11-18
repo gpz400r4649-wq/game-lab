@@ -1,32 +1,33 @@
-import {FURNITURE_PRESETS,isFurniture,furnitureIcon} from './furniture3d.js?v=20261118h';
-import {prepareEnemyDropWeapon} from './enemy-loot3d.js?v=20261118h';
-import {fencePresetKey,FLOOR_PRESETS,RAMP_PRESETS,FENCE_PRESETS,ROOF_PRESETS,architectureIcon} from './architecture3d.js?v=20261118h';
-import {renderAllyRangePreview} from './ally-range-preview3d.js?v=20261118h';
-import {createChoiceControl} from './choices3d.js?v=20261118h';
-import {sharedDefaultsType,applyBlockDefaults,sharedKeys,synchronizeCharacterDefaults,useCharacterDefaults,inheritNewCharacter,writeCharacterDefaults} from './character-defaults3d.js?v=20261118h';
-import {copyEnemySettings,ENEMY_COPY_GROUPS} from './enemy-batch3d.js?v=20261118h';
-import {ACTOR_HATS} from './actor3d.js?v=20261118h';
-import {makeTool} from './building3d.js?v=20261118h';
-import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261118h';
-import {openWaypointEditor} from './waypoint-ui3d.js?v=20261118h';
-import {openPatrolEditor} from './patrol-ui3d.js?v=20261118h';
-import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261118h';
-import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261118h';
-import {inGridRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261118h';
-import {closeLiveRangeEditor,renderEnemyRange as renderEnemyRangeBase} from './enemy-range-ui3d.js?v=20261118h';
-import {gunPreviewSVG} from './appearance3d.js?v=20261118h';
-import {DOOR_PRESETS,doorUsesGlass,doorCanOpen,isSlidingDoor,doorDimensions} from './doors3d.js?v=20261118h';
-import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261118h';
-import {coordinateLimit} from './world3d.js?v=20261118h';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261118h';
-import {actionsFor} from './events3d.js?v=20261118h';
-import {renderEventEditor} from './event-editor3d.js?v=20261118h';
-import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261118h';
-import {alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261118h';
-import {part,ENEMY_SCALES,PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261118h';
+import {moveRaceGate,orderedRaceGates} from './race3d.js?v=20261118i';
+import {FURNITURE_PRESETS,isFurniture,furnitureIcon} from './furniture3d.js?v=20261118i';
+import {prepareEnemyDropWeapon} from './enemy-loot3d.js?v=20261118i';
+import {fencePresetKey,FLOOR_PRESETS,RAMP_PRESETS,FENCE_PRESETS,ROOF_PRESETS,architectureIcon} from './architecture3d.js?v=20261118i';
+import {renderAllyRangePreview} from './ally-range-preview3d.js?v=20261118i';
+import {createChoiceControl} from './choices3d.js?v=20261118i';
+import {sharedDefaultsType,applyBlockDefaults,sharedKeys,synchronizeCharacterDefaults,useCharacterDefaults,inheritNewCharacter,writeCharacterDefaults} from './character-defaults3d.js?v=20261118i';
+import {copyEnemySettings,ENEMY_COPY_GROUPS} from './enemy-batch3d.js?v=20261118i';
+import {ACTOR_HATS} from './actor3d.js?v=20261118i';
+import {makeTool} from './building3d.js?v=20261118i';
+import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261118i';
+import {openWaypointEditor} from './waypoint-ui3d.js?v=20261118i';
+import {openPatrolEditor} from './patrol-ui3d.js?v=20261118i';
+import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261118i';
+import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261118i';
+import {inGridRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261118i';
+import {closeLiveRangeEditor,renderEnemyRange as renderEnemyRangeBase} from './enemy-range-ui3d.js?v=20261118i';
+import {gunPreviewSVG} from './appearance3d.js?v=20261118i';
+import {DOOR_PRESETS,doorUsesGlass,doorCanOpen,isSlidingDoor,doorDimensions} from './doors3d.js?v=20261118i';
+import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261118i';
+import {coordinateLimit} from './world3d.js?v=20261118i';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261118i';
+import {actionsFor} from './events3d.js?v=20261118i';
+import {renderEventEditor} from './event-editor3d.js?v=20261118i';
+import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261118i';
+import {alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261118i';
+import {part,ENEMY_SCALES,PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261118i';
 
-const ICONS={actor:'💬',plate:'▣',ally:'🛡',weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
-const DESCRIPTIONS={actor:'名前とせりふを書こう。交換する品を置くとお店になるよ。',plate:'踏んでいる間、えらんだドアが開くよ。',ally:'近くで「ついてきて」と呼ぶと、一緒に戦うよ。',weapon:'地面に置いて、ふれると拾える銃。持ちもの・銃づくりで用意した銃をえらぼう。',ramp:'低いほうから歩くと、そのまま登れるスロープ。回して好きな向きにつなげよう。',wall:'家を囲う壁。向きを変えてつなげよう。',floor:'家の床と天井に使える板。壁の内側にぴったり合うよ。',roof:'壁の上にのせる三角屋根。向きを変えて家を仕上げよう。',
+const ICONS={raceGate:'🏁',actor:'💬',plate:'▣',ally:'🛡',weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
+const DESCRIPTIONS={raceGate:'数字が小さいゲートからじゅんばんにとおるよ。ぜんぶとおるとゴール！',actor:'名前とせりふを書こう。交換する品を置くとお店になるよ。',plate:'踏んでいる間、えらんだドアが開くよ。',ally:'近くで「ついてきて」と呼ぶと、一緒に戦うよ。',weapon:'地面に置いて、ふれると拾える銃。持ちもの・銃づくりで用意した銃をえらぼう。',ramp:'低いほうから歩くと、そのまま登れるスロープ。回して好きな向きにつなげよう。',wall:'家を囲う壁。向きを変えてつなげよう。',floor:'家の床と天井に使える板。壁の内側にぴったり合うよ。',roof:'壁の上にのせる三角屋根。向きを変えて家を仕上げよう。',
   box:'かべや建物をつくれる、かたいブロック。',platform:'ジャンプで乗れる足場。高さを変えてコースにしよう。',
   moving:'置くだけで行ったり来たり。乗ると一緒に運んでくれるよ。',bounce:'ふれると大ジャンプ！ 飛ぶ強さを変えてみよう。',
   enemy:'動きかたと、攻撃してくるかを別々にえらべるよ。攻撃するマスも工夫してみよう。',star:'ふれると拾える星。得点をもらうほか、銃を拾うなどの役割にも変えられるよ。',
@@ -207,6 +208,7 @@ export function createWorkshop(api){
     const description=document.createElement('p');description.className='component-description';setReadingText(description,isFurniture(o)?(o.furnitureKind==='chair'?'机のうしろに置くいす。90度ずつ回して向きを変えられるよ。':o.furnitureKind==='longTable'?'いすを３つ並べられる長い机。机の端を押すと、半マスずつそろってつながるよ。':'１人用の学習机。半マスずつそろい、横にも前後にもぴったりつながるよ。'):o.doorVariant==='frame'?'ドアの枠だけのパーツ。中央をそのまま通れるよ。':o.doorVariant==='windowFrame'?'窓の枠だけのパーツ。窓のあいた部分にはガラスがないよ。':o.doorVariant==='windowGlass'?'ガラスの入った窓。開け閉めしない窓だよ。':o.doorVariant==='windowSwing'?'左右に開く窓。近づいて「あける」を押そう。':doorUsesGlass(o)?'木のわくに大きなガラスを入れた戸。向こうの部屋が見えるよ。近づいて「あける」を押そう。':isSlidingDoor(o)?'近くの扉が、隣の扉に重なって開くよ。半マス分が通り道になるよ。１枚ずつ開け閉めできるよ。':o.type==='door'&&doorDimensions(o).single?'扉は半マスの幅。残りの半分は壁だよ。扉を左右どちらに置くかもえらべるよ。':o.floorHalf?'半マスの床。２枚を並べると１マスになるよ。90度回して向きを変えられるよ。':o.roofStyle==='slope'?'左右のななめ屋根を頂点で合わせよう。斜面の端を押すと、隣につながるよ。下は空いているので部屋に使えるよ。':o.wallGable?'ななめ屋根の端をふさぐ三角のかべ。左がひくい形と右がひくい形を合わせよう。':o.rampStyle?'角に合わせて回すスロープ。低いほうから登れるよ。':o.wallHalf==='halfVertical'&&o.wallStyle?'はばが半分のさく。２枚で１マスになり、90度回してL字にもつなげられるよ。':o.wallHalf==='halfVertical'?'幅が半分の壁。２枚を横に並べると壁１枚分になるよ。':o.wallHalf==='halfHorizontal'?'高さが半分の壁。２枚を上下に積むと壁１枚分になるよ。':o.wallStyle==='diagonal'?'１マスの角から反対の角へつながる、ななめの壁。90度回すと逆向きになるよ。':o.wallStyle?'柵のパーツ。半分の高さと、壁と同じ高さを選べるよ。':DESCRIPTIONS[o.type]);el.append(title,description);
     sharedObject=sharedKeys(o.type).length?o:null;
     const s=o.settings;
+    if(o.type==='raceGate'){const gates=orderedRaceGates(p.objects);field(el,'ゲートをとおる順ばん',gates.indexOf(o)+1,1,gates.length,1,n=>moveRaceGate(p.objects,o,n));}
     if(o.type==='weapon'){
       const missing=o.weaponId&&o.weaponId!=='@random'&&!p.loadout.some(t=>t.id===o.weaponId);
       selectField(el,'ひろう銃',[['','銃をえらぼう'],['@random','ランダムでひとつ'],...(missing?[[o.weaponId,'銃が削除されています']]:[]),...p.loadout.map(t=>[t.id,t.name+(t.pickupOnly?'（拾って使う）':'（最初から持つ）')])],o.weaponId||'',v=>{o.weaponId=v;inspect();});
@@ -377,7 +379,7 @@ export function createWorkshop(api){
       function updateRuleHint(){if(!['stars','keys'].includes(s.condition))return;const type=s.condition==='stars'?'star':'key',count=p.objects.reduce((n,x)=>n+[...actionsFor(x),...(x.destroyEvents||[])].filter(a=>a.type===(type==='star'?'addStar':'addKey')||(a.type==='dropItem'&&a.target===type)).length,0);let note=el.querySelector('.recipe-hint');if(!note){note=document.createElement('p');note.className='recipe-hint';el.append(note);}note.hidden=count>=s.required;setReadingText(note,`いまのイベントで増やせる${PARTS[type]}は${count}個。あと${Math.max(0,s.required-count)}個ぶんの効果を足すか、必要な数を減らそう。`);}
       updateRuleHint();
     }
-    if((!commonObject||!DESTRUCTIBLE_TYPES.has(o.type))&&!(o.type==='door'&&!doorCanOpen(o)))renderEventEditor(el,o,p,{selectField,field,save,rebuild,inspect,partNames:PARTS});
+    if(o.type!=='raceGate'&&(!commonObject||!DESTRUCTIBLE_TYPES.has(o.type))&&!(o.type==='door'&&!doorCanOpen(o)))renderEventEditor(el,o,p,{selectField,field,save,rebuild,inspect,partNames:PARTS});
     const label=document.createElement('div');label.className='small-heading placement-controls';setReadingText(label,'置く場所をちょうせい');if(!commonObject)el.append(label);
     const nudges=document.createElement('div');nudges.className='nudge-grid placement-controls';
     for(const [name,key,amount] of [['← 左','x',-1],['奥へ ↑','z',-1],['右 →','x',1],['下げる','y',-.5],['手前 ↓','z',1],['上げる','y',.5]]){
@@ -387,7 +389,7 @@ export function createWorkshop(api){
     for(const [key,name,min,max] of [['x','横 X',-coordinateLimit(p),coordinateLimit(p)],['y','高さ Y',0,MAX_BUILD_Y],['z','奥行 Z',-coordinateLimit(p),coordinateLimit(p)]])field(positions,name,o[key],min,max,gridStep(o,key),n=>{o[key]=n;alignPiece(o,p);return o[key];});fine.append(positions);
     if(!isFurniture(o)&&['box','platform','moving','door','bounce','hazard','wall','floor','roof','ramp'].includes(o.type))for(const [key,name] of [['w','はば'],['h','たかさ'],['d','おくゆき']])field(fine,name,o[key],['wall','floor','roof','bounce','hazard'].includes(o.type)?.2:.5,10,.5,n=>o[key]=n);
     const positionDetails=details(isFurniture(o)?'位置を数字でちょうせい':'位置・大きさを数字でちょうせい',[fine]);positionDetails.className='placement-controls';if(!commonObject)el.append(positionDetails);
-    const copy=document.createElement('button');setReadingText(copy,'＋ 同じパーツをもう１つ');copy.onclick=()=>{if(p.objects.length>=MAX_PARTS){api.toast(`パーツは${MAX_PARTS}個まで置けます`);return;}const duplicate=structuredClone(o);duplicate.id=crypto.randomUUID();for(const a of duplicate.events||[])if(a.target===o.id)a.target=duplicate.id;let found=false;const copyStep=isFurniture(o)?2:4;for(const [dx,dz] of [[Math.max(copyStep,Math.ceil(o.w/copyStep)*copyStep),0],[0,Math.max(copyStep,Math.ceil(o.d/copyStep)*copyStep)],[-Math.max(copyStep,Math.ceil(o.w/copyStep)*copyStep),0],[0,-Math.max(copyStep,Math.ceil(o.d/copyStep)*copyStep)]]){duplicate.x=o.x+dx;duplicate.z=o.z+dz;if(!GRID_PARTS.has(o.type)){duplicate.x=clamp(o.x+2,-coordinateLimit(p),coordinateLimit(p));duplicate.z=o.z;found=true;break;}alignPiece(duplicate,p);if(!editorPlacementReason(duplicate,p.objects,p.spawn)){found=true;break;}}if(!found){api.toast('隣のマスが空いていません');return;}p.objects.push(duplicate);select(duplicate.id);save();rebuild();api.objectList();inspect();};
+    const copy=document.createElement('button');setReadingText(copy,'＋ 同じパーツをもう１つ');copy.onclick=()=>{if(p.objects.length>=MAX_PARTS){api.toast(`パーツは${MAX_PARTS}個まで置けます`);return;}const duplicate=structuredClone(o);duplicate.id=crypto.randomUUID();for(const a of duplicate.events||[])if(a.target===o.id)a.target=duplicate.id;let found=false;const copyStep=isFurniture(o)?2:4;for(const [dx,dz] of [[Math.max(copyStep,Math.ceil(o.w/copyStep)*copyStep),0],[0,Math.max(copyStep,Math.ceil(o.d/copyStep)*copyStep)],[-Math.max(copyStep,Math.ceil(o.w/copyStep)*copyStep),0],[0,-Math.max(copyStep,Math.ceil(o.d/copyStep)*copyStep)]]){duplicate.x=o.x+dx;duplicate.z=o.z+dz;if(!GRID_PARTS.has(o.type)){duplicate.x=clamp(o.x+2,-coordinateLimit(p),coordinateLimit(p));duplicate.z=o.z;found=true;break;}alignPiece(duplicate,p);if(!editorPlacementReason(duplicate,p.objects,p.spawn)){found=true;break;}}if(!found){api.toast('隣のマスが空いていません');return;}p.objects.push(duplicate);if(duplicate.type==='raceGate')moveRaceGate(p.objects,duplicate,p.objects.length);select(duplicate.id);save();rebuild();api.objectList();inspect();};
     if(!commonObject){duplicateSelected=copy.onclick;duplicateButton.disabled=p.objects.length>=MAX_PARTS;}
   }
   function weapons(){if(api.renderLoadout){api.renderLoadout();return;}
@@ -408,7 +410,9 @@ export function createWorkshop(api){
   function chooseDoor(){chooseBuildingPalette('door');}
   function renderPalette(){
     const selected=api.getToolSelection?.()||{type:'select'},paletteType=['gableLeft','gableRight'].includes(selected.preset)?'roof':selected.type==='door'&&DOOR_PRESETS[selected.preset]?.window?'wall':selected.type;
-    const rows=[['#palette3',['wall','floor','roof','ramp','box','platform','moving','bounce','hazard','door']],['#palette-extra3',['enemy','ally','actor','weapon','star','key','heal','checkpoint','plate','goal']]];
+    const rows=getProject().template==='car'?
+      [['#palette3',['floor','ramp','wall','box','platform','moving','bounce','raceGate']],['#palette-extra3',[]]]:
+      [['#palette3',['wall','floor','roof','ramp','box','platform','moving','bounce','hazard','door']],['#palette-extra3',['enemy','ally','actor','weapon','star','key','heal','checkpoint','plate','goal']]];
     const shortNames={wall:'かべ・まど',floor:'ゆか',roof:'やね',ramp:'スロープ',box:'ブロック・かぐ',moving:'うごく',platform:'あしば',bounce:'ジャンプ',hazard:'ダメージ',enemy:'てき',ally:'みかた',actor:'やくしゃ',weapon:'じゅう',star:'ほし',key:'カギ',heal:'かいふく',checkpoint:'セーブ',plate:'スイッチ',goal:'ゴール'};
     for(const [selector,types]of rows){
       const palette=$(selector);palette.replaceChildren();
