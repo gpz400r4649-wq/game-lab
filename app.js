@@ -1,37 +1,345 @@
 import {WORLD,TYPES,ACTIONS,clamp,makeObject,freshProject,validateProject,createGame,stepGame} from './engine.js';
-const $=s=>document.querySelector(s),canvas=$('#stage'),ctx=canvas.getContext('2d'),KEY='tsukuru-lab-v1';
-let project=freshProject(),selected,tool='select',mode='edit',game=null,camera={x:440,y:800},keys=new Set(),stick={x:0,y:0},firing=false,drag=null,last=0,saveTimer,toastTimer;
-function toast(message){$('#toast').textContent=message;$('#toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').classList.remove('show'),3000);}
-try{const saved=localStorage.getItem(KEY);if(saved)project=validateProject(JSON.parse(saved));}catch{toast('保存した作品を読み込めませんでした。作品ファイルから読み込めます。');}
-selected=project.objects.find(o=>o.type==='player').id;camera={...project.objects.find(o=>o.type==='player')};$('#title').value=project.title;
-function save(){clearTimeout(saveTimer);$('#save-state').textContent='保存中…';saveTimer=setTimeout(()=>{try{localStorage.setItem(KEY,JSON.stringify(project));$('#save-state').textContent='✓ このブラウザに保存しました';}catch{$('#save-state').textContent='保存できません。ファイルに保存してください';}},300);}
-function field(label,value,min,max,step,onChange){const row=document.createElement('label');row.className='field';const text=document.createElement('span');text.textContent=label;const input=document.createElement('input');input.type='number';Object.assign(input,{value,min,max,step});input.onchange=()=>{const n=Number(input.value);input.value=Number.isFinite(n)?clamp(Math.round(n/step)*step,min,max):value;onChange(Number(input.value));save();};row.append(text,input);return row;}
-function inspector(){const panel=$('#inspector');panel.replaceChildren();const obj=project.objects.find(o=>o.id===selected);if(!obj){panel.innerHTML='<p class="empty">「えらぶ」でパーツをタップすると、うごきや強さを変えられるよ。</p>';return;}const type=TYPES[obj.type],title=document.createElement('div');title.className='object-title';title.innerHTML=`<span>${type.icon}</span><div><b>${type.name}</b><small>${obj.type==='player'?'PLAYER / じぶんのキャラクター':'OBJECT / ステージのパーツ'}</small></div>`;panel.append(title);
-if(obj.type==='player'){panel.append(field('弾の速さ',project.weapon.speed,100,1000,50,n=>project.weapon.speed=n),field('発射の間かく（秒）',project.weapon.interval,0.1,2,0.1,n=>project.weapon.interval=n),field('弾のつよさ',project.weapon.damage,1,10,1,n=>project.weapon.damage=n));const label=document.createElement('label');label.className='field';label.textContent='いちどに出る弾';const select=document.createElement('select');[1,3,5].forEach(n=>select.add(new Option(n+' 発',n)));select.value=project.weapon.spread;select.onchange=()=>{project.weapon.spread=Number(select.value);save();};label.append(select);panel.append(label);const note=document.createElement('p');note.className='empty';note.textContent='近い敵を自動でねらうよ。まずは弾の数を変えてみよう！';panel.append(note);}
-if(obj.type==='enemy'){panel.append(field('体力',obj.hp,1,20,1,n=>obj.hp=n));const event=document.createElement('div');event.className='event-block';event.textContent='⚑ ゲームがはじまったとき';const loop=document.createElement('div');loop.className='loop-block';loop.textContent='↻ ずっとくり返す（上から順に）';obj.program.forEach((b,i)=>{const block=document.createElement('div');block.className='block';const select=document.createElement('select');select.setAttribute('aria-label',`${i+1}番目のうごき`);Object.entries(ACTIONS).forEach(([k,v])=>select.add(new Option(v,k)));select.value=b.action;select.onchange=()=>{b.action=select.value;save();inspector();};const row=document.createElement('label');row.className='block-row';row.textContent='速さ ';const input=document.createElement('input');input.type='number';input.min=10;input.max=300;input.step=10;input.value=b.value;input.onchange=()=>{b.value=clamp(Number(input.value)||10,10,300);input.value=b.value;save();};row.append(input);const actions=document.createElement('div');actions.className='block-actions';for(const [text,disabled,fn] of [['↑',i===0,()=>{[obj.program[i-1],obj.program[i]]=[obj.program[i],obj.program[i-1]];}],['↓',i===obj.program.length-1,()=>{[obj.program[i+1],obj.program[i]]=[obj.program[i],obj.program[i+1]];}],['×',false,()=>obj.program.splice(i,1)]]){const btn=document.createElement('button');btn.textContent=text;btn.disabled=disabled;btn.setAttribute('aria-label',text==='×'?'ブロックを消す':text==='↑'?'上へ動かす':'下へ動かす');btn.onclick=()=>{fn();save();inspector();};actions.append(btn);}block.append(select,row,actions);loop.append(block);});const add=document.createElement('button');add.className='add-block';add.textContent='＋ うごきを追加';add.disabled=obj.program.length>=8;add.onclick=()=>{obj.program.push({action:'patrol',value:60});save();inspector();$('#challenge').textContent='✓ 敵のプログラムを変えられた！';};loop.append(add);panel.append(event,loop);}
-if(obj.type==='goal'){const p=document.createElement('p');p.className='empty';p.textContent='すべての敵をたおすと、ゴールが開くよ。ゴールまでたどり着いたらクリア！';panel.append(p);}
-if(obj.type!=='player'){const del=document.createElement('button');del.className='delete';del.textContent='このパーツを消す';del.onclick=()=>{project.objects=project.objects.filter(o=>o.id!==obj.id);selected=null;save();inspector();};panel.append(del);}panel.inert=mode==='play';}
-const tools=[['select','↖','えらぶ'],['enemy','🤖','敵'],['wall','▧','かべ'],['star','★','星'],['goal','⚑','ゴール'],['erase','⌫','けす']];
-for(const [id,icon,name] of tools){const b=document.createElement('button');b.className='tool'+(id===tool?' active':'');b.dataset.tool=id;b.innerHTML=`<span>${icon}</span>${name}`;b.onclick=()=>{if(mode==='play')setMode('edit');tool=id;document.querySelectorAll('.tool').forEach(x=>x.classList.toggle('active',x.dataset.tool===id));$('#hint').textContent=id==='select'?'パーツをタップしてえらぼう。ドラッグで動かせるよ':id==='erase'?'消したいパーツをタップしよう':`${name}を置く場所をタップしよう`;};$('#tools').append(b);}
-function setMode(next){mode=next;keys.clear();stick={x:0,y:0};firing=false;$('#joystick span').style.transform='';$('#edit').classList.toggle('active',mode==='edit');$('#play').classList.toggle('active',mode==='play');$('#hud').hidden=mode!=='play';$('#touch-controls').hidden=mode!=='play';$('#mode-tag').hidden=mode==='play';$('#pan-controls').hidden=mode==='play';$('#result').hidden=true;$('#inspector').inert=mode==='play';$('#title').disabled=mode==='play';if(mode==='play'){game=createGame(project);camera={...game.player};$('#hint').textContent='スティック / 矢印・WASDで移動　発射 / スペースで弾を撃つ';}else{$('#hint').textContent='パーツをタップして、ステージに置こう';inspector();}canvas.focus({preventScroll:true});}
-$('#play').onclick=()=>setMode('play');$('#edit').onclick=()=>setMode('edit');$('#restart').onclick=$('#retry').onclick=()=>setMode('play');$('#back').onclick=()=>setMode('edit');$('#home').onclick=()=>{const p=mode==='play'?game.player:project.objects.find(o=>o.type==='player');camera={...p};};$('#title').oninput=()=>{project.title=$('#title').value;save();};
-document.querySelectorAll('[data-pan]').forEach(b=>b.onclick=()=>{const [x,y]=b.dataset.pan.split(',').map(Number);camera.x=clamp(camera.x+x*240,0,WORLD.w);camera.y=clamp(camera.y+y*240,0,WORLD.h);});
-function view(){const r=canvas.getBoundingClientRect(),scale=Math.max(0.5,Math.min(r.width/940,r.height/650));return {w:r.width,h:r.height,scale};}
-function point(e){const r=canvas.getBoundingClientRect(),v=view();return {x:(e.clientX-r.left-v.w/2)/v.scale+camera.x,y:(e.clientY-r.top-v.h/2)/v.scale+camera.y};}
-function hit(p){return [...project.objects].reverse().find(o=>Math.abs(o.x-p.x)<(o.type==='wall'?34:26)&&Math.abs(o.y-p.y)<(o.type==='wall'?34:26));}
-canvas.onpointerdown=e=>{if(mode!=='edit')return;e.preventDefault();canvas.setPointerCapture(e.pointerId);const p=point(e),o=hit(p);if(tool==='select'){selected=o?.id;drag=o?{id:o.id,dx:o.x-p.x,dy:o.y-p.y}:null;inspector();}else if(tool==='erase'){if(o&&o.type!=='player'){project.objects=project.objects.filter(x=>x.id!==o.id);if(selected===o.id)selected=null;save();inspector();}}else{if(project.objects.length>=300){toast('パーツは300個まで置けます');return;}if(p.x<24||p.y<24||p.x>WORLD.w-24||p.y>WORLD.h-24)return;const x=clamp(Math.round(p.x/32)*32,32,WORLD.w-32),y=clamp(Math.round(p.y/32)*32,32,WORLD.h-32);if(tool==='wall'&&project.objects.some(o=>Math.abs(o.x-x)<55&&Math.abs(o.y-y)<55)){toast('少しはなれた場所に置こう');return;}const added=makeObject(tool,x,y);project.objects.push(added);selected=added.id;save();inspector();$('#challenge').textContent=tool==='enemy'?'✓ 敵を追加できた！ 次はうごきを変えよう':'✓ パーツを置けた！ あそんでみよう';}};
-canvas.onpointermove=e=>{if(!drag||mode!=='edit')return;const p=point(e),o=project.objects.find(x=>x.id===drag.id);if(o){o.x=clamp(Math.round((p.x+drag.dx)/16)*16,32,WORLD.w-32);o.y=clamp(Math.round((p.y+drag.dy)/16)*16,32,WORLD.h-32);}};canvas.onpointerup=canvas.onpointercancel=()=>{if(drag)save();drag=null;};
-window.addEventListener('keydown',e=>{if(e.target.matches('input,select,textarea')||document.querySelector('dialog[open]'))return;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();keys.add(e.key.toLowerCase());});window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));function clearInput(){keys.clear();stick={x:0,y:0};firing=false;$('#joystick span').style.transform='';}window.addEventListener('blur',clearInput);document.addEventListener('visibilitychange',clearInput);
-let stickPointer=null;const joy=$('#joystick');function updateStick(e){const r=joy.getBoundingClientRect();let x=(e.clientX-r.left-r.width/2)/38,y=(e.clientY-r.top-r.height/2)/38,d=Math.hypot(x,y);if(d>1){x/=d;y/=d;}stick={x,y};$('#joystick span').style.transform=`translate(${x*25}px,${y*25}px)`;}
-joy.onpointerdown=e=>{e.preventDefault();stickPointer=e.pointerId;joy.setPointerCapture(e.pointerId);updateStick(e);};joy.onpointermove=e=>{if(e.pointerId===stickPointer)updateStick(e);};joy.onpointerup=joy.onpointercancel=joy.onlostpointercapture=()=>{stickPointer=null;stick={x:0,y:0};$('#joystick span').style.transform='';};$('#fire').onpointerdown=e=>{e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);firing=true;};$('#fire').onpointerup=$('#fire').onpointercancel=$('#fire').onlostpointercapture=()=>firing=false;
-function showDialog(id){if(mode==='play')setMode('edit');$(id).showModal();}$('#help').onclick=()=>showDialog('#help-dialog');$('#files').onclick=()=>showDialog('#files-dialog');document.querySelectorAll('dialog .close').forEach(b=>b.onclick=()=>b.closest('dialog').close());
-$('#export').onclick=()=>{const blob=new Blob([JSON.stringify(project,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=(project.title.replace(/[<>:"/\\|?*]/g,'_')||'わたしのゲーム')+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);toast('作品ファイルを保存しました');};
-$('#import').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{if(f.size>500000)throw Error('ファイルが大きすぎます');const next=validateProject(JSON.parse(await f.text()));if(!confirm('今の作品を、読み込んだ作品に置き換えますか？'))return;project=next;selected=project.objects.find(o=>o.type==='player').id;camera={...project.objects.find(o=>o.type==='player')};$('#title').value=project.title;save();setMode('edit');$('#files-dialog').close();toast('作品を読み込みました');}catch(err){toast(err instanceof SyntaxError?'作品ファイルを読み込めませんでした':err.message);}finally{e.target.value='';}};
-$('#new').onclick=()=>{if(!confirm('今の作品を新しいステージに置き換えますか？ 必要なら先に「作品の保存・読込」で保存してください。'))return;project=freshProject();selected=project.objects[0].id;camera={...project.objects[0]};$('#title').value=project.title;setMode('edit');save();};
+import {createEditHistory} from './history3d.js?v=20261118h';
+import {createChoiceControl} from './choices3d.js?v=20261118h';
+import {configureNumericInput} from './numeric3d.js?v=20261118h';
+import {installGameTouchGuard,createGamePageMode,bindHeldButton,bindGameAction} from './input3d.js?v=20261118h';
+
+const $=selector=>document.querySelector(selector);
+const canvas=$('#stage'),ctx=canvas.getContext('2d'),overview=$('#overview'),mapContext=overview.getContext('2d');
+const settingsDialog=$('#settings-dialog'),mapDialog=$('#map-dialog'),KEY='tsukuru-lab-v1';
+const keys=new Set(),setGamePageMode=createGamePageMode(document);
+let project=freshProject(),selected=null,tool='select',mode='edit',game=null;
+let stick={x:0,y:0},firing=false,gesture=null,preview=null,last=0,saveTimer,toastTimer;
+let settingsTarget=null,stickPointer=null;
+
+function toast(message){
+ const notice=$('#toast');notice.textContent=message;notice.classList.add('show');clearTimeout(toastTimer);
+ toastTimer=setTimeout(()=>notice.classList.remove('show'),3000);
+}
+try{
+ const saved=localStorage.getItem(KEY);if(saved)project=validateProject(JSON.parse(saved));
+}catch{toast('ほぞんしたさくひんがひらけませんでした。ファイルからよみこめます。');}
+const start=()=>project.objects.find(o=>o.type==='player');
+let camera={x:start().x,y:start().y},history=createEditHistory(project);
+$('#title').value=project.title;
+
+function syncHistory(){
+ $('#undo').disabled=mode!=='edit'||!history.canUndo;
+ $('#redo').disabled=mode!=='edit'||!history.canRedo;
+}
+function save({record=true}={}){
+ if(record)history.record(project);
+ syncHistory();clearTimeout(saveTimer);
+ $('#save-state').textContent='ほぞん中…';
+ saveTimer=setTimeout(()=>{
+  try{localStorage.setItem(KEY,JSON.stringify(project));$('#save-state').textContent='このブラウザにほぞんしました';}
+  catch{$('#save-state').textContent='ファイルにほぞんしてください';}
+ },300);
+}
+function renderSelection(){
+ const part=project.objects.find(o=>o.id===selected),button=$('#part-open');
+ button.hidden=!part;$('#selected-hint').hidden=!!part;
+ if(part)button.textContent=({player:'スタートのせってい',enemy:'このてきのせってい',wall:'このかべのせってい',star:'このほしのせってい',goal:'このゴールのせってい'})[part.type];
+}
+function applyProject(next,{reset=false}={}){
+ finishGesture(false);project=next;
+ if(reset){history=createEditHistory(next);selected=null;camera={x:start().x,y:start().y};updateTool('select');}
+ else if(!project.objects.some(o=>o.id===selected))selected=null;
+ $('#title').value=project.title;renderSelection();save({record:false});
+}
+for(const [id,direction] of [['#undo','undo'],['#redo','redo']])$(id).onclick=()=>{
+ if(mode!=='edit')return;
+ finishGesture(false);const next=history[direction]();if(next)applyProject(next);
+};
+
+function field(label,value,min,max,step,onChange){
+ const row=document.createElement('label'),text=document.createElement('span'),input=document.createElement('input');
+ row.className='field';text.textContent=label;row.append(text,input);
+ configureNumericInput(input,{value,min,max,step,onValue:n=>{
+  const next=clamp(Number((Math.round(n/step)*step).toFixed(1)),min,max);
+  onChange(next);return next;
+ },onCommit:()=>save()});
+ return row;
+}
+function choice(label,choices,value,onChange){
+ const group=createChoiceControl();group.setAttribute('aria-label',label);
+ for(const [key,text] of choices)group.add(new Option(text,key));
+ group.value=value;
+ group.onchange=()=>{onChange(group.value);save();};
+ return group;
+}
+function note(text){const p=document.createElement('p');p.textContent=text;return p;}
+const actionLabels={chase:'おいかける',patrol:'さゆうにうごく',shoot:'ちかづいたらたまをうつ',flee:'ちかづいたらにげる'};
+const partNotes={wall:'かべは、プレイヤーやてきのとおりみちをさえぎるよ。',star:'ほしをひろうと、てんすうがふえるよ。',goal:'てきをぜんぶたおすとゴールがひらくよ。'};
+function renderSettings(){
+ const panel=$('#inspector');panel.replaceChildren();
+ const part=project.objects.find(o=>o.id===settingsTarget);
+ if(settingsTarget==='player'){
+  const weapon=project.weapon;$('#settings-title').textContent='プレイヤー・たまのせってい';
+  panel.append(field('たまのはやさ',weapon.speed,100,1000,50,n=>weapon.speed=n),
+   field('たまをうつまでのまちじかん（びょう）',weapon.interval,.1,2,.1,n=>weapon.interval=n),
+   field('たまのつよさ',weapon.damage,1,10,1,n=>weapon.damage=n),
+   note('いちどに出るたまのかず'),choice('いちどに出るたまのかず',[[1,'1こ'],[3,'3こ'],[5,'5こ']],weapon.spread,n=>weapon.spread=Number(n)));
+  return;
+ }
+ if(!part)return;
+ $('#settings-title').textContent=$('#part-open').textContent;
+ if(part.type==='player'){
+  panel.append(note('スタートをドラッグすると、ゲームをはじめるばしょをかえられるよ。'));
+  const playerButton=document.createElement('button');playerButton.textContent='プレイヤー・たまのせってい';
+  playerButton.onclick=()=>{settingsTarget='player';renderSettings();};panel.append(playerButton);return;
+ }
+ if(part.type!=='enemy'){panel.append(note(partNotes[part.type]));return;}
+ panel.append(field('たいりょく',part.hp,1,20,1,n=>part.hp=n),note('ゲームがはじまったら、うえからじゅんにうごきをくりかえすよ。'));
+ const changeProgram=action=>{action();save();renderSettings();};
+ part.program.forEach((entry,i)=>{
+  const block=document.createElement('section'),title=document.createElement('h3'),actions=document.createElement('div');
+  block.className='program-block';actions.className='program-actions';title.textContent=`うごき ${i+1}`;
+  const move=offset=>{[part.program[i],part.program[i+offset]]=[part.program[i+offset],part.program[i]];};
+  for(const [label,disabled,action] of [['↑ うえへ',i===0,()=>move(-1)],['↓ したへ',i===part.program.length-1,()=>move(1)],['けす',false,()=>part.program.splice(i,1)]]){
+   const button=document.createElement('button');button.textContent=label;button.disabled=disabled;
+   button.onclick=()=>changeProgram(action);actions.append(button);
+  }
+  block.append(title,choice(`うごき ${i+1}`,Object.entries(ACTIONS).map(([key])=>[key,actionLabels[key]]),entry.action,v=>entry.action=v),
+   field('はやさ',entry.value,10,300,1,n=>entry.value=n),actions);panel.append(block);
+ });
+ const add=document.createElement('button');add.textContent='＋ うごきをたす';add.disabled=part.program.length>=8;
+ add.onclick=()=>changeProgram(()=>part.program.push({action:'patrol',value:60}));panel.append(add);
+}
+function openSettings(target){settingsTarget=target;renderSettings();settingsDialog.showModal();}
+$('#part-open').onclick=()=>{if(selected)openSettings(selected);};
+$('#player-open').onclick=()=>openSettings('player');
+
+const partTools=[['enemy','🤖','てき'],['wall','▧','かべ'],['star','★','ほし'],['goal','⚑','ゴール']];
+const editTools=[['select','↖','えらぶ'],['erase','⌫','けす']];
+let toolButtons=[];
+function updateTool(next){
+ finishGesture(false);tool=next;preview=null;
+ for(const button of toolButtons){const active=button.dataset.tool===tool;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));}
+ if(mode==='play')return;
+ const label=partTools.find(([key])=>key===tool)?.[2];
+ $('#hint').textContent=tool==='select'?'パーツをタップしてえらぼう。ドラッグでうごかせるよ':tool==='erase'?'けしたいパーツをタップしよう':`${label}をおくばしょをタップしよう`;
+}
+for(const [selector,entries] of [['#tools',partTools],['#edit-tools',editTools]]){
+ for(const [id,icon,label] of entries){
+  const button=document.createElement('button'),symbol=document.createElement('span');button.className='tool';button.dataset.tool=id;
+  symbol.className='tool-icon';symbol.setAttribute('aria-hidden','true');symbol.textContent=icon;
+  button.append(symbol,label);button.onclick=()=>updateTool(id);$(selector).append(button);toolButtons.push(button);
+ }
+}
+updateTool(tool);
+
+function setMode(next){
+ finishGesture(false);preview=null;clearInput();
+ if(next==='edit'&&mode==='play')centerOn(game.player);
+ mode=next;const playing=mode==='play';setGamePageMode(playing);
+ $('#editor-layout').classList.toggle('is-playing',playing);
+ for(const id of ['#edit','#play']){const current=(id==='#play')===playing;$(id).classList.toggle('active',current);$(id).setAttribute('aria-pressed',String(current));}
+ for(const id of ['#tools','#edit-toolbar','#mode-tag','#world-label','#pan-controls'])$(id).hidden=playing;
+ for(const id of ['#hud','#touch-controls','#restart'])$(id).hidden=!playing;
+ $('#result').hidden=true;$('#workshop').inert=playing;$('#title').disabled=playing;
+ if(playing){game=createGame(project);centerOn(game.player);$('#hint').textContent='ひだりでいどう・みぎでたまをうつ　PC: WASD・スペース';}
+ else{updateTool(tool);renderSelection();}
+ syncHistory();canvas.focus({preventScroll:true});
+}
+function centerOn(point){camera.x=clamp(point.x,0,WORLD.w);camera.y=clamp(point.y,0,WORLD.h);}
+$('#play').onclick=()=>setMode('play');$('#edit').onclick=()=>setMode('edit');$('#restart').onclick=()=>setMode('play');
+bindGameAction($('#retry'),()=>setMode('play'));bindGameAction($('#back'),()=>setMode('edit'));
+$('#home').onclick=()=>centerOn(mode==='play'?game.player:start());
+$('#title').oninput=()=>{project.title=$('#title').value;save({record:false});};
+$('#title').onchange=()=>save();
+for(const button of document.querySelectorAll('[data-pan]'))button.onclick=()=>{
+ const [x,y]=button.dataset.pan.split(',').map(Number);centerOn({x:camera.x+x*240,y:camera.y+y*240});preview=null;
+};
+
+function view(){
+ const box=canvas.getBoundingClientRect(),scale=Math.max(.4,Math.min(box.width/940,box.height/650));
+ return {w:box.width,h:box.height,scale};
+}
+function point(event){
+ const rect=canvas.getBoundingClientRect(),{w,h,scale}=view();
+ return {x:(event.clientX-rect.left-w/2)/scale+camera.x,y:(event.clientY-rect.top-h/2)/scale+camera.y};
+}
+function hit(point){
+ for(let index=project.objects.length-1;index>=0;index--){
+  const part=project.objects[index],radius=part.type==='wall'?34:26;
+  if(Math.abs(part.x-point.x)<radius&&Math.abs(part.y-point.y)<radius)return part;
+ }
+}
+function insideStage(event){
+ const rect=canvas.getBoundingClientRect();return event.clientX>=rect.left&&event.clientX<=rect.right&&event.clientY>=rect.top&&event.clientY<=rect.bottom;
+}
+function placement(point){
+ const {x,y}=point;if(x<24||y<24||x>WORLD.w-24||y>WORLD.h-24)return null;
+ const snapped={type:tool,x:clamp(Math.round(x/32)*32,32,WORLD.w-32),y:clamp(Math.round(y/32)*32,32,WORLD.h-32)};
+ const blocked=tool==='wall'&&project.objects.some(o=>Math.abs(o.x-snapped.x)<55&&Math.abs(o.y-snapped.y)<55);
+ return {...snapped,reason:project.objects.length>=300?'パーツは300こまでおけます':blocked?'すこしはなれたばしょにおこう':''};
+}
+canvas.onpointerdown=event=>{
+ if(mode!=='edit'||gesture)return;
+ event.preventDefault();canvas.setPointerCapture(event.pointerId);
+ const location=point(event),part=hit(location);
+ gesture={pointer:event.pointerId,tool,part,startX:event.clientX,startY:event.clientY,camera:{...camera},moved:false};
+ if(tool==='select'&&part){gesture.from={x:part.x,y:part.y};gesture.grab=location;selected=part.id;renderSelection();}
+ if(tool!=='select'&&tool!=='erase')preview=placement(location);
+};
+canvas.onpointermove=event=>{
+ if(mode!=='edit')return;
+ if(!gesture){if(event.pointerType!=='touch'&&tool!=='select'&&tool!=='erase')preview=placement(point(event));return;}
+ if(event.pointerId!==gesture.pointer)return;
+ const dx=event.clientX-gesture.startX,dy=event.clientY-gesture.startY;
+ if(Math.hypot(dx,dy)>5)gesture.moved=true;
+ if(gesture.tool==='select'&&gesture.moved){
+  if(gesture.part){
+   const {from,grab,part}=gesture,now=point(event);
+   part.x=clamp(Math.round((from.x+now.x-grab.x)/16)*16,32,WORLD.w-32);
+   part.y=clamp(Math.round((from.y+now.y-grab.y)/16)*16,32,WORLD.h-32);
+  }else{const {scale}=view();centerOn({x:gesture.camera.x-dx/scale,y:gesture.camera.y-dy/scale});}
+ }else if(gesture.tool!=='select'&&gesture.tool!=='erase')preview=insideStage(event)?placement(point(event)):null;
+};
+function finishGesture(commit,event){
+ if(!gesture||event&&gesture.pointer!==event.pointerId)return;
+ const action=gesture;gesture=null;
+ const candidate=commit&&insideStage(event)&&action.tool!=='select'&&action.tool!=='erase'?placement(point(event)):null;
+ preview=null;
+ if(action.tool==='select'){
+  if(action.from){if(commit){if(action.moved)save();}else Object.assign(action.part,action.from);}
+  else if(commit&&!action.moved){selected=null;renderSelection();}
+  return;
+ }
+ if(!commit||!insideStage(event))return;
+ if(action.tool==='erase'){
+  const part=action.part;if(action.moved||!part||part.type==='player')return;
+  project.objects=project.objects.filter(o=>o.id!==part.id);if(selected===part.id)selected=null;
+ }else{
+  if(!candidate)return;
+  if(candidate.reason){toast(candidate.reason);return;}
+  const added=makeObject(candidate.type,candidate.x,candidate.y);project.objects.push(added);selected=added.id;
+ }
+ save();renderSelection();
+}
+canvas.onpointerup=event=>finishGesture(true,event);
+canvas.onpointercancel=canvas.onlostpointercapture=event=>finishGesture(false,event);
+canvas.onpointerleave=()=>{if(!gesture)preview=null;};
+
+window.addEventListener('keydown',event=>{
+ if(event.target.matches('input,textarea,button')||document.querySelector('dialog[open]'))return;
+ if(mode==='play'&&['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(event.key))event.preventDefault();
+ keys.add(event.key.toLowerCase());
+});
+window.addEventListener('keyup',event=>keys.delete(event.key.toLowerCase()));
+const joy=$('#joystick'),resetHeld=bindHeldButton($('#fire'),()=>{firing=true;},()=>{firing=false;});
+const resetTouch=installGameTouchGuard($('.canvas-wrap'),()=>mode==='play');
+function clearInput(){keys.clear();resetHeld();resetTouch();stickPointer=null;stick={x:0,y:0};joy.firstElementChild.style.transform='';}
+window.addEventListener('blur',()=>{clearInput();finishGesture(false);});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){clearInput();finishGesture(false);}});
+function updateStick(event){
+ const rect=joy.getBoundingClientRect(),radius=rect.width*.34;
+ let x=(event.clientX-rect.left-rect.width/2)/radius,y=(event.clientY-rect.top-rect.height/2)/radius;
+ const distance=Math.max(1,Math.hypot(x,y));x/=distance;y/=distance;
+ stick={x,y};joy.firstElementChild.style.transform=`translate(${x*25}px,${y*25}px)`;
+}
+joy.onpointerdown=event=>{if(stickPointer!==null)return;event.preventDefault();stickPointer=event.pointerId;joy.setPointerCapture(event.pointerId);updateStick(event);};
+joy.onpointermove=event=>{if(event.pointerId===stickPointer)updateStick(event);};
+joy.onpointerup=joy.onpointercancel=joy.onlostpointercapture=event=>{if(event.pointerId===stickPointer){stickPointer=null;stick={x:0,y:0};joy.firstElementChild.style.transform='';}};
+
+for(const [button,dialog] of [['#help','#help-dialog'],['#files','#files-dialog']])$(button).onclick=()=>{
+ if(mode==='play')setMode('edit');$(dialog).showModal();
+};
+for(const button of document.querySelectorAll('dialog .close'))button.onclick=()=>button.closest('dialog').close();
+$('#map-open').onclick=()=>{finishGesture(false);preview=null;clearInput();$('#map-hint').hidden=mode==='play';mapDialog.showModal();drawOverview();};
+overview.onclick=event=>{
+ if(mode!=='edit')return;
+ const bounds=overview.getBoundingClientRect();centerOn({x:(event.clientX-bounds.left)*WORLD.w/bounds.width,y:(event.clientY-bounds.top)*WORLD.h/bounds.height});
+ mapDialog.close();canvas.focus({preventScroll:true});
+};
+$('#export').onclick=()=>{
+ const blob=new Blob([JSON.stringify(project,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),link=document.createElement('a');
+ link.href=url;link.download=(project.title.replace(/[<>:"/\\|?*]/g,'_')||'わたしのゲーム')+'.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),10000);
+ toast('さくひんファイルをほぞんしました');
+};
+$('#import').onchange=async event=>{
+ const file=event.target.files[0];if(!file)return;
+ try{
+  if(file.size>500000)throw Error('ファイルが大きすぎます');
+  const next=validateProject(JSON.parse(await file.text()));
+  if(!confirm('いまのさくひんを、よみこんださくひんにいれかえますか？'))return;
+  applyProject(next,{reset:true});$('#files-dialog').close();setMode('edit');toast('さくひんをよみこみました');
+ }catch(error){toast(error instanceof SyntaxError?'さくひんファイルをよみこめませんでした':error.message);}
+ finally{event.target.value='';}
+};
+$('#new').onclick=()=>{
+ if(!confirm('いまのさくひんを、からのステージにいれかえますか？'))return;
+ applyProject(freshProject(),{reset:true});setMode('edit');
+};
+
 function rounded(x,y,w,h,r,fill){ctx.fillStyle=fill;ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fill();}
 function star(x,y,r,color){ctx.fillStyle=color;ctx.beginPath();for(let i=0;i<10;i++){const a=i*Math.PI/5-Math.PI/2,rr=i%2?r*.45:r;const px=x+Math.cos(a)*rr,py=y+Math.sin(a)*rr;i?ctx.lineTo(px,py):ctx.moveTo(px,py);}ctx.closePath();ctx.fill();}
 function drawObject(o,selectedFlag=false){const {x,y}=o;ctx.save();if(selectedFlag){ctx.strokeStyle='#b7a1ff';ctx.lineWidth=2;ctx.setLineDash([5,4]);ctx.strokeRect(x-38,y-38,76,76);ctx.setLineDash([]);}if(o.type==='wall'){rounded(x-32,y-32,64,64,8,'#405773');rounded(x-27,y-27,54,49,6,'#526b87');ctx.strokeStyle='#6c849e';ctx.strokeRect(x-20,y-20,40,36);}if(o.type==='star'&&!o.collected){ctx.shadowColor='#f9d47a';ctx.shadowBlur=18;star(x,y,16,'#ffda80');}if(o.type==='goal'){const locked=mode==='play'&&game.objects.some(e=>e.type==='enemy');ctx.strokeStyle=locked?'#6c6495':'#b6a0fc';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(x,y+18,30,13,0,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(x-8,y+12);ctx.lineTo(x-8,y-25);ctx.lineTo(x+19,y-15);ctx.lineTo(x-8,y-5);ctx.stroke();if(locked){ctx.font='10px system-ui';ctx.fillStyle='#a5a3b5';ctx.textAlign='center';ctx.fillText('敵をたおすと開く',x,y+45);}}
 if(o.type==='enemy'){ctx.shadowColor='#ff8d9b66';ctx.shadowBlur=15;rounded(x-23,y-22,46,44,14,'#dd7189');ctx.shadowBlur=0;rounded(x-17,y-17,34,29,9,'#ff9ead');rounded(x-14,y-9,28,13,5,'#493750');ctx.fillStyle='#fff1c8';ctx.fillRect(x-9,y-5,5,5);ctx.fillRect(x+4,y-5,5,5);ctx.strokeStyle='#fc9aaa';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x,y-22);ctx.lineTo(x,y-30);ctx.stroke();ctx.beginPath();ctx.arc(x,y-31,3,0,Math.PI*2);ctx.fill();if(mode==='play'){rounded(x-20,y+29,40,4,2,'#51384e');rounded(x-20,y+29,40*clamp(o.hp/(project.objects.find(p=>p.id===o.id)?.hp||3),0,1),4,2,'#f8a5b5');}}
 if(o.type==='player'){if(mode==='play'&&o.invincible>0&&Math.floor(o.invincible*12)%2)ctx.globalAlpha=.4;ctx.translate(x,y);ctx.rotate((o.angle||0)+Math.PI/2);ctx.shadowColor='#69efdc80';ctx.shadowBlur=22;ctx.fillStyle='#80e6d7';ctx.beginPath();ctx.moveTo(0,-28);ctx.lineTo(21,20);ctx.lineTo(0,12);ctx.lineTo(-21,20);ctx.closePath();ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#e7fff7';ctx.beginPath();ctx.moveTo(0,-17);ctx.lineTo(7,4);ctx.lineTo(-7,4);ctx.closePath();ctx.fill();ctx.fillStyle='#d6b6ff';ctx.beginPath();ctx.moveTo(-6,19);ctx.lineTo(0,31+Math.sin(performance.now()/80)*4);ctx.lineTo(6,19);ctx.fill();}ctx.restore();}
-function draw(){const v=view(),dpr=Math.min(devicePixelRatio||1,2),w=Math.round(v.w*dpr),h=Math.round(v.h*dpr);if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle='#141f36';ctx.fillRect(0,0,v.w,v.h);ctx.translate(v.w/2,v.h/2);ctx.scale(v.scale,v.scale);ctx.translate(-camera.x,-camera.y);ctx.fillStyle='#1b2941';ctx.fillRect(0,0,WORLD.w,WORLD.h);const left=Math.max(0,camera.x-v.w/v.scale/2),top=Math.max(0,camera.y-v.h/v.scale/2),right=Math.min(WORLD.w,camera.x+v.w/v.scale/2),bottom=Math.min(WORLD.h,camera.y+v.h/v.scale/2);ctx.fillStyle='#35455e';for(let x=Math.floor(left/40)*40;x<right;x+=40)for(let y=Math.floor(top/40)*40;y<bottom;y+=40){ctx.beginPath();ctx.arc(x,y,1,0,Math.PI*2);ctx.fill();}ctx.strokeStyle='#51617d';ctx.lineWidth=3;ctx.strokeRect(0,0,WORLD.w,WORLD.h);ctx.font='11px system-ui';ctx.fillStyle='#6e809c';ctx.fillText('じぶんの世界を、もっとひろげよう。',Math.max(40,left+20),Math.max(60,top+100));const objects=mode==='play'?game.objects:project.objects;for(const o of objects)if(o.type!=='player')drawObject(o,mode==='edit'&&o.id===selected);drawObject(mode==='play'?game.player:objects.find(o=>o.type==='player'),mode==='edit'&&selected===objects.find(o=>o.type==='player')?.id);if(mode==='play'){for(const b of game.bullets){ctx.fillStyle=b.enemy?'#ff9ba9':'#b4ffeb';ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=10;ctx.beginPath();ctx.arc(b.x,b.y,b.enemy?5:4,0,Math.PI*2);ctx.fill();}ctx.shadowBlur=0;}ctx.setTransform(dpr,0,0,dpr,0,0);const mw=110,mh=mw*WORLD.h/WORLD.w,mx=v.w-mw-14,my=mode==='play'?65:15;rounded(mx-5,my-5,mw+10,mh+10,6,'#111d30cc');ctx.fillStyle='#273750';ctx.fillRect(mx,my,mw,mh);for(const o of objects){ctx.fillStyle=TYPES[o.type].color;ctx.fillRect(mx+o.x/WORLD.w*mw-1,my+o.y/WORLD.h*mh-1,3,3);}ctx.strokeStyle='#bca8ff88';ctx.lineWidth=1;ctx.strokeRect(mx+left/WORLD.w*mw,my+top/WORLD.h*mh,(right-left)/WORLD.w*mw,(bottom-top)/WORLD.h*mh);}
-function frame(t){const dt=last?Math.min((t-last)/1000,.04):0;last=t;if(mode==='play'){const input={x:stick.x+(keys.has('arrowright')||keys.has('d')?1:0)-(keys.has('arrowleft')||keys.has('a')?1:0),y:stick.y+(keys.has('arrowdown')||keys.has('s')?1:0)-(keys.has('arrowup')||keys.has('w')?1:0),fire:firing||keys.has(' ')};stepGame(game,project,input,dt);camera.x+=(game.player.x-camera.x)*Math.min(1,dt*10);camera.y+=(game.player.y-camera.y)*Math.min(1,dt*10);$('#health').textContent='♥'.repeat(Math.max(0,game.player.hp))+'♡'.repeat(5-Math.max(0,game.player.hp));$('#score').textContent=`★ ${game.score}　🤖 ${game.objects.filter(o=>o.type==='enemy').length}`;if(game.state!=='playing'&&$('#result').hidden){$('#result').hidden=false;$('#result-title').textContent=game.state==='won'?'ステージクリア！':'もう一度、チャレンジ！';$('#result-text').textContent=game.state==='won'?`${game.score}点！ 次はどんなステージをつくる？`:'弾を増やしたり、敵の速さを変えてみよう。';}}draw();requestAnimationFrame(frame);}inspector();requestAnimationFrame(frame);
+function drawOverview(){
+ const bounds=overview.getBoundingClientRect(),ratio=Math.min(devicePixelRatio||1,2);
+ const w=Math.round(bounds.width*ratio),h=Math.round(bounds.height*ratio);
+ if(overview.width!==w||overview.height!==h){overview.width=w;overview.height=h;}
+ const map=mapContext;
+ map.fillStyle='#1b2941';map.fillRect(0,0,w,h);
+ map.strokeStyle='#35455e';map.lineWidth=ratio;
+ for(let x=0;x<WORLD.w;x+=240){map.beginPath();map.moveTo(x/WORLD.w*w,0);map.lineTo(x/WORLD.w*w,h);map.stroke();}
+ for(let y=0;y<WORLD.h;y+=160){map.beginPath();map.moveTo(0,y/WORLD.h*h);map.lineTo(w,y/WORLD.h*h);map.stroke();}
+ const objects=mode==='play'?[...game.objects.filter(o=>o.type!=='player'&&!o.collected),game.player]:project.objects;
+ for(const part of objects){
+  const size=(part.type==='player'?8:5)*ratio;map.fillStyle=TYPES[part.type].color;
+  map.fillRect(part.x/WORLD.w*w-size/2,part.y/WORLD.h*h-size/2,size,size);
+ }
+ const {w:stageWidth,h:stageHeight,scale}=view();
+ const width=stageWidth/scale/WORLD.w*w,height=stageHeight/scale/WORLD.h*h;
+ map.strokeStyle='#cabbff';map.strokeRect(camera.x/WORLD.w*w-width/2,camera.y/WORLD.h*h-height/2,width,height);
+}
+function draw(){
+ const v=view(),dpr=Math.min(devicePixelRatio||1,2),w=Math.round(v.w*dpr),h=Math.round(v.h*dpr);
+ if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}
+ ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle='#141f36';ctx.fillRect(0,0,v.w,v.h);
+ ctx.translate(v.w/2,v.h/2);ctx.scale(v.scale,v.scale);ctx.translate(-camera.x,-camera.y);
+ ctx.fillStyle='#1b2941';ctx.fillRect(0,0,WORLD.w,WORLD.h);
+ const left=Math.max(0,camera.x-v.w/v.scale/2),top=Math.max(0,camera.y-v.h/v.scale/2);
+ const right=Math.min(WORLD.w,camera.x+v.w/v.scale/2),bottom=Math.min(WORLD.h,camera.y+v.h/v.scale/2);
+ const cell=32;
+ ctx.fillStyle='#40526e';
+ for(let x=Math.ceil(left/cell)*cell;x<right;x+=cell)for(let y=Math.ceil(top/cell)*cell;y<bottom;y+=cell){ctx.beginPath();ctx.arc(x,y,1,0,Math.PI*2);ctx.fill();}
+ ctx.strokeStyle='#51617d';ctx.lineWidth=3;ctx.strokeRect(0,0,WORLD.w,WORLD.h);
+ const objects=mode==='play'?game.objects:project.objects;
+ for(const part of objects)if(part.type!=='player')drawObject(part,mode==='edit'&&part.id===selected);
+ const player=mode==='play'?game.player:start();drawObject(player,mode==='edit'&&selected===player.id);
+ if(mode==='edit'&&preview){
+  ctx.save();ctx.globalAlpha=.55;drawObject(preview);ctx.globalAlpha=1;
+  ctx.strokeStyle=preview.reason?'#ff9d9e':'#90f0d2';ctx.lineWidth=3;ctx.strokeRect(preview.x-32,preview.y-32,64,64);ctx.restore();
+ }
+ if(mode==='play'){
+  for(const bullet of game.bullets){
+   ctx.fillStyle=bullet.enemy?'#ff9ba9':'#b4ffeb';ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=10;
+   ctx.beginPath();ctx.arc(bullet.x,bullet.y,bullet.enemy?5:4,0,Math.PI*2);ctx.fill();
+  }
+  ctx.shadowBlur=0;
+ }
+}
+function frame(time){
+ const dt=last?Math.min((time-last)/1000,.04):0;last=time;
+ if(mode==='play'&&!mapDialog.open){
+  stepGame(game,project,{
+   x:stick.x+Number(keys.has('arrowright')||keys.has('d'))-Number(keys.has('arrowleft')||keys.has('a')),
+   y:stick.y+Number(keys.has('arrowdown')||keys.has('s'))-Number(keys.has('arrowup')||keys.has('w')),
+   fire:firing||keys.has(' '),
+  },dt);
+  camera.x+=(game.player.x-camera.x)*Math.min(1,dt*10);camera.y+=(game.player.y-camera.y)*Math.min(1,dt*10);
+  const hp=Math.max(0,game.player.hp);$('#health').textContent='♥'.repeat(hp)+'♡'.repeat(5-hp);
+  $('#score').textContent=`★ ${game.score}　🤖 ${game.objects.filter(o=>o.type==='enemy').length}`;
+  if(game.state!=='playing'&&$('#result').hidden){
+   const won=game.state==='won';$('#result').hidden=false;
+   $('#result-title').textContent=won?'ステージクリア！':'もういちどチャレンジ！';
+   $('#result-text').textContent=won?`${game.score}てん！`:'たまのかずや、てきのはやさをかえてみよう。';
+  }
+ }
+ draw();if(mapDialog.open)drawOverview();requestAnimationFrame(frame);
+}
+renderSelection();syncHistory();requestAnimationFrame(frame);
