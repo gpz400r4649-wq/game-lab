@@ -1,6 +1,6 @@
-import {createChoiceControl} from './choices3d.js?v=20261118a';
-import {setReadingText,kanaText} from './readings3d.js?v=20261118a';
-import {FALL_DEFAULTS,FALL_BLOCK_HEIGHT,fallDamageForDistance} from './fall-damage3d.js?v=20261118a';
+import {createChoiceControl} from './choices3d.js?v=20261118b';
+import {setReadingText,kanaText} from './readings3d.js?v=20261118b';
+import {FALL_DEFAULTS,FALL_BLOCK_HEIGHT,fallDamageForDistance} from './fall-damage3d.js?v=20261118b';
 const PLAYER_DEFAULTS={hp:5,speed:5,jumpHeight:49/38};
 export function createPlayerRulesUI({root,getProject,field,save,friendlyFire}){
  let activePage='player';

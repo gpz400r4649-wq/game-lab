@@ -1,12 +1,12 @@
 import * as T from './vendor/three.module.min.js';
-import {mountLiveRangeEditor} from './range-panel3d.js?v=20261118a';
-import {setStageRangePainter} from './stage-range3d.js?v=20261118a';
-import {worldSize,coordinateLimit} from './world3d.js?v=20261118a';
-import {validPatrolRoute,placeAtRouteStart} from './patrol-route3d.js?v=20261118a';
-import {setReadingText} from './readings3d.js?v=20261118a';
-export function createPatrolOverlay(scene){
- const group=new T.Group(),material=new T.MeshBasicMaterial({color:0x399cda,depthWrite:false}),lineGeometry=new T.CylinderGeometry(.07,.07,1,8),pointGeometry=new T.SphereGeometry(.3,12,8),direction=new T.Vector3(),up=new T.Vector3(0,1,0),lines=[],points=[],labels=[];group.visible=false;scene.add(group);
- for(let i=0;i<16;i++){const line=new T.Mesh(lineGeometry,material),point=new T.Mesh(pointGeometry,new T.MeshBasicMaterial({color:i===0?0x399cda:0xf0a23a,depthWrite:false}));line.layers.set(2);point.layers.set(2);group.add(line,point);lines.push(line);points.push(point);}
+import {mountLiveRangeEditor} from './range-panel3d.js?v=20261118b';
+import {setStageRangePainter} from './stage-range3d.js?v=20261118b';
+import {worldSize,coordinateLimit} from './world3d.js?v=20261118b';
+import {validPatrolRoute,placeAtRouteStart} from './patrol-route3d.js?v=20261118b';
+import {setReadingText} from './readings3d.js?v=20261118b';
+export function createPatrolOverlay(scene,{throughParts=false}={}){
+ const group=new T.Group(),material=new T.MeshBasicMaterial({color:0x399cda,depthWrite:false,depthTest:!throughParts,fog:!throughParts}),lineGeometry=new T.CylinderGeometry(.07,.07,1,8),pointGeometry=new T.SphereGeometry(.3,12,8),direction=new T.Vector3(),up=new T.Vector3(0,1,0),lines=[],points=[],labels=[];group.visible=false;scene.add(group);
+ for(let i=0;i<16;i++){const line=new T.Mesh(lineGeometry,material),point=new T.Mesh(pointGeometry,new T.MeshBasicMaterial({color:i===0?0x399cda:0xf0a23a,depthWrite:false,depthTest:!throughParts,fog:!throughParts}));line.layers.set(2);point.layers.set(2);group.add(line,point);lines.push(line);points.push(point);}
  function label(i){if(labels[i])return labels[i];const canvas=globalThis.document?.createElement('canvas'),ctx=canvas?.getContext?.('2d');if(!ctx)return null;canvas.width=64;canvas.height=64;ctx.fillStyle='#ffffff';ctx.beginPath();ctx.arc(32,32,28,0,Math.PI*2);ctx.fill();ctx.fillStyle='#3b567e';ctx.font='bold 34px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(i+1),32,34);const sprite=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(canvas),depthTest:false,depthWrite:false}));sprite.layers.set(2);sprite.scale.set(.9,.9,1);group.add(sprite);labels[i]=sprite;return sprite;}
  return {show(route,y=0,loop=false){group.visible=!!route?.length;if(!group.visible)return;points.forEach((mesh,i)=>{mesh.visible=!!route[i];if(route[i]){mesh.position.set(route[i].x,y+.15,route[i].z);const number=label(i);if(number){number.visible=true;number.position.set(route[i].x,y+.85,route[i].z);}}else if(labels[i])labels[i].visible=false;});lines.forEach((line,i)=>{const a=route[i],b=route[i+1]||(loop&&i===route.length-1?route[0]:null);line.visible=!!a&&!!b;if(line.visible){direction.set(b.x-a.x,0,b.z-a.z);line.position.set((a.x+b.x)/2,y+.15,(a.z+b.z)/2);line.scale.set(1,direction.length(),1);line.quaternion.setFromUnitVectors(up,direction.normalize());}});}};
 }
