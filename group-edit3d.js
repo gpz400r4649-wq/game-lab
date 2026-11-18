@@ -1,17 +1,28 @@
-import {isFurniture} from './furniture3d.js?v=20261117b';
-import {GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261117b';
-import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261117b';
-import {coordinateLimit} from './world3d.js?v=20261117b';
-import {rangeCell,validMoveRange,validAttackRange} from './enemy-range3d.js?v=20261117b';
-import {validPatrolRoute,validWaypoints} from './patrol-route3d.js?v=20261117b';
-import {validate3D} from './engine3d.js?v=20261117b';
-export function groupSteps(objects){if(objects.length&&objects.every(isFurniture))return {horizontal:2,vertical:.25};return {horizontal:objects.some(o=>GRID_PARTS.has(o.type)||[o.moveRange,o.searchRange,o.attackRange].some(r=>r?.space==='world'))?4:1,vertical:objects.some(o=>['wall','floor','roof','ramp','box','door'].includes(o.type))?3:.5};}
+import {isFurniture} from './furniture3d.js?v=20261118a';
+import {gridStep,editorPlacementReason} from './building3d.js?v=20261118a';
+import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261118a';
+import {coordinateLimit} from './world3d.js?v=20261118a';
+import {rangeCell,validMoveRange,validAttackRange} from './enemy-range3d.js?v=20261118a';
+import {validPatrolRoute,validWaypoints} from './patrol-route3d.js?v=20261118a';
+import {validate3D} from './engine3d.js?v=20261118a';
+export function groupSteps(objects){
+ const steps={x:1,y:0.25,z:1};
+ for(const part of objects){
+  // Each axis uses a step shared by all selected parts so their offsets stay intact.
+  for(const axis of ['x','y','z'])steps[axis]=Math.max(steps[axis],gridStep(part,axis));
+  if([part.moveRange,part.searchRange,part.attackRange].some(range=>range?.space==='world')){
+   steps.x=Math.max(steps.x,4);
+   steps.z=Math.max(steps.z,4);
+  }
+ }
+ return steps;
+}
 export function groupCandidate(project,ids,delta,{copy=false}={}){
  const chosen=new Set(ids),sources=project.objects.filter(o=>chosen.has(o.id));
  if(!sources.length)return {pieces:[],reason:'パーツをえらぼう'};
  if(!['x','y','z'].every(key=>Number.isFinite(delta[key])))return {pieces:[],reason:'動かす場所をえらぼう'};
  if(copy&&project.objects.length+sources.length>MAX_PARTS)return {pieces:[],reason:`コピーすると${MAX_PARTS}個をこえます`};
- const steps=groupSteps(sources),dx=Math.round(delta.x/steps.horizontal)*steps.horizontal,dz=Math.round(delta.z/steps.horizontal)*steps.horizontal,dy=Math.round(delta.y/steps.vertical)*steps.vertical,limit=coordinateLimit(project);
+ const steps=groupSteps(sources),dx=Math.round(delta.x/steps.x)*steps.x,dz=Math.round(delta.z/steps.z)*steps.z,dy=Math.round(delta.y/steps.y)*steps.y,limit=coordinateLimit(project);
  const pieces=sources.map(source=>{
   const next=structuredClone(source);next.x+=dx;next.y+=dy;next.z+=dz;
   for(const key of ['moveRange','searchRange','attackRange'])if(next[key]?.space==='world')next[key].cells=next[key].cells.map(([x,z])=>[x+rangeCell(next.x)-rangeCell(source.x),z+rangeCell(next.z)-rangeCell(source.z)]);
@@ -45,9 +56,15 @@ export function commitGroup(project,ids,delta,{copy=false}={}){
 }
 export function copyGroupNearby(project,ids){
  const chosen=new Set(ids),pieces=project.objects.filter(o=>chosen.has(o.id));if(!pieces.length)throw Error('パーツをえらぼう');
- const steps=groupSteps(pieces),extent=axis=>Math.ceil((Math.max(...pieces.map(o=>o[axis]+o[axis==='x'?'w':'d']/2))-Math.min(...pieces.map(o=>o[axis]-o[axis==='x'?'w':'d']/2)))/steps.horizontal)*steps.horizontal+(pieces.every(isFurniture)?0:steps.horizontal);
+ const steps=groupSteps(pieces),gapless=pieces.every(isFurniture);
+ const extent=axis=>{
+  const size=axis==='x'?'w':'d';
+  const width=Math.max(...pieces.map(o=>o[axis]+o[size]/2))-Math.min(...pieces.map(o=>o[axis]-o[size]/2));
+  return (Math.ceil(width/steps[axis])+(gapless?0:1))*steps[axis];
+ };
+ const width=extent('x'),depth=extent('z');
  let last='コピーを置く場所が空いていません';
- for(const distance of [1,2,3])for(const [x,z]of [[extent('x')*distance,0],[0,extent('z')*distance],[-extent('x')*distance,0],[0,-extent('z')*distance]]){
+ for(const distance of [1,2,3])for(const [x,z]of [[width*distance,0],[0,depth*distance],[-width*distance,0],[0,-depth*distance]]){
   const delta={x,y:0,z},result=groupCandidate(project,ids,delta,{copy:true});if(result.reason){last=result.reason;continue;}return commitGroup(project,ids,delta,{copy:true});
  }
  throw Error(last);

@@ -1,13 +1,13 @@
-import {isFurniture,furnitureSolids} from './furniture3d.js?v=20261117b';
-import {fenceSolids,isDiagonal,diagonalDistance} from './architecture3d.js?v=20261117b';
-import {doorSolids} from './doors3d.js?v=20261117b';
-import {dropEnemyLoot} from './enemy-loot3d.js?v=20261117b';
-import {MAX_BUILD_Y} from './limits3d.js?v=20261117b';
-import {nearbyObjects} from './spatial3d.js?v=20261117b';
-import {worldHalf} from './world3d.js?v=20261117b';
-import {fireDestructionEvents} from './events3d.js?v=20261117b';
-import {topAt,bottomAt} from './building3d.js?v=20261117b';
-import {LIMITS,safeShot,DESTRUCTIBLE_TYPES,impactEffects} from './weapons3d.js?v=20261117b';
+import {isFurniture,furnitureSolids} from './furniture3d.js?v=20261118a';
+import {fenceSolids,isDiagonal,diagonalDistance} from './architecture3d.js?v=20261118a';
+import {doorSolids} from './doors3d.js?v=20261118a';
+import {dropEnemyLoot} from './enemy-loot3d.js?v=20261118a';
+import {MAX_BUILD_Y} from './limits3d.js?v=20261118a';
+import {nearbyObjects} from './spatial3d.js?v=20261118a';
+import {worldHalf} from './world3d.js?v=20261118a';
+import {fireDestructionEvents} from './events3d.js?v=20261118a';
+import {topAt,bottomAt} from './building3d.js?v=20261118a';
+import {LIMITS,safeShot,DESTRUCTIBLE_TYPES,impactEffects} from './weapons3d.js?v=20261118a';
 const solidType=o=>DESTRUCTIBLE_TYPES.has(o.type)||o.type==='door';
 const robot=o=>o.type==='enemy'||o.type==='ally';
 function canHitRobot(g,b,o){

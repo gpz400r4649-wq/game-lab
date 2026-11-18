@@ -1,6 +1,6 @@
-import {halfFloorMasks,fencePresetKey} from './architecture3d.js?v=20261117b';
+import {halfFloorMasks,fencePresetKey} from './architecture3d.js?v=20261118a';
 import * as T from './vendor/three.module.min.js';
-import {MAX_PARTS} from './limits3d.js?v=20261117b';
+import {MAX_PARTS} from './limits3d.js?v=20261118a';
 export const BATCH_TYPES=new Set(['wall','floor','roof','ramp','box','platform']);
 export const isBatchedStructure=o=>BATCH_TYPES.has(o.type);
 const batchKey=o=>o.furnitureKind?'furniture:'+o.furnitureKind:o.roofStyle?'roof:'+o.roofStyle:o.wallGable?'wall:'+o.wallGable:o.rampStyle?'ramp:'+o.rampStyle:o.wallStyle?'wall:'+fencePresetKey(o):o.type;

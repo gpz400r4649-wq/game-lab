@@ -4,6 +4,9 @@ import {fresh3D,part,validate3D} from '../engine3d.js';
 import {groupCandidate,groupSteps,commitGroup,copyGroupNearby} from '../group-edit3d.js';
 import {initializeCharacterDefaults,synchronizeCharacterDefaults} from '../character-defaults3d.js';
 import {createEditHistory} from '../history3d.js';
+import {configureDoor} from '../doors3d.js';
+import {configureBuildingPart} from '../architecture3d.js';
+import {dragCandidate} from '../editor-drag3d.js';
 const project=()=>{const p=fresh3D();p.worldSize=240;p.spawn.z=80;return p;};
 test('家をまとめて動かしても、パーツ同士の位置・向き・高さを保ち、グリッドへそろう',()=>{
  const p=project();p.objects=[part('floor',0,0),part('wall',0,2),part('roof',0,0)];p.objects[2].y=3;const before=structuredClone(p);
@@ -32,4 +35,42 @@ test('コピー先が近くで見つかり、8000個までの制限と空の選�
 });
 test('一度の移動・コピー・削除を、それぞれ一度のもどす・すすむで扱える',()=>{
  const p=project();p.objects=[part('floor',0,0),part('wall',0,2)];const initial=JSON.stringify(p),history=createEditHistory(p);commitGroup(p,p.objects.map(o=>o.id),{x:8,y:0,z:0});history.record(p);const moved=JSON.stringify(p);copyGroupNearby(p,p.objects.map(o=>o.id));history.record(p);const copied=JSON.stringify(p);p.objects=p.objects.slice(0,2);history.record(p);assert.equal(JSON.stringify(history.undo()),copied);assert.equal(JSON.stringify(history.undo()),moved);assert.equal(JSON.stringify(history.undo()),initial);assert.equal(JSON.stringify(history.redo()),moved);
+});
+
+for(const axis of ['x','z'])test(`壁と窓をまとめて半マス動かし、空いた場所にちょうど入る (${axis})`,()=>{
+ const p=project(),wall=part('wall',0,2),window=configureDoor(part('door',4,2),'windowGlass'),obstacle=part('wall',10,2);
+ if(axis==='z')for(const piece of [wall,window,obstacle]){
+  [piece.x,piece.z]=[piece.z,piece.x];
+  [piece.w,piece.d]=[piece.d,piece.w];
+  piece.rotation=90;
+ }
+ p.objects=[wall,window,obstacle];
+ const ids=[wall.id,window.id],delta={x:0,y:0,z:0};delta[axis]=2;
+ for(const piece of [wall,window]){
+  const target={x:piece.x+delta.x,z:piece.z+delta.z};
+  const single=dragCandidate(piece,piece,target,[obstacle],p.spawn,p);
+  assert.equal(single.reason,'');
+  assert.equal(single.piece[axis],target[axis]);
+ }
+ const preview=groupCandidate(p,ids,delta);
+ assert.equal(preview.reason,'');
+ assert.deepEqual(preview.delta,delta);
+ assert.notEqual(groupCandidate(p,ids,{...delta,[axis]:4}).reason,'');
+ commitGroup(p,ids,preview.delta);
+ assert.deepEqual(p.objects.map(piece=>piece[axis]),[2,6,10]);
+});
+
+test('ハーフ床と壁の組み合わせは、共通の刻みを方向ごとに使う',()=>{
+ const p=project(),floor=configureBuildingPart(part('floor'),'floorHalf'),wall=part('wall',0,2);
+ assert.equal(floor.floorHalf,true);
+ p.objects=[floor,wall];
+ const ids=p.objects.map(piece=>piece.id);
+ assert.deepEqual(groupCandidate(p,ids,{x:2,y:0,z:3}).delta,{x:2,y:0,z:4});
+});
+
+test('高さ半分の壁だけなら半段ずつまとめて動かせる',()=>{
+ const p=project();
+ p.objects=[0,4].map(x=>configureBuildingPart(part('wall',x,2),'halfHorizontal'));
+ commitGroup(p,p.objects.map(piece=>piece.id),{x:0,y:1.5,z:0});
+ assert.deepEqual(p.objects.map(piece=>piece.y),[1.5,1.5]);
 });
