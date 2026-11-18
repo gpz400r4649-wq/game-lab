@@ -1,4 +1,4 @@
-import {WORLD,TYPES,ACTIONS,UPGRADES,SPAWN_ENEMIES,GOAL_RULES,MAX_UPGRADES,canAddSpawner,goalReady,clamp,makeObject,freshProject,validateProject,createGame,stepGame} from './engine.js?v=20261118-2d-rules';
+import {WORLD,TYPES,ACTIONS,UPGRADES,SPAWN_ENEMIES,GOAL_RULES,MAX_UPGRADES,canAddSpawner,goalReady,enemySettings,enemyUsesDefaults,clamp,makeObject,freshProject,validateProject,createGame,stepGame} from './engine.js?v=20261118-2d-enemies';
 import {createEditHistory} from './history3d.js?v=20261118h';
 import {createChoiceControl} from './choices3d.js?v=20261118h';
 import {configureNumericInput} from './numeric3d.js?v=20261118h';
@@ -106,7 +106,11 @@ function renderSpawner(panel,part){
   field('なんかいでる？',rule.waves,1,5,1,n=>{rule.waves=n;interval.hidden=n===1;}));
  const interval=field('つぎまで何びょうまつ？',rule.interval,2,60,1,n=>rule.interval=n);interval.hidden=rule.waves===1;
  panel.append(interval,labeledChoice('どのてきがでる？',options,rule.enemy,value=>rule.enemy=value),
-  checkbox('このてきがたおれたら、ほしをおとす',rule.dropStar,value=>rule.dropStar=value));
+  labeledChoice('たおれたら、ほしをおとす？',
+   [['shared','全体のせってい'],['yes','おとす'],['no','おとさない']],
+   rule.dropStar===undefined?'shared':rule.dropStar?'yes':'no',value=>{
+    if(value==='shared')delete rule.dropStar;else rule.dropStar=value==='yes';
+   }));
  if(enemies.length)panel.append(note('「おいたてき」をえらぶと、ステージにおいたてきのうごきとたいりょくをつかうよ。'));
 }
 function renderGoal(panel,part){
@@ -120,6 +124,7 @@ function renderGoal(panel,part){
 function renderSettings(){
  const panel=$('#inspector');panel.replaceChildren();
  if(settingsTarget==='upgrades'){renderUpgrades(panel);return;}
+ if(settingsTarget==='enemies'){renderEnemySettings(panel);return;}
  const part=project.objects.find(o=>o.id===settingsTarget);
  if(settingsTarget==='player'){
   const weapon=project.weapon;$('#settings-title').textContent='プレイヤー・たまのせってい';
@@ -139,26 +144,54 @@ function renderSettings(){
  if(part.type==='spawner'){renderSpawner(panel,part);return;}
  if(part.type==='goal'){renderGoal(panel,part);return;}
  if(part.type!=='enemy'){panel.append(note(partNotes[part.type]));return;}
- panel.append(field('たいりょく',part.hp,1,20,1,n=>part.hp=n),checkbox('たおれたら、ほしをおとす',part.dropStar===true,value=>part.dropStar=value),note('ゲームがはじまったら、うえからじゅんにうごきをくりかえすよ。'));
- const changeProgram=action=>{action();save();renderSettings();};
- part.program.forEach((entry,i)=>{
+ renderEnemySettings(panel,part);
+}
+function renderEnemySettings(panel,part){
+ const settings=enemySettings(project,part);
+ if(!part){
+  $('#settings-title').textContent='てき全体のせってい';
+  panel.append(note('全体のせっていをつかうてきに、ここでえらんだうごきやたいりょくをつかうよ。'));
+ }else{
+  const shared=enemyUsesDefaults(part);
+  panel.append(checkbox('このてきだけ、せっていをかえる',!shared,individual=>{
+   part.useEnemyDefaults=!individual;
+   if(individual)Object.assign(part,settings);
+   renderSettings();
+  }));
+  if(shared){
+   panel.append(note(`全体のせっていをつかっているよ。たいりょく ${settings.hp}、ほしは${settings.dropStar?'おとす':'おとさない'}。`));
+   const button=document.createElement('button');button.textContent='てき全体のせっていをみる';
+   button.onclick=()=>{settingsTarget='enemies';renderSettings();};panel.append(button);
+   return;
+  }
+ }
+ function writeSettings(){
+  if(part)Object.assign(part,settings,{useEnemyDefaults:false});
+  else project.enemyDefaults=settings;
+ }
+ panel.append(field('たいりょく',settings.hp,1,20,1,n=>{settings.hp=n;writeSettings();}),
+  checkbox('たおれたら、ほしをおとす',settings.dropStar,value=>{settings.dropStar=value;writeSettings();}),
+  note('ゲームがはじまったら、うえからじゅんにうごきをくりかえすよ。'));
+ const changeProgram=action=>{action();writeSettings();save();renderSettings();};
+ settings.program.forEach((entry,i)=>{
   const block=document.createElement('section'),title=document.createElement('h3'),actions=document.createElement('div');
   block.className='program-block';actions.className='program-actions';title.textContent=`うごき ${i+1}`;
-  const move=offset=>{[part.program[i],part.program[i+offset]]=[part.program[i+offset],part.program[i]];};
-  for(const [label,disabled,action] of [['↑ うえへ',i===0,()=>move(-1)],['↓ したへ',i===part.program.length-1,()=>move(1)],['けす',false,()=>part.program.splice(i,1)]]){
+  const move=offset=>{[settings.program[i],settings.program[i+offset]]=[settings.program[i+offset],settings.program[i]];};
+  for(const [label,disabled,action] of [['↑ うえへ',i===0,()=>move(-1)],['↓ したへ',i===settings.program.length-1,()=>move(1)],['けす',false,()=>settings.program.splice(i,1)]]){
    const button=document.createElement('button');button.textContent=label;button.disabled=disabled;
    button.onclick=()=>changeProgram(action);actions.append(button);
   }
-  block.append(title,choice(`うごき ${i+1}`,Object.entries(ACTIONS).map(([key])=>[key,actionLabels[key]]),entry.action,v=>entry.action=v),
-   field('はやさ',entry.value,10,300,1,n=>entry.value=n),actions);panel.append(block);
+  block.append(title,choice(`うごき ${i+1}`,Object.entries(ACTIONS).map(([key])=>[key,actionLabels[key]]),entry.action,v=>{entry.action=v;writeSettings();}),
+   field('はやさ',entry.value,10,300,1,n=>{entry.value=n;writeSettings();}),actions);panel.append(block);
  });
- const add=document.createElement('button');add.textContent='＋ うごきをたす';add.disabled=part.program.length>=8;
- add.onclick=()=>changeProgram(()=>part.program.push({action:'patrol',value:60}));panel.append(add);
+ const add=document.createElement('button');add.textContent='＋ うごきをたす';add.disabled=settings.program.length>=8;
+ add.onclick=()=>changeProgram(()=>settings.program.push({action:'patrol',value:60}));panel.append(add);
 }
 function openSettings(target){settingsTarget=target;renderSettings();settingsDialog.showModal();}
 $('#part-open').onclick=()=>{if(selected)openSettings(selected);};
 $('#player-open').onclick=()=>openSettings('player');
 $('#upgrades-open').onclick=()=>openSettings('upgrades');
+$('#enemy-settings-open').onclick=()=>openSettings('enemies');
 
 const partTools=[['enemy','🤖','てき'],['spawner','◉','てきがでるばしょ'],['wall','▧','かべ'],['star','★','ほし'],['goal','⚑','ゴール']];
 const editTools=[['select','↖','えらぶ'],['erase','⌫','けす']];

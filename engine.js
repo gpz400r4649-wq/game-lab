@@ -2,35 +2,52 @@ export const WORLD={w:2400,h:1600};
 export const TYPES={player:{name:'スタート',icon:'🚀',color:'#74dbd1'},enemy:{name:'てきロボット',icon:'🤖',color:'#fc949a'},spawner:{name:'てきがでるばしょ',icon:'◉',color:'#efad80'},wall:{name:'かべ',icon:'▧',color:'#687e9b'},star:{name:'ほし',icon:'★',color:'#f4d37b'},goal:{name:'ゴール',icon:'⚑',color:'#ae9af5'}};
 export const ACTIONS={chase:'プレイヤーを追いかける',patrol:'左右に動く',shoot:'近づいたら弾を撃つ',flee:'近づいたら逃げる'};
 export const UPGRADES={damage:'たまをつよくする',spread:'たまをふやす',interval:'たまをはやくうつ',speed:'いどうをはやくする',heal:'たいりょくを２かいふく'};
-export const SPAWN_ENEMIES={chaser:'おいかけるてき',shooter:'たまをうつてき',tough:'たいりょくのあるてき'};
+export const SPAWN_ENEMIES={shared:'てき全体のせってい',chaser:'おいかけるてき',shooter:'たまをうつてき',tough:'たいりょくのあるてき'};
 export const GOAL_RULES={enemies:'てきをぜんぶたおす',stars:'ほしをあつめる',both:'てきをたおして、ほしもあつめる'};
 export const MAX_UPGRADES=8;
 const MAX_SPAWNERS=12,MAX_ACTIVE_SPAWNED=48,MAX_BULLETS=512;
 export const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const validNumber=(n,min,max)=>Number.isFinite(n)&&n>=min&&n<=max;
 const validInteger=(n,min,max)=>Number.isInteger(n)&&validNumber(n,min,max);
-export function defaultSpawn(){return {delay:3,count:3,waves:1,interval:8,enemy:'chaser',dropStar:true};}
+export function defaultEnemySettings(){return {hp:3,program:[{action:'chase',value:65}],dropStar:true};}
+export function enemySettings(project,enemy){
+ const initial=defaultEnemySettings(),base=project.enemyDefaults||initial;
+ if(!enemy||enemy.useEnemyDefaults===true)return structuredClone(base);
+ const custom=enemy.useEnemyDefaults===false;
+ const sameProgram=enemy.program.length===1&&enemy.program[0].action===initial.program[0].action&&enemy.program[0].value===initial.program[0].value;
+ return {hp:custom||enemy.hp!==initial.hp?enemy.hp:base.hp,
+  program:structuredClone(custom||!sameProgram?enemy.program:base.program),dropStar:enemy.dropStar??base.dropStar};
+}
+export function enemyUsesDefaults(enemy){
+ if(enemy.useEnemyDefaults!==undefined)return enemy.useEnemyDefaults;
+ const initial=defaultEnemySettings();
+ return enemy.dropStar===undefined&&enemy.hp===initial.hp&&enemy.program.length===1&&enemy.program[0].action===initial.program[0].action&&enemy.program[0].value===initial.program[0].value;
+}
+export function defaultSpawn(){return {delay:3,count:3,waves:1,interval:8,enemy:'shared'};}
 export function makeObject(type,x,y){
- const object={id:globalThis.crypto.randomUUID(),type,x,y,hp:3,program:type==='enemy'?[{action:'chase',value:65}]:[]};
+ const object={id:globalThis.crypto.randomUUID(),type,x,y,hp:3,program:type==='enemy'?defaultEnemySettings().program:[]};
  if(type==='spawner')object.spawn=defaultSpawn();
  return object;
 }
 export function freshProject(){return {version:1,title:'はじめての宇宙たんけん',weapon:{speed:500,interval:0.3,damage:1,spread:1},objects:[makeObject('player',440,800)]};}
+const validProgram=program=>Array.isArray(program)&&program.length<=8&&program.every(b=>b&&Object.hasOwn(ACTIONS,b.action)&&validNumber(b.value,10,300));
 export function validateProject(data){
  if(!data||data.version!==1||typeof data.title!=='string'||data.title.length>40||!Array.isArray(data.objects)||data.objects.length>300)throw Error('作品ファイルの形式がちがいます');
  const w=data.weapon;
  if(!w||!validNumber(w.speed,100,1000)||!validNumber(w.interval,.1,2)||!validInteger(w.damage,1,10)||![1,3,5].includes(w.spread))throw Error('武器の設定が読み込めません');
  if(data.upgrades!==undefined&&(!Array.isArray(data.upgrades)||data.upgrades.length>MAX_UPGRADES||data.upgrades.some(rule=>!rule||!validInteger(rule.stars,1,100)||!Object.hasOwn(UPGRADES,rule.effect))))throw Error('ほしのパワーアップのせっていをたしかめてね');
+ const defaults=data.enemyDefaults;
+ if(defaults!==undefined&&(!defaults||!validInteger(defaults.hp,1,20)||!validProgram(defaults.program)||typeof defaults.dropStar!=='boolean'))throw Error('てき全体のせっていをたしかめてね');
  const ids=new Set();let spawners=0,players=0;
  for(const o of data.objects){
   if(!o||!Object.hasOwn(TYPES,o.type)||typeof o.id!=='string'||ids.has(o.id)||!validNumber(o.x,24,WORLD.w-24)||!validNumber(o.y,24,WORLD.h-24)||!validInteger(o.hp,1,20)||!Array.isArray(o.program)||o.program.length>8)throw Error('パーツの設定が読み込めません');
   ids.add(o.id);
-  for(const b of o.program)if(!b||!Object.hasOwn(ACTIONS,b.action)||!validNumber(b.value,10,300))throw Error('プログラムが読み込めません');
+  if(!validProgram(o.program))throw Error('プログラムが読み込めません');
   if(o.type==='player')players++;
-  if(o.type==='enemy'&&o.dropStar!==undefined&&typeof o.dropStar!=='boolean')throw Error('てきがおとすほしのせっていをたしかめてね');
+  if(o.type==='enemy'&&((o.dropStar!==undefined&&typeof o.dropStar!=='boolean')||(o.useEnemyDefaults!==undefined&&typeof o.useEnemyDefaults!=='boolean')))throw Error('てきがおとすほしのせっていをたしかめてね');
   if(o.type==='spawner'){
    const rule=o.spawn;spawners++;
-   if(spawners>MAX_SPAWNERS||!rule||!validInteger(rule.delay,0,120)||!validInteger(rule.count,1,8)||!validInteger(rule.waves,1,5)||!validInteger(rule.interval,2,60)||typeof rule.enemy!=='string'||(!Object.hasOwn(SPAWN_ENEMIES,rule.enemy)&&!rule.enemy.startsWith('part:'))||typeof rule.dropStar!=='boolean')throw Error('てきがでるばしょのせっていをたしかめてね');
+   if(spawners>MAX_SPAWNERS||!rule||!validInteger(rule.delay,0,120)||!validInteger(rule.count,1,8)||!validInteger(rule.waves,1,5)||!validInteger(rule.interval,2,60)||typeof rule.enemy!=='string'||(!Object.hasOwn(SPAWN_ENEMIES,rule.enemy)&&!rule.enemy.startsWith('part:'))||(rule.dropStar!==undefined&&typeof rule.dropStar!=='boolean'))throw Error('てきがでるばしょのせっていをたしかめてね');
   }
   if(o.type==='goal'&&o.goal!==undefined&&(!o.goal||!Object.hasOwn(GOAL_RULES,o.goal.rule)||!validInteger(o.goal.stars,1,100)))throw Error('ゴールのせっていをたしかめてね');
  }
@@ -42,13 +59,17 @@ export function blocked(x,y,r,walls){return walls.some(w=>Math.abs(x-w.x)<32+r&&
 export function moveBody(body,dx,dy,walls,r=20){let x=clamp(body.x+dx,r,WORLD.w-r),y=clamp(body.y+dy,r,WORLD.h-r);if(!blocked(x,body.y,r,walls))body.x=x;if(!blocked(body.x,y,r,walls))body.y=y;}
 export function createGame(project){
  const objects=structuredClone(project.objects);
+ const defaults=enemySettings(project);
+ for(const object of objects)if(object.type==='enemy'){
+  Object.assign(object,enemySettings(project,object));object.maxHp=object.hp;
+ }
  const player={...objects.find(o=>o.type==='player'),hp:5,maxHp:5,speed:230,invincible:0,angle:0};
  const templates=new Map(objects.filter(o=>o.type==='enemy').map(o=>[o.id,{hp:o.hp,program:structuredClone(o.program)}]));
  const spawners=objects.filter(o=>o.type==='spawner').map(o=>{
   const {enemy,delay}=o.spawn;
-  return {part:o,nextAt:delay,waves:0,remaining:0,template:templates.get(enemy.slice(5))};
+  return {part:o,nextAt:delay,waves:0,remaining:0,template:enemy==='shared'?defaults:templates.get(enemy.slice(5))};
  });
- return {objects,player,spawners,weapon:{...project.weapon},upgrades:(project.upgrades||[]).map(rule=>({...rule,used:false})),bullets:[],score:0,stars:0,time:0,cooldown:0,state:'playing',message:'',messageId:0};
+ return {objects,player,spawners,enemyDefaults:defaults,weapon:{...project.weapon},upgrades:(project.upgrades||[]).map(rule=>({...rule,used:false})),bullets:[],score:0,stars:0,time:0,cooldown:0,state:'playing',message:'',messageId:0};
 }
 function announce(game,message){game.message=message;game.messageId++;}
 function spawnAt(part,walls,player,index){
@@ -76,7 +97,7 @@ function stepSpawners(game,walls){
    if(template){enemy.hp=template.hp;enemy.program=structuredClone(template.program);}
    else if(rule.enemy==='shooter')enemy.program=[{action:'shoot',value:105}];
    else if(rule.enemy==='tough'){enemy.hp=10;enemy.program[0].value=48;}
-   enemy.maxHp=enemy.hp;enemy.dropStar=rule.dropStar;enemy.spawned=true;game.objects.push(enemy);created++;active++;
+   enemy.maxHp=enemy.hp;enemy.dropStar=rule.dropStar??game.enemyDefaults.dropStar;enemy.spawned=true;game.objects.push(enemy);created++;active++;
   }
   if(!state.remaining)state.nextAt=game.time+rule.interval;
   if(created)announce(game,'てきがでてきた！');

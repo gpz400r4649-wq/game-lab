@@ -41,3 +41,24 @@ test('倒した敵の星をひろって、星だけが条件のゴールをひ�
  tick(g,p,8,{fire:true});assert.equal(g.objects.filter(o=>o.type==='star').length,1);assert.equal(goalReady(g,goal),false);
  tick(g,p,10,{x:1});assert.equal(g.stars,1);assert.equal(g.state,'won');assert.ok(g.objects.some(o=>o.type==='enemy'));
 });
+
+test('敵は初期状態で星を落とし、全体設定と個別設定は出現する敵にも反映される',()=>{
+ const p=freshProject(),start=p.objects[0];
+ const regular=makeObject('enemy',start.x+110,start.y),custom=makeObject('enemy',1000,800),spawn=makeObject('spawner',1200,800);
+ p.objects.push(regular,custom,spawn);
+ const initial=createGame(p);
+ assert.equal(initial.objects.find(o=>o.id===regular.id).dropStar,true);
+ Object.assign(custom,{hp:9,program:[{action:'flee',value:95}],dropStar:false});
+ p.enemyDefaults={hp:7,program:[{action:'patrol',value:80}],dropStar:false};
+ Object.assign(spawn.spawn,{delay:0,count:1});
+ const saved=validateProject(JSON.parse(JSON.stringify(p))),game=createGame(saved);
+ const shared=game.objects.find(o=>o.id===regular.id),individual=game.objects.find(o=>o.id===custom.id);
+ assert.equal(shared.hp,7);assert.deepEqual(shared.program,p.enemyDefaults.program);assert.equal(shared.dropStar,false);
+ assert.equal(individual.hp,9);assert.deepEqual(individual.program,custom.program);assert.equal(individual.dropStar,false);
+ tick(game,p,1);const fromSpawner=game.objects.find(o=>o.spawned);
+ assert.equal(fromSpawner.hp,7);assert.deepEqual(fromSpawner.program,p.enemyDefaults.program);assert.equal(fromSpawner.dropStar,false);
+ const legacy=makeObject('enemy',start.x+110,start.y);legacy.hp=1;legacy.program=[];
+ const original=freshProject();original.objects.push(legacy);
+ const legacyGame=createGame(original);tick(legacyGame,original,10,{fire:true});
+ assert.ok(legacyGame.objects.some(o=>o.type==='star'));
+});
