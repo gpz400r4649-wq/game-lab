@@ -1,8 +1,8 @@
-import {validPatrolRoute} from './patrol-route3d.js?v=20261118g';
-import {coordinateLimit} from './world3d.js?v=20261118g';
-import {MAX_BUILD_Y} from './limits3d.js?v=20261118g';
-import {topAt} from './building3d.js?v=20261118g';
-import {dropPickup,LOOT_LIMIT} from './loot3d.js?v=20261118g';
+import {validPatrolRoute} from './patrol-route3d.js?v=20261118h';
+import {coordinateLimit} from './world3d.js?v=20261118h';
+import {MAX_BUILD_Y} from './limits3d.js?v=20261118h';
+import {topAt} from './building3d.js?v=20261118h';
+import {dropPickup,LOOT_LIMIT} from './loot3d.js?v=20261118h';
 
 export const SUPPLY_REWARDS={heal:'かいふく',star:'ほし',weapon:'ランダムなじゅう'};
 export const SUPPLY_ALTITUDE=MAX_BUILD_Y+12;
@@ -41,7 +41,7 @@ export function updateSupplyFlight(game,dt,surfacesAt){
  if(!state.dropped&&elapsed>=duration/2){
   state.dropped=true;
   state.crate={...at(.5),y:SUPPLY_ALTITUDE-1,landingY:0,landed:false};
-  game.message=duration/2<3?'きいろいひこうきが、アイテムのはこをおとしたよ！':'アイテムのはこをおとしたよ！';
+  game.message='アイテムのはこをおとしたよ！';
   game.messageId++;
  }
  const crate=state.crate;if(!crate)return;
