@@ -1,10 +1,10 @@
-import {validPatrolRoute} from './patrol-route3d.js?v=20261118c';
-import {coordinateLimit} from './world3d.js?v=20261118c';
-import {MAX_BUILD_Y} from './limits3d.js?v=20261118c';
-import {topAt} from './building3d.js?v=20261118c';
-import {dropPickup,LOOT_LIMIT} from './loot3d.js?v=20261118c';
+import {validPatrolRoute} from './patrol-route3d.js?v=20261118d';
+import {coordinateLimit} from './world3d.js?v=20261118d';
+import {MAX_BUILD_Y} from './limits3d.js?v=20261118d';
+import {topAt} from './building3d.js?v=20261118d';
+import {dropPickup,LOOT_LIMIT} from './loot3d.js?v=20261118d';
 
-export const SUPPLY_REWARDS={heal:'回復',star:'星',weapon:'ランダムな銃'};
+export const SUPPLY_REWARDS={heal:'かいふく',star:'ほし',weapon:'ランダムなじゅう'};
 export const SUPPLY_ALTITUDE=MAX_BUILD_Y+12;
 const flightSpeed=28, descentSpeed=7;
 
@@ -36,7 +36,7 @@ export function updateSupplyFlight(game,dt,surfacesAt){
  if(!state.dropped&&elapsed>=duration/2){
   state.dropped=true;
   state.crate={...at(.5),y:SUPPLY_ALTITUDE-1,landingY:0,landed:false};
-  game.message='補給箱を投下したよ！';game.messageId++;
+  game.message='アイテムのはこをおとしたよ！';game.messageId++;
  }
  const crate=state.crate;if(!crate)return;
  if(!crate.landed){
@@ -53,6 +53,6 @@ export function updateSupplyFlight(game,dt,surfacesAt){
  if(crate.landed&&Math.hypot(crate.x-player.x,crate.z-player.z)<1.8&&Math.abs(crate.y-player.y)<1.5){
   if(game.drops.length>=LOOT_LIMIT&&game.drops.filter(drop=>!drop.collected).length>=LOOT_LIMIT)return;
   const item=dropPickup(game,settings.reward,{...crate,h:1},settings.reward==='weapon'?{weaponId:'@random'}:{});
-  if(item){state.crate=null;game.message='補給箱を開けた！';game.messageId++;}
+  if(item){state.crate=null;game.message='アイテムのはこがひらいたよ！';game.messageId++;}
  }
 }

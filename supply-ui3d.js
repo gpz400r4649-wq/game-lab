@@ -1,11 +1,11 @@
 import * as T from './vendor/three.module.min.js';
-import {defaultSupplyFlight,SUPPLY_REWARDS} from './supply3d.js?v=20261118c';
-import {coordinateLimit} from './world3d.js?v=20261118c';
-import {setReadingText} from './readings3d.js?v=20261118c';
-import {configureNumericInput} from './numeric3d.js?v=20261118c';
-import {createPatrolOverlay} from './patrol-ui3d.js?v=20261118c';
-import {mountLiveRangeEditor} from './range-panel3d.js?v=20261118c';
-import {setStageRangePainter} from './stage-range3d.js?v=20261118c';
+import {defaultSupplyFlight,SUPPLY_REWARDS} from './supply3d.js?v=20261118d';
+import {coordinateLimit} from './world3d.js?v=20261118d';
+import {setReadingText} from './readings3d.js?v=20261118d';
+import {configureNumericInput} from './numeric3d.js?v=20261118d';
+import {createPatrolOverlay} from './patrol-ui3d.js?v=20261118d';
+import {mountLiveRangeEditor} from './range-panel3d.js?v=20261118d';
+import {setStageRangePainter} from './stage-range3d.js?v=20261118d';
 
 export function createSupplyUI({$,getProject,save,scene,focusRoute,toast}){
  const dialog=$('#supply-dialog3'),routeOverlay=createPatrolOverlay(scene,{throughParts:true});
@@ -29,12 +29,12 @@ export function createSupplyUI({$,getProject,save,scene,focusRoute,toast}){
   dialog.close();
   const panel=document.createElement('section'),heading=document.createElement('div'),title=document.createElement('h2'),controls=document.createElement('div');
   panel.className='range-live-panel';heading.className='range-live-heading';controls.className='stage-range-tools supply-route-steps';
-  setReadingText(title,'補給便のルート');heading.append(title);panel.append(heading,controls);
+  setReadingText(title,'ひこうきのとぶみち');heading.append(title);panel.append(heading,controls);
   let step=0,pointer=null,returnToDialog=false,cameraMode=false;
   function makeButton(text,action){
    const button=document.createElement('button');setReadingText(button,text);button.onclick=action;controls.append(button);return button;
   }
-  const points=['出発をえらぶ','到着をえらぶ'].map((text,index)=>makeButton(text,()=>{
+  const points=['はじめのばしょ','おわりのばしょ'].map((text,index)=>makeButton(text,()=>{
    step=index;cameraMode=false;focusRoute(draft.route,index);refresh();
   }));
   const done=makeButton('できた',()=>{returnToDialog=true;finish();});
@@ -58,7 +58,7 @@ export function createSupplyUI({$,getProject,save,scene,focusRoute,toast}){
    if(!point||Math.abs(point.x)>limit+2||Math.abs(point.z)>limit+2)return true;
    const snap=value=>Math.max(-limit,Math.min(limit,Math.round(value/4)*4));
    const selected={x:snap(point.x),z:snap(point.z)},other=draft.route[1-step];
-   if(selected.x===other.x&&selected.z===other.z){toast('出発と到着は別の場所をえらぼう');return true;}
+   if(selected.x===other.x&&selected.z===other.z){toast('はじめとおわりは、ちがうばしょをえらぼう');return true;}
    draft.route[step]=selected;
    step++;
    if(step===1&&Math.hypot(selected.x-other.x,selected.z-other.z)>60)focusRoute(draft.route,1);
