@@ -1,10 +1,10 @@
-import {isFurniture,isDesk,furnitureTopAt} from './furniture3d.js?v=20261118e';
-import {halfFloorMask,ROOF_SHELL_RATIO,isDiagonal,diagonalContains,footprintsIntersect} from './architecture3d.js?v=20261118e';
-import {inheritNewCharacter} from './character-defaults3d.js?v=20261118e';
-import {DEFAULT_APPEARANCE,validAppearance} from './appearance3d.js?v=20261118e';
-import {MAX_PARTS,MAX_BUILD_Y,MAX_BUILD_LEVEL} from './limits3d.js?v=20261118e';
-import {worldHalf,coordinateLimit} from './world3d.js?v=20261118e';
-import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261118e';
+import {isFurniture,isDesk,furnitureTopAt} from './furniture3d.js?v=20261118f';
+import {halfFloorMask,ROOF_SHELL_RATIO,isDiagonal,diagonalContains,footprintsIntersect} from './architecture3d.js?v=20261118f';
+import {inheritNewCharacter} from './character-defaults3d.js?v=20261118f';
+import {DEFAULT_APPEARANCE,validAppearance} from './appearance3d.js?v=20261118f';
+import {MAX_PARTS,MAX_BUILD_Y,MAX_BUILD_LEVEL} from './limits3d.js?v=20261118f';
+import {worldHalf,coordinateLimit} from './world3d.js?v=20261118f';
+import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261118f';
 // Shared by editor, gameplay and placement preview. No browser dependency.
 export const BUILD_TYPES={wall:'壁',floor:'床',roof:'屋根',ramp:'スロープ',diagonal:'ななめの壁',halfFloor:'ハーフの床'};
 export const GRID={cell:4,layer:3,size:60};

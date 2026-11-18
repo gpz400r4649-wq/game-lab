@@ -1,8 +1,8 @@
-import {validPatrolRoute} from './patrol-route3d.js?v=20261118e';
-import {coordinateLimit} from './world3d.js?v=20261118e';
-import {MAX_BUILD_Y} from './limits3d.js?v=20261118e';
-import {topAt} from './building3d.js?v=20261118e';
-import {dropPickup,LOOT_LIMIT} from './loot3d.js?v=20261118e';
+import {validPatrolRoute} from './patrol-route3d.js?v=20261118f';
+import {coordinateLimit} from './world3d.js?v=20261118f';
+import {MAX_BUILD_Y} from './limits3d.js?v=20261118f';
+import {topAt} from './building3d.js?v=20261118f';
+import {dropPickup,LOOT_LIMIT} from './loot3d.js?v=20261118f';
 
 export const SUPPLY_REWARDS={heal:'かいふく',star:'ほし',weapon:'ランダムなじゅう'};
 export const SUPPLY_ALTITUDE=MAX_BUILD_Y+12;
@@ -22,7 +22,7 @@ export function defaultSupplyFlight(world){
 export function createSupplyFlight(project){
  if(!project.supplyFlight?.enabled)return null;
  const settings=structuredClone(project.supplyFlight),[start,end]=settings.route;
- return {settings,plane:null,crate:null,dropped:false,duration:Math.hypot(end.x-start.x,end.z-start.z)/flightSpeed};
+ return {settings,plane:null,crate:null,announced:false,dropped:false,duration:Math.hypot(end.x-start.x,end.z-start.z)/flightSpeed};
 }
 
 export function updateSupplyFlight(game,dt,surfacesAt){
@@ -30,13 +30,19 @@ export function updateSupplyFlight(game,dt,surfacesAt){
  const {settings,duration}=state;
  const elapsed=game.time-settings.startTime;
  if(elapsed<0)return;
+ if(!state.announced){
+  state.announced=true;
+  game.message='きいろいひこうきがきたよ！ そらをみてみよう';
+  game.messageId++;
+ }
  const [start,end]=settings.route;
  const at=t=>({x:start.x+(end.x-start.x)*t,z:start.z+(end.z-start.z)*t});
  state.plane=elapsed<duration?{...at(elapsed/duration),y:SUPPLY_ALTITUDE,yaw:Math.atan2(start.x-end.x,start.z-end.z)}:null;
  if(!state.dropped&&elapsed>=duration/2){
   state.dropped=true;
   state.crate={...at(.5),y:SUPPLY_ALTITUDE-1,landingY:0,landed:false};
-  game.message='アイテムのはこをおとしたよ！';game.messageId++;
+  game.message=duration/2<3?'きいろいひこうきが、アイテムのはこをおとしたよ！':'アイテムのはこをおとしたよ！';
+  game.messageId++;
  }
  const crate=state.crate;if(!crate)return;
  if(!crate.landed){

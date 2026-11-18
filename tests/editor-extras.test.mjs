@@ -38,9 +38,10 @@ test('補給便は指定時刻に飛び、箱が屋根に着地してから近�
  p.objects=[roof];p.supplyFlight={...defaultSupplyFlight(p),startTime:1,reward:'weapon',route:[{x:-14,z:0},{x:14,z:0}]};
  const g=create3D(validate3D(p));
  const tick=(count)=>{for(let i=0;i<count;i++)step3D(g,p,{},.025);};
- tick(30);assert.equal(g.supply.plane,null);tick(20);assert.ok(g.supply.plane);assert.equal(g.supply.crate,null);
- tick(20);assert.equal(g.supply.crate,null);assert.ok(g.supply.plane.x<0);
- tick(12);assert.equal(g.supply.crate.x,0);assert.equal(g.supply.crate.landed,false);assert.equal(g.drops.length,0);
+ tick(30);assert.equal(g.supply.plane,null);assert.equal(g.messageId,0);
+ tick(20);assert.ok(g.supply.plane);assert.equal(g.supply.crate,null);assert.match(g.message,/ひこうきがきたよ/);assert.equal(g.messageId,1);
+ tick(20);assert.equal(g.supply.crate,null);assert.ok(g.supply.plane.x<0);assert.equal(g.messageId,1);
+ tick(12);assert.match(g.message,/ひこうきが、アイテムのはこをおとしたよ/);assert.equal(g.messageId,2);assert.equal(g.supply.crate.x,0);assert.equal(g.supply.crate.landed,false);assert.equal(g.drops.length,0);
  tick(400);assert.equal(g.supply.crate.landed,true);assert.equal(g.supply.crate.y,6.25);assert.equal(g.drops.length,0);
  Object.assign(g.player,{x:1.5,y:6.25,z:0,vy:0});tick(1);
  assert.equal(g.supply.crate,null);assert.equal(g.drops[0].weaponId,'@random');tick(1);assert.equal(g.drops.length,1);

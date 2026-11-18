@@ -1,10 +1,10 @@
-import {isFurniture} from './furniture3d.js?v=20261118e';
-import {gridStep,editorPlacementReason} from './building3d.js?v=20261118e';
-import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261118e';
-import {coordinateLimit} from './world3d.js?v=20261118e';
-import {rangeCell,validMoveRange,validAttackRange} from './enemy-range3d.js?v=20261118e';
-import {validPatrolRoute,validWaypoints} from './patrol-route3d.js?v=20261118e';
-import {validate3D} from './engine3d.js?v=20261118e';
+import {isFurniture} from './furniture3d.js?v=20261118f';
+import {gridStep,editorPlacementReason} from './building3d.js?v=20261118f';
+import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261118f';
+import {coordinateLimit} from './world3d.js?v=20261118f';
+import {rangeCell,validMoveRange,validAttackRange} from './enemy-range3d.js?v=20261118f';
+import {validPatrolRoute,validWaypoints} from './patrol-route3d.js?v=20261118f';
+import {validate3D} from './engine3d.js?v=20261118f';
 export function groupSteps(objects){
  const steps={x:1,y:0.25,z:1};
  for(const part of objects){
