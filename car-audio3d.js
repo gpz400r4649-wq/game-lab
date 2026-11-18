@@ -1,4 +1,4 @@
-const ENGINE_LEVEL = 0.035;
+const ENGINE_LEVEL = 0.07;
 const IDLE_RATE = .9;
 const ENGINE_SAMPLE = new URL('./car-engine-loop.wav?v=20261119f', import.meta.url);
 
