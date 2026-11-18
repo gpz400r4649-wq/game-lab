@@ -3,7 +3,7 @@ import {courseStart} from './road3d.js?v=20261119d';
 import {createRoadView} from './road-model3d.js?v=20261119d';
 import {createRoadEditor} from './road-ui3d.js?v=20261119d';
 import {makeCarModel,updateCarModel,makeRaceGateModel,updateRaceGateModel,updateRaceGateNumber} from './race-model3d.js?v=20261119d';
-import {CAR_TUNING,DEFAULT_CAR_TUNING,fitRaceGate,orderedRaceGates,turnRaceGate} from './race3d.js?v=20261119j';
+import {CAR_TUNING,DEFAULT_CAR_TUNING,fitRaceGate,orderedRaceGates,turnRaceGate} from './race3d.js?v=20261119l';
 import {assemblyCandidate,assemblyCopies,saveAssembly,temporarySpawn} from './assembly3d.js?v=20261119d';
 import {createSupplyUI,createSupplyView} from './supply-ui3d.js?v=20261119d';
 import {FURNITURE_PRESETS,configureFurniture,isFurniture} from './furniture3d.js?v=20261119d';
@@ -46,7 +46,7 @@ import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261119d';
 import {rotatePiece,BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,topAt,editorPlacementReason,editorPlacementBlocker,blockPlacement} from './building3d.js?v=20261119d';
 import {createToolsUI} from './tools3d.js?v=20261119d';
 import * as T from './vendor/three.module.min.js';
-import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet} from './engine3d.js?v=20261119j';
+import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet} from './engine3d.js?v=20261119l';
 import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261119d';
 document.querySelectorAll('.setting-choices').forEach(enhanceChoiceControl);
 const $=s=>document.querySelector(s),view=$('#viewport');
@@ -275,7 +275,7 @@ if(carTemplate){
   const tuning=project.carTuning||DEFAULT_CAR_TUNING;
   for(const [key,control] of Object.entries(controls))control.value=tuning[key];
   reset.disabled=Object.keys(controls).every(key=>tuning[key]===DEFAULT_CAR_TUNING[key]);
-  note.hidden=tuning.maxSpeed<=18;
+  note.hidden=tuning.maxSpeed<=CAR_TUNING.maxSpeed[2];
   if(!note.hidden){
    const length=Math.ceil(tuning.maxSpeed**2/(2*tuning.acceleration)/10)*10;
    note.textContent=`このスピードまで出すには、まっすぐな道が約 ${length} m いるよ。`;

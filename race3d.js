@@ -2,7 +2,7 @@ import {nearestRoad,ROAD_WIDTHS} from './road3d.js?v=20261119d';
 
 export const F1_TOP_SPEED_KMH=360;
 export const CAR_TUNING=Object.freeze({
- maxSpeed:Object.freeze([8,12,18,120/3.6,240/3.6,F1_TOP_SPEED_KMH/3.6]),
+ maxSpeed:Object.freeze([30,45,65,120,240,F1_TOP_SPEED_KMH].map(kmh=>kmh/3.6)),
  acceleration:Object.freeze([4,7,10]),
  steering:Object.freeze([1.6,2.4,3.2]),
  braking:Object.freeze([12,22,32])
@@ -11,6 +11,11 @@ export const DEFAULT_CAR_TUNING=Object.freeze(Object.fromEntries(
  Object.entries(CAR_TUNING).map(([key,levels])=>[key,levels[1]])
 ));
 const REVERSE_SPEED=4;
+const OLD_CAR_TOP_SPEEDS=new Map([[8,30/3.6],[12,45/3.6],[18,65/3.6],[361.6/3.6,F1_TOP_SPEED_KMH/3.6]]);
+
+export function upgradeCarTopSpeed(maxSpeed){
+ return OLD_CAR_TOP_SPEEDS.get(maxSpeed)??maxSpeed;
+}
 
 export function validCarTuning(tuning){
  return !!tuning&&Object.entries(CAR_TUNING).every(([key,levels])=>levels.includes(tuning[key]));
