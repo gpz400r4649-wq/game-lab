@@ -1,5 +1,5 @@
 import {courseStart,validRoads} from './road3d.js?v=20261119d';
-import {carMotion,createCarRun,updateRaceGates,validCarTuning,validGateFit} from './race3d.js?v=20261119i';
+import {carMotion,createCarRun,F1_TOP_SPEED_KMH,updateRaceGates,validCarTuning,validGateFit} from './race3d.js?v=20261119j';
 import {validAssemblies} from './assembly3d.js?v=20261119d';
 import {validSupplyFlight,createSupplyFlight,updateSupplyFlight} from './supply3d.js?v=20261119d';
 import {isFurniture,validFurniture,furnitureSolids} from './furniture3d.js?v=20261119d';
@@ -45,6 +45,7 @@ export function validate3D(data,skipShared=false){
   if(Array.isArray(p.loadout))p.loadout.forEach(upgradeTool);
   if(!Array.isArray(p.loadout)||!p.loadout.length||p.loadout.length>8||!p.loadout.every(validTool)||new Set(p.loadout.map(t=>t.id)).size!==p.loadout.length)throw Error('持ちものの設定を確認してください');
   if(p.template!==undefined&&p.template!=='car')throw Error('さくひんの種類をたしかめてね');
+  if(p.template==='car'&&p.carTuning?.maxSpeed===361.6/3.6)p.carTuning.maxSpeed=F1_TOP_SPEED_KMH/3.6;
   if(p.carTuning!==undefined&&(p.template!=='car'||!validCarTuning(p.carTuning)))throw Error('くるまのせっていをたしかめてね');
   if((p.roads!==undefined&&p.template!=='car')||!validRoads(p.roads,p))throw Error('どうろのせっていをたしかめてね');
   if(!validSupplyFlight(p.supplyFlight,p))throw Error('そらからアイテムをとどけるせっていをたしかめてね');

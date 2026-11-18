@@ -36,7 +36,7 @@ test('車のせっていは保存でき、速さ・加速・ハンドル・ブ�
  const tuning={maxSpeed:18,acceleration:10,steering:3.2,braking:32};
  const tuned=validate3D(JSON.parse(JSON.stringify({...base,carTuning:tuning})));
  assert.deepEqual(tuned.carTuning,tuning);
- assert.throws(()=>validate3D({...base,carTuning:{...tuning,maxSpeed:100}}),/くるまのせってい/);
+ assert.throws(()=>validate3D({...base,carTuning:{...tuning,maxSpeed:101}}),/くるまのせってい/);
  assert.throws(()=>validate3D({...fresh3D(),carTuning:tuning}),/くるまのせってい/);
  const normal=create3D(base),fast=create3D(tuned);
  tick(normal,base,.5,{z:-1});tick(fast,tuned,.5,{z:-1});
@@ -56,6 +56,8 @@ test('F1の最高速に届き、１フレームでゲートや壁を通りすぎ
  const maxSpeed=F1_TOP_SPEED_KMH/3.6;
  const carTuning={...DEFAULT_CAR_TUNING,maxSpeed,acceleration:10};
  const project=validate3D({...fresh3D('car'),worldSize:960,spawn:{x:0,y:0,z:465},carTuning});
+ const oldProject={...project,carTuning:{...carTuning,maxSpeed:361.6/3.6}};
+ assert.deepEqual(validate3D(oldProject).carTuning,carTuning);
  const fast=create3D(project);
  tick(fast,project,11,{z:-1});
  assert.ok(Math.abs(fast.car.actualSpeed*3.6-F1_TOP_SPEED_KMH)<1e-8);

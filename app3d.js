@@ -3,7 +3,7 @@ import {courseStart} from './road3d.js?v=20261119d';
 import {createRoadView} from './road-model3d.js?v=20261119d';
 import {createRoadEditor} from './road-ui3d.js?v=20261119d';
 import {makeCarModel,updateCarModel,makeRaceGateModel,updateRaceGateModel,updateRaceGateNumber} from './race-model3d.js?v=20261119d';
-import {CAR_TUNING,DEFAULT_CAR_TUNING,F1_TOP_SPEED_KMH,fitRaceGate,orderedRaceGates,turnRaceGate} from './race3d.js?v=20261119i';
+import {CAR_TUNING,DEFAULT_CAR_TUNING,fitRaceGate,orderedRaceGates,turnRaceGate} from './race3d.js?v=20261119j';
 import {assemblyCandidate,assemblyCopies,saveAssembly,temporarySpawn} from './assembly3d.js?v=20261119d';
 import {createSupplyUI,createSupplyView} from './supply-ui3d.js?v=20261119d';
 import {FURNITURE_PRESETS,configureFurniture,isFurniture} from './furniture3d.js?v=20261119d';
@@ -46,7 +46,7 @@ import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261119d';
 import {rotatePiece,BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,topAt,editorPlacementReason,editorPlacementBlocker,blockPlacement} from './building3d.js?v=20261119d';
 import {createToolsUI} from './tools3d.js?v=20261119d';
 import * as T from './vendor/three.module.min.js';
-import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet} from './engine3d.js?v=20261119i';
+import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet} from './engine3d.js?v=20261119j';
 import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261119d';
 document.querySelectorAll('.setting-choices').forEach(enhanceChoiceControl);
 const $=s=>document.querySelector(s),view=$('#viewport');
@@ -264,9 +264,9 @@ function objectList(){renderPlayerRules();allyHitRule.value=project.playerHitsAl
 if(carTemplate){
  const opener=$('#car-settings-open3'),dialog=$('#car-settings3'),panel=$('#car-tuning3');
  const reset=$('#car-tuning-reset3'),note=$('#car-speed-note3'),controls={};
+ const speedExamples=['ゆうえんちのカート','はいたつのくるま','まちをはしるくるま','ふつうのくるま','スポーツカー','F1マシン'];
  const rows=[
-  ['maxSpeed','いちばん速いスピード',CAR_TUNING.maxSpeed.map(speed=>
-   (speed===F1_TOP_SPEED_KMH/3.6?F1_TOP_SPEED_KMH:Math.round(speed*3.6))+' km/h')],
+  ['maxSpeed','いちばん速いスピード',CAR_TUNING.maxSpeed.map(speed=>Math.round(speed*3.6)+' km/h'),speedExamples],
   ['acceleration','スピードの上がり方',['ゆっくり','ふつう','すばやい']],
   ['steering','ハンドルのきき方',['ゆるやか','ふつう','よくまがる']],
   ['braking','ブレーキのきき方',['よわい','ふつう','つよい']]
@@ -281,12 +281,20 @@ if(carTemplate){
    note.textContent=`このスピードまで出すには、まっすぐな道が約 ${length} m いるよ。`;
   }
  };
- for(const [key,label,options] of rows){
+ for(const [key,label,options,examples] of rows){
   const card=document.createElement('section'),title=document.createElement('h3'),choice=createChoiceControl();
   title.id='car-setting-'+key;
   setReadingText(title,label);
   choice.setAttribute('aria-labelledby',title.id);
-  options.forEach((name,index)=>choice.add(new Option(name,String(CAR_TUNING[key][index]))));
+  options.forEach((name,index)=>{
+   choice.add(new Option(name,String(CAR_TUNING[key][index])));
+   if(examples){
+    const example=document.createElement('span');
+    example.className='car-speed-example';
+    example.textContent=examples[index];
+    choice.lastElementChild.append(example);
+   }
+  });
   choice.onchange=()=>{
    project.carTuning={...(project.carTuning||DEFAULT_CAR_TUNING),[key]:Number(choice.value)};
    save();
@@ -569,8 +577,7 @@ function driveFrame(dt){
   carAudio.stop();
   carSoundButton.disabled=true;
  }
- const meterDecimals=car.tuning.maxSpeed===F1_TOP_SPEED_KMH/3.6?1:0;
- const speedNow=(car.actualSpeed*3.6).toFixed(meterDecimals),speedPeak=(car.peakSpeed*3.6).toFixed(meterDecimals);
+ const speedNow=String(Math.round(car.actualSpeed*3.6)),speedPeak=String(Math.round(car.peakSpeed*3.6));
  const speedLabel=$('#speed-now3'),peakLabel=$('#speed-peak3');
  if(speedLabel.textContent!==speedNow)speedLabel.textContent=speedNow;
  if(peakLabel.textContent!==speedPeak)peakLabel.textContent=speedPeak;
