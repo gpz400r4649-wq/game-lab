@@ -264,7 +264,7 @@ function objectList(){renderPlayerRules();allyHitRule.value=project.playerHitsAl
 if(carTemplate){
  const opener=$('#car-settings-open3'),dialog=$('#car-settings3'),panel=$('#car-tuning3');
  const reset=$('#car-tuning-reset3'),note=$('#car-speed-note3'),controls={};
- const speedExamples=['ゆうえんちのカート','はいたつのくるま','まちをはしるくるま','ふつうのくるま','スポーツカー','F1マシン'];
+ const speedExamples=['ブルドーザー','せんしゃ','おおがたトラック','ふつうのくるま','スポーツカー','F1マシン'];
  const rows=[
   ['maxSpeed','いちばん速いスピード',CAR_TUNING.maxSpeed.map(speed=>Math.round(speed*3.6)+' km/h'),speedExamples],
   ['acceleration','スピードの上がり方',['ゆっくり','ふつう','すばやい']],
