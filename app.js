@@ -1,4 +1,4 @@
-import {WORLD,TYPES,ACTIONS,clamp,makeObject,freshProject,validateProject,createGame,stepGame} from './engine.js';
+import {WORLD,TYPES,ACTIONS,UPGRADES,SPAWN_ENEMIES,GOAL_RULES,MAX_UPGRADES,canAddSpawner,goalReady,clamp,makeObject,freshProject,validateProject,createGame,stepGame} from './engine.js?v=20261118-2d-rules';
 import {createEditHistory} from './history3d.js?v=20261118h';
 import {createChoiceControl} from './choices3d.js?v=20261118h';
 import {configureNumericInput} from './numeric3d.js?v=20261118h';
@@ -10,7 +10,7 @@ const settingsDialog=$('#settings-dialog'),mapDialog=$('#map-dialog'),KEY='tsuku
 const keys=new Set(),setGamePageMode=createGamePageMode(document);
 let project=freshProject(),selected=null,tool='select',mode='edit',game=null;
 let stick={x:0,y:0},firing=false,gesture=null,preview=null,last=0,saveTimer,toastTimer;
-let settingsTarget=null,stickPointer=null;
+let settingsTarget=null,stickPointer=null,lastMessageId=0;
 
 function toast(message){
  const notice=$('#toast');notice.textContent=message;notice.classList.add('show');clearTimeout(toastTimer);
@@ -39,7 +39,7 @@ function save({record=true}={}){
 function renderSelection(){
  const part=project.objects.find(o=>o.id===selected),button=$('#part-open');
  button.hidden=!part;$('#selected-hint').hidden=!!part;
- if(part)button.textContent=({player:'スタートのせってい',enemy:'このてきのせってい',wall:'このかべのせってい',star:'このほしのせってい',goal:'このゴールのせってい'})[part.type];
+ if(part)button.textContent=({player:'スタートのせってい',enemy:'このてきのせってい',spawner:'てきがでるばしょのせってい',wall:'このかべのせってい',star:'このほしのせってい',goal:'このゴールのせってい'})[part.type];
 }
 function applyProject(next,{reset=false}={}){
  finishGesture(false);project=next;
@@ -70,9 +70,56 @@ function choice(label,choices,value,onChange){
 }
 function note(text){const p=document.createElement('p');p.textContent=text;return p;}
 const actionLabels={chase:'おいかける',patrol:'さゆうにうごく',shoot:'ちかづいたらたまをうつ',flee:'ちかづいたらにげる'};
-const partNotes={wall:'かべは、プレイヤーやてきのとおりみちをさえぎるよ。',star:'ほしをひろうと、てんすうがふえるよ。',goal:'てきをぜんぶたおすとゴールがひらくよ。'};
+const partNotes={wall:'かべは、プレイヤーやてきのとおりみちをさえぎるよ。',star:'ほしをひろうと、てんすうがふえるよ。'};
+function checkbox(label,checked,onChange){
+ const row=document.createElement('label'),input=document.createElement('input');
+ row.className='checkbox-setting';input.type='checkbox';input.checked=checked;
+ input.onchange=()=>{onChange(input.checked);save();};row.append(input,label);return row;
+}
+function labeledChoice(label,choices,value,onChange){
+ const section=document.createElement('section');section.className='rule-choices';
+ const title=document.createElement('h3');title.textContent=label;
+ section.append(title,choice(label,choices,value,onChange));return section;
+}
+function renderUpgrades(panel){
+ $('#settings-title').textContent='ほしでパワーアップ';
+ const rules=project.upgrades||[];
+ panel.append(note('ほしはぜんぶで何こひろったかをかぞえるよ。きめたかずになると、パワーアップが１かいおこるよ。'));
+ for(const [index,rule] of rules.entries()){
+  const card=document.createElement('section');card.className='program-block';
+  const remove=document.createElement('button');remove.textContent='このルールをけす';
+  remove.onclick=()=>{rules.splice(index,1);save();renderSettings();};
+  card.append(field('ほしを何こひろったら？',rule.stars,1,100,1,n=>rule.stars=n),
+   labeledChoice('どうなる？',Object.entries(UPGRADES),rule.effect,value=>rule.effect=value),remove);
+  panel.append(card);
+ }
+ const add=document.createElement('button');add.className='primary';add.textContent='＋ パワーアップをたす';add.disabled=rules.length>=MAX_UPGRADES;
+ add.onclick=()=>{(project.upgrades??=[]).push({stars:Math.min(100,(rules.at(-1)?.stars||0)+3),effect:'spread'});save();renderSettings();};
+ panel.append(add);
+}
+function renderSpawner(panel,part){
+ const rule=part.spawn,enemies=project.objects.filter(o=>o.type==='enemy');
+ const options=[...Object.entries(SPAWN_ENEMIES),...enemies.map((enemy,index)=>['part:'+enemy.id,`おいたてき ${index+1}`])];
+ if(!options.some(([id])=>id===rule.enemy))options.push([rule.enemy,'けされたてき（おいかけるてきがでる）']);
+ panel.append(field('はじまってから何びょう？',rule.delay,0,120,1,n=>rule.delay=n),
+  field('いちどに何体でる？',rule.count,1,8,1,n=>rule.count=n),
+  field('なんかいでる？',rule.waves,1,5,1,n=>{rule.waves=n;interval.hidden=n===1;}));
+ const interval=field('つぎまで何びょうまつ？',rule.interval,2,60,1,n=>rule.interval=n);interval.hidden=rule.waves===1;
+ panel.append(interval,labeledChoice('どのてきがでる？',options,rule.enemy,value=>rule.enemy=value),
+  checkbox('このてきがたおれたら、ほしをおとす',rule.dropStar,value=>rule.dropStar=value));
+ if(enemies.length)panel.append(note('「おいたてき」をえらぶと、ステージにおいたてきのうごきとたいりょくをつかうよ。'));
+}
+function renderGoal(panel,part){
+ const rule=part.goal||{rule:'enemies',stars:5};
+ const count=field('ほしを何こあつめたら？',rule.stars,1,100,1,n=>{rule.stars=n;part.goal=rule;});
+ count.hidden=rule.rule==='enemies';
+ panel.append(labeledChoice('どうしたらゴールがひらく？',Object.entries(GOAL_RULES),rule.rule,value=>{
+  rule.rule=value;part.goal=rule;count.hidden=value==='enemies';
+ }),count);
+}
 function renderSettings(){
  const panel=$('#inspector');panel.replaceChildren();
+ if(settingsTarget==='upgrades'){renderUpgrades(panel);return;}
  const part=project.objects.find(o=>o.id===settingsTarget);
  if(settingsTarget==='player'){
   const weapon=project.weapon;$('#settings-title').textContent='プレイヤー・たまのせってい';
@@ -89,8 +136,10 @@ function renderSettings(){
   const playerButton=document.createElement('button');playerButton.textContent='プレイヤー・たまのせってい';
   playerButton.onclick=()=>{settingsTarget='player';renderSettings();};panel.append(playerButton);return;
  }
+ if(part.type==='spawner'){renderSpawner(panel,part);return;}
+ if(part.type==='goal'){renderGoal(panel,part);return;}
  if(part.type!=='enemy'){panel.append(note(partNotes[part.type]));return;}
- panel.append(field('たいりょく',part.hp,1,20,1,n=>part.hp=n),note('ゲームがはじまったら、うえからじゅんにうごきをくりかえすよ。'));
+ panel.append(field('たいりょく',part.hp,1,20,1,n=>part.hp=n),checkbox('たおれたら、ほしをおとす',part.dropStar===true,value=>part.dropStar=value),note('ゲームがはじまったら、うえからじゅんにうごきをくりかえすよ。'));
  const changeProgram=action=>{action();save();renderSettings();};
  part.program.forEach((entry,i)=>{
   const block=document.createElement('section'),title=document.createElement('h3'),actions=document.createElement('div');
@@ -109,8 +158,9 @@ function renderSettings(){
 function openSettings(target){settingsTarget=target;renderSettings();settingsDialog.showModal();}
 $('#part-open').onclick=()=>{if(selected)openSettings(selected);};
 $('#player-open').onclick=()=>openSettings('player');
+$('#upgrades-open').onclick=()=>openSettings('upgrades');
 
-const partTools=[['enemy','🤖','てき'],['wall','▧','かべ'],['star','★','ほし'],['goal','⚑','ゴール']];
+const partTools=[['enemy','🤖','てき'],['spawner','◉','てきがでるばしょ'],['wall','▧','かべ'],['star','★','ほし'],['goal','⚑','ゴール']];
 const editTools=[['select','↖','えらぶ'],['erase','⌫','けす']];
 let toolButtons=[];
 function updateTool(next){
@@ -138,7 +188,7 @@ function setMode(next){
  for(const id of ['#tools','#edit-toolbar','#mode-tag','#world-label','#pan-controls'])$(id).hidden=playing;
  for(const id of ['#hud','#touch-controls','#restart'])$(id).hidden=!playing;
  $('#result').hidden=true;$('#workshop').inert=playing;$('#title').disabled=playing;
- if(playing){game=createGame(project);centerOn(game.player);$('#hint').textContent='ひだりでいどう・みぎでたまをうつ　PC: WASD・スペース';}
+ if(playing){lastMessageId=0;game=createGame(project);centerOn(game.player);$('#hint').textContent='ひだりでいどう・みぎでたまをうつ　PC: WASD・スペース';}
  else{updateTool(tool);renderSelection();}
  syncHistory();canvas.focus({preventScroll:true});
 }
@@ -173,7 +223,8 @@ function placement(point){
  const {x,y}=point;if(x<24||y<24||x>WORLD.w-24||y>WORLD.h-24)return null;
  const snapped={type:tool,x:clamp(Math.round(x/32)*32,32,WORLD.w-32),y:clamp(Math.round(y/32)*32,32,WORLD.h-32)};
  const blocked=tool==='wall'&&project.objects.some(o=>Math.abs(o.x-snapped.x)<55&&Math.abs(o.y-snapped.y)<55);
- return {...snapped,reason:project.objects.length>=300?'パーツは300こまでおけます':blocked?'すこしはなれたばしょにおこう':''};
+ const full=tool==='spawner'&&!canAddSpawner(project.objects);
+ return {...snapped,reason:project.objects.length>=300?'パーツは300こまでおけます':full?'てきがでるばしょは12こまで':blocked?'すこしはなれたばしょにおこう':''};
 }
 canvas.onpointerdown=event=>{
  if(mode!=='edit'||gesture)return;
@@ -275,8 +326,8 @@ $('#new').onclick=()=>{
 
 function rounded(x,y,w,h,r,fill){ctx.fillStyle=fill;ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fill();}
 function star(x,y,r,color){ctx.fillStyle=color;ctx.beginPath();for(let i=0;i<10;i++){const a=i*Math.PI/5-Math.PI/2,rr=i%2?r*.45:r;const px=x+Math.cos(a)*rr,py=y+Math.sin(a)*rr;i?ctx.lineTo(px,py):ctx.moveTo(px,py);}ctx.closePath();ctx.fill();}
-function drawObject(o,selectedFlag=false){const {x,y}=o;ctx.save();if(selectedFlag){ctx.strokeStyle='#b7a1ff';ctx.lineWidth=2;ctx.setLineDash([5,4]);ctx.strokeRect(x-38,y-38,76,76);ctx.setLineDash([]);}if(o.type==='wall'){rounded(x-32,y-32,64,64,8,'#405773');rounded(x-27,y-27,54,49,6,'#526b87');ctx.strokeStyle='#6c849e';ctx.strokeRect(x-20,y-20,40,36);}if(o.type==='star'&&!o.collected){ctx.shadowColor='#f9d47a';ctx.shadowBlur=18;star(x,y,16,'#ffda80');}if(o.type==='goal'){const locked=mode==='play'&&game.objects.some(e=>e.type==='enemy');ctx.strokeStyle=locked?'#6c6495':'#b6a0fc';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(x,y+18,30,13,0,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(x-8,y+12);ctx.lineTo(x-8,y-25);ctx.lineTo(x+19,y-15);ctx.lineTo(x-8,y-5);ctx.stroke();if(locked){ctx.font='10px system-ui';ctx.fillStyle='#a5a3b5';ctx.textAlign='center';ctx.fillText('敵をたおすと開く',x,y+45);}}
-if(o.type==='enemy'){ctx.shadowColor='#ff8d9b66';ctx.shadowBlur=15;rounded(x-23,y-22,46,44,14,'#dd7189');ctx.shadowBlur=0;rounded(x-17,y-17,34,29,9,'#ff9ead');rounded(x-14,y-9,28,13,5,'#493750');ctx.fillStyle='#fff1c8';ctx.fillRect(x-9,y-5,5,5);ctx.fillRect(x+4,y-5,5,5);ctx.strokeStyle='#fc9aaa';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x,y-22);ctx.lineTo(x,y-30);ctx.stroke();ctx.beginPath();ctx.arc(x,y-31,3,0,Math.PI*2);ctx.fill();if(mode==='play'){rounded(x-20,y+29,40,4,2,'#51384e');rounded(x-20,y+29,40*clamp(o.hp/(project.objects.find(p=>p.id===o.id)?.hp||3),0,1),4,2,'#f8a5b5');}}
+function drawObject(o,selectedFlag=false){const {x,y}=o;ctx.save();if(selectedFlag){ctx.strokeStyle='#b7a1ff';ctx.lineWidth=2;ctx.setLineDash([5,4]);ctx.strokeRect(x-38,y-38,76,76);ctx.setLineDash([]);}if(o.type==='wall'){rounded(x-32,y-32,64,64,8,'#405773');rounded(x-27,y-27,54,49,6,'#526b87');ctx.strokeStyle='#6c849e';ctx.strokeRect(x-20,y-20,40,36);}if(o.type==='star'&&!o.collected){ctx.shadowColor='#f9d47a';ctx.shadowBlur=18;star(x,y,16,'#ffda80');}if(o.type==='spawner'){ctx.fillStyle='#773e46';ctx.strokeStyle='#ffb891';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,y,22,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.beginPath();ctx.arc(x,y,10,0,Math.PI*2);ctx.stroke();}if(o.type==='goal'){const locked=mode==='play'&&!goalReady(game,o);ctx.strokeStyle=locked?'#6c6495':'#b6a0fc';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(x,y+18,30,13,0,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(x-8,y+12);ctx.lineTo(x-8,y-25);ctx.lineTo(x+19,y-15);ctx.lineTo(x-8,y-5);ctx.stroke();if(locked){ctx.font='10px system-ui';ctx.fillStyle='#a5a3b5';ctx.textAlign='center';ctx.fillText(o.goal?.rule==='stars'?'ほしをあつめよう':o.goal?.rule==='both'?'てきとほしをたしかめよう':'てきをたおそう',x,y+45);}}
+if(o.type==='enemy'){ctx.shadowColor='#ff8d9b66';ctx.shadowBlur=15;rounded(x-23,y-22,46,44,14,'#dd7189');ctx.shadowBlur=0;rounded(x-17,y-17,34,29,9,'#ff9ead');rounded(x-14,y-9,28,13,5,'#493750');ctx.fillStyle='#fff1c8';ctx.fillRect(x-9,y-5,5,5);ctx.fillRect(x+4,y-5,5,5);ctx.strokeStyle='#fc9aaa';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x,y-22);ctx.lineTo(x,y-30);ctx.stroke();ctx.beginPath();ctx.arc(x,y-31,3,0,Math.PI*2);ctx.fill();if(mode==='play'){rounded(x-20,y+29,40,4,2,'#51384e');rounded(x-20,y+29,40*clamp(o.hp/(o.maxHp||project.objects.find(p=>p.id===o.id)?.hp||3),0,1),4,2,'#f8a5b5');}}
 if(o.type==='player'){if(mode==='play'&&o.invincible>0&&Math.floor(o.invincible*12)%2)ctx.globalAlpha=.4;ctx.translate(x,y);ctx.rotate((o.angle||0)+Math.PI/2);ctx.shadowColor='#69efdc80';ctx.shadowBlur=22;ctx.fillStyle='#80e6d7';ctx.beginPath();ctx.moveTo(0,-28);ctx.lineTo(21,20);ctx.lineTo(0,12);ctx.lineTo(-21,20);ctx.closePath();ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#e7fff7';ctx.beginPath();ctx.moveTo(0,-17);ctx.lineTo(7,4);ctx.lineTo(-7,4);ctx.closePath();ctx.fill();ctx.fillStyle='#d6b6ff';ctx.beginPath();ctx.moveTo(-6,19);ctx.lineTo(0,31+Math.sin(performance.now()/80)*4);ctx.lineTo(6,19);ctx.fill();}ctx.restore();}
 function drawOverview(){
  const bounds=overview.getBoundingClientRect(),ratio=Math.min(devicePixelRatio||1,2);
@@ -309,7 +360,16 @@ function draw(){
  for(let x=Math.ceil(left/cell)*cell;x<right;x+=cell)for(let y=Math.ceil(top/cell)*cell;y<bottom;y+=cell){ctx.beginPath();ctx.arc(x,y,1,0,Math.PI*2);ctx.fill();}
  ctx.strokeStyle='#51617d';ctx.lineWidth=3;ctx.strokeRect(0,0,WORLD.w,WORLD.h);
  const objects=mode==='play'?game.objects:project.objects;
- for(const part of objects)if(part.type!=='player')drawObject(part,mode==='edit'&&part.id===selected);
+ const showEnemyNumbers=mode==='edit'&&objects.some(part=>part.id===selected&&part.type==='spawner');
+ let enemyNumber=0;
+ for(const part of objects){
+  if(part.type==='player')continue;
+  drawObject(part,mode==='edit'&&part.id===selected);
+  if(showEnemyNumbers&&part.type==='enemy'){
+   ctx.save();ctx.font='bold 14px system-ui';ctx.textAlign='center';ctx.fillStyle='#fff';
+   ctx.fillText(String(++enemyNumber),part.x,part.y-41);ctx.restore();
+  }
+ }
  const player=mode==='play'?game.player:start();drawObject(player,mode==='edit'&&selected===player.id);
  if(mode==='edit'&&preview){
   ctx.save();ctx.globalAlpha=.55;drawObject(preview);ctx.globalAlpha=1;
@@ -333,7 +393,8 @@ function frame(time){
   },dt);
   camera.x+=(game.player.x-camera.x)*Math.min(1,dt*10);camera.y+=(game.player.y-camera.y)*Math.min(1,dt*10);
   const hp=Math.max(0,game.player.hp);$('#health').textContent='♥'.repeat(hp)+'♡'.repeat(5-hp);
-  $('#score').textContent=`★ ${game.score}　🤖 ${game.objects.filter(o=>o.type==='enemy').length}`;
+  $('#score').textContent=`★ ${game.stars}　${game.score}てん　🤖 ${game.objects.filter(o=>o.type==='enemy').length}`;
+  if(lastMessageId!==game.messageId){lastMessageId=game.messageId;toast(game.message);}
   if(game.state!=='playing'&&$('#result').hidden){
    const won=game.state==='won';$('#result').hidden=false;
    $('#result-title').textContent=won?'ステージクリア！':'もういちどチャレンジ！';
