@@ -1,7 +1,7 @@
-import {isDiagonal,diagonalContains} from './architecture3d.js?v=20261119a';
-import {nearbyObjects} from './spatial3d.js?v=20261119a';
-import {shootVolley} from './combat3d.js?v=20261119a';
-import {safeShot} from './weapons3d.js?v=20261119a';
+import {isDiagonal,diagonalContains} from './architecture3d.js?v=20261119b';
+import {nearbyObjects} from './spatial3d.js?v=20261119b';
+import {shootVolley} from './combat3d.js?v=20261119b';
+import {safeShot} from './weapons3d.js?v=20261119b';
 
 export function recruitTarget(g,yaw){
  let best=null,score=0;

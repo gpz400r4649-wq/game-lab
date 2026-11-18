@@ -1,3 +1,5 @@
+import {nearestRoad,ROAD_WIDTHS} from './road3d.js?v=20261119b';
+
 const MAX_SPEED=12;
 const REVERSE_SPEED=4;
 const TURN_SPEED=2.4;
@@ -18,8 +20,9 @@ export function moveRaceGate(objects,gate,position){
  return index+1;
 }
 
-export function createCarRun(objects){
- return {speed:0,heading:0,wheelAngle:0,steering:0,gates:orderedRaceGates(objects),nextGate:0};
+export function createCarRun(objects,heading=0,spawn){
+ const gates=orderedRaceGates(objects);
+ return {speed:0,heading,wheelAngle:0,steering:0,gates,nextGate:0,startsInFirst:!!(spawn&&gates[0]&&inGate(spawn,gates[0]))};
 }
 
 export function carMotion(car,input,grounded,dt){
@@ -38,16 +41,45 @@ export function carMotion(car,input,grounded,dt){
  return {x:-Math.sin(car.heading)*distance,z:-Math.cos(car.heading)*distance};
 }
 
+const GATE_DEPTH=.6;
+export const raceGateWidth=gate=>gate.gateWidth??(gate.rotation===90?gate.d:gate.w);
+export const raceGateHeading=gate=>gate.gateYaw??(gate.rotation||0)*Math.PI/180;
+
+function orientWideGate(gate,width,heading){
+ const cosine=Math.abs(Math.cos(heading)),sine=Math.abs(Math.sin(heading));
+ return Object.assign(gate,{gateWidth:width,gateYaw:heading,rotation:0,w:width*cosine+GATE_DEPTH*sine,d:width*sine+GATE_DEPTH*cosine});
+}
+export function validGateFit(gate){
+ if(gate.gateWidth===undefined&&gate.gateYaw===undefined)return true;
+ if(!ROAD_WIDTHS.includes(gate.gateWidth)||!Number.isFinite(gate.gateYaw)||Math.abs(gate.gateYaw)>Math.PI)return false;
+ const expected=orientWideGate({},gate.gateWidth,gate.gateYaw);
+ return Math.abs(gate.w-expected.w)<.001&&Math.abs(gate.d-expected.d)<.001;
+}
+export function fitRaceGate(gate,roads,point){
+ if(gate.type!=='raceGate'||Math.abs(point.y??gate.y)>.35)return gate;
+ const fit=nearestRoad(roads,point);if(!fit)return gate;
+ Object.assign(gate,{x:fit.x,y:0,z:fit.z});
+ return orientWideGate(gate,fit.width,fit.heading);
+}
+export function turnRaceGate(gate){
+ if(gate.gateYaw!==undefined){
+  const angle=gate.gateYaw+Math.PI/2;
+  return orientWideGate(gate,gate.gateWidth,angle>Math.PI?angle-Math.PI*2:angle);
+ }
+ gate.rotation=gate.rotation===90?0:90;[gate.w,gate.d]=[gate.d,gate.w];return gate;
+}
 function inGate(player,gate){
- const turned=gate.rotation===90;
- return Math.abs(player.x-gate.x)<gate.w/2+(turned?.4:0)&&Math.abs(player.z-gate.z)<gate.d/2+(turned?0:.4)&&player.y>=gate.y-.15&&player.y<gate.y+gate.h-.8;
+ const angle=raceGateHeading(gate),dx=player.x-gate.x,dz=player.z-gate.z;
+ const x=dx*Math.cos(angle)-dz*Math.sin(angle),z=dx*Math.sin(angle)+dz*Math.cos(angle);
+ return Math.abs(x)<raceGateWidth(gate)/2&&Math.abs(z)<GATE_DEPTH/2+.4&&player.y>=gate.y-.15&&player.y<gate.y+gate.h-.8;
 }
 
 export function updateRaceGates(game,before,notify){
  const car=game.car;
  if(!car.gates.length||car.nextGate>=car.gates.length)return;
  const gate=car.gates[car.nextGate];
- if(inGate(game.player,gate)&&!inGate(before,gate)){
+ const wasIn=inGate(before,gate),isIn=inGate(game.player,gate);
+ if(isIn&&!wasIn||!isIn&&wasIn&&car.nextGate===0&&car.startsInFirst){
   car.nextGate++;
   if(car.nextGate===car.gates.length)game.state='won';
   else notify(`ゲート ${car.nextGate} をとおったよ！`);

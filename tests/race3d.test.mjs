@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {create3D,fresh3D,part,step3D,validate3D} from '../engine3d.js';
-import {moveRaceGate} from '../race3d.js';
-import {makeCarModel,updateCarModel} from '../race-model3d.js';
+import {fitRaceGate,moveRaceGate,raceGateHeading,raceGateWidth} from '../race3d.js';
+import {makeCarModel,makeRaceGateModel,updateCarModel} from '../race-model3d.js';
 import {Quaternion,Vector3} from '../vendor/three.module.min.js';
 
 function tick(game,project,seconds,input){
@@ -66,4 +66,33 @@ test('タイヤの転がる角度を変えても車軸の向きは変わらず�
  });
  updateCarModel(model,{wheelAngle:-2,steering:.4});
  axles.forEach(({wheel,front},index)=>assert.equal(axis(wheel).distanceTo(before[index])>.1,front));
+});
+
+
+test('最初の道路のはじめを向いて走り出し、ここからためすは選んだ場所を使う',()=>{
+ const p=fresh3D('car');
+ p.roads=[{id:'first',width:8,closed:false,points:[{x:12,z:20},{x:32,z:20}]},
+  {id:'second',width:8,closed:false,points:[{x:-30,z:-25},{x:-20,z:-25}]}];
+ const g=create3D(validate3D(p));
+ assert.equal(g.player.x,12);assert.equal(g.player.z,20);assert.equal(g.car.heading,-Math.PI/2);
+ tick(g,p,1,{z:-1});assert.ok(g.player.x>14);assert.equal(g.player.z,20);
+ const test=create3D(p,{testSpawn:{x:5,y:0,z:12}});assert.equal(test.player.x,5);assert.equal(test.player.z,12);
+});
+
+test('斜めの道に幅12mのゲートをそろえ、道の端近くでも通過できる',()=>{
+ const p=fresh3D('car');
+ p.roads=[{id:'diagonal',width:12,closed:false,points:[{x:0,z:0},{x:20,z:-20}]}];
+ const gate=fitRaceGate(part('raceGate'),p.roads,{x:9,z:-11,y:0});p.objects=[gate];
+ assert.equal(gate.x,10);assert.equal(gate.z,-10);assert.equal(raceGateWidth(gate),12);assert.equal(raceGateHeading(gate),-Math.PI/4);
+ const model=makeRaceGateModel(gate);assert.equal(model.rotation.y,-Math.PI/4);
+ assert.deepEqual(model.userData.lights.map(light=>light.position.x),[-6,6]);
+ const g=create3D(validate3D(p),{testSpawn:{x:6,y:0,z:-14,heading:-Math.PI/4}});
+ Object.assign(g.player,{x:10+4/Math.sqrt(2)-3/Math.sqrt(2),z:-10+4/Math.sqrt(2)+3/Math.sqrt(2)});
+ tick(g,p,1.4,{z:-1});assert.equal(g.state,'won');
+});
+
+test('スタートに置いた最初のゲートは、そのまま走り抜けて通過できる',()=>{
+ const p=fresh3D('car');p.roads=[{id:'straight',width:8,closed:false,points:[{x:0,z:0},{x:0,z:-20}]}];
+ p.objects=[fitRaceGate(part('raceGate'),p.roads,{x:0,y:0,z:0})];
+ const g=create3D(p);tick(g,p,.8,{z:-1});assert.equal(g.state,'won');
 });

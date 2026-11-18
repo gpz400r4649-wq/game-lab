@@ -1,10 +1,10 @@
-import {isFurniture,isDesk,furnitureTopAt} from './furniture3d.js?v=20261119a';
-import {halfFloorMask,ROOF_SHELL_RATIO,isDiagonal,diagonalContains,footprintsIntersect} from './architecture3d.js?v=20261119a';
-import {inheritNewCharacter} from './character-defaults3d.js?v=20261119a';
-import {DEFAULT_APPEARANCE,validAppearance} from './appearance3d.js?v=20261119a';
-import {MAX_PARTS,MAX_BUILD_Y,MAX_BUILD_LEVEL} from './limits3d.js?v=20261119a';
-import {worldHalf,coordinateLimit} from './world3d.js?v=20261119a';
-import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261119a';
+import {isFurniture,isDesk,furnitureTopAt} from './furniture3d.js?v=20261119b';
+import {halfFloorMask,ROOF_SHELL_RATIO,isDiagonal,diagonalContains,footprintsIntersect} from './architecture3d.js?v=20261119b';
+import {inheritNewCharacter} from './character-defaults3d.js?v=20261119b';
+import {DEFAULT_APPEARANCE,validAppearance} from './appearance3d.js?v=20261119b';
+import {MAX_PARTS,MAX_BUILD_Y,MAX_BUILD_LEVEL} from './limits3d.js?v=20261119b';
+import {worldHalf,coordinateLimit} from './world3d.js?v=20261119b';
+import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts,validHandling} from './weapons3d.js?v=20261119b';
 // Shared by editor, gameplay and placement preview. No browser dependency.
 export const BUILD_TYPES={wall:'壁',floor:'床',roof:'屋根',ramp:'スロープ',diagonal:'ななめの壁',halfFloor:'ハーフの床'};
 export const GRID={cell:4,layer:3,size:60};
@@ -123,6 +123,7 @@ export function editorPlacementBlocker(piece,objects){
 export function editorPlacementReason(piece,objects,spawn,world=60){
   if(objects.length>=MAX_PARTS)return `部品は${MAX_PARTS}個まで置けます`;
   if(!Number.isFinite(piece.y)||piece.y<0||piece.y>MAX_BUILD_Y)return `高さは0〜${MAX_BUILD_Y}mの中に置こう`;
+  if(piece.type==='raceGate'&&(Math.abs(piece.x)+piece.w/2>worldHalf(world)||Math.abs(piece.z)+piece.d/2>worldHalf(world)))return 'ゲートがマップの中に入る場所をえらぼう';
   if(!GRID_PARTS.has(piece.type))return '';
   if(Math.abs(piece.x)>coordinateLimit(world)||Math.abs(piece.z)>coordinateLimit(world)||Math.abs(piece.x)+piece.w/2>worldHalf(world)||Math.abs(piece.z)+piece.d/2>worldHalf(world))return 'ステージの中に置こう';
   if(spawn&&(!isDiagonal(piece)||diagonalContains(piece,spawn.x,spawn.z,.35))&&Math.abs(piece.x-spawn.x)<piece.w/2+.35&&Math.abs(piece.z-spawn.z)<piece.d/2+.35&&piece.y<spawn.y+1.7&&piece.y+piece.h>spawn.y)return 'スタートに重ならない場所に置こう';

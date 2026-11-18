@@ -1,5 +1,5 @@
-import {GRID} from './building3d.js?v=20261119a';
-import {worldHalf,coordinateLimit} from './world3d.js?v=20261119a';
+import {GRID} from './building3d.js?v=20261119b';
+import {worldHalf,coordinateLimit} from './world3d.js?v=20261119b';
 
 export const ROAD_WIDTHS=[4,8,12];
 export const MAX_ROADS=16;
@@ -73,4 +73,40 @@ export function sampleRoad(road){
  }
  if(closed)path.push({...path[0]});
  return path;
+}
+
+const roadPaths=new WeakMap();
+export function savedRoadPath(road){
+ let path=roadPaths.get(road);
+ if(!path){path=sampleRoad(road);roadPaths.set(road,path);}
+ return path;
+}
+
+function closestOnPath(path,point,maxGap,last=path.length-1){
+ let nearest=null,best=maxGap*maxGap;
+ for(let index=1;index<=last;index++){
+  const a=path[index-1],b=path[index],dx=b.x-a.x,dz=b.z-a.z,length=dx*dx+dz*dz;
+  if(length<.000001)continue;
+  const fraction=Math.max(0,Math.min(1,((point.x-a.x)*dx+(point.z-a.z)*dz)/length));
+  const x=a.x+dx*fraction,z=a.z+dz*fraction,gap=(x-point.x)**2+(z-point.z)**2;
+  if(gap<best){best=gap;nearest={x,z,heading:Math.atan2(-dx,-dz),gap};}
+ }
+ return nearest;
+}
+
+export function nearestRoad(roads,point){
+ let nearest=null;
+ for(const road of roads||[]){
+  const match=closestOnPath(savedRoadPath(road),point,road.width/2+.65);
+  if(match&&(!nearest||match.gap<nearest.gap))nearest={...match,width:road.width};
+ }
+ return nearest;
+}
+
+export function courseStart(project){
+ const road=project.template==='car'&&project.roads?.[0];
+ if(!road)return project.spawn;
+ const path=savedRoadPath(road);
+ const start=closestOnPath(path,road.points[0],Infinity,road.closed?12:1);
+ return start?{x:start.x,y:0,z:start.z,heading:start.heading}:project.spawn;
 }

@@ -1,4 +1,5 @@
 import * as T from './vendor/three.module.min.js';
+import {raceGateWidth,raceGateHeading} from './race3d.js?v=20261119b';
 
 const material=(color)=>new T.MeshStandardMaterial({color,roughness:.8});
 const body=material(0x7563db),trim=material(0x443b7d),glass=material(0x86d7de),tire=material(0x27364a),hub=material(0xaabbd2),lamp=material(0xffeeaa),tail=material(0xe77b91);
@@ -39,14 +40,15 @@ export function updateCarModel(model,car){
 }
 
 export function makeRaceGateModel(part){
- const model=new T.Group(),lights=[];
+ const model=new T.Group(),lights=[],width=raceGateWidth(part);
  for(const side of [-1,1]){
-  box(model,gateFrame,side*1.9,1.44,0,.22,2.88,.24);
-  lights.push(box(model,gateReady,side*1.9,1.53,0,.26,1.8,.28));
+  const x=side*width/2;
+  box(model,gateFrame,x,1.44,0,.22,2.88,.24);
+  lights.push(box(model,gateReady,x,1.53,0,.26,1.8,.28));
  }
- box(model,gateFrame,0,2.89,0,4.02,.22,.26);
- for(let x=-1.75;x<=1.75;x+=.5)box(model,gateAccent,x,2.9,-.142,.225,.11,.02);
- model.rotation.y=(part.rotation||0)*Math.PI/180;
+ box(model,gateFrame,0,2.89,0,width+.22,.22,.26);
+ for(let x=-width/2+.25;x<=width/2-.25;x+=.5)box(model,gateAccent,x,2.9,-.142,.225,.11,.02);
+ model.rotation.y=raceGateHeading(part);
  model.userData.lights=lights;
  return model;
 }
