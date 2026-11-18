@@ -613,3 +613,10 @@ html:not(.car-workshop) #road-open3 { display:none; }
 .speedometer-now small,.speedometer-peak { font-size:10px; text-align:right; }
 .speedometer-track { height:4px; overflow:hidden; border-radius:4px; background:#e2daf3; }
 #speedometer3 #speed-bar3 { display:block; height:100%; background:#785ccc; transform:scaleX(0); transform-origin:left; }
+#car-sound3 {
+ min-height:44px; padding:0 10px; pointer-events:auto; touch-action:manipulation;
+ background:#faf9ff; color:#3a315b; border:1px solid #d8cff2; font-size:11px; white-space:nowrap;
+}
+#car-sound3[aria-pressed="true"] { color:white; background:#694cb7; border-color:#694cb7; }
+#car-sound3 b { margin-inline-start:3px; }
+#car-sound3[hidden] { display:none; }
