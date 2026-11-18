@@ -1,4 +1,4 @@
-import {WORLD,TYPES,ACTIONS,UPGRADES,SPAWN_ENEMIES,GOAL_RULES,MAX_UPGRADES,canAddSpawner,goalReady,enemySettings,enemyUsesDefaults,clamp,makeObject,freshProject,validateProject,createGame,stepGame} from './engine.js?v=20261118-2d-enemies';
+import {WORLD,TYPES,ACTIONS,UPGRADES,SPAWN_ENEMIES,GOAL_RULES,MAX_UPGRADES,canAddSpawner,goalReady,enemySettings,enemyUsesDefaults,clamp,makeObject,freshProject,validateProject,createGame,stepGame} from './engine.js?v=20261118-2d-enemies-labels';
 import {createEditHistory} from './history3d.js?v=20261118h';
 import {createChoiceControl} from './choices3d.js?v=20261118h';
 import {configureNumericInput} from './numeric3d.js?v=20261118h';
@@ -107,7 +107,7 @@ function renderSpawner(panel,part){
  const interval=field('つぎまで何びょうまつ？',rule.interval,2,60,1,n=>rule.interval=n);interval.hidden=rule.waves===1;
  panel.append(interval,labeledChoice('どのてきがでる？',options,rule.enemy,value=>rule.enemy=value),
   labeledChoice('たおれたら、ほしをおとす？',
-   [['shared','全体のせってい'],['yes','おとす'],['no','おとさない']],
+   [['shared','ぜんたいのせってい'],['yes','おとす'],['no','おとさない']],
    rule.dropStar===undefined?'shared':rule.dropStar?'yes':'no',value=>{
     if(value==='shared')delete rule.dropStar;else rule.dropStar=value==='yes';
    }));
@@ -149,8 +149,8 @@ function renderSettings(){
 function renderEnemySettings(panel,part){
  const settings=enemySettings(project,part);
  if(!part){
-  $('#settings-title').textContent='てき全体のせってい';
-  panel.append(note('全体のせっていをつかうてきに、ここでえらんだうごきやたいりょくをつかうよ。'));
+  $('#settings-title').textContent='てきぜんたいのせってい';
+  panel.append(note('ぜんたいのせっていをつかうてきに、ここでえらんだうごきやたいりょくをつかうよ。'));
  }else{
   const shared=enemyUsesDefaults(part);
   panel.append(checkbox('このてきだけ、せっていをかえる',!shared,individual=>{
@@ -159,8 +159,8 @@ function renderEnemySettings(panel,part){
    renderSettings();
   }));
   if(shared){
-   panel.append(note(`全体のせっていをつかっているよ。たいりょく ${settings.hp}、ほしは${settings.dropStar?'おとす':'おとさない'}。`));
-   const button=document.createElement('button');button.textContent='てき全体のせっていをみる';
+   panel.append(note(`ぜんたいのせっていをつかっているよ。たいりょく ${settings.hp}、ほしは${settings.dropStar?'おとす':'おとさない'}。`));
+   const button=document.createElement('button');button.textContent='てきぜんたいのせっていをみる';
    button.onclick=()=>{settingsTarget='enemies';renderSettings();};panel.append(button);
    return;
   }

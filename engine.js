@@ -2,7 +2,7 @@ export const WORLD={w:2400,h:1600};
 export const TYPES={player:{name:'スタート',icon:'🚀',color:'#74dbd1'},enemy:{name:'てきロボット',icon:'🤖',color:'#fc949a'},spawner:{name:'てきがでるばしょ',icon:'◉',color:'#efad80'},wall:{name:'かべ',icon:'▧',color:'#687e9b'},star:{name:'ほし',icon:'★',color:'#f4d37b'},goal:{name:'ゴール',icon:'⚑',color:'#ae9af5'}};
 export const ACTIONS={chase:'プレイヤーを追いかける',patrol:'左右に動く',shoot:'近づいたら弾を撃つ',flee:'近づいたら逃げる'};
 export const UPGRADES={damage:'たまをつよくする',spread:'たまをふやす',interval:'たまをはやくうつ',speed:'いどうをはやくする',heal:'たいりょくを２かいふく'};
-export const SPAWN_ENEMIES={shared:'てき全体のせってい',chaser:'おいかけるてき',shooter:'たまをうつてき',tough:'たいりょくのあるてき'};
+export const SPAWN_ENEMIES={shared:'てきぜんたいのせってい',chaser:'おいかけるてき',shooter:'たまをうつてき',tough:'たいりょくのあるてき'};
 export const GOAL_RULES={enemies:'てきをぜんぶたおす',stars:'ほしをあつめる',both:'てきをたおして、ほしもあつめる'};
 export const MAX_UPGRADES=8;
 const MAX_SPAWNERS=12,MAX_ACTIVE_SPAWNED=48,MAX_BULLETS=512;
@@ -37,7 +37,7 @@ export function validateProject(data){
  if(!w||!validNumber(w.speed,100,1000)||!validNumber(w.interval,.1,2)||!validInteger(w.damage,1,10)||![1,3,5].includes(w.spread))throw Error('武器の設定が読み込めません');
  if(data.upgrades!==undefined&&(!Array.isArray(data.upgrades)||data.upgrades.length>MAX_UPGRADES||data.upgrades.some(rule=>!rule||!validInteger(rule.stars,1,100)||!Object.hasOwn(UPGRADES,rule.effect))))throw Error('ほしのパワーアップのせっていをたしかめてね');
  const defaults=data.enemyDefaults;
- if(defaults!==undefined&&(!defaults||!validInteger(defaults.hp,1,20)||!validProgram(defaults.program)||typeof defaults.dropStar!=='boolean'))throw Error('てき全体のせっていをたしかめてね');
+ if(defaults!==undefined&&(!defaults||!validInteger(defaults.hp,1,20)||!validProgram(defaults.program)||typeof defaults.dropStar!=='boolean'))throw Error('てきぜんたいのせっていをたしかめてね');
  const ids=new Set();let spawners=0,players=0;
  for(const o of data.objects){
   if(!o||!Object.hasOwn(TYPES,o.type)||typeof o.id!=='string'||ids.has(o.id)||!validNumber(o.x,24,WORLD.w-24)||!validNumber(o.y,24,WORLD.h-24)||!validInteger(o.hp,1,20)||!Array.isArray(o.program)||o.program.length>8)throw Error('パーツの設定が読み込めません');
