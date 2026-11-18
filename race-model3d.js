@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.min.js';
-import {raceGateWidth,raceGateHeading} from './race3d.js?v=20261119b';
+import {raceGateWidth,raceGateHeading} from './race3d.js?v=20261119c';
 
 const material=(color)=>new T.MeshStandardMaterial({color,roughness:.8});
 const body=material(0x7563db),trim=material(0x443b7d),glass=material(0x86d7de),tire=material(0x27364a),hub=material(0xaabbd2),lamp=material(0xffeeaa),tail=material(0xe77b91);

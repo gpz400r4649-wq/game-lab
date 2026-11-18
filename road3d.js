@@ -1,5 +1,5 @@
-import {GRID} from './building3d.js?v=20261119b';
-import {worldHalf,coordinateLimit} from './world3d.js?v=20261119b';
+import {GRID} from './building3d.js?v=20261119c';
+import {worldHalf,coordinateLimit} from './world3d.js?v=20261119c';
 
 export const ROAD_WIDTHS=[4,8,12];
 export const MAX_ROADS=16;
@@ -98,7 +98,7 @@ export function nearestRoad(roads,point){
  let nearest=null;
  for(const road of roads||[]){
   const match=closestOnPath(savedRoadPath(road),point,road.width/2+.65);
-  if(match&&(!nearest||match.gap<nearest.gap))nearest={...match,width:road.width};
+  if(match&&(!nearest||match.gap<nearest.gap))nearest={...match,width:road.width,roadId:road.id};
  }
  return nearest;
 }

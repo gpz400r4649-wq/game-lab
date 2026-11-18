@@ -1,4 +1,4 @@
-import {nearestRoad,ROAD_WIDTHS} from './road3d.js?v=20261119b';
+import {nearestRoad,ROAD_WIDTHS} from './road3d.js?v=20261119c';
 
 const MAX_SPEED=12;
 const REVERSE_SPEED=4;
@@ -50,16 +50,35 @@ function orientWideGate(gate,width,heading){
  return Object.assign(gate,{gateWidth:width,gateYaw:heading,rotation:0,w:width*cosine+GATE_DEPTH*sine,d:width*sine+GATE_DEPTH*cosine});
 }
 export function validGateFit(gate){
+ if(gate.gateRoadId!==undefined&&(typeof gate.gateRoadId!=='string'||!gate.gateRoadId||gate.gateRoadId.length>80||gate.gateWidth===undefined))return false;
  if(gate.gateWidth===undefined&&gate.gateYaw===undefined)return true;
  if(!ROAD_WIDTHS.includes(gate.gateWidth)||!Number.isFinite(gate.gateYaw)||Math.abs(gate.gateYaw)>Math.PI)return false;
  const expected=orientWideGate({},gate.gateWidth,gate.gateYaw);
  return Math.abs(gate.w-expected.w)<.001&&Math.abs(gate.d-expected.d)<.001;
 }
 export function fitRaceGate(gate,roads,point){
- if(gate.type!=='raceGate'||Math.abs(point.y??gate.y)>.35)return gate;
- const fit=nearestRoad(roads,point);if(!fit)return gate;
- Object.assign(gate,{x:fit.x,y:0,z:fit.z});
+ if(gate.type!=='raceGate')return gate;
+ const fit=Math.abs(point.y??gate.y)<=.35&&nearestRoad(roads,point);
+ if(!fit){delete gate.gateRoadId;return gate;}
+ Object.assign(gate,{x:fit.x,y:0,z:fit.z,gateRoadId:fit.roadId});
  return orientWideGate(gate,fit.width,fit.heading);
+}
+export function updateRoadGateWidths(objects,previousRoads,nextRoads){
+ const next=new Map(nextRoads.map(road=>[road.id,road]));
+ return objects.map(gate=>{
+  if(gate.type!=='raceGate'||gate.gateWidth===undefined||Math.abs(gate.y)>.35)return gate;
+  const linked=gate.gateRoadId&&previousRoads.find(road=>road.id===gate.gateRoadId);
+  // Older gates did not store a road ID. A fitted gate at an old centreline
+  // with the old road width still identifies which road it was placed on.
+  const nearby=linked?nearestRoad([linked],gate):null;
+  const legacy=!nearby&&nearestRoad(previousRoads.filter(road=>road.width===gate.gateWidth),gate);
+  const roadId=nearby?.roadId||(legacy&&legacy.gap<.05?legacy.roadId:null);
+  if(!roadId)return gate;
+  const road=next.get(roadId);
+  if(!road){const detached={...gate};delete detached.gateRoadId;return detached;}
+  if(road.width===gate.gateWidth)return gate;
+  return orientWideGate({...gate,gateRoadId:road.id},road.width,gate.gateYaw);
+ });
 }
 export function turnRaceGate(gate){
  if(gate.gateYaw!==undefined){

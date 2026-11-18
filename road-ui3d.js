@@ -1,6 +1,7 @@
-import {MAX_ROADS,MAX_ROAD_POINTS,ROAD_WIDTHS,roadPoint,roadGridSites,nearestRoadHandle,roadPointsFit,validRoads} from './road3d.js?v=20261119b';
-import {mountLiveRangeEditor} from './range-panel3d.js?v=20261119b';
-import {setStageRangePainter} from './stage-range3d.js?v=20261119b';
+import {updateRoadGateWidths} from './race3d.js?v=20261119c';
+import {MAX_ROADS,MAX_ROAD_POINTS,ROAD_WIDTHS,roadPoint,roadGridSites,nearestRoadHandle,roadPointsFit,validRoads} from './road3d.js?v=20261119c';
+import {mountLiveRangeEditor} from './range-panel3d.js?v=20261119c';
+import {setStageRangePainter} from './stage-range3d.js?v=20261119c';
 
 export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,toast}){
  const dialog=$('#road-dialog3'),list=$('#road-list3'),add=$('#road-add3');
@@ -15,13 +16,18 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,toast
    const row=document.createElement('div');row.className='road-list-row';
    const label=`どうろ ${index+1}`;
    const edit=button(`${label}をなおす`,()=>openEditor(road));
-   const remove=button('けす',()=>{getProject().roads=roads.filter(item=>item.id!==road.id);save();rebuild();renderList();toast('どうろをけしたよ。もどすでもとにもどせるよ');});
+   const remove=button('けす',()=>{applyRoads(roads.filter(item=>item.id!==road.id));renderList();toast('どうろをけしたよ。もどすでもとにもどせるよ');});
    remove.setAttribute('aria-label',`${label}をけす`);row.append(edit,remove);list.append(row);
   });
  }
  $('#road-open3').onclick=()=>{renderList();dialog.showModal();};
  add.onclick=()=>openEditor({id:crypto.randomUUID(),width:8,closed:false,points:[]});
 
+ function applyRoads(next){
+  const project=getProject();
+  project.objects=updateRoadGateWidths(project.objects,project.roads||[],next);
+  project.roads=next;save();rebuild();
+ }
  function openEditor(original){
   dialog.close();
   let draft=structuredClone(original),selected=-1,pointer=null,mode=original.points.length?'move':'add',returnToList=false,cameraRestore=null;
@@ -54,7 +60,7 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,toast
    const project=getProject(),roads=project.roads||[];
    const next=roads.some(road=>road.id===draft.id)?roads.map(road=>road.id===draft.id?draft:road):[...roads,draft];
    if(!validRoads(next,project))return;
-   project.roads=next;save();rebuild();returnToList=true;finish();
+   applyRoads(next);returnToList=true;finish();
   },'primary');
   const cancel=button('やめる',()=>{returnToList=true;finish();});
   const help=document.createElement('span');help.className='road-editor-hint';help.setAttribute('role','status');
