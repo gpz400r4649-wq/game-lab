@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {create3D,fresh3D,part,step3D,validate3D} from '../engine3d.js';
 import {moveRaceGate} from '../race3d.js';
+import {makeCarModel,updateCarModel} from '../race-model3d.js';
+import {Quaternion,Vector3} from '../vendor/three.module.min.js';
 
 function tick(game,project,seconds,input){
  for(let step=0;step<Math.round(seconds/.02);step++)step3D(game,project,input,.02);
@@ -46,4 +48,20 @@ test('ゲートの順ばんを入れ替えられ、飛ばすとクリアにな�
  assert.equal(g.car.nextGate,1);assert.equal(g.state,'playing');
  Object.assign(g.player,{x:0,y:0,z:3,vy:0,grounded:true});g.car.speed=0;
  tick(g,p,1,{z:1});assert.equal(g.car.nextGate,2);assert.equal(g.state,'won');
+});
+
+
+test('タイヤの転がる角度を変えても車軸の向きは変わらず、前輪だけがハンドルで向きを変える',()=>{
+ const model=makeCarModel();
+ const axis=wheel=>new Vector3(0,1,0).applyQuaternion(wheel.getWorldQuaternion(new Quaternion()));
+ const axles=model.userData.wheels;
+ updateCarModel(model,{wheelAngle:0,steering:0});
+ const before=axles.map(({wheel})=>axis(wheel));
+ updateCarModel(model,{wheelAngle:-1.5,steering:0});
+ axles.forEach(({wheel},index)=>{
+  assert.ok(before[index].distanceTo(new Vector3(1,0,0))<1e-10);
+  assert.ok(axis(wheel).distanceTo(before[index])<1e-10);
+ });
+ updateCarModel(model,{wheelAngle:-2,steering:.4});
+ axles.forEach(({wheel,front},index)=>assert.equal(axis(wheel).distanceTo(before[index])>.1,front));
 });

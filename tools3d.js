@@ -1,12 +1,12 @@
-import {FURNITURE_PRESETS} from './furniture3d.js?v=20261118k';
-import {createChoiceControl} from './choices3d.js?v=20261118k';
-import {MAX_BUILD_LEVEL} from './limits3d.js?v=20261118k';
-import {appearanceFor,GUN_SHAPES,GUN_COLORS,gunPreviewSVG} from './appearance3d.js?v=20261118k';
-import {bindGameAction} from './input3d.js?v=20261118k';
-import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261118k';
-import {LIMITS,PROJECTILES,IMPACTS,impactEffects,weaponPresetKey,SHOT_PATTERNS,cadenceHandling} from './weapons3d.js?v=20261118k';
-import {buildChoices,activeBuildTool,cycleBuildType,facingBuildRotation,makeTool,TOOL_EFFECTS,BUILD_TYPES,equipTool,keepStructures,equipBlock} from './building3d.js?v=20261118k';
-import {WEAPON_PRESETS,PARTS} from './engine3d.js?v=20261118k';
+import {FURNITURE_PRESETS} from './furniture3d.js?v=20261118l';
+import {createChoiceControl} from './choices3d.js?v=20261118l';
+import {MAX_BUILD_LEVEL} from './limits3d.js?v=20261118l';
+import {appearanceFor,GUN_SHAPES,GUN_COLORS,gunPreviewSVG} from './appearance3d.js?v=20261118l';
+import {bindGameAction} from './input3d.js?v=20261118l';
+import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261118l';
+import {LIMITS,PROJECTILES,IMPACTS,impactEffects,weaponPresetKey,SHOT_PATTERNS,cadenceHandling} from './weapons3d.js?v=20261118l';
+import {buildChoices,activeBuildTool,cycleBuildType,facingBuildRotation,makeTool,TOOL_EFFECTS,BUILD_TYPES,equipTool,keepStructures,equipBlock} from './building3d.js?v=20261118l';
+import {WEAPON_PRESETS,PARTS} from './engine3d.js?v=20261118l';
 export function createToolsUI(api){
   const {$,getProject,getGame,getMode,field,save,refresh,finishBuilding}=api;
   let editing=0,rotation=0,level=0,activePage='basic';

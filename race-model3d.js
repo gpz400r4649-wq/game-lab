@@ -19,10 +19,12 @@ export function makeCarModel(){
   box(model,lamp,side*.52,.58,-1.23,.36,.19,.045);
   box(model,tail,side*.55,.6,1.23,.26,.16,.05);
   for(const end of [-1,1]){
-   const steering=new T.Group(),wheel=new T.Group();
-   steering.position.set(side*.83,.36,end*.82);wheel.rotation.z=Math.PI/2;
-   const tread=new T.Mesh(wheelShape,tire),cap=new T.Mesh(hubShape,hub);cap.position.y=-side*.113;
-   wheel.add(tread,cap);steering.add(wheel);model.add(steering);wheels.push({steering,wheel,front:end<0});
+   const steering=new T.Group(),axle=new T.Group(),wheel=new T.Group();
+   steering.position.set(side*.83,.36,end*.82);
+   // The cylinder rolls on its local Y axis, which the axle points along the car’s X axis.
+   axle.rotation.z=-Math.PI/2;
+   const tread=new T.Mesh(wheelShape,tire),cap=new T.Mesh(hubShape,hub);cap.position.y=side*.113;
+   wheel.add(tread,cap);axle.add(wheel);steering.add(axle);model.add(steering);wheels.push({steering,wheel,front:end<0});
   }
  }
  model.userData.wheels=wheels;
