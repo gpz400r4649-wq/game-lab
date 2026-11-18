@@ -1,10 +1,10 @@
-import {mountLiveRangeEditor} from './range-panel3d.js?v=20261118o';
-import {worldMoveRange,rangeCell,MOVE_MAX_CELLS,convertRangeSpace,fitRoamingEnemy} from './enemy-range3d.js?v=20261118o';
-import {worldSize} from './world3d.js?v=20261118o';
-import {setReadingText} from './readings3d.js?v=20261118o';
+import {mountLiveRangeEditor} from './range-panel3d.js?v=20261119a';
+import {worldMoveRange,rangeCell,MOVE_MAX_CELLS,convertRangeSpace,fitRoamingEnemy} from './enemy-range3d.js?v=20261119a';
+import {worldSize} from './world3d.js?v=20261119a';
+import {setReadingText} from './readings3d.js?v=20261119a';
 let painter=null;
 export function setStageRangePainter(next){painter=next;}
-export function stageRangePointer(kind,id,point){return painter?.(kind,id,point)||false;}
+export function stageRangePointer(kind,id,point,canceled=false){return painter?.(kind,id,point,canceled)||false;}
 export function paintMoveCells(range,from,to,erase,half,accept=()=>true){
  if(!to||Math.abs(to.x)>half||Math.abs(to.z)>half)return false;
  const end=[rangeCell(to.x),rangeCell(to.z)],start=from?[rangeCell(from.x),rangeCell(from.z)]:end,steps=Math.max(Math.abs(end[0]-start[0]),Math.abs(end[1]-start[1]),1),cells=new Set(range.cells.map(c=>c.join(',')));let changed=false;

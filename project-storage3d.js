@@ -1,4 +1,4 @@
-import {MAX_PARTS,MAX_PROJECT_BYTES} from './limits3d.js?v=20261118o';
+import {MAX_PARTS,MAX_PROJECT_BYTES} from './limits3d.js?v=20261119a';
 const FORMAT='game-lab-3d-storage';
 // Share repeated part definitions in browser storage; exported project JSON stays ordinary.
 export function stringifyStoredProject(project){

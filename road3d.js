@@ -1,5 +1,5 @@
-import {GRID} from './building3d.js?v=20261118o';
-import {worldHalf,coordinateLimit} from './world3d.js?v=20261118o';
+import {GRID} from './building3d.js?v=20261119a';
+import {worldHalf,coordinateLimit} from './world3d.js?v=20261119a';
 
 export const ROAD_WIDTHS=[4,8,12];
 export const MAX_ROADS=16;
@@ -25,6 +25,15 @@ export function roadGridSites(ground,world){
  const x=edge(ground.x),z=edge(ground.z);
  const offsets=[0,ROAD_GRID_STEP,GRID.cell];
  return offsets.flatMap(dz=>offsets.map(dx=>({x:x+dx,z:z+dz})));
+}
+
+export function nearestRoadHandle(points,ground,radius=2.5){
+ let nearest=-1,distanceToHandle=radius;
+ for(const [index,point] of points.entries()){
+  const gap=distance(point,ground);
+  if(gap<distanceToHandle){nearest=index;distanceToHandle=gap;}
+ }
+ return nearest;
 }
 
 export function roadPointsFit(points,closed){

@@ -1,11 +1,11 @@
 import * as T from './vendor/three.module.min.js';
-import {sampleRoad} from './road3d.js?v=20261118o';
+import {sampleRoad} from './road3d.js?v=20261119a';
 
 const asphalt=new T.MeshStandardMaterial({color:0x333c4e,roughness:.98,side:T.DoubleSide});
 const edges=new T.MeshBasicMaterial({color:0xe2e6ef,side:T.DoubleSide});
 const centre=new T.MeshBasicMaterial({color:0xf3d88b,side:T.DoubleSide});
 const draftSurface=new T.MeshStandardMaterial({color:0x404c6f,roughness:.95,side:T.DoubleSide});
-const pegShape=new T.SphereGeometry(.48,12,8),pegMaterial=new T.MeshBasicMaterial({color:0xa88bff,depthTest:false}),pickedMaterial=new T.MeshBasicMaterial({color:0xffde88,depthTest:false});
+const pegShape=new T.SphereGeometry(.65,12,8),pegMaterial=new T.MeshBasicMaterial({color:0xa88bff,depthTest:false}),pickedMaterial=new T.MeshBasicMaterial({color:0xffde88,depthTest:false});
 
 function bearing(a,b){
  const x=b.x-a.x,z=b.z-a.z,length=Math.hypot(x,z);
