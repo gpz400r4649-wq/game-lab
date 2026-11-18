@@ -1,12 +1,12 @@
-import {validPatrolRoute} from './patrol-route3d.js?v=20261118d';
-import {coordinateLimit} from './world3d.js?v=20261118d';
-import {MAX_BUILD_Y} from './limits3d.js?v=20261118d';
-import {topAt} from './building3d.js?v=20261118d';
-import {dropPickup,LOOT_LIMIT} from './loot3d.js?v=20261118d';
+import {validPatrolRoute} from './patrol-route3d.js?v=20261118e';
+import {coordinateLimit} from './world3d.js?v=20261118e';
+import {MAX_BUILD_Y} from './limits3d.js?v=20261118e';
+import {topAt} from './building3d.js?v=20261118e';
+import {dropPickup,LOOT_LIMIT} from './loot3d.js?v=20261118e';
 
 export const SUPPLY_REWARDS={heal:'かいふく',star:'ほし',weapon:'ランダムなじゅう'};
 export const SUPPLY_ALTITUDE=MAX_BUILD_Y+12;
-const flightSpeed=28, descentSpeed=7;
+const flightSpeed=14, descentSpeed=7;
 
 export function validSupplyFlight(flight,world){
  return flight===undefined||!!flight&&typeof flight.enabled==='boolean'&&
