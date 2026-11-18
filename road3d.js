@@ -1,5 +1,5 @@
-import {GRID} from './building3d.js?v=20261119c';
-import {worldHalf,coordinateLimit} from './world3d.js?v=20261119c';
+import {GRID} from './building3d.js?v=20261119d';
+import {worldHalf,coordinateLimit} from './world3d.js?v=20261119d';
 
 export const ROAD_WIDTHS=[4,8,12];
 export const MAX_ROADS=16;

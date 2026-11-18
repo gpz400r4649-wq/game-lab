@@ -600,3 +600,16 @@ html:not(.car-workshop) #road-open3 { display:none; }
 .road-list-row button:first-child { flex:1; }
 .road-width-choices { display:flex; gap:3px; padding-right:5px; border-right:1px solid #dce3ed; }
 .road-editor-hint { align-self:center; padding-inline:4px; font-size:11px; color:#53637b; }
+
+#speedometer3 {
+ display:grid; gap:4px; min-width:126px; padding:7px 10px; border-radius:10px;
+ background:#faf9ffef; color:#3a315b; border:1px solid #d8cff2; pointer-events:none;
+ font-variant-numeric:tabular-nums; letter-spacing:normal;
+}
+#speedometer3 span { padding:0; border-radius:0; background:none; }
+#speedometer3[hidden] { display:none; }
+.speedometer-now { display:flex; align-items:baseline; justify-content:flex-end; gap:5px; white-space:nowrap; }
+#speed-now3 { font-size:26px; font-weight:750; line-height:1; }
+.speedometer-now small,.speedometer-peak { font-size:10px; text-align:right; }
+.speedometer-track { height:4px; overflow:hidden; border-radius:4px; background:#e2daf3; }
+#speedometer3 #speed-bar3 { display:block; height:100%; background:#785ccc; transform:scaleX(0); transform-origin:left; }

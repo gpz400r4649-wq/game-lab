@@ -1,6 +1,6 @@
-import {nearestRoad,ROAD_WIDTHS} from './road3d.js?v=20261119c';
+import {nearestRoad,ROAD_WIDTHS} from './road3d.js?v=20261119d';
 
-const MAX_SPEED=12;
+export const CAR_MAX_SPEED=12;
 const REVERSE_SPEED=4;
 const TURN_SPEED=2.4;
 
@@ -22,17 +22,17 @@ export function moveRaceGate(objects,gate,position){
 
 export function createCarRun(objects,heading=0,spawn){
  const gates=orderedRaceGates(objects);
- return {speed:0,heading,wheelAngle:0,steering:0,gates,nextGate:0,startsInFirst:!!(spawn&&gates[0]&&inGate(spawn,gates[0]))};
+ return {speed:0,actualSpeed:0,peakSpeed:0,heading,wheelAngle:0,steering:0,gates,nextGate:0,startsInFirst:!!(spawn&&gates[0]&&inGate(spawn,gates[0]))};
 }
 
 export function carMotion(car,input,grounded,dt){
  const throttle=Math.max(-1,Math.min(1,-(input.z||0)));
  const steer=Math.max(-1,Math.min(1,input.x||0));
- const target=input.brake?0:throttle*(throttle<0?REVERSE_SPEED:MAX_SPEED);
+ const target=input.brake?0:throttle*(throttle<0?REVERSE_SPEED:CAR_MAX_SPEED);
  const slowing=input.brake||Math.sign(car.speed)!==Math.sign(target);
  car.speed=approach(car.speed,target,dt*(input.brake?22:slowing?12:7));
  if(grounded){
-  const turnFactor=Math.min(1,Math.abs(car.speed)/2)*(1-.45*Math.min(1,Math.abs(car.speed)/MAX_SPEED));
+  const turnFactor=Math.min(1,Math.abs(car.speed)/2)*(1-.45*Math.min(1,Math.abs(car.speed)/CAR_MAX_SPEED));
   car.heading-=steer*turnFactor*TURN_SPEED*Math.sign(car.speed)*dt;
  }
  car.steering=approach(car.steering,steer*.42,dt*3);

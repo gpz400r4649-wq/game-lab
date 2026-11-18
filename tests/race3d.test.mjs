@@ -25,6 +25,7 @@ test('車は加速・旋回・ブレーキ・バックができ、壁で止ま�
  tick(g,p,.6,{z:-1});const before=g.player.z;
  tick(g,p,.5,{x:1,z:-1});assert.ok(g.player.x>0);assert.ok(g.player.z<before);
  tick(g,p,.6,{z:-1,brake:true});assert.equal(g.car.speed,0);
+ assert.equal(g.car.actualSpeed,0);assert.ok(g.car.peakSpeed>3);assert.equal(create3D(p).car.peakSpeed,0);
  const stop=g.player.z;tick(g,p,.8,{z:1});assert.ok(g.player.z>stop);
  const wall=part('wall',0,0);p.objects=[wall];const stopped=create3D(p);
  tick(stopped,p,3,{z:-1});assert.ok(stopped.player.z>=1);assert.ok(stopped.car.speed<1);
