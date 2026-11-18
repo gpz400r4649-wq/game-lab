@@ -11,6 +11,8 @@ function tick(game,project,seconds,input){
 
 test('車やゲートのない従来作と、空の車テンプレートの両方を読み込める',()=>{
  const ordinary=fresh3D(),car=fresh3D('car');
+ assert.equal(ordinary.worldSize,60);assert.equal(car.worldSize,240);
+ assert.equal(validate3D({...car,worldSize:60}).worldSize,60);
  assert.equal(create3D(validate3D(ordinary)).car,undefined);
  const drive=create3D(validate3D(car));
  assert.equal(drive.car.speed,0);assert.equal(drive.car.gates.length,0);

@@ -1,28 +1,28 @@
-import {validRoads} from './road3d.js?v=20261118m';
-import {carMotion,createCarRun,updateRaceGates} from './race3d.js?v=20261118m';
-import {validAssemblies} from './assembly3d.js?v=20261118m';
-import {validSupplyFlight,createSupplyFlight,updateSupplyFlight} from './supply3d.js?v=20261118m';
-import {isFurniture,validFurniture,furnitureSolids} from './furniture3d.js?v=20261118m';
-import {FALL_DEFAULTS,validFallDamage,updatePlayerFall,resetPlayerFall} from './fall-damage3d.js?v=20261118m';
-import {validArchitecture,fenceSolids,isDiagonal,diagonalContains,diagonalInterval} from './architecture3d.js?v=20261118m';
-import {initializeCharacterDefaults,synchronizeCharacterDefaults,sharedKeys} from './character-defaults3d.js?v=20261118m';
-import {companionsAt,updatePlates,validCharacterSettings} from './actor3d.js?v=20261118m';
-import {stepAllies} from './ally3d.js?v=20261118m';
-import {validEnemyLoot} from './enemy-loot3d.js?v=20261118m';
-import {validPatrolRoute,validWaypoints} from './patrol-route3d.js?v=20261118m';
-import {validLibrary} from './assets3d.js?v=20261118m';
-import {moveEnemy,canEnemyEnter,validEnemyMovement} from './enemy-ai3d.js?v=20261118m';
-import {worldMoveRange,validMoveRange,validAttackRange,inAttackRange,enemyYaw,defaultEnemyRanges} from './enemy-range3d.js?v=20261118m';
-import {enemyGunMuzzle,playerGunMuzzle,finitePoint} from './muzzle3d.js?v=20261118m';
-import {doorSolids,doorCanOpen,doorInteraction,prepareDoorPanels,setDoorPanelOpen,doorFrameSolids,validDoor,nearbyDoor,doorwayOccupied,animateDoors} from './doors3d.js?v=20261118m';
-import {nearbyObjects} from './spatial3d.js?v=20261118m';
-import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261118m';
-import {worldSize,worldHalf,coordinateLimit,WORLD_SIZES} from './world3d.js?v=20261118m';
-import {settleLoot} from './loot3d.js?v=20261118m';
-import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261118m';
-import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261118m';
-import {shootVolley,updateCombat,resolveShotOrigin} from './combat3d.js?v=20261118m';
-import {BUILD_TYPES,constructionPart,topAt,bottomAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261118m';
+import {validRoads} from './road3d.js?v=20261118n';
+import {carMotion,createCarRun,updateRaceGates} from './race3d.js?v=20261118n';
+import {validAssemblies} from './assembly3d.js?v=20261118n';
+import {validSupplyFlight,createSupplyFlight,updateSupplyFlight} from './supply3d.js?v=20261118n';
+import {isFurniture,validFurniture,furnitureSolids} from './furniture3d.js?v=20261118n';
+import {FALL_DEFAULTS,validFallDamage,updatePlayerFall,resetPlayerFall} from './fall-damage3d.js?v=20261118n';
+import {validArchitecture,fenceSolids,isDiagonal,diagonalContains,diagonalInterval} from './architecture3d.js?v=20261118n';
+import {initializeCharacterDefaults,synchronizeCharacterDefaults,sharedKeys} from './character-defaults3d.js?v=20261118n';
+import {companionsAt,updatePlates,validCharacterSettings} from './actor3d.js?v=20261118n';
+import {stepAllies} from './ally3d.js?v=20261118n';
+import {validEnemyLoot} from './enemy-loot3d.js?v=20261118n';
+import {validPatrolRoute,validWaypoints} from './patrol-route3d.js?v=20261118n';
+import {validLibrary} from './assets3d.js?v=20261118n';
+import {moveEnemy,canEnemyEnter,validEnemyMovement} from './enemy-ai3d.js?v=20261118n';
+import {worldMoveRange,validMoveRange,validAttackRange,inAttackRange,enemyYaw,defaultEnemyRanges} from './enemy-range3d.js?v=20261118n';
+import {enemyGunMuzzle,playerGunMuzzle,finitePoint} from './muzzle3d.js?v=20261118n';
+import {doorSolids,doorCanOpen,doorInteraction,prepareDoorPanels,setDoorPanelOpen,doorFrameSolids,validDoor,nearbyDoor,doorwayOccupied,animateDoors} from './doors3d.js?v=20261118n';
+import {nearbyObjects} from './spatial3d.js?v=20261118n';
+import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261118n';
+import {worldSize,worldHalf,coordinateLimit,WORLD_SIZES} from './world3d.js?v=20261118n';
+import {settleLoot} from './loot3d.js?v=20261118n';
+import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261118n';
+import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261118n';
+import {shootVolley,updateCombat,resolveShotOrigin} from './combat3d.js?v=20261118n';
+import {BUILD_TYPES,constructionPart,topAt,bottomAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261118n';
 export const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export const ENEMY_SCALES=Array.from({length:19},(_,i)=>1+i/2);
 export const PARTS={raceGate:'ゲート',actor:'役者キャラクター',plate:'床スイッチ',ally:'味方ロボット',weapon:'銃アイテム',ramp:'スロープ',wall:'壁',floor:'床',roof:'屋根',box:'ブロック',platform:'足場',moving:'動く足場',bounce:'ジャンプ台',enemy:'敵ロボット',star:'星',key:'カギ',door:'ドア',heal:'回復',checkpoint:'セーブポイント',hazard:'ダメージ床',goal:'ゴール'};
@@ -33,7 +33,7 @@ export const CONDITION_NAMES={allies:'仲間を連れてきたら',unset:'クリ
 const solidTypes=new Set(['box','platform','moving','door','wall','floor','roof','ramp']);
 export function settingsFor(type){return {axis:'x',distance:3,speed:2,value:type==='bounce'?11:type==='star'?5:1,condition:type==='goal'?'unset':type==='door'?'keys':'touch',required:1};}
 export function part(type,x=0,z=-5){if(type==='raceGate')return {id:crypto.randomUUID(),type,x,y:0,z,w:4,h:3,d:.6,hp:3,rotation:0,gateOrder:1,program:[],settings:settingsFor(type)};if(Object.hasOwn(BUILD_TYPES,type))return constructionPart(type,x,z);return {id:crypto.randomUUID(),type,x,y:['platform','moving'].includes(type)?1:0,z,w:['box','platform','moving'].includes(type)?4:type==='door'?3:2,h:type==='box'?3:['platform','moving'].includes(type)?.5:['bounce','hazard'].includes(type)?.2:type==='door'?3:2,d:type==='door'?.6:['box','platform','moving'].includes(type)?4:2,hp:DESTRUCTIBLE_TYPES.has(type)?20:3,...(DESTRUCTIBLE_TYPES.has(type)?{destructible:true,destroyEvents:[{type:'dropSelf'}]}:{}),program:[],settings:settingsFor(type),...(type==='weapon'?{weaponId:'@random'}:{}),...(type==='enemy'?{attackEnabled:true,attackSpeed:3,program:[{action:'search',speed:2}],routine:{idle:'wait',notice:'near',lost:'return'},dropHeldWeapon:true,enemyDrops:[{type:'star'}],...defaultEnemyRanges({x,z})}:{})};}
-export function fresh3D(template){const weapon={speed:24,interval:.25,damage:1,spread:1};return {version:1,kind:'game-lab-3d',worldSize:60,playerHitsAlly:true,title:template==='car'?'わたしのくるまコース':'わたしの3Dワールド',...(template==='car'?{template:'car'}:{}),spawn:{x:0,y:0,z:8},weapon,loadout:defaultLoadout(weapon),objects:[]};}
+export function fresh3D(template){const weapon={speed:24,interval:.25,damage:1,spread:1};return {version:1,kind:'game-lab-3d',worldSize:template==='car'?240:60,playerHitsAlly:true,title:template==='car'?'わたしのくるまコース':'わたしの3Dワールド',...(template==='car'?{template:'car'}:{}),spawn:{x:0,y:0,z:8},weapon,loadout:defaultLoadout(weapon),objects:[]};}
 export function validate3D(data,skipShared=false){
   const p=structuredClone(data),number=(v,a,b)=>Number.isFinite(v)&&v>=a&&v<=b;
   if(p?.worldSize!==undefined&&!WORLD_SIZES.includes(p.worldSize))throw Error('マップのひろさを確認してください');

@@ -1,4 +1,4 @@
-import {worldHalf,coordinateLimit} from './world3d.js?v=20261118m';
+import {worldHalf,coordinateLimit} from './world3d.js?v=20261118n';
 
 export const ROAD_WIDTHS=[4,8,12];
 export const MAX_ROADS=16;

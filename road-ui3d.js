@@ -1,6 +1,6 @@
-import {MAX_ROADS,MAX_ROAD_POINTS,ROAD_WIDTHS,roadPoint,roadPointsFit,validRoads} from './road3d.js?v=20261118m';
-import {mountLiveRangeEditor} from './range-panel3d.js?v=20261118m';
-import {setStageRangePainter} from './stage-range3d.js?v=20261118m';
+import {MAX_ROADS,MAX_ROAD_POINTS,ROAD_WIDTHS,roadPoint,roadPointsFit,validRoads} from './road3d.js?v=20261118n';
+import {mountLiveRangeEditor} from './range-panel3d.js?v=20261118n';
+import {setStageRangePainter} from './stage-range3d.js?v=20261118n';
 
 export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,toast}){
  const dialog=$('#road-dialog3'),list=$('#road-list3'),add=$('#road-add3');

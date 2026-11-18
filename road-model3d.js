@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.min.js';
-import {sampleRoad} from './road3d.js?v=20261118m';
+import {sampleRoad} from './road3d.js?v=20261118n';
 
 const asphalt=new T.MeshStandardMaterial({color:0x333c4e,roughness:.98,side:T.DoubleSide});
 const edges=new T.MeshBasicMaterial({color:0xe2e6ef,side:T.DoubleSide});
