@@ -1,8 +1,8 @@
-import {validPatrolRoute} from './patrol-route3d.js?v=20261118b';
-import {coordinateLimit} from './world3d.js?v=20261118b';
-import {MAX_BUILD_Y} from './limits3d.js?v=20261118b';
-import {topAt} from './building3d.js?v=20261118b';
-import {dropPickup,LOOT_LIMIT} from './loot3d.js?v=20261118b';
+import {validPatrolRoute} from './patrol-route3d.js?v=20261118c';
+import {coordinateLimit} from './world3d.js?v=20261118c';
+import {MAX_BUILD_Y} from './limits3d.js?v=20261118c';
+import {topAt} from './building3d.js?v=20261118c';
+import {dropPickup,LOOT_LIMIT} from './loot3d.js?v=20261118c';
 
 export const SUPPLY_REWARDS={heal:'回復',star:'星',weapon:'ランダムな銃'};
 export const SUPPLY_ALTITUDE=MAX_BUILD_Y+12;

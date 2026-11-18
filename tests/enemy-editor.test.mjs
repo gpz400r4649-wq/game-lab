@@ -12,7 +12,7 @@ function setup(t,{idle='patrol',notice='near',lost='return'}={}){
  const $=id=>{if(!nodes.has(id)){const el=dom.doc.createElement(id==='aside'?'aside':'div');el.id=id.slice(1);dom.doc.body.append(el);nodes.set(id,el);}return nodes.get(id);};
  const field=(parent,label,value,min,max,step,change)=>{const row=dom.doc.createElement('label'),input=dom.doc.createElement('input');row.className='field';input.value=value;input.setAttribute('aria-label',label);input.onchange=()=>{change(Number(input.value));saves++;};row.append(input);parent.append(row);return row;};
  const ui=createWorkshop({$,getProject:()=>p,getSelected:()=>selected,select:id=>selected=id,save:()=>saves++,rebuild(){},field,advancedInspector(){},advancedWeaponFields(){},loadProject(){},setTool:(type,preset)=>toolSelections.push([type,preset]),toast(){}});
- ui.inspect();$('#enemy-open3').onclick();const dialog=dom.doc.querySelector('.enemy-workspace'),page=key=>dialog.querySelector('#enemy-settings-'+key),tab=key=>dialog.querySelectorAll('[role=tab]').find(b=>b.dataset.page===key).onclick();
+ ui.inspect();$('#part-open3').onclick();const dialog=dom.doc.querySelector('.enemy-workspace'),page=key=>dialog.querySelector('#enemy-settings-'+key),tab=key=>dialog.querySelectorAll('[role=tab]').find(b=>b.dataset.page===key).onclick();
  const choose=(key,label,value)=>{tab(key);const control=page(key).querySelector(`[aria-label="${label}"]`);assert.ok(control,label);const button=control.children.find(b=>b.value===value);assert.ok(button,value);button.onclick();};
  const setPart=type=>{const object=part(type,8,0);p.objects.push(object);selected=object.id;ui.inspect();return object;};
  return {p,enemy,dialog,page,tab,choose,ui,$,setPart,toolSelections,saves:()=>saves};
@@ -32,7 +32,7 @@ test('攻撃・体力・落とすものを保存でき、ぜんたい設定で�
  const {enemy,page,tab,ui,dialog,$}=setup(t);tab('combat');const attack=page('combat').querySelector('input');attack.checked=true;attack.onchange();assert.equal(enemy.attackEnabled,true);assert.equal(page('combat').hidden,false);assert.ok(page('combat').querySelector('[data-range="attackRange"]'));
  tab('body');const hp=page('body').querySelector('[aria-label="体力"]');hp.value='500';hp.onchange();assert.equal(enemy.hp,500);
  tab('loot');page('loot').querySelector('.enemy-loot-items').lastElementChild.onclick();assert.equal(enemy.enemyDrops.length,1);assert.equal(page('loot').hidden,false);
- ui.inspect();const header=dialog.querySelector('header');header.children[1].onclick();assert.equal(dialog.querySelectorAll('[role=tab]').length,6);assert.equal(page('movement').hidden,false);assert.equal($('#enemy-open3').disabled,false);
+ ui.inspect();const header=dialog.querySelector('header');header.children[1].onclick();assert.equal(dialog.querySelectorAll('[role=tab]').length,6);assert.equal(page('movement').hidden,false);assert.match($('#part-open3').textContent,/このてき/);
 });
 
 test('範囲を見るために閉じても、設定に戻ると同じタブを表示する',t=>{
@@ -65,7 +65,7 @@ test('味方・ドア・役者・ゴールも、選択肢を見渡して直接�
 });
 
 test('味方の射程と銃を変えると、同じ縮尺のプレビューに実際の届く範囲を反映する',t=>{
- const {p,setPart,$,ui}=setup(t),ally=setPart('ally');$('#ally-open3').onclick();
+ const {p,setPart,$,ui}=setup(t),ally=setPart('ally');$('#part-open3').onclick();
  const preview=()=>document.querySelector('.ally-range-preview'),picture=()=>preview().querySelector('.ally-range-picture').innerHTML;
  const choose=(label,value)=>document.querySelectorAll('.setting-choices').find(g=>g.getAttribute('aria-label')===label&&g.closest('.ally-settings-controls')).options.find(b=>b.value===value).onclick();
  const initial=picture();choose('射程（マス）','10');assert.equal(ally.allyRangeCells,10);assert.notEqual(picture(),initial);assert.match(picture(),/r="100"/);assert.match(picture(),/data-distance="7" data-reachable="true"/);assert.match(picture(),/data-distance="11" data-reachable="false"/);

@@ -1,11 +1,11 @@
 import * as T from './vendor/three.module.min.js';
-import {defaultSupplyFlight,SUPPLY_REWARDS} from './supply3d.js?v=20261118b';
-import {coordinateLimit} from './world3d.js?v=20261118b';
-import {setReadingText} from './readings3d.js?v=20261118b';
-import {configureNumericInput} from './numeric3d.js?v=20261118b';
-import {createPatrolOverlay} from './patrol-ui3d.js?v=20261118b';
-import {mountLiveRangeEditor} from './range-panel3d.js?v=20261118b';
-import {setStageRangePainter} from './stage-range3d.js?v=20261118b';
+import {defaultSupplyFlight,SUPPLY_REWARDS} from './supply3d.js?v=20261118c';
+import {coordinateLimit} from './world3d.js?v=20261118c';
+import {setReadingText} from './readings3d.js?v=20261118c';
+import {configureNumericInput} from './numeric3d.js?v=20261118c';
+import {createPatrolOverlay} from './patrol-ui3d.js?v=20261118c';
+import {mountLiveRangeEditor} from './range-panel3d.js?v=20261118c';
+import {setStageRangePainter} from './stage-range3d.js?v=20261118c';
 
 export function createSupplyUI({$,getProject,save,scene,focusRoute,toast}){
  const dialog=$('#supply-dialog3'),routeOverlay=createPatrolOverlay(scene,{throughParts:true});
@@ -27,32 +27,42 @@ export function createSupplyUI({$,getProject,save,scene,focusRoute,toast}){
  $('#supply-save3').onclick=()=>{getProject().supplyFlight=structuredClone(draft);save();dialog.close();};
  $('#supply-route3').onclick=()=>{
   dialog.close();
-  const panel=document.createElement('section'),heading=document.createElement('div'),title=document.createElement('h2'),done=document.createElement('button'),controls=document.createElement('div'),help=document.createElement('p');
-  panel.className='range-live-panel';heading.className='range-live-heading';controls.className='stage-range-tools';
-  setReadingText(title,'補給便のルート');setReadingText(done,'設定にもどる');heading.append(title,done);panel.append(heading,controls,help);
-  let index=0,pointer=null,returnToDialog=false;
-  const instructions=['青：出発する場所をタップ','オレンジ：到着する場所をタップ','カメラを動かして地図を見よう'];
-  const buttons=['出発','到着','カメラを動かす'].map((text,i)=>{
-   const button=document.createElement('button');setReadingText(button,text);button.onclick=()=>{index=i;if(i!==2)focusRoute(draft.route,i);refresh();};controls.append(button);return button;
-  });
+  const panel=document.createElement('section'),heading=document.createElement('div'),title=document.createElement('h2'),controls=document.createElement('div');
+  panel.className='range-live-panel';heading.className='range-live-heading';controls.className='stage-range-tools supply-route-steps';
+  setReadingText(title,'補給便のルート');heading.append(title);panel.append(heading,controls);
+  let step=0,pointer=null,returnToDialog=false,cameraMode=false;
+  function makeButton(text,action){
+   const button=document.createElement('button');setReadingText(button,text);button.onclick=action;controls.append(button);return button;
+  }
+  const points=['出発をえらぶ','到着をえらぶ'].map((text,index)=>makeButton(text,()=>{
+   step=index;cameraMode=false;focusRoute(draft.route,index);refresh();
+  }));
+  const done=makeButton('できた',()=>{returnToDialog=true;finish();});
+  const camera=makeButton('カメラをうごかす',()=>{cameraMode=!cameraMode;refresh();});
   function refresh(){
-   setReadingText(help,instructions[index]);
-   buttons.forEach((button,i)=>{button.classList.toggle('active',i===index);button.setAttribute('aria-pressed',String(i===index));});
+   points.forEach((button,index)=>{
+    if(!cameraMode&&step===index)button.setAttribute('aria-current','step');else button.removeAttribute('aria-current');
+   });
+   if(step===2)done.setAttribute('aria-current','step');else done.removeAttribute('aria-current');
+   camera.hidden=step===2;
+   camera.setAttribute('aria-pressed',String(cameraMode));
    routeOverlay.show(draft.route);
   }
-  const finish=mountLiveRangeEditor(panel,()=>{setStageRangePainter(null);routeOverlay.show(null);if(returnToDialog)open();});
-  done.onclick=()=>{returnToDialog=true;finish();};
+  const finish=mountLiveRangeEditor(panel,()=>{setStageRangePainter(null);routeOverlay.show(null);if(returnToDialog)open();},{showDetails:false});
   setStageRangePainter((kind,id,point)=>{
    if(kind==='end'){if(pointer!==id)return false;pointer=null;return true;}
    if(kind!=='start')return pointer===id;
-   if(index===2)return false;
+   if(cameraMode||step===2)return false;
    if(pointer!==null)return true;pointer=id;
    const limit=coordinateLimit(getProject());
    if(!point||Math.abs(point.x)>limit+2||Math.abs(point.z)>limit+2)return true;
    const snap=value=>Math.max(-limit,Math.min(limit,Math.round(value/4)*4));
-   const selected={x:snap(point.x),z:snap(point.z)},other=draft.route[1-index];
+   const selected={x:snap(point.x),z:snap(point.z)},other=draft.route[1-step];
    if(selected.x===other.x&&selected.z===other.z){toast('出発と到着は別の場所をえらぼう');return true;}
-   draft.route[index]=selected;index=index===0?1:2;refresh();return true;
+   draft.route[step]=selected;
+   step++;
+   if(step===1&&Math.hypot(selected.x-other.x,selected.z-other.z)>60)focusRoute(draft.route,1);
+   refresh();return true;
   });
   focusRoute(draft.route);refresh();
  };

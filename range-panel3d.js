@@ -2,7 +2,7 @@ let activeFinish=null;
 export const isLiveRangeEditing=()=>activeFinish!==null;
 export function closeLiveRangeEditor(){activeFinish?.();}
 // All three range editors share the same stage-visible sidebar and lifecycle.
-export function mountLiveRangeEditor(panel,onClose){
+export function mountLiveRangeEditor(panel,onClose,{showDetails=true}={}){
  closeLiveRangeEditor();
  globalThis.window?.dispatchEvent(new Event('enemy-range-open'));
  const aside=document.querySelector('aside'),main=aside.closest('main'),scrollTop=aside.scrollTop;
@@ -33,7 +33,7 @@ export function mountLiveRangeEditor(panel,onClose){
   const fan=panel.querySelector('.fan-controls');
   if(fan)controls.prepend(fan);
 
-  if(dock){dock.replaceChildren(panel);more.hidden=false;more.open=false;}
+  if(dock){dock.replaceChildren(panel);more.hidden=!showDetails;more.open=false;}
 
   actions.hidden=false;
   actions.onkeydown=e=>{if(e.key==='Escape'){e.preventDefault();finish();}};

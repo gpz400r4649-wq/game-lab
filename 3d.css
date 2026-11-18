@@ -120,8 +120,7 @@ aside.is-range-editing .fan-choices button{min-height:44px}
 main.range-editing .view-column>nav{position:sticky;top:0;z-index:25;background:#eff3f9}
 
 .workshop-launchers{position:sticky;top:0;z-index:8;background:white;padding:6px 0 10px;display:grid;gap:8px}
-.workshop-launchers .tools-open,.workshop-launchers .enemy-editor-launch{margin:0;width:100%;min-height:48px}
-#enemy-open3:disabled{opacity:.4;cursor:default}
+.workshop-launchers .tools-open{margin:0;width:100%;min-height:48px}
 
 main.range-editing{grid-template-columns:minmax(0,1fr)}
 main.range-editing aside.is-range-editing{display:none}
@@ -168,7 +167,6 @@ main.range-editing #reset-camera{margin-left:0}
 .player-rules-header button{min-height:44px;flex-shrink:0}
 .player-rules-body{padding:12px 18px 20px;max-height:calc(90dvh - 85px);overflow-y:auto;overscroll-behavior:contain}
 
-#goal-open3{min-height:48px;width:100%;margin:0}#goal-open3:disabled{opacity:.4;cursor:default}
 
 #part-open3{min-height:48px;width:100%;margin:0}#part-open3:disabled{opacity:.4;cursor:default}
 
@@ -361,7 +359,6 @@ aside>#group-tools3{padding:0;margin:0;border:0;background:transparent;border-ra
 .viewport-top-left{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
 .viewport-top-left>#multi-select3{margin-left:0}
 
-.placement-launch-row>#enemy-open3,.placement-launch-row>#ally-open3{flex:1;min-width:0;width:auto}
 
 /* Gun settings are a compact workspace rather than a long stack of fields. */
 .tools-dialog{width:calc(100% - 24px);max-width:1040px;max-height:94dvh}
@@ -572,3 +569,17 @@ aside>#group-tools3{padding:0;margin:0;border:0;background:transparent;border-ra
 #assembly-name-row3:not([hidden]) { display:flex; flex-wrap:wrap; align-items:end; gap:.5rem; margin-bottom:.6rem; }
 #stage-extra3:not([hidden]) { position:absolute; z-index:8; top:3rem; left:50%; transform:translateX(-50%); display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:.35rem; width:max-content; max-width:95%; padding:.4rem; background:#fff; border-radius:.65rem; box-shadow:0 2px 8px #26365926; }
 #stage-extra3 button { min-height:44px; }
+
+.workshop-launchers section { min-width:0; }
+.workshop-section-title { margin:0 0 4px; color:#52617b; font-size:12px; }
+.workshop-settings-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
+.workshop-settings-grid > button { width:100%; min-height:44px; padding:6px 8px; margin:0; }
+.workshop-settings-grid > #tools-open3 { grid-column:1 / -1; min-height:44px; }
+.workshop-settings-grid > #ally-open3 { min-height:44px; }
+#part-launch-row3 { min-height:48px; }
+#selected-part-hint3 { margin:0; padding:8px 9px; color:#52617b; font-size:12px; }
+#part-open3[hidden], #selected-part-hint3[hidden], .stage-toolbar.is-playing #try-here3 { display:none; }
+.toolbar-row>#stage-mode3 #try-here3 { white-space:nowrap; }
+@media(max-width:700px) { .toolbar-row>#stage-mode3 #try-here3 { min-width:0; padding-inline:5px; } }
+
+#range-actions3 .supply-route-steps button[aria-current="step"] { background:#7d62dd; color:white; }

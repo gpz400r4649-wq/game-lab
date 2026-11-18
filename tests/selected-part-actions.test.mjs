@@ -30,11 +30,14 @@ test('位置調整は必要な時だけ開き、右側の設定を押し下げ�
  open.onclick();c.selected=null;c.syncSelectedPartActions();assert.equal(panel.hidden,true);assert.equal(open.hidden,true);
 });
 
-test('いどうボタンは敵・味方・その他の選択に合わせた設定ボタンの横へ移り、同じパネルを使う',()=>{
- const {c,nodes}=setup('enemy');c.syncSelectedPartActions();const launcher=nodes.get('#placement-open3');assert.equal(launcher.parentElement,nodes.get('#enemy-launch-row3'));assert.equal(launcher.hidden,false);launcher.onclick();const panel=nodes.get('#placement-panel3');assert.equal(panel.hidden,false);
- const ally=part('ally',8,0);c.project.objects.push(ally);c.selected=ally.id;c.syncSelectedPartActions();assert.equal(launcher.parentElement,nodes.get('#ally-launch-row3'));assert.equal(panel.hidden,false);assert.equal(nodes.get('#enemy-launch-row3').children.length,0);
- const wall=part('wall',12,2);c.project.objects.push(wall);c.selected=wall.id;c.syncSelectedPartActions();assert.equal(launcher.parentElement,nodes.get('#part-launch-row3'));assert.equal(panel.hidden,false);
- c.selected=null;c.syncSelectedPartActions();assert.equal(launcher.hidden,true);assert.equal(panel.hidden,true);
+test('敵・味方・壁で設定と移動の位置をそろえ、選択がなければ案内だけを表示する',()=>{
+ const {c,nodes}=setup('enemy');c.syncSelectedPartActions();const move=nodes.get('#placement-open3'),settings=nodes.get('#part-open3'),hint=nodes.get('#selected-part-hint3');
+ assert.equal(hint.hidden,true);move.onclick();const panel=nodes.get('#placement-panel3');assert.equal(panel.hidden,false);
+ for(const type of ['ally','wall']){
+  const object=part(type,8,2);c.project.objects.push(object);c.selected=object.id;c.syncSelectedPartActions();
+  assert.equal(move.hidden,false);assert.equal(settings.hidden,false);assert.equal(panel.hidden,false);
+ }
+ c.selected=null;c.syncSelectedPartActions();assert.equal(move.hidden,true);assert.equal(settings.hidden,true);assert.equal(hint.hidden,false);assert.equal(panel.hidden,true);
 });
 
 test('敵・味方のいどうから開いても、パーツの設定欄を基準とした同じ位置に出す',()=>{
