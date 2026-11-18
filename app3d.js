@@ -1,4 +1,4 @@
-import {createCarAudio} from './car-audio3d.js?v=20261119e';
+import {createCarAudio} from './car-audio3d.js?v=20261119f';
 import {courseStart} from './road3d.js?v=20261119d';
 import {createRoadView} from './road-model3d.js?v=20261119d';
 import {createRoadEditor} from './road-ui3d.js?v=20261119d';
@@ -67,7 +67,10 @@ function showCarSound(enabled){
  carSoundButton.setAttribute('aria-pressed',String(enabled));
  carSoundLabel.textContent=enabled?'オン':'オフ';
 }
-const carAudio=createCarAudio(()=>showCarSound(false));
+const carAudio=createCarAudio(loadFailed=>{
+ showCarSound(false);
+ if(loadFailed)toast('エンジンのおとをならせませんでした');
+});
 carSoundButton.addEventListener('click',()=>{
  if(mode!=='play'||!game?.car||game.state!=='playing'||document.hidden)return;
  if(carAudio.enabled)carAudio.stop();

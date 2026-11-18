@@ -332,3 +332,7 @@ FPSの銃は右下に配置し、銃身はカメラの正面方向と平行に�
 ## ハーフ壁の間に窓や壁をつなげる
 
 普通の壁・窓・ドアも水平位置を半マス単位で調整できます。「ハーフ壁 → 窓 → ハーフ壁」の順に隙間なく並べ、窓の上に壁を重ねられます。置いてある壁や窓の端を押すと、実際の幅を使って隣へ接続します。ドラッグ・移動ボタン・回転・保存読み込みでも半マスずれた位置を保ちます。空いた地面へ最初に置く際は従来のマスの端を使います。
+
+## Car engine audio
+
+[Car engine loop](https://opengameart.org/content/racing-car-engine-sound-loops) by domasx2, [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/). The game uses an edited copy of `loop_0.wav` with softened high frequencies and a crossfaded loop.
