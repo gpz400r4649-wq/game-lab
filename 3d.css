@@ -593,3 +593,10 @@ aside>#group-tools3{padding:0;margin:0;border:0;background:transparent;border-ra
 .car-workshop #fire3 { background:#785ccc; }
 .car-workshop #fire3:active { background:#573ca6; }
 .car-workshop #block-open3 { grid-column:1/-1; }
+
+html:not(.car-workshop) #road-open3 { display:none; }
+.car-workshop #road-open3 { grid-column:1/-1; }
+.road-list-row { display:flex; gap:6px; margin:6px 0; }
+.road-list-row button:first-child { flex:1; }
+.road-width-choices { display:flex; gap:3px; padding-right:5px; border-right:1px solid #dce3ed; }
+.road-editor-hint { align-self:center; padding-inline:4px; font-size:11px; color:#53637b; }

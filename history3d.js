@@ -1,4 +1,4 @@
-import {stringifyStoredProject,parseStoredProject} from './project-storage3d.js?v=20261118l';
+import {stringifyStoredProject,parseStoredProject} from './project-storage3d.js?v=20261118m';
 // Snapshots are session-only; cap both count and UTF-16 storage for large maps.
 export function createEditHistory(initial,{limit=50,maxBytes=24*1024*1024}={}){
  let states=[stringifyStoredProject(initial)],index=0;
