@@ -1,5 +1,5 @@
 import {courseStart,validRoads} from './road3d.js?v=20261119d';
-import {carMotion,createCarRun,updateRaceGates,validCarTuning,validGateFit} from './race3d.js?v=20261119h';
+import {carMotion,createCarRun,updateRaceGates,validCarTuning,validGateFit} from './race3d.js?v=20261119i';
 import {validAssemblies} from './assembly3d.js?v=20261119d';
 import {validSupplyFlight,createSupplyFlight,updateSupplyFlight} from './supply3d.js?v=20261119d';
 import {isFurniture,validFurniture,furnitureSolids} from './furniture3d.js?v=20261119d';
@@ -139,17 +139,28 @@ export function step3D(g,p,input,dt){
     const s=o.settings,before={x:o.x,y:o.y,z:o.z},axis=s.axis;o[axis]=clamp(o.origin[axis]+Math.sin(g.time*s.speed/s.distance)*s.distance,axis==='y'?0:-limit,axis==='y'?MAX_BUILD_Y:limit);
     if(player.grounded&&player.supportId===o.id){player.x+=o.x-before.x;player.y+=o.y-before.y;player.z+=o.z-before.z;}}}
   const yaw=input.yaw||0,beforeDrive={x:player.x,y:player.y,z:player.z},fallBefore={y:player.y,grounded:player.grounded};
-  const reach=g.car?2:1,terrain=nearbyObjects(g,player.x-reach,player.z-reach,player.x+reach,player.z+reach);
   if(g.car){
     const movement=carMotion(g.car,input,player.grounded,dt);
-    movePlayer(player,terrain,movement.x,movement.z,dt,false,g);
+    const distance=Math.hypot(movement.x,movement.z);
+    const {x,z}=beforeDrive;
+    const terrain=nearbyObjects(g,Math.min(x,x+movement.x)-2,Math.min(z,z+movement.z)-2,Math.max(x,x+movement.x)+2,Math.max(z,z+movement.z)+2);
+    // Sample collisions and gate entry between rendered frames at high speed.
+    const steps=Math.max(1,Math.ceil(distance/.6)),stepTime=dt/steps;
+    let elapsed=0,previous=beforeDrive;
+    for(let i=0;i<steps;i++){
+      movePlayer(player,terrain,movement.x/steps,movement.z/steps,stepTime,false,g);
+      elapsed+=stepTime;
+      updateRaceGates(g,previous,tell);
+      if(g.state!=='playing')break;
+      previous={x:player.x,y:player.y,z:player.z};
+    }
     const travelled=Math.hypot(player.x-beforeDrive.x,player.z-beforeDrive.z);
-    if(Math.hypot(movement.x,movement.z)>.001&&travelled<Math.hypot(movement.x,movement.z)*.35)g.car.speed*=.45;
-    g.car.actualSpeed=dt>0?travelled/dt:0;
+    if(g.state==='playing'&&distance>.001&&travelled<distance*.35)g.car.speed*=.45;
+    g.car.actualSpeed=elapsed>0?travelled/elapsed:0;
     g.car.peakSpeed=Math.max(g.car.peakSpeed,g.car.actualSpeed);
-    updateRaceGates(g,beforeDrive,tell);
   }else{
     let x=input.x||0,z=input.z||0,len=Math.hypot(x,z);if(len>1){x/=len;z/=len;}
+    const terrain=nearbyObjects(g,player.x-1,player.z-1,player.x+1,player.z+1);
     movePlayer(player,terrain,(x*Math.cos(yaw)+z*Math.sin(yaw))*player.walkSpeed*dt,(-x*Math.sin(yaw)+z*Math.cos(yaw))*player.walkSpeed*dt,dt,input.jump,g);
   }
   const fallRule=g.car?{...FALL_DEFAULTS,enabled:false}:p.playerRules?.fallDamage??FALL_DEFAULTS;

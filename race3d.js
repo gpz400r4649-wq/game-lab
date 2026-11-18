@@ -1,7 +1,9 @@
 import {nearestRoad,ROAD_WIDTHS} from './road3d.js?v=20261119d';
 
+// Pierre Gasly, 2026 Mexico City GP, FIA race speed trap (km/h).
+export const F1_TOP_SPEED_KMH=361.6;
 export const CAR_TUNING=Object.freeze({
- maxSpeed:Object.freeze([8,12,18]),
+ maxSpeed:Object.freeze([8,12,18,120/3.6,240/3.6,F1_TOP_SPEED_KMH/3.6]),
  acceleration:Object.freeze([4,7,10]),
  steering:Object.freeze([1.6,2.4,3.2]),
  braking:Object.freeze([12,22,32])

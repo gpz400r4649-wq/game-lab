@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {create3D,fresh3D,part,step3D,validate3D} from '../engine3d.js';
-import {fitRaceGate,moveRaceGate,raceGateHeading,raceGateWidth,updateRoadGateWidths} from '../race3d.js';
+import {DEFAULT_CAR_TUNING,F1_TOP_SPEED_KMH,fitRaceGate,moveRaceGate,raceGateHeading,raceGateWidth,updateRoadGateWidths} from '../race3d.js';
 import {makeCarModel,makeRaceGateModel,updateCarModel} from '../race-model3d.js';
 import {Quaternion,Vector3} from '../vendor/three.module.min.js';
 
@@ -50,6 +50,25 @@ test('車のせっていは保存でき、速さ・加速・ハンドル・ブ�
  normal.car.speed=fast.car.speed=8;
  tick(normal,base,.1,{brake:true});tick(fast,tuned,.1,{brake:true});
  assert.ok(fast.car.speed<normal.car.speed);
+});
+
+test('F1の最高速に届き、１フレームでゲートや壁を通りすぎない',()=>{
+ const maxSpeed=F1_TOP_SPEED_KMH/3.6;
+ const carTuning={...DEFAULT_CAR_TUNING,maxSpeed,acceleration:10};
+ const project=validate3D({...fresh3D('car'),worldSize:960,spawn:{x:0,y:0,z:465},carTuning});
+ const fast=create3D(project);
+ tick(fast,project,11,{z:-1});
+ assert.ok(Math.abs(fast.car.actualSpeed*3.6-F1_TOP_SPEED_KMH)<1e-8);
+
+ const gate=part('raceGate',0,0),wall=part('wall',0,0);
+ for(const piece of [gate,wall]){
+  const course={...project,objects:[piece],spawn:{x:0,y:0,z:2}};
+  const run=create3D(course);
+  run.car.speed=maxSpeed;
+  step3D(run,course,{z:-1},.033);
+  if(piece===gate)assert.equal(run.state,'won');
+  else assert.ok(run.player.z>=wall.d/2+.9-1e-8);
+ }
 });
 
 test('車は低い側からスロープを登り、続く床を走れる',()=>{
