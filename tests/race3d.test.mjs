@@ -31,6 +31,27 @@ test('車は加速・旋回・ブレーキ・バックができ、壁で止ま�
  tick(stopped,p,3,{z:-1});assert.ok(stopped.player.z>=1);assert.ok(stopped.car.speed<1);
 });
 
+test('車のせっていは保存でき、速さ・加速・ハンドル・ブレーキに反映される',()=>{
+ const base=fresh3D('car');
+ const tuning={maxSpeed:18,acceleration:10,steering:3.2,braking:32};
+ const tuned=validate3D(JSON.parse(JSON.stringify({...base,carTuning:tuning})));
+ assert.deepEqual(tuned.carTuning,tuning);
+ assert.throws(()=>validate3D({...base,carTuning:{...tuning,maxSpeed:100}}),/くるまのせってい/);
+ assert.throws(()=>validate3D({...fresh3D(),carTuning:tuning}),/くるまのせってい/);
+ const normal=create3D(base),fast=create3D(tuned);
+ tick(normal,base,.5,{z:-1});tick(fast,tuned,.5,{z:-1});
+ assert.ok(fast.car.speed>normal.car.speed);
+ tick(normal,base,2,{z:-1});tick(fast,tuned,2,{z:-1});
+ assert.ok(Math.abs(normal.car.actualSpeed-12)<1e-9);
+ assert.ok(Math.abs(fast.car.actualSpeed-18)<1e-9);
+ normal.car.speed=fast.car.speed=8;
+ tick(normal,base,.1,{x:1,z:-1});tick(fast,tuned,.1,{x:1,z:-1});
+ assert.ok(Math.abs(fast.car.heading)>Math.abs(normal.car.heading));
+ normal.car.speed=fast.car.speed=8;
+ tick(normal,base,.1,{brake:true});tick(fast,tuned,.1,{brake:true});
+ assert.ok(fast.car.speed<normal.car.speed);
+});
+
 test('車は低い側からスロープを登り、続く床を走れる',()=>{
  const p=fresh3D('car');p.objects=[part('ramp',0,0),part('floor',0,-4)];p.objects[1].y=3;
  const g=create3D(p);

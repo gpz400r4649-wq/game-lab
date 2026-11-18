@@ -3,7 +3,7 @@ import {courseStart} from './road3d.js?v=20261119d';
 import {createRoadView} from './road-model3d.js?v=20261119d';
 import {createRoadEditor} from './road-ui3d.js?v=20261119d';
 import {makeCarModel,updateCarModel,makeRaceGateModel,updateRaceGateModel,updateRaceGateNumber} from './race-model3d.js?v=20261119d';
-import {CAR_MAX_SPEED,fitRaceGate,orderedRaceGates,turnRaceGate} from './race3d.js?v=20261119d';
+import {CAR_TUNING,DEFAULT_CAR_TUNING,fitRaceGate,orderedRaceGates,turnRaceGate} from './race3d.js?v=20261119h';
 import {assemblyCandidate,assemblyCopies,saveAssembly,temporarySpawn} from './assembly3d.js?v=20261119d';
 import {createSupplyUI,createSupplyView} from './supply-ui3d.js?v=20261119d';
 import {FURNITURE_PRESETS,configureFurniture,isFurniture} from './furniture3d.js?v=20261119d';
@@ -46,7 +46,7 @@ import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261119d';
 import {rotatePiece,BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,topAt,editorPlacementReason,editorPlacementBlocker,blockPlacement} from './building3d.js?v=20261119d';
 import {createToolsUI} from './tools3d.js?v=20261119d';
 import * as T from './vendor/three.module.min.js';
-import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet} from './engine3d.js?v=20261119d';
+import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet} from './engine3d.js?v=20261119h';
 import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261119d';
 document.querySelectorAll('.setting-choices').forEach(enhanceChoiceControl);
 const $=s=>document.querySelector(s),view=$('#viewport');
@@ -260,6 +260,41 @@ $('#rules-open3').onclick=()=>{renderPlayerRules();allyHitRule.value=project.pla
 $('#rules-close3').onclick=()=>$('#project-rules3').close();
 allyHitRule.onchange=()=>{project.playerHitsAlly=allyHitRule.value==='on';save();};
 function objectList(){renderPlayerRules();allyHitRule.value=project.playerHitsAlly?'on':'off';}
+
+if(carTemplate){
+ const opener=$('#car-settings-open3'),dialog=$('#car-settings3'),panel=$('#car-tuning3');
+ const reset=$('#car-tuning-reset3'),controls={};
+ const rows=[
+  ['maxSpeed','いちばん速いスピード',CAR_TUNING.maxSpeed.map(speed=>Math.round(speed*3.6)+' km/h')],
+  ['acceleration','スピードの上がり方',['ゆっくり','ふつう','すばやい']],
+  ['steering','ハンドルのきき方',['ゆるやか','ふつう','よくまがる']],
+  ['braking','ブレーキのきき方',['よわい','ふつう','つよい']]
+ ];
+ const sync=()=>{
+  const tuning=project.carTuning||DEFAULT_CAR_TUNING;
+  for(const [key,control] of Object.entries(controls))control.value=tuning[key];
+  reset.disabled=Object.keys(controls).every(key=>tuning[key]===DEFAULT_CAR_TUNING[key]);
+ };
+ for(const [key,label,options] of rows){
+  const card=document.createElement('section'),title=document.createElement('h3'),choice=createChoiceControl();
+  title.id='car-setting-'+key;
+  setReadingText(title,label);
+  choice.setAttribute('aria-labelledby',title.id);
+  options.forEach((name,index)=>choice.add(new Option(name,String(CAR_TUNING[key][index]))));
+  choice.onchange=()=>{
+   project.carTuning={...(project.carTuning||DEFAULT_CAR_TUNING),[key]:Number(choice.value)};
+   save();
+   sync();
+  };
+  controls[key]=choice;
+  card.append(title,choice);
+  panel.append(card);
+ }
+ opener.hidden=false;
+ opener.onclick=()=>{sync();dialog.showModal();};
+ reset.onclick=()=>{delete project.carTuning;save();sync();};
+ $('#car-tuning-try3').onclick=()=>{dialog.close();setMode('play');};
+}
 function advancedInspector(){const el=$('#inspector3');el.replaceChildren();const o=editedObject();if(!o){el.innerHTML='<p class="empty">何もない場所から、はじめよう。<br>敵も足場も、自分でついかできるよ。</p>';return;}const title=document.createElement('div');title.className='inspector-heading';setReadingText(title,PARTS[o.type]);el.append(title);const pos=document.createElement('div');pos.className='position-fields';for(const [k,label,min,max] of [['x','横 X',-coordinateLimit(project),coordinateLimit(project)],['y','高さ Y',0,MAX_BUILD_Y],['z','奥行 Z',-coordinateLimit(project),coordinateLimit(project)]])field(pos,label,o[k],min,max,.5,n=>o[k]=n);el.append(pos);if(o.type==='box'||o.type==='platform'){for(const [k,label] of [['w','はば'],['h','たかさ'],['d','おくゆき']])field(el,label,o[k],.5,10,.5,n=>o[k]=n);}
 if(o.type==='enemy'){field(el,'体力',o.hp,1,500,1,n=>o.hp=Math.round(n));const loop=document.createElement('div');loop.className='loop';setReadingText(loop,'⚑ ゲーム開始 → ずっとくり返す');o.program.forEach((b,i)=>{const block=document.createElement('div');block.className='block';const select=createChoiceControl();select.setAttribute('aria-label',`3Dの${i+1}番目のうごき`);Object.entries(BEHAVIORS).forEach(([k,v])=>select.add(new Option(kanaText(v),k)));select.value=b.action;select.onchange=()=>{b.action=select.value;save();rebuild();inspector();};block.append(select);field(block,'速さ',b.speed,.5,8,.5,n=>b.speed=n);const row=document.createElement('div');row.className='block-controls';for(const [name,disabled,fn] of [['↑',i===0,()=>[o.program[i-1],o.program[i]]=[o.program[i],o.program[i-1]]],['↓',i===o.program.length-1,()=>[o.program[i+1],o.program[i]]=[o.program[i],o.program[i+1]]],['×',false,()=>o.program.splice(i,1)]]){const btn=document.createElement('button');setReadingText(btn,name);btn.disabled=disabled;btn.setAttribute('aria-label',name==='×'?'3Dブロックを削除':name==='↑'?'3Dブロックを上へ':'3Dブロックを下へ');btn.onclick=()=>{fn();save();inspector();};row.append(btn);}block.append(row);loop.append(block);});const add=document.createElement('button');setReadingText(add,'＋ うごきを追加');add.disabled=o.program.length>=8;add.onclick=()=>{o.program.push({action:'patrol',speed:2});save();inspector();};loop.append(add);el.append(loop);}
 }
@@ -522,7 +557,8 @@ function driveFrame(dt){
  },dt);
  firePressed=false;syncGameMeshes();
  const car=game.car;
- if(game.state==='playing')carAudio.update(car.actualSpeed/CAR_MAX_SPEED,brake?0:throttle);
+ const speedFraction=car.actualSpeed/car.tuning.maxSpeed;
+ if(game.state==='playing')carAudio.update(speedFraction,brake?0:throttle);
  else{
   carAudio.stop();
   carSoundButton.disabled=true;
@@ -531,7 +567,7 @@ function driveFrame(dt){
  const speedLabel=$('#speed-now3'),peakLabel=$('#speed-peak3');
  if(speedLabel.textContent!==speedNow)speedLabel.textContent=speedNow;
  if(peakLabel.textContent!==speedPeak)peakLabel.textContent=speedPeak;
- $('#speed-bar3').style.transform=`scaleX(${Math.min(1,car.actualSpeed/CAR_MAX_SPEED)})`;
+ $('#speed-bar3').style.transform=`scaleX(${Math.min(1,speedFraction)})`;
  const gateScore=$('#score3');gateScore.hidden=!car.gates.length;
  if(car.gates.length)setReadingText(gateScore,`ゲート ${car.nextGate} / ${car.gates.length}`);
  $('#lost3').hidden=game.state==='playing';

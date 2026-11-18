@@ -1,8 +1,19 @@
 import {nearestRoad,ROAD_WIDTHS} from './road3d.js?v=20261119d';
 
-export const CAR_MAX_SPEED=12;
+export const CAR_TUNING=Object.freeze({
+ maxSpeed:Object.freeze([8,12,18]),
+ acceleration:Object.freeze([4,7,10]),
+ steering:Object.freeze([1.6,2.4,3.2]),
+ braking:Object.freeze([12,22,32])
+});
+export const DEFAULT_CAR_TUNING=Object.freeze(Object.fromEntries(
+ Object.entries(CAR_TUNING).map(([key,levels])=>[key,levels[1]])
+));
 const REVERSE_SPEED=4;
-const TURN_SPEED=2.4;
+
+export function validCarTuning(tuning){
+ return !!tuning&&Object.entries(CAR_TUNING).every(([key,levels])=>levels.includes(tuning[key]));
+}
 
 function approach(value,target,step){
  return value+Math.sign(target-value)*Math.min(Math.abs(target-value),step);
@@ -20,20 +31,21 @@ export function moveRaceGate(objects,gate,position){
  return index+1;
 }
 
-export function createCarRun(objects,heading=0,spawn){
+export function createCarRun(objects,heading=0,spawn,tuning=DEFAULT_CAR_TUNING){
  const gates=orderedRaceGates(objects);
- return {speed:0,actualSpeed:0,peakSpeed:0,heading,wheelAngle:0,steering:0,gates,nextGate:0,startsInFirst:!!(spawn&&gates[0]&&inGate(spawn,gates[0]))};
+ return {tuning:{...tuning},speed:0,actualSpeed:0,peakSpeed:0,heading,wheelAngle:0,steering:0,gates,nextGate:0,startsInFirst:!!(spawn&&gates[0]&&inGate(spawn,gates[0]))};
 }
 
 export function carMotion(car,input,grounded,dt){
  const throttle=Math.max(-1,Math.min(1,-(input.z||0)));
  const steer=Math.max(-1,Math.min(1,input.x||0));
- const target=input.brake?0:throttle*(throttle<0?REVERSE_SPEED:CAR_MAX_SPEED);
+ const {maxSpeed,acceleration,steering,braking}=car.tuning;
+ const target=input.brake?0:throttle*(throttle<0?REVERSE_SPEED:maxSpeed);
  const slowing=input.brake||Math.sign(car.speed)!==Math.sign(target);
- car.speed=approach(car.speed,target,dt*(input.brake?22:slowing?12:7));
+ car.speed=approach(car.speed,target,dt*(input.brake?braking:slowing?12:acceleration));
  if(grounded){
-  const turnFactor=Math.min(1,Math.abs(car.speed)/2)*(1-.45*Math.min(1,Math.abs(car.speed)/CAR_MAX_SPEED));
-  car.heading-=steer*turnFactor*TURN_SPEED*Math.sign(car.speed)*dt;
+  const turnFactor=Math.min(1,Math.abs(car.speed)/2)*(1-.45*Math.min(1,Math.abs(car.speed)/maxSpeed));
+  car.heading-=steer*turnFactor*steering*Math.sign(car.speed)*dt;
  }
  car.steering=approach(car.steering,steer*.42,dt*3);
  const distance=car.speed*dt;
