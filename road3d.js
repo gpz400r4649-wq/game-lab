@@ -1,7 +1,7 @@
 import {GRID} from './building3d.js?v=20261119d';
 import {worldHalf,coordinateLimit} from './world3d.js?v=20261119d';
 
-export const ROAD_WIDTHS=[4,8,12];
+export const ROAD_WIDTHS=[4,8,12,16];
 export const MAX_ROADS=16;
 export const MAX_ROAD_POINTS=64;
 const ROAD_GRID_STEP=GRID.cell/2;

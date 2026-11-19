@@ -1,5 +1,5 @@
-import {courseStart,validRoads} from './road3d.js?v=20261119d';
-import {carMotion,createCarRun,updateRaceGates,upgradeCarTopSpeed,validCarTuning,validGateFit} from './race3d.js?v=20261119l';
+import {courseStart,validRoads} from './road3d.js?v=20261119s';
+import {carMotion,createCarRun,updateRaceGates,upgradeCarTopSpeed,validCarTuning,validGateFit} from './race3d.js?v=20261119s';
 import {validAssemblies} from './assembly3d.js?v=20261119d';
 import {validSupplyFlight,createSupplyFlight,updateSupplyFlight} from './supply3d.js?v=20261119d';
 import {isFurniture,validFurniture,furnitureSolids} from './furniture3d.js?v=20261119d';
@@ -65,7 +65,8 @@ export function validate3D(data,skipShared=false){
     if(!validFurniture(o)||!validDoor(o)||!validArchitecture(o))throw Error('ドアの設定を確認してください');
     if(o.type==='raceGate'&&(!Number.isInteger(o.gateOrder)||!number(o.gateOrder,1,MAX_PARTS)||!validGateFit(o)))throw Error('ゲートの順ばんをたしかめてね');
     if(!validEvents(o))throw Error('イベントの設定を確認してください');
-    const sizes=['w','h','d'].every(k=>number(o[k],['wall','floor','roof','ramp','bounce','hazard','door'].includes(o.type)?.2:.5,o.type==='enemy'?Math.max(10,2*(o.enemyScale||1)):o.type==='raceGate'&&o.gateWidth!==undefined?13:10));
+    const sizeLimit=o.type==='enemy'?Math.max(10,2*(o.enemyScale||1)):o.type==='raceGate'&&o.gateWidth!==undefined?Math.max(13,o.gateWidth+1):10;
+    const sizes=['w','h','d'].every(k=>number(o[k],['wall','floor','roof','ramp','bounce','hazard','door'].includes(o.type)?.2:.5,sizeLimit));
     if(o.rotation!==undefined&&!(o.type==='ramp'||o.type==='door'||o.furnitureKind||o.wallHalf||o.roofStyle==='slope'?[0,90,180,270]:[0,90]).includes(o.rotation))throw Error('部品の向きを確認してください');
     if(!Object.hasOwn(PARTS,o.type)||typeof o.id!=='string'||ids.has(o.id)||!['x','z'].every(k=>number(o[k],-limit,limit))||!number(o.y,0,MAX_BUILD_Y)||!sizes||!Number.isInteger(o.hp)||!number(o.hp,1,o.type==='enemy'?500:DESTRUCTIBLE_TYPES.has(o.type)?200:20)||!Array.isArray(o.program)||o.program.length>8)throw Error('パーツの設定を確認してください');ids.add(o.id);if(DESTRUCTIBLE_TYPES.has(o.type)){if(o.destructible===undefined)o.destructible=true;if(typeof o.destructible!=='boolean')throw Error('ブロックの体力設定を確認してください');}
     for(const b of o.program)if((!Object.hasOwn(BEHAVIORS,b.action)&&b.action!=='shoot')||!number(b.speed,.5,8))throw Error('うごきの設定を確認してください');

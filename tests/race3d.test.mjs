@@ -151,17 +151,23 @@ test('道幅の変更は、その道路に合わせた新旧のゲートだけ�
  const legacy=fitRaceGate(part('raceGate'),[road,other],{x:10,y:0,z:-10});delete legacy.gateRoadId;
  const unrelated=fitRaceGate(part('raceGate'),[road,other],{x:30,y:0,z:-10});
  const detached={...onRoad,id:crypto.randomUUID(),x:-20};const plain=part('raceGate',1,-1);
- const wider={...road,width:12};
+ const wider={...road,width:16};
  const next=updateRoadGateWidths([onRoad,legacy,unrelated,detached,plain],[road,other],[wider,other]);
  for(const [index,gate] of next.slice(0,2).entries()){
   const previous=[onRoad,legacy][index];
-  assert.equal(raceGateWidth(gate),12);assert.equal(gate.x,previous.x);assert.equal(gate.z,previous.z);
+  assert.equal(raceGateWidth(gate),16);assert.equal(gate.x,previous.x);assert.equal(gate.z,previous.z);
   assert.equal(gate.gateYaw,previous.gateYaw);assert.equal(gate.gateRoadId,road.id);
-  assert.deepEqual(makeRaceGateModel(gate).userData.lights.map(light=>light.position.x),[-6,6]);
+  assert.deepEqual(makeRaceGateModel(gate).userData.lights.map(light=>light.position.x),[-8,8]);
  }
  assert.deepEqual(next.slice(2),[unrelated,detached,plain]);
  const narrowed=updateRoadGateWidths(next,[wider,other],[{...road,width:4},other]);
  assert.deepEqual(narrowed.slice(0,2).map(raceGateWidth),[4,4]);
  const project=fresh3D('car');project.objects=next;project.roads=[wider,other];
  assert.deepEqual(validate3D(JSON.parse(JSON.stringify(project))).objects,next);
+ const straight={...wider,points:[{x:0,z:0},{x:0,z:-32}]};
+ const edgeGate=fitRaceGate(part('raceGate'),[straight],{x:7.5,y:0,z:-16});
+ const course=validate3D({...fresh3D('car'),roads:[straight],objects:[edgeGate]});
+ const run=create3D(course,{testSpawn:{x:7.5,y:0,z:-12,heading:0}});
+ tick(run,course,1.4,{z:-1});
+ assert.equal(run.state,'won');
 });

@@ -1,4 +1,4 @@
-import {nearestRoad,ROAD_WIDTHS} from './road3d.js?v=20261119d';
+import {nearestRoad,ROAD_WIDTHS} from './road3d.js?v=20261119s';
 
 export const F1_TOP_SPEED_KMH=360;
 export const CAR_TUNING=Object.freeze({

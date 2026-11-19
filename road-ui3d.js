@@ -1,5 +1,5 @@
-import {updateRoadGateWidths} from './race3d.js?v=20261119d';
-import {MAX_ROADS,MAX_ROAD_POINTS,ROAD_WIDTHS,roadPoint,roadGridSites,nearestRoadHandle,roadPointsFit,validRoads} from './road3d.js?v=20261119d';
+import {updateRoadGateWidths} from './race3d.js?v=20261119s';
+import {MAX_ROADS,MAX_ROAD_POINTS,ROAD_WIDTHS,roadPoint,roadGridSites,nearestRoadHandle,roadPointsFit,validRoads} from './road3d.js?v=20261119s';
 import {mountLiveRangeEditor} from './range-panel3d.js?v=20261119d';
 import {setStageRangePainter} from './stage-range3d.js?v=20261119d';
 
@@ -37,7 +37,8 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,toast
   title.textContent=original.points.length?'どうろをなおす':'どうろをひく';heading.append(title);panel.append(heading,controls);
   const widthChoices=document.createElement('div');widthChoices.className='road-width-choices';widthChoices.setAttribute('role','group');widthChoices.setAttribute('aria-label','みちのはば');
   const widths=ROAD_WIDTHS.map((width,index)=>{
-   const control=button(['せまい','ふつう','ひろい'][index],()=>{
+   const label=['せまい','ふつう','ひろい','もっとひろい'][index];
+   const control=button(`${label} ${width}m`,()=>{
     if(draft.width!==width){remember();draft.width=width;refresh();}
    });widthChoices.append(control);return control;
   });
