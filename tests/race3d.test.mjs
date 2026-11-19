@@ -182,7 +182,7 @@ test('周回レースはスタートで計り始め、ゲートの順番を守�
  assert.throws(()=>validate3D({...p,raceLaps:99}),/しゅうかい/);
 });
 
-test('周回の最初のゲート上から走り出すと計測を開始し、ゲートが１つなら周回を数えない',()=>{
+test('周回の最初のゲート上から走り出すと計測を開始し、ゲートのないコースは自由に走れる',()=>{
  const p=fresh3D('car');
  p.raceLaps=1;
  p.roads=[{id:'straight',width:8,closed:false,points:[{x:0,z:0},{x:0,z:-20}]}];
@@ -191,10 +191,52 @@ test('周回の最初のゲート上から走り出すと計測を開始し、�
  tick(game,p,.5,{z:-1});
  assert.notEqual(game.car.laps.startedAt,null);
  assert.equal(game.car.nextGate,1);
- const incomplete={...p,objects:p.objects.slice(0,1)},run=create3D(incomplete);
+ const incomplete={...p,objects:[]},run=create3D(incomplete);
  tick(run,incomplete,.5,{z:-1});
  assert.equal(run.car.laps.startedAt,null);
  assert.equal(run.state,'playing');
+});
+
+test('閉じた道路では１つのゲートでスタートとゴールを兼ね、コースをひと回りしたときだけ数える',()=>{
+ const p=fresh3D('car');
+ p.raceLaps=2;
+ p.roads=[{id:'loop',width:8,closed:true,points:[{x:-24,z:24},{x:-24,z:-24},{x:24,z:-24},{x:24,z:24}]}];
+ p.objects=[fitRaceGate(part('raceGate'),p.roads,{x:-24,y:0,z:1})];
+ const run=create3D(validate3D(p)),gate=run.car.gates[0];
+ const cross=(marker,time,sign=1)=>{
+  const x=Math.sin(marker.gateYaw)*sign,z=Math.cos(marker.gateYaw)*sign;
+  Object.assign(run.player,{x:marker.x-x,y:0,z:marker.z-z});
+  updateRaceGates(run,{x:marker.x+x,y:0,z:marker.z+z},()=>{},time);
+ };
+ cross(gate,1);
+ assert.equal(run.car.laps.startedAt,1);
+ cross(gate,2,-1);
+ cross(gate,3);
+ assert.equal(run.car.laps.completed,0);
+ const markers=run.car.laps.markers;
+ assert.equal(markers.length,3);
+ markers.forEach((marker,i)=>cross(marker,5+i));
+ cross(gate,9);
+ assert.equal(run.car.laps.completed,1);
+ assert.equal(run.car.laps.best,8);
+ markers.forEach((marker,i)=>cross(marker,11+i));
+ cross(gate,15);
+ assert.equal(run.state,'won');
+ assert.equal(run.car.laps.best,6);
+});
+
+test('道路に結びつけない１つのゲートでも、進行方向に戻れば１周になる',()=>{
+ const p=fresh3D('car');p.raceLaps=1;p.objects=[part('raceGate',0,0)];
+ const game=create3D(p);
+ const cross=(before,after,time)=>{
+  game.player.z=after;
+  updateRaceGates(game,{x:0,y:0,z:before},()=>{},time);
+ };
+ cross(2,-2,1);
+ cross(-2,2,2);
+ assert.equal(game.car.laps.completed,0);
+ cross(2,-2,10);
+ assert.equal(game.state,'won');
 });
 
 

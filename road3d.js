@@ -89,7 +89,7 @@ function closestOnPath(path,point,maxGap,last=path.length-1){
   if(length<.000001)continue;
   const fraction=Math.max(0,Math.min(1,((point.x-a.x)*dx+(point.z-a.z)*dz)/length));
   const x=a.x+dx*fraction,z=a.z+dz*fraction,gap=(x-point.x)**2+(z-point.z)**2;
-  if(gap<best){best=gap;nearest={x,z,heading:Math.atan2(-dx,-dz),gap};}
+  if(gap<best){best=gap;nearest={x,z,heading:Math.atan2(-dx,-dz),gap,index,fraction};}
  }
  return nearest;
 }
@@ -98,9 +98,29 @@ export function nearestRoad(roads,point){
  let nearest=null;
  for(const road of roads||[]){
   const match=closestOnPath(savedRoadPath(road),point,road.width/2+.65);
-  if(match&&(!nearest||match.gap<nearest.gap))nearest={...match,width:road.width,roadId:road.id};
+  if(match&&(!nearest||match.gap<nearest.gap)){
+   const {x,z,heading,gap}=match;
+   nearest={x,z,heading,gap,width:road.width,roadId:road.id};
+  }
  }
  return nearest;
+}
+
+export function lapRoadMarkers(road,point,heading){
+ const path=savedRoadPath(road),start=closestOnPath(path,point,road.width/2+.65);
+ if(!start)return [];
+ const lengths=[0];
+ for(let i=1;i<path.length;i++)lengths.push(lengths[i-1]+distance(path[i-1],path[i]));
+ const length=lengths.at(-1);
+ const offset=lengths[start.index-1]+start.fraction*(lengths[start.index]-lengths[start.index-1]);
+ const direction=Math.cos(heading-start.heading)>=0?1:-1;
+ return [.25,.5,.75].map(portion=>{
+  const at=((offset+direction*length*portion)%length+length)%length;
+  const index=lengths.findIndex(value=>value>at);
+  const a=path[index-1],b=path[index];
+  const position=lerp(a,b,(at-lengths[index-1])/(lengths[index]-lengths[index-1]));
+  return {...position,heading:Math.atan2(direction*(a.x-b.x),direction*(a.z-b.z))};
+ });
 }
 
 export function courseStart(project){

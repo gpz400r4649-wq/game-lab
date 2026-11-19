@@ -3,7 +3,7 @@ import {courseStart} from './road3d.js?v=20261119s';
 import {createRoadView} from './road-model3d.js?v=20261119d';
 import {createRoadEditor} from './road-ui3d.js?v=20261119s';
 import {makeCarModel,updateCarModel,makeRaceGateModel,updateRaceGateModel,updateRaceGateNumber} from './race-model3d.js?v=20261119d';
-import {CAR_TUNING,DEFAULT_CAR_TUNING,RACE_LAP_OPTIONS,fitRaceGate,orderedRaceGates,turnRaceGate} from './race3d.js?v=20261119t';
+import {CAR_TUNING,DEFAULT_CAR_TUNING,RACE_LAP_OPTIONS,fitRaceGate,orderedRaceGates,turnRaceGate} from './race3d.js?v=20261119u';
 import {assemblyCandidate,assemblyCopies,saveAssembly,temporarySpawn} from './assembly3d.js?v=20261119p';
 import {createSupplyUI,createSupplyView} from './supply-ui3d.js?v=20261119d';
 import {FURNITURE_PRESETS,configureFurniture,isFurniture} from './furniture3d.js?v=20261119d';
@@ -15,7 +15,7 @@ import {createPlayerRulesUI} from './player-rules-ui3d.js?v=20261119d';
 import {fencePresetKey,floorPresetKey,FLOOR_PRESETS,configureBuildingPart,FENCE_PRESETS,RAMP_PRESETS,ROOF_PRESETS} from './architecture3d.js?v=20261119o';
 import {makeHalfFloorGeometries,makeDiagonalWallGeometry,makeCornerRampGeometry,makeFenceModel,fenceGeometry,makeRoofSlopeGeometry,makeGableGeometry} from './architecture-model3d.js?v=20261119d';
 import {createChoiceControl,enhanceChoiceControl} from './choices3d.js?v=20261119d';
-import {groupSteps,groupCandidate,commitGroup,copyGroupNearby} from './group-edit3d.js?v=20261119t';
+import {groupSteps,groupCandidate,commitGroup,copyGroupNearby} from './group-edit3d.js?v=20261119u';
 import {initializeCharacterDefaults,synchronizeCharacterDefaults,inheritNewCharacter} from './character-defaults3d.js?v=20261119d';
 import {nearbyActor,trade,companionsAt} from './actor3d.js?v=20261119d';
 import {giveAllyGun,giftableGun,recruitTarget,allyAttackDistance} from './ally3d.js?v=20261119d';
@@ -46,7 +46,7 @@ import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261119d';
 import {rotatePiece,BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,topAt,editorPlacementReason,editorPlacementBlocker,blockPlacement} from './building3d.js?v=20261119p';
 import {createToolsUI} from './tools3d.js?v=20261119d';
 import * as T from './vendor/three.module.min.js';
-import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,nearbyChair} from './engine3d.js?v=20261119t';
+import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,nearbyChair} from './engine3d.js?v=20261119u';
 import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261119s';
 document.querySelectorAll('.setting-choices').forEach(enhanceChoiceControl);
 const $=s=>document.querySelector(s),view=$('#viewport');
@@ -314,13 +314,13 @@ if(carTemplate){
  const raceOpener=$('#race-rules-open3'),raceDialog=$('#race-rules3');
  const lapChoices=enhanceChoiceControl($('#race-lap-choices3'));
  lapChoices.setAttribute('aria-labelledby','race-laps-title3');
- for(const count of RACE_LAP_OPTIONS)lapChoices.add(new Option(count?`${count}しゅう`:'ゲートを１回ずつ',count));
+ for(const count of RACE_LAP_OPTIONS)lapChoices.add(new Option(count?`${count}しゅう`:'いっぽんみち',count));
  function syncRaceRules(){
   const count=project.raceLaps||0;
   lapChoices.value=count;
-  const guide=!count?'ゲートをじゅんばんに１回ずつとおるとゴール。':
-   orderedRaceGates(project.objects).length<2?'ゲートを２ついじょうおこう。１ばんはスタートとゴールだよ。':
-   '１ばんでスタート。のこりのゲートをじゅんばんにとおって、１ばんにもどると１しゅう。';
+  const guide=count?
+   'ゲート１つでスタートとゴール。１しゅうしてもどろう。とちゅうにゲートをおくと、番号のじゅんばんにとおるよ。':
+   'はじめとおわりにゲートをおこう。じゅんばんにとおって、さいごのゲートでゴール。';
   $('#race-rules-guide3').textContent=guide;
  }
  raceOpener.hidden=false;
@@ -557,7 +557,7 @@ const effectPool=[],bulletPool=[];function syncGameMeshes(){
   if(o.type==='enemy')mesh.rotation.y=enemyYaw(o,game.player);if(o.type==='ally')mesh.rotation.y=o.heading||0;if(o.type==='plate')mesh.userData.pad.position.y=o.pressed?.075:.13;
   if(['star','key','weapon','blockItem'].includes(o.type))mesh.rotation.y=game.time;
   if(o.type==='door')updateDoorModel(mesh,o);
-  if(o.type==='raceGate'&&game.car){const index=game.car.gates.findIndex(gate=>gate.id===o.id);const {laps,nextGate}=game.car;const passed=laps?laps.startedAt!==null&&index>0&&(nextGate===0||index<nextGate):index<nextGate;updateRaceGateModel(mesh,game.state==='playing'&&index===nextGate,passed);}
+  if(o.type==='raceGate'&&game.car){const index=game.car.gates.findIndex(gate=>gate.id===o.id);const {laps,nextGate}=game.car;const passed=laps?laps.startedAt!==null&&index>0&&(nextGate===0||index<nextGate):index<nextGate;const ready=!laps||laps.startedAt===null||laps.nextMarker>=laps.markers.length;updateRaceGateModel(mesh,game.state==='playing'&&ready&&index===nextGate,passed);}
  if(o.type==='goal')mesh.userData.portal.material=conditionMet(o,game)?materials.ready:materials.goal;
   if(o.type==='checkpoint')mesh.userData.flag.material=game.checkpoint?.id===o.id?materials.ready:materials.checkpoint;
  }
@@ -635,8 +635,9 @@ function driveFrame(dt){
   const lapTime=laps.finishedAt!==null?laps.last:laps.lapStartedAt===null?null:game.time-laps.lapStartedAt;
   setReadingText($('#car-lap-time3'),raceTime(lapTime));
   setReadingText($('#car-lap-best3'),raceTime(laps.best));
-  setReadingText(gateScore,car.gates.length<2?'ゲートを２ついじょうおこう':laps.finishedAt!==null?'ゴール！':
-   laps.startedAt===null?'スタート：ゲート 1':car.nextGate===0?'ゲート 1 にもどろう':`つぎは ゲート ${car.nextGate+1}`);
+  setReadingText(gateScore,!car.gates.length?'スタートのゲートをおこう':laps.finishedAt!==null?'ゴール！':
+   laps.startedAt===null?'スタート：ゲート 1':laps.nextMarker<laps.markers.length?'コースを１しゅうしよう':
+   car.nextGate===0?'ゲート 1 にもどろう':`つぎは ゲート ${car.nextGate+1}`);
  }else if(car.gates.length)setReadingText(gateScore,`ゲート ${car.nextGate} / ${car.gates.length}`);
  $('#lost3').hidden=game.state==='playing';
  setReadingText($('#result-title3'),game.state==='won'?'ゴール！':'もういちど');
