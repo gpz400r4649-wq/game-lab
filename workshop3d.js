@@ -8,6 +8,7 @@ import {sharedDefaultsType,applyBlockDefaults,sharedKeys,synchronizeCharacterDef
 import {copyEnemySettings,ENEMY_COPY_GROUPS} from './enemy-batch3d.js?v=20261119d';
 import {ACTOR_HATS} from './actor3d.js?v=20261119d';
 import {makeTool} from './building3d.js?v=20261119p';
+import {findDuplicatePosition} from './editor-drag3d.js?v=20261119r';
 import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261119d';
 import {openWaypointEditor} from './waypoint-ui3d.js?v=20261119d';
 import {openPatrolEditor} from './patrol-ui3d.js?v=20261119d';
@@ -23,7 +24,7 @@ import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261119d
 import {actionsFor} from './events3d.js?v=20261119d';
 import {renderEventEditor} from './event-editor3d.js?v=20261119d';
 import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261119d';
-import {alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261119p';
+import {alignPiece,gridStep,editorPlacementReason} from './building3d.js?v=20261119p';
 import {part,ENEMY_SCALES,PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261119d';
 
 const ICONS={raceGate:'🏁',actor:'💬',plate:'▣',ally:'🛡',weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
@@ -389,8 +390,21 @@ export function createWorkshop(api){
     for(const [key,name,min,max] of [['x','横 X',-coordinateLimit(p),coordinateLimit(p)],['y','高さ Y',0,MAX_BUILD_Y],['z','奥行 Z',-coordinateLimit(p),coordinateLimit(p)]])field(positions,name,o[key],min,max,gridStep(o,key),n=>{o[key]=n;alignPiece(o,p);return o[key];});fine.append(positions);
     if(!isFurniture(o)&&['box','platform','moving','door','bounce','hazard','wall','floor','roof','ramp'].includes(o.type))for(const [key,name] of [['w','はば'],['h','たかさ'],['d','おくゆき']].filter(([key])=>!o.floorQuarter||key==='h'))field(fine,name,o[key],['wall','floor','roof','bounce','hazard'].includes(o.type)?.2:.5,10,.5,n=>o[key]=n);
     const positionDetails=details(isFurniture(o)?'位置を数字でちょうせい':'位置・大きさを数字でちょうせい',[fine]);positionDetails.className='placement-controls';if(!commonObject)el.append(positionDetails);
-    const copy=document.createElement('button');setReadingText(copy,'＋ 同じパーツをもう１つ');copy.onclick=()=>{if(p.objects.length>=MAX_PARTS){api.toast(`パーツは${MAX_PARTS}個まで置けます`);return;}const duplicate=structuredClone(o);duplicate.id=crypto.randomUUID();for(const a of duplicate.events||[])if(a.target===o.id)a.target=duplicate.id;let found=false;const copyStep=isFurniture(o)?2:4;for(const [dx,dz] of [[Math.max(copyStep,Math.ceil(o.w/copyStep)*copyStep),0],[0,Math.max(copyStep,Math.ceil(o.d/copyStep)*copyStep)],[-Math.max(copyStep,Math.ceil(o.w/copyStep)*copyStep),0],[0,-Math.max(copyStep,Math.ceil(o.d/copyStep)*copyStep)]]){duplicate.x=o.x+dx;duplicate.z=o.z+dz;if(!GRID_PARTS.has(o.type)){duplicate.x=clamp(o.x+2,-coordinateLimit(p),coordinateLimit(p));duplicate.z=o.z;found=true;break;}alignPiece(duplicate,p);if(!editorPlacementReason(duplicate,p.objects,p.spawn)){found=true;break;}}if(!found){api.toast('隣のマスが空いていません');return;}p.objects.push(duplicate);if(duplicate.type==='raceGate')moveRaceGate(p.objects,duplicate,p.objects.length);select(duplicate.id);save();rebuild();api.objectList();inspect();};
-    if(!commonObject){duplicateSelected=copy.onclick;duplicateButton.disabled=p.objects.length>=MAX_PARTS;}
+    if(!commonObject){
+      duplicateSelected=()=>{
+        if(p.objects.length>=MAX_PARTS){api.toast(`パーツは${MAX_PARTS}個まで置けます`);return;}
+        const candidate=findDuplicatePosition(p,o);
+        if(!candidate){api.toast('同じ高さにコピーを置く場所が空いていません');return;}
+        const duplicate=structuredClone(candidate);
+        for(const action of duplicate.events||[])if(action.target===o.id)action.target=duplicate.id;
+        p.objects.push(duplicate);
+        if(duplicate.type==='raceGate')moveRaceGate(p.objects,duplicate,p.objects.length);
+        select(duplicate.id);
+        api.focusDuplicate?.(duplicate);
+        save();rebuild();api.objectList();inspect();
+      };
+      duplicateButton.disabled=p.objects.length>=MAX_PARTS;
+    }
   }
   function weapons(){if(api.renderLoadout){api.renderLoadout();return;}
     advancedWeaponFields();const el=$('#weapon3'),advanced=[...el.childNodes];el.replaceChildren();const p=getProject();
