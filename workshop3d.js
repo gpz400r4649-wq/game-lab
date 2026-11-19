@@ -1,13 +1,13 @@
 import {moveRaceGate,orderedRaceGates} from './race3d.js?v=20261119d';
 import {FURNITURE_PRESETS,isFurniture,furnitureIcon} from './furniture3d.js?v=20261119d';
 import {prepareEnemyDropWeapon} from './enemy-loot3d.js?v=20261119d';
-import {fencePresetKey,FLOOR_PRESETS,RAMP_PRESETS,FENCE_PRESETS,ROOF_PRESETS,architectureIcon} from './architecture3d.js?v=20261119d';
+import {fencePresetKey,floorPresetKey,FLOOR_PRESETS,RAMP_PRESETS,FENCE_PRESETS,ROOF_PRESETS,architectureIcon} from './architecture3d.js?v=20261119o';
 import {renderAllyRangePreview} from './ally-range-preview3d.js?v=20261119d';
 import {createChoiceControl} from './choices3d.js?v=20261119d';
 import {sharedDefaultsType,applyBlockDefaults,sharedKeys,synchronizeCharacterDefaults,useCharacterDefaults,inheritNewCharacter,writeCharacterDefaults} from './character-defaults3d.js?v=20261119d';
 import {copyEnemySettings,ENEMY_COPY_GROUPS} from './enemy-batch3d.js?v=20261119d';
 import {ACTOR_HATS} from './actor3d.js?v=20261119d';
-import {makeTool} from './building3d.js?v=20261119n';
+import {makeTool} from './building3d.js?v=20261119o';
 import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261119d';
 import {openWaypointEditor} from './waypoint-ui3d.js?v=20261119d';
 import {openPatrolEditor} from './patrol-ui3d.js?v=20261119d';
@@ -23,7 +23,7 @@ import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261119d
 import {actionsFor} from './events3d.js?v=20261119d';
 import {renderEventEditor} from './event-editor3d.js?v=20261119d';
 import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261119d';
-import {alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261119n';
+import {alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261119o';
 import {part,ENEMY_SCALES,PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261119d';
 
 const ICONS={raceGate:'🏁',actor:'💬',plate:'▣',ally:'🛡',weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
@@ -180,7 +180,7 @@ export function createWorkshop(api){
       setReadingText(partOpen,'この'+name+'のせってい');
     }
     if(!isOtherPart(selected))return;
-    partOwner=selected.id;setReadingText(partTitle,commonObject?(selected.type==='ally'?'味方のぜんたい設定':'ブロックのぜんたい設定'):(FURNITURE_PRESETS[selected.furnitureKind]||DOOR_PRESETS[selected.doorVariant]?.name||FLOOR_PRESETS[selected.floorHalf?'floorHalf':'']||ROOF_PRESETS[selected.wallGable]||ROOF_PRESETS[selected.roofStyle==='slope'?'roofSlope':'']||FENCE_PRESETS[fencePresetKey(selected)]||RAMP_PRESETS[selected.rampStyle]||PARTS[selected.type])+'のせってい');
+    partOwner=selected.id;setReadingText(partTitle,commonObject?(selected.type==='ally'?'味方のぜんたい設定':'ブロックのぜんたい設定'):(FURNITURE_PRESETS[selected.furnitureKind]||DOOR_PRESETS[selected.doorVariant]?.name||(selected.type==='floor'?FLOOR_PRESETS[floorPresetKey(selected)]:null)||ROOF_PRESETS[selected.wallGable]||ROOF_PRESETS[selected.roofStyle==='slope'?'roofSlope':'']||FENCE_PRESETS[fencePresetKey(selected)]||RAMP_PRESETS[selected.rampStyle]||PARTS[selected.type])+'のせってい');
     const el=$('#inspector3');
     partContent.replaceChildren(...[...el.children].filter(node=>!node.classList.contains('inspector-back')&&!node.classList.contains('inspector-heading')&&!node.classList.contains('placement-controls')&&!(selected.type==='ally'&&node.classList.contains('component-description'))));
   }
@@ -204,7 +204,7 @@ export function createWorkshop(api){
     if(!commonObject)advancedInspector();const loop=el.querySelector('.loop');el.replaceChildren();
     const p=getProject(),o=p.objects.find(o=>o.id===getSelected());
     if(!o){sharedObject=null;return;}
-    const title=document.createElement('h2');title.className='inspector-heading';setReadingText(title,`${ICONS[o.type]} ${FURNITURE_PRESETS[o.furnitureKind]||DOOR_PRESETS[o.doorVariant]?.name||FLOOR_PRESETS[o.floorHalf?'floorHalf':'']||ROOF_PRESETS[o.wallGable]||ROOF_PRESETS[o.roofStyle==='slope'?'roofSlope':'']||FENCE_PRESETS[fencePresetKey(o)]||RAMP_PRESETS[o.rampStyle]||PARTS[o.type]}`);
+    const title=document.createElement('h2');title.className='inspector-heading';setReadingText(title,`${ICONS[o.type]} ${FURNITURE_PRESETS[o.furnitureKind]||DOOR_PRESETS[o.doorVariant]?.name||(o.type==='floor'?FLOOR_PRESETS[floorPresetKey(o)]:null)||ROOF_PRESETS[o.wallGable]||ROOF_PRESETS[o.roofStyle==='slope'?'roofSlope':'']||FENCE_PRESETS[fencePresetKey(o)]||RAMP_PRESETS[o.rampStyle]||PARTS[o.type]}`);
     const description=document.createElement('p');description.className='component-description';setReadingText(description,isFurniture(o)?(o.furnitureKind==='chair'?'机のうしろに置くいす。90度ずつ回して向きを変えられるよ。':o.furnitureKind==='longTable'?'いすを３つ並べられる長い机。机の端を押すと、半マスずつそろってつながるよ。':'１人用の学習机。半マスずつそろい、横にも前後にもぴったりつながるよ。'):o.doorVariant==='frame'?'ドアの枠だけのパーツ。中央をそのまま通れるよ。':o.doorVariant==='windowFrame'?'窓の枠だけのパーツ。窓のあいた部分にはガラスがないよ。':o.doorVariant==='windowGlass'?'ガラスの入った窓。開け閉めしない窓だよ。':o.doorVariant==='windowSwing'?'左右に開く窓。近づいて「あける」を押そう。':doorUsesGlass(o)?'木のわくに大きなガラスを入れた戸。向こうの部屋が見えるよ。近づいて「あける」を押そう。':isSlidingDoor(o)?'近くの扉が、隣の扉に重なって開くよ。半マス分が通り道になるよ。１枚ずつ開け閉めできるよ。':o.type==='door'&&doorDimensions(o).single?'扉は半マスの幅。残りの半分は壁だよ。扉を左右どちらに置くかもえらべるよ。':o.floorHalf?'半マスの床。２枚を並べると１マスになるよ。90度回して向きを変えられるよ。':o.roofStyle==='slope'?'左右のななめ屋根を頂点で合わせよう。斜面の端を押すと、隣につながるよ。下は空いているので部屋に使えるよ。':o.wallGable?'ななめ屋根の端をふさぐ三角のかべ。左がひくい形と右がひくい形を合わせよう。':o.rampStyle?'角に合わせて回すスロープ。低いほうから登れるよ。':o.wallHalf==='halfVertical'&&o.wallStyle?'はばが半分のさく。２枚で１マスになり、90度回してL字にもつなげられるよ。':o.wallHalf==='halfVertical'?'幅が半分の壁。２枚を横に並べると壁１枚分になるよ。':o.wallHalf==='halfHorizontal'?'高さが半分の壁。２枚を上下に積むと壁１枚分になるよ。':o.wallStyle==='diagonal'?'１マスの角から反対の角へつながる、ななめの壁。90度回すと逆向きになるよ。':o.wallStyle?'柵のパーツ。半分の高さと、壁と同じ高さを選べるよ。':DESCRIPTIONS[o.type]);el.append(title,description);
     sharedObject=sharedKeys(o.type).length?o:null;
     const s=o.settings;
@@ -387,7 +387,7 @@ export function createWorkshop(api){
     }if(!commonObject)el.append(nudges);
     const fine=document.createElement('div'),positions=document.createElement('div');positions.className='position-fields';
     for(const [key,name,min,max] of [['x','横 X',-coordinateLimit(p),coordinateLimit(p)],['y','高さ Y',0,MAX_BUILD_Y],['z','奥行 Z',-coordinateLimit(p),coordinateLimit(p)]])field(positions,name,o[key],min,max,gridStep(o,key),n=>{o[key]=n;alignPiece(o,p);return o[key];});fine.append(positions);
-    if(!isFurniture(o)&&['box','platform','moving','door','bounce','hazard','wall','floor','roof','ramp'].includes(o.type))for(const [key,name] of [['w','はば'],['h','たかさ'],['d','おくゆき']])field(fine,name,o[key],['wall','floor','roof','bounce','hazard'].includes(o.type)?.2:.5,10,.5,n=>o[key]=n);
+    if(!isFurniture(o)&&['box','platform','moving','door','bounce','hazard','wall','floor','roof','ramp'].includes(o.type))for(const [key,name] of [['w','はば'],['h','たかさ'],['d','おくゆき']].filter(([key])=>!o.floorQuarter||key==='h'))field(fine,name,o[key],['wall','floor','roof','bounce','hazard'].includes(o.type)?.2:.5,10,.5,n=>o[key]=n);
     const positionDetails=details(isFurniture(o)?'位置を数字でちょうせい':'位置・大きさを数字でちょうせい',[fine]);positionDetails.className='placement-controls';if(!commonObject)el.append(positionDetails);
     const copy=document.createElement('button');setReadingText(copy,'＋ 同じパーツをもう１つ');copy.onclick=()=>{if(p.objects.length>=MAX_PARTS){api.toast(`パーツは${MAX_PARTS}個まで置けます`);return;}const duplicate=structuredClone(o);duplicate.id=crypto.randomUUID();for(const a of duplicate.events||[])if(a.target===o.id)a.target=duplicate.id;let found=false;const copyStep=isFurniture(o)?2:4;for(const [dx,dz] of [[Math.max(copyStep,Math.ceil(o.w/copyStep)*copyStep),0],[0,Math.max(copyStep,Math.ceil(o.d/copyStep)*copyStep)],[-Math.max(copyStep,Math.ceil(o.w/copyStep)*copyStep),0],[0,-Math.max(copyStep,Math.ceil(o.d/copyStep)*copyStep)]]){duplicate.x=o.x+dx;duplicate.z=o.z+dz;if(!GRID_PARTS.has(o.type)){duplicate.x=clamp(o.x+2,-coordinateLimit(p),coordinateLimit(p));duplicate.z=o.z;found=true;break;}alignPiece(duplicate,p);if(!editorPlacementReason(duplicate,p.objects,p.spawn)){found=true;break;}}if(!found){api.toast('隣のマスが空いていません');return;}p.objects.push(duplicate);if(duplicate.type==='raceGate')moveRaceGate(p.objects,duplicate,p.objects.length);select(duplicate.id);save();rebuild();api.objectList();inspect();};
     if(!commonObject){duplicateSelected=copy.onclick;duplicateButton.disabled=p.objects.length>=MAX_PARTS;}

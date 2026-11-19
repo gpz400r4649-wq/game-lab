@@ -11,6 +11,45 @@ import {createStructureRenderer} from '../structure-render3d.js';
 const spawn={x:20,y:0,z:20};
 function halfWall(x=-1,z=0){return configureBuildingPart(part('wall',x,z),'halfVertical');}
 function floors(y=0){return [constructionPart('halfFloor',-1,0,y),constructionPart('halfFloor',0,1,y,90)];}
+test('４分の１の床は４枚で１マスを埋め、90度ずつ位置を回せる',()=>{
+ const quarter=(x,z)=>snapEditorPiece(configureBuildingPart(part('floor'),'floorQuarter'),{x,y:0,z});
+ const objects=[];
+ for(const [x,z] of [[-1,-1],[-1,1],[1,1],[1,-1]]){
+  const floor=quarter(x,z);
+  assert.deepEqual([floor.x,floor.z,floor.w,floor.d],[x,z,2,2]);
+  assert.equal(editorPlacementReason(floor,objects,spawn),'');
+  objects.push(floor);
+ }
+ assert.ok(editorPlacementReason(quarter(-1,-1),objects,spawn));
+ assert.ok(editorPlacementReason(quarter(-1,-1),[floors()[0]],spawn));
+ const turned=quarter(-1,-1);
+ for(const [x,z] of [[-1,1],[1,1],[1,-1],[-1,-1]]){
+  rotatePiece(turned);
+  assert.deepEqual([turned.x,turned.z],[x,z]);
+ }
+ const project=validate3D({...fresh3D(),objects});
+ const game=create3D({...project,objects:[]});
+ giveBlock(game,blockTemplate(turned));
+ const result=placeBlock(game,{buildPoint:{x:1,y:0,z:1}});
+ assert.ok(result.valid,result.reason);
+ assert.equal(result.piece.floorQuarter,true);
+ assert.deepEqual([result.piece.x,result.piece.z,result.piece.w,result.piece.d],[1,1,2,2]);
+});
+test('４分の１の壁は幅２m・高さ1.5mで、高さと横をハーフの壁にそろえられる',()=>{
+ const wall=configureBuildingPart(part('wall'),'quarterWall');
+ const a=snapEditorPiece(wall,{x:-.9,y:0,z:2});
+ assert.deepEqual([a.x,a.y,a.z,a.w,a.h,a.d],[-1,0,2,2,1.5,.25]);
+ assert.equal(gridStep(a,'y'),1.5);
+ const up=snapEditorPiece({...a,id:crypto.randomUUID()},{x:-1,y:1.5,z:2},a,{x:0,y:1,z:0});
+ const next=snapEditorPiece({...a,id:crypto.randomUUID()},{x:0,y:1,z:2},a,{x:1,y:0,z:0});
+ assert.deepEqual([up.x,up.y,next.x,next.y],[-1,1.5,1,0]);
+ assert.equal(editorPlacementReason(up,[a],spawn),'');
+ assert.equal(editorPlacementReason(next,[a,up],spawn),'');
+ rotatePiece(next);
+ assert.equal(next.d,2);
+ assert.equal(next.wallHalf,'quarterWall');
+ assert.ok(validate3D({...fresh3D(),objects:[a,up,next]}));
+});
 test('ハーフ壁を１マス中央へ置き、90度回して同じマス内にL字でつなげる',()=>{
  const a=snapEditorPiece(halfWall(),{x:-.8,y:0,z:.1}),b=structuredClone(a);b.id=crypto.randomUUID();assert.deepEqual([a.x,a.z],[-1,0]);rotatePiece(b);assert.deepEqual([b.x,b.z,b.rotation],[0,1,90]);assert.equal(editorPlacementReason(b,[a],spawn),'');assert.equal(gridStep(a,'z'),2);assert.equal(gridStep(b,'x'),2);for(let i=0;i<3;i++)rotatePiece(b);assert.deepEqual([b.x,b.z],[-1,0]);assert.notEqual(editorPlacementReason(b,[a],spawn),'');
 });

@@ -1,5 +1,5 @@
 import {isFurniture,isDesk,furnitureTopAt} from './furniture3d.js?v=20261119d';
-import {halfFloorMask,ROOF_SHELL_RATIO,isDiagonal,diagonalContains,footprintsIntersect} from './architecture3d.js?v=20261119d';
+import {halfFloorMask,ROOF_SHELL_RATIO,isDiagonal,diagonalContains,footprintsIntersect,narrowWall,shortWall} from './architecture3d.js?v=20261119o';
 import {inheritNewCharacter} from './character-defaults3d.js?v=20261119d';
 import {DEFAULT_APPEARANCE,validAppearance} from './appearance3d.js?v=20261119d';
 import {MAX_PARTS,MAX_BUILD_Y,MAX_BUILD_LEVEL} from './limits3d.js?v=20261119d';
@@ -15,15 +15,16 @@ function boundedGrid(value,extent,offset=0,world=60,step=4){extent=Math.max(step
 // Border pieces can start halfway along a tile, joining full windows to half walls.
 // Both horizontal axes use this lattice so rotating a shifted piece preserves its anchor.
 export function alignPiece(o,world=60){
- if(!GRID_PARTS.has(o.type))return o;if(isFurniture(o)){o.x=boundedGrid(o.x,o.w/2,1,world,2);o.z=boundedGrid(o.z,o.d/2,1,world,2);return o;}if(o.floorHalf){const turned=(o.rotation||0)%180===90;o.x=boundedGrid(o.x,o.w/2,turned?0:1,world,turned?4:2);o.z=boundedGrid(o.z,o.d/2,turned?1:0,world,turned?2:4);return o;}const bordered=['wall','door'].includes(o.type)&&!isDiagonal(o),turned=bordered&&(o.rotation||0)%180===90,half=o.wallHalf==='halfVertical',longOffset=half?1:o.type==='door'&&(turned?o.d:o.w)>=7.9?2:0;
+ if(o.floorQuarter){o.x=boundedGrid(o.x,o.w/2,1,world,2);o.z=boundedGrid(o.z,o.d/2,1,world,2);return o;}
+ if(!GRID_PARTS.has(o.type))return o;if(isFurniture(o)){o.x=boundedGrid(o.x,o.w/2,1,world,2);o.z=boundedGrid(o.z,o.d/2,1,world,2);return o;}if(o.floorHalf){const turned=(o.rotation||0)%180===90;o.x=boundedGrid(o.x,o.w/2,turned?0:1,world,turned?4:2);o.z=boundedGrid(o.z,o.d/2,turned?1:0,world,turned?2:4);return o;}const bordered=['wall','door'].includes(o.type)&&!isDiagonal(o),turned=bordered&&(o.rotation||0)%180===90,half=narrowWall(o),longOffset=half?1:o.type==='door'&&(turned?o.d:o.w)>=7.9?2:0;
  o.x=boundedGrid(o.x,o.w/2,turned?(o.wallHalf?0:2):longOffset,world,bordered?2:4);o.z=boundedGrid(o.z,o.d/2,bordered&&!turned?(o.wallHalf?0:2):longOffset,world,bordered?2:4);return o;
 }
-export function gridStep(o,axis){if(axis!=='y'&&borderPart(o))return 2;if(isFurniture(o))return axis==='y'?.25:2;if(o.wallHalf&&axis===((o.rotation||0)%180===90?'x':'z'))return 2;if(o.floorHalf&&axis===((o.rotation||0)%180===90?'z':'x'))return 2;if(o.wallHalf==='halfVertical'&&axis===((o.rotation||0)%180===90?'z':'x'))return 2;if(axis==='y'&&(o.type==='floor'||o.wallHalf==='halfHorizontal'))return HALF_LAYER;return GRID_PARTS.has(o.type)?axis==='y'?(['box','wall','roof','ramp','door'].includes(o.type)?3:.5):4:axis==='y'?.5:1;}
+export function gridStep(o,axis){if(axis!=='y'&&(borderPart(o)||o.floorQuarter))return 2;if(isFurniture(o))return axis==='y'?.25:2;if(o.floorHalf&&axis===((o.rotation||0)%180===90?'z':'x'))return 2;if(axis==='y'&&(o.type==='floor'||shortWall(o)))return HALF_LAYER;return GRID_PARTS.has(o.type)?axis==='y'?(['box','wall','roof','ramp','door'].includes(o.type)?3:.5):4:axis==='y'?.5:1;}
 const borderPart=o=>o&&['wall','door'].includes(o.type)&&!isDiagonal(o);
 function orientBorder(o,rotation){const phase=o.type==='door'||o.wallHalf?rotation:rotation%180;if((o.rotation||0)%180!==phase%180)[o.w,o.d]=[o.d,o.w];o.rotation=phase;}
 function borderAnchor(o){
  const phase=o.rotation||0,turned=phase%180===90,positive=phase<180,thin=turned?o.x:o.z;
- const mid=o.wallHalf?(positive?Math.floor((thin+1.99999)/4)*4:Math.ceil((thin-1.99999)/4)*4):thin-(positive?2:-2),long=turned?o.z:o.x,along=o.wallHalf==='halfVertical'?snap(long):long;
+ const mid=o.wallHalf?(positive?Math.floor((thin+1.99999)/4)*4:Math.ceil((thin-1.99999)/4)*4):thin-(positive?2:-2),long=turned?o.z:o.x,along=narrowWall(o)?snap(long):long;
  return turned?{x:mid,z:along}:{x:along,z:mid};
 }
 function rampFloorAnchor(ramp,normal,floor,point=null){
@@ -169,6 +170,7 @@ export function constructionPart(type,x=0,z=0,y=0,rotation=0){
 }
 export function rotatePiece(o,world=60){
  if(isFurniture(o)){[o.w,o.d]=[o.d,o.w];o.rotation=((o.rotation||0)+90)%360;alignPiece(o,world);return;}
+ if(o.floorQuarter){const cx=snap(o.x),cz=snap(o.z),dx=o.x-cx,dz=o.z-cz;o.x=cx+dz;o.z=cz-dx;alignPiece(o,world);return;}
  if(o.floorHalf){const turned=(o.rotation||0)%180===90,cx=turned?o.x:snap(o.x),cz=turned?snap(o.z):o.z,dx=o.x-cx,dz=o.z-cz;o.x=cx+dz;o.z=cz-dx;[o.w,o.d]=[o.d,o.w];o.rotation=turned?0:90;alignPiece(o,world);return;}
  if(isDiagonal(o)){o.rotation=o.rotation===90?0:90;alignPiece(o,world);return;}
  if(o.wallHalf||o.type==='door'){
@@ -251,7 +253,7 @@ export function keepStructures(p,g){
 
 export function blockTemplate(o){
  const turned=(o.rotation||0)%180===90;
- return {type:o.type,w:turned?o.d:o.w,h:o.h,d:turned?o.w:o.d,rotation:0,...(o.furnitureKind?{furnitureKind:o.furnitureKind}:{}),...(o.rampStyle?{rampStyle:o.rampStyle}:{}),...(o.wallStyle?{wallStyle:o.wallStyle}:{}),...(o.wallHalf?{wallHalf:o.wallHalf}:{}),...(o.floorHalf?{floorHalf:true}:{}),...(o.wallGable?{wallGable:o.wallGable}:{}),...(o.roofStyle?{roofStyle:o.roofStyle}:{}),hp:Math.max(1,Math.min(200,o.maxHp||o.hp||1)),destructible:o.destructible!==false,program:structuredClone(o.program||[]),settings:structuredClone(o.settings),destroyEvents:structuredClone(o.destroyEvents||[])};
+ return {type:o.type,w:turned?o.d:o.w,h:o.h,d:turned?o.w:o.d,rotation:0,...(o.furnitureKind?{furnitureKind:o.furnitureKind}:{}),...(o.rampStyle?{rampStyle:o.rampStyle}:{}),...(o.wallStyle?{wallStyle:o.wallStyle}:{}),...(o.wallHalf?{wallHalf:o.wallHalf}:{}),...(o.floorHalf?{floorHalf:true}:{}),...(o.floorQuarter?{floorQuarter:true}:{}),...(o.wallGable?{wallGable:o.wallGable}:{}),...(o.roofStyle?{roofStyle:o.roofStyle}:{}),hp:Math.max(1,Math.min(200,o.maxHp||o.hp||1)),destructible:o.destructible!==false,program:structuredClone(o.program||[]),settings:structuredClone(o.settings),destroyEvents:structuredClone(o.destroyEvents||[])};
 }
 export function giveBlock(g,template){
  g.blockInventory??=[];const key=JSON.stringify(template);let stack=g.blockInventory.find(s=>s.key===key);
@@ -265,11 +267,14 @@ export function blockPlacement(g,point,rotation=0,level=0){
  if(!stack||stack.count<=0)return no('拾ったブロックがありません');
  if(!point||!['x','y','z'].every(k=>Number.isFinite(point[k]))||![0,90,180,270].includes(rotation)||!Number.isInteger(level)||Math.abs(level)>MAX_BUILD_LEVEL)return no('置く場所をえらぼう');
  const t=stack.template;let piece;
- if(isFurniture(t)){const turned=rotation%180===90;piece=snapEditorPiece({...structuredClone(t),id:crypto.randomUUID(),rotation,w:turned?t.d:t.w,d:turned?t.w:t.d},{...point,keepFurnitureRotation:true},point.surface,point.normal,g);piece.y+=level*3;}else if(Object.hasOwn(BUILD_TYPES,t.type)){
+ if(isFurniture(t)){const turned=rotation%180===90;piece=snapEditorPiece({...structuredClone(t),id:crypto.randomUUID(),rotation,w:turned?t.d:t.w,d:turned?t.w:t.d},{...point,keepFurnitureRotation:true},point.surface,point.normal,g);piece.y+=level*3;}else if(t.floorQuarter){
+  piece=snapEditorPiece({...structuredClone(t),id:crypto.randomUUID()},point,point.surface,point.normal,g);
+  piece.y+=level*3;
+ }else if(Object.hasOwn(BUILD_TYPES,t.type)){
   const result=placement(g,{effect:isDiagonal(t)?'diagonal':t.floorHalf?'halfFloor':t.type},point,rotation,level);if(!result.piece)return result;
   const turned=rotation%180!==0;piece={...structuredClone(t),id:crypto.randomUUID(),x:result.piece.x,y:result.piece.y,z:result.piece.z,rotation:result.piece.rotation,w:turned?t.d:t.w,d:turned?t.w:t.d};
   if(t.roofStyle==='slope')piece.rotation=rotation;
-  if(t.wallHalf){piece.rotation=rotation;piece[rotation%180===90?'x':'z']=snap(point[rotation%180===90?'x':'z'],2);if(t.wallHalf==='halfVertical')piece[rotation%180===90?'z':'x']=point[rotation%180===90?'z':'x'];else{const surface=point.surface,onTop=surface&&point.normal?.y>.5;piece.y=(onTop?(surface.type==='floor'?surface.y:topAt(surface,point.x,point.z)):Math.floor((Math.max(0,point.y)+.08)/1.5)*1.5)+level*1.5;}alignPiece(piece,g);}
+  if(t.wallHalf){piece.rotation=rotation;piece[rotation%180===90?'x':'z']=snap(point[rotation%180===90?'x':'z'],2);if(narrowWall(t))piece[rotation%180===90?'z':'x']=point[rotation%180===90?'z':'x'];if(shortWall(t)){const surface=point.surface,onTop=surface&&point.normal?.y>.5;piece.y=(onTop?(surface.type==='floor'?surface.y:topAt(surface,point.x,point.z)):Math.floor((Math.max(0,point.y)+.08)/1.5)*1.5)+level*1.5;}alignPiece(piece,g);}
  }else{
   piece=snapEditorPiece({...structuredClone(t),id:crypto.randomUUID(),x:0,y:0,z:0},point,point.surface,point.normal,g);piece.y+=level*3;
   if(rotation%180!==0)[piece.w,piece.d]=[piece.d,piece.w];piece.rotation=rotation%180;
