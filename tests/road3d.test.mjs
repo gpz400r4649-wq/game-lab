@@ -2,8 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Scene} from '../vendor/three.module.min.js';
 import {createRoadView} from '../road-model3d.js';
-import {roadPoint,roadGridSites,sampleRoad,validRoads} from '../road3d.js';
-import {fresh3D,validate3D} from '../engine3d.js';
+import {createRoadSurfaceQuery,roadPoint,roadGridSites,sampleRoad,validRoads} from '../road3d.js';
+import {create3D,fresh3D,part,step3D,validate3D} from '../engine3d.js';
+import {fitRaceGate,updateRaceGates,updateRoadGateWidths} from '../race3d.js';
 import {resizeReason} from '../world3d.js';
 
 const turn=()=>({id:'first',width:8,closed:false,points:[{x:-20,z:0},{x:0,z:0},{x:0,z:-20}]});
@@ -56,4 +57,63 @@ test('１マスの四隅・辺のまんなか・中心の９点に道路が吸�
 test('以前に保存した道路のグリッドに合わない点は読み込み時に動かない',()=>{
  const p=fresh3D('car');p.roads=[{id:'legacy',width:8,closed:false,points:[{x:3,z:7},{x:19,z:11}]}];
  assert.deepEqual(validate3D(p).roads,p.roads);
+});
+
+const bridge=()=>({id:'upper',width:8,closed:false,points:[
+ {x:0,y:0,z:36},{x:0,y:6,z:16},{x:0,y:6,z:-16},{x:0,y:0,z:-36}
+]});
+const underpass=()=>({id:'lower',width:8,closed:false,points:[{x:-36,z:0},{x:36,z:0}]});
+
+test('立体交差の道路は高さを保存し、通る道に合わせて坂を上り下りできる',()=>{
+ const p=fresh3D('car');p.roads=[bridge(),underpass()];
+ assert.deepEqual(validate3D(JSON.parse(JSON.stringify(p))).roads,p.roads);
+ const invalid={...bridge(),points:[{x:0,z:0,y:0},{x:0,z:2,y:6}]};
+ assert.equal(validRoads([invalid],p),false);
+ const query=createRoadSurfaceQuery(p.roads,p);
+ assert.ok(query(0,0).some(point=>Math.abs(point.y-6)<1e-8));
+ assert.ok(query(0,28).some(point=>point.y>0&&point.y<6));
+ assert.equal(query(9,0).length,0);
+ const upper=create3D(p),lower=create3D(p,{testSpawn:{x:-14,y:0,z:0,heading:-Math.PI/2}});
+ let crossedAbove=false,crossedBelow=false;
+ for(let i=0;i<400;i++){
+  step3D(upper,p,{z:-1},.02);step3D(lower,p,{z:-1},.02);
+  if(Math.abs(upper.player.z)<1){
+   assert.ok(Math.abs(upper.player.y-6)<.01);crossedAbove=true;
+  }
+  if(Math.abs(lower.player.x)<1){
+   assert.equal(lower.player.y,0);crossedBelow=true;
+  }
+ }
+ assert.ok(crossedAbove&&crossedBelow);
+ assert.equal(upper.player.y,0);
+ assert.ok(upper.player.z<-36&&lower.player.x>6);
+});
+
+test('立体交差のゲートは選んだ道の高さに合い、下から通っても上のゲートは反応しない',()=>{
+ const p=fresh3D('car');p.roads=[bridge(),underpass()];
+ const high=fitRaceGate(part('raceGate'),p.roads,{x:0,y:6.025,z:0});
+ const low=fitRaceGate(part('raceGate'),p.roads,{x:0,y:.025,z:0});
+ assert.deepEqual([high.gateRoadId,high.y,low.gateRoadId,low.y],['upper',6,'lower',0]);
+ p.objects=[high];
+ const g=create3D(validate3D(p));
+ Object.assign(g.player,{x:0,y:0,z:0});
+ updateRaceGates(g,{x:0,y:0,z:1},()=>{});
+ assert.equal(g.state,'playing');
+ Object.assign(g.player,{x:0,y:6,z:0});
+ updateRaceGates(g,{x:0,y:6,z:1},()=>{});
+ assert.equal(g.state,'won');
+ const raised=p.roads.map(road=>road.id==='upper'?{...road,width:16,points:road.points.map(point=>({...point,y:point.y+1.5}))}:road);
+ const [changed]=updateRoadGateWidths(p.objects,p.roads,raised);
+ assert.equal(changed.y,7.5);
+ assert.equal(changed.gateWidth,16);
+});
+
+test('保存した立体道路の見た目と編集ハンドルも道路の高さを使う',()=>{
+ const scene=new Scene(),view=createRoadView(scene),road=bridge();
+ view.sync([road],120);
+ const [mesh]=view.surfaces();
+ mesh.geometry.computeBoundingBox();
+ assert.ok(mesh.geometry.boundingBox.max.y>6);
+ view.showDraft(road,1);
+ assert.equal(view.handles()[1].position.y,6.34);
 });

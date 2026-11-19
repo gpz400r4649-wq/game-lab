@@ -1,5 +1,5 @@
-import {fitRaceGate} from './race3d.js?v=20261119s';
-import {courseStart} from './road3d.js?v=20261119s';
+import {fitRaceGate} from './race3d.js?v=20261119x';
+import {courseStart} from './road3d.js?v=20261119x';
 import {alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261119p';
 import {coordinateLimit,worldHalf} from './world3d.js?v=20261119d';
 import {nearbyObjects} from './spatial3d.js?v=20261119d';

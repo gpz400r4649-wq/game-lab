@@ -1,4 +1,4 @@
-import {courseStart,lapRoadMarkers,nearestRoad,ROAD_WIDTHS} from './road3d.js?v=20261119u';
+import {courseStart,lapRoadMarkers,nearestRoad,ROAD_WIDTHS} from './road3d.js?v=20261119x';
 
 export const F1_TOP_SPEED_KMH=360;
 export const CAR_TUNING=Object.freeze({
@@ -48,7 +48,7 @@ export function createCarRun(objects,heading=0,spawn,tuning=DEFAULT_CAR_TUNING,l
  }
  const first=gates[0],road=lapCount&&gates.length===1&&roads.find(item=>item.closed&&item.id===first.gateRoadId);
  const markers=road?lapRoadMarkers(road,first,raceGateHeading(first)).map(point=>
-  ({x:point.x,y:first.y,z:point.z,h:first.h,gateWidth:road.width,gateYaw:point.heading})):[];
+  ({x:point.x,y:point.y||0,z:point.z,h:first.h,gateWidth:road.width,gateYaw:point.heading})):[];
  return {tuning:{...tuning},speed:0,actualSpeed:0,peakSpeed:0,heading,wheelAngle:0,steering:0,gates,nextGate:0,startsInFirst:!!(spawn&&gates[0]&&inGate(spawn,gates[0])),
   laps:lapCount?{count:lapCount,completed:0,startedAt:null,lapStartedAt:null,finishedAt:null,best:null,last:null,autoStart,markers,nextMarker:0,direction:0}:null};
 }
@@ -87,26 +87,28 @@ export function validGateFit(gate){
 }
 export function fitRaceGate(gate,roads,point){
  if(gate.type!=='raceGate')return gate;
- const fit=Math.abs(point.y??gate.y)<=.35&&nearestRoad(roads,point);
+ const fit=nearestRoad(roads,{...point,y:point.y??gate.y},1.25);
  if(!fit){delete gate.gateRoadId;return gate;}
- Object.assign(gate,{x:fit.x,y:0,z:fit.z,gateRoadId:fit.roadId});
+ Object.assign(gate,{x:fit.x,y:fit.y,z:fit.z,gateRoadId:fit.roadId});
  return orientWideGate(gate,fit.width,fit.heading);
 }
 export function updateRoadGateWidths(objects,previousRoads,nextRoads){
  const next=new Map(nextRoads.map(road=>[road.id,road]));
  return objects.map(gate=>{
-  if(gate.type!=='raceGate'||gate.gateWidth===undefined||Math.abs(gate.y)>.35)return gate;
+  if(gate.type!=='raceGate'||gate.gateWidth===undefined)return gate;
   const linked=gate.gateRoadId&&previousRoads.find(road=>road.id===gate.gateRoadId);
   // Older gates did not store a road ID. A fitted gate at an old centreline
   // with the old road width still identifies which road it was placed on.
-  const nearby=linked?nearestRoad([linked],gate):null;
-  const legacy=!nearby&&nearestRoad(previousRoads.filter(road=>road.width===gate.gateWidth),gate);
+  const nearby=linked?nearestRoad([linked],gate,1.25):null;
+  const legacy=!nearby&&nearestRoad(previousRoads.filter(road=>road.width===gate.gateWidth),gate,1.25);
   const roadId=nearby?.roadId||(legacy&&legacy.gap<.05?legacy.roadId:null);
   if(!roadId)return gate;
   const road=next.get(roadId);
   if(!road){const detached={...gate};delete detached.gateRoadId;return detached;}
-  if(road.width===gate.gateWidth)return gate;
-  return orientWideGate({...gate,gateRoadId:road.id},road.width,gate.gateYaw);
+  const fit=nearestRoad([road],gate)??nearestRoad([road],{x:gate.x,z:gate.z});
+  const y=fit?.y??gate.y;
+  if(road.width===gate.gateWidth&&Math.abs(y-gate.y)<.0001)return gate;
+  return orientWideGate({...gate,y,gateRoadId:road.id},road.width,gate.gateYaw);
  });
 }
 export function turnRaceGate(gate){
@@ -119,7 +121,9 @@ export function turnRaceGate(gate){
 function inGate(player,gate){
  const angle=raceGateHeading(gate),dx=player.x-gate.x,dz=player.z-gate.z;
  const x=dx*Math.cos(angle)-dz*Math.sin(angle),z=dx*Math.sin(angle)+dz*Math.cos(angle);
- return Math.abs(x)<raceGateWidth(gate)/2&&Math.abs(z)<GATE_DEPTH/2+.4&&player.y>=gate.y-.15&&player.y<gate.y+gate.h-.8;
+ const height=player.y-gate.y;
+ return Math.abs(x)<raceGateWidth(gate)/2&&Math.abs(z)<GATE_DEPTH/2+.4&&
+  (gate.gateYaw!==undefined?Math.abs(height)<.7:height>=-.15&&height<gate.h-.8);
 }
 
 function crossedLapGate(before,after,gate,launch=false,direction=0){
