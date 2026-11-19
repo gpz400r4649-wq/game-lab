@@ -94,6 +94,60 @@ export function validate3D(data,skipShared=false){
 export const solids=objects=>objects.flatMap(o=>isFurniture(o)?furnitureSolids(o):o.type==='door'?doorSolids(o):o.wallStyle&&!isDiagonal(o)?fenceSolids(o):solidTypes.has(o.type)&&!o.open?[o]:[]);
 const bodyRadius=p=>p.collisionRadius??(p.type==='enemy'?.55*(p.enemyScale||1):.35);
 function overlaps(p,o){return (!isDiagonal(o)||diagonalContains(o,p.x,p.z,bodyRadius(p)))&&Math.abs(p.x-o.x)<o.w/2+(bodyRadius(p))-.00001&&Math.abs(p.z-o.z)<o.d/2+(bodyRadius(p))-.00001&&p.y<topAt(o,p.x,p.z)-.001&&p.y+1.7*(p.enemyScale||1)>bottomAt(o,p.x,p.z)+.001;}
+const CHAIR_REACH=1.8;
+const usableChair=o=>o.furnitureKind==='chair'&&!o.hidden&&!o.collected&&o.hp>0;
+const chairYaw=chair=>(chair.rotation||0)*Math.PI/180;
+function chairTerrain(game){
+ const {x,z}=game.player,reach=CHAIR_REACH+1;
+ return nearbyObjects(game,x-reach,z-reach,x+reach,z+reach).filter(o=>!o.hidden&&!o.collected&&o.hp>0);
+}
+function clearChairPath(start,end,walls){
+ for(let i=0;i<=8;i++){
+  const t=i/8,body={x:start.x+(end.x-start.x)*t,y:start.y+(end.y-start.y)*t,z:start.z+(end.z-start.z)*t};
+  if(walls.some(wall=>overlaps(body,wall)))return false;
+ }
+ return true;
+}
+export function nearbyChair(game,yaw=0){
+ const player=game.player;
+ if(game.car||game.state!=='playing'||!player.grounded||player.seated)return null;
+ const terrain=chairTerrain(game);
+ let closest=null,best=CHAIR_REACH;
+ for(const chair of terrain){
+  if(!usableChair(chair)||Math.abs(chair.y-player.y)>.35)continue;
+  const dx=chair.x-player.x,dz=chair.z-player.z,distance=Math.hypot(dx,dz);
+  if(distance>=best||(distance>.7&&-Math.sin(yaw)*dx-Math.cos(yaw)*dz<distance*.15))continue;
+  if(!clearChairPath(player,chair,solids(terrain.filter(o=>o!==chair))))continue;
+  closest=chair;best=distance;
+ }
+ return closest;
+}
+function updateChair(game,useSeat,yaw,tell){
+ const player=game.player,seat=player.seated;
+ if(!seat){
+  const chair=useSeat&&nearbyChair(game,yaw);
+  if(chair){
+   player.seated={chair,yaw:chairYaw(chair),entry:{x:player.x,y:player.y,z:player.z}};
+   Object.assign(player,{x:chair.x,y:chair.y,z:chair.z,vy:0,supportId:null});
+  }
+  return;
+ }
+ if(!usableChair(seat.chair)||!game.objects.includes(seat.chair)){
+  player.seated=null;
+  return;
+ }
+ if(!useSeat)return;
+ const terrain=chairTerrain(game),walls=solids(terrain.filter(o=>o!==seat.chair));
+ const sin=Math.sin(seat.yaw),cos=Math.cos(seat.yaw);
+ const exits=[seat.entry,...[[0,-1.15],[1.15,0],[-1.15,0],[0,1.15]].map(([x,z])=>({
+  x:player.x+x*cos+z*sin,y:player.y,z:player.z-x*sin+z*cos
+ }))];
+ const limit=worldHalf(game)-1,chairSolids=furnitureSolids(seat.chair);
+ const exit=exits.find(point=>Math.abs(point.x)<=limit&&Math.abs(point.z)<=limit&&
+  !chairSolids.some(wall=>overlaps(point,wall))&&clearChairPath(player,point,walls));
+ if(!exit){tell('いすのまわりをあけると立てるよ');return;}
+ Object.assign(player,{...exit,seated:null,vy:0,grounded:false,supportId:null});
+}
 export function movePlayer(p,objects,dx,dz,dt,jump,world=60){
  const support=p.grounded?objects.find(o=>o.id===p.supportId):null,onSlope=!!support&&['roof','ramp'].includes(support.type),walls=solids(objects);let steppedOntoOther=false;
  const canStep=(o,top)=>{
@@ -160,9 +214,12 @@ export function step3D(g,p,input,dt){
     g.car.actualSpeed=elapsed>0?travelled/elapsed:0;
     g.car.peakSpeed=Math.max(g.car.peakSpeed,g.car.actualSpeed);
   }else{
-    let x=input.x||0,z=input.z||0,len=Math.hypot(x,z);if(len>1){x/=len;z/=len;}
-    const terrain=nearbyObjects(g,player.x-1,player.z-1,player.x+1,player.z+1);
-    movePlayer(player,terrain,(x*Math.cos(yaw)+z*Math.sin(yaw))*player.walkSpeed*dt,(-x*Math.sin(yaw)+z*Math.cos(yaw))*player.walkSpeed*dt,dt,input.jump,g);
+    updateChair(g,input.useSeat,yaw,tell);
+    if(!player.seated){
+      let x=input.x||0,z=input.z||0,len=Math.hypot(x,z);if(len>1){x/=len;z/=len;}
+      const terrain=nearbyObjects(g,player.x-1,player.z-1,player.x+1,player.z+1);
+      movePlayer(player,terrain,(x*Math.cos(yaw)+z*Math.sin(yaw))*player.walkSpeed*dt,(-x*Math.sin(yaw)+z*Math.cos(yaw))*player.walkSpeed*dt,dt,input.jump,g);
+    }
   }
   const fallRule=g.car?{...FALL_DEFAULTS,enabled:false}:p.playerRules?.fallDamage??FALL_DEFAULTS;
   const cushioned=fallRule.enabled&&player.grounded&&(player.fallAirborne||!fallBefore.grounded)&&nearbyObjects(g,player.x-1,player.z-1,player.x+1,player.z+1).some(o=>o.type==='bounce'&&Math.abs(player.x-o.x)<o.w/2+.25&&Math.abs(player.z-o.z)<o.d/2+.25&&player.y<o.y+1.8&&player.y+1.7>o.y&&player.y>=o.y-.1&&player.y<=o.y+o.h+.2);
@@ -213,11 +270,11 @@ export function step3D(g,p,input,dt){
       if(o.type==='weapon'&&actions.length>0&&actions.every(a=>a.type==='giveTool'&&(g.inventoryCounts?.[a.target]||0)>=99)){tell('同じ銃は99こまで持てます');continue;}
       o.collected=true;fireEvents(g,p,o,tell,recipient);
     }
-    if(o.type==='bounce'&&player.vy<=0&&player.y>=o.y-.1&&player.y<=o.y+o.h+.2){player.y=o.y+o.h+.02;player.vy=o.settings.value;player.grounded=false;player.supportId=null;}
+    if(o.type==='bounce'&&!player.seated&&player.vy<=0&&player.y>=o.y-.1&&player.y<=o.y+o.h+.2){player.y=o.y+o.h+.02;player.vy=o.settings.value;player.grounded=false;player.supportId=null;}
     if(o.type==='hazard'&&player.y<=o.y+o.h+.1&&player.invincible<=0){player.hp-=o.settings.value;player.invincible=1;}}
   g.drops=g.drops.filter(o=>!o.collected);
   // Items are collected before testing conditions. Each source fires once per test play.
   for(const o of g.objects)if(!o.triggered&&((o.type==='door'&&doorCanOpen(o)&&!o.plateControlled&&!o.doorMode&&conditionMet(o,g))||(o.type==='checkpoint'&&nearby(o))||(o.type==='goal'&&nearby(o)&&conditionMet(o,g)&&player.hp>0)))fireEvents(g,p,o,tell);
   updatePlates(g);animateDoors(g,dt);
-  if(player.hp<=0){if(g.checkpoint){Object.assign(player,{x:g.checkpoint.x,y:g.checkpoint.y,z:g.checkpoint.z,vy:0,hp:player.maxHp,invincible:2,grounded:false,supportId:null});resetPlayerFall(player);g.bullets=[];tell('セーブポイントからもう一度！');}else g.state='lost';}
+  if(player.hp<=0){if(g.checkpoint){Object.assign(player,{x:g.checkpoint.x,y:g.checkpoint.y,z:g.checkpoint.z,vy:0,hp:player.maxHp,invincible:2,grounded:false,supportId:null,seated:null});resetPlayerFall(player);g.bullets=[];tell('セーブポイントからもう一度！');}else g.state='lost';}
 }

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import * as T from '../vendor/three.module.min.js';
 import {FURNITURE_PRESETS,FURNITURE_SIZES,configureFurniture,isFurniture,validFurniture,furnitureSolids,furniturePieces} from '../furniture3d.js';
 import {furnitureGeometry,makeFurnitureModel} from '../furniture-model3d.js';
-import {part,fresh3D,create3D,validate3D,movePlayer} from '../engine3d.js';
+import {part,fresh3D,create3D,validate3D,movePlayer,nearbyChair,step3D} from '../engine3d.js';
 import {constructionPart,snapEditorPiece,alignPiece,rotatePiece,gridStep,editorPlacementReason,topAt,blockTemplate,giveBlock,placeBlock,keepStructures} from '../building3d.js';
 import {initializeCharacterDefaults,inheritNewCharacter} from '../character-defaults3d.js';
 import {groupSteps,copyGroupNearby} from '../group-edit3d.js';
@@ -30,6 +30,34 @@ test('机の脚の隙間は弾が通り、天板・脚・いすの座面には�
 });
 test('天板と座面に乗れ、当たり判定と実際の表面がそろう',()=>{
  for(const kind of kinds){const o=furniture(kind,1,1),body={x:1,y:3,z:1,vy:0,grounded:false};for(let i=0;i<100;i++)movePlayer(body,[o],0,0,.02,false);assert.ok(Math.abs(body.y-(kind==='chair'?.64:1.2))<1e-8);const root=makeFurnitureModel(o,material);root.position.set(o.x,o.y,o.z);root.updateMatrixWorld(true);const hit=new T.Raycaster(new T.Vector3(1,5,1),new T.Vector3(0,-1,0)).intersectObject(root,true)[0];assert.ok(hit);assert.ok(Math.abs(hit.point.y-body.y)<1e-6);assert.equal(topAt(o,1,1),body.y);}
+});
+test('イスに座ると向きがそろい、立つまでは移動やジャンプをしない',()=>{
+ const p=fresh3D(),chair=furniture('chair',1,1);
+ chair.rotation=90;
+ p.objects=[chair,furniture('schoolDesk',-1,1)];
+ const game=create3D(p,{testSpawn:{x:2.25,y:0,z:1}});
+ const yaw=Math.PI/2;
+ assert.equal(nearbyChair(game,yaw)?.id,chair.id);
+ step3D(game,p,{yaw,useSeat:true},.02);
+ assert.equal(game.player.seated.yaw,yaw);
+ for(let i=0;i<20;i++)step3D(game,p,{x:1,z:-1,jump:true},.02);
+ assert.deepEqual([game.player.x,game.player.y,game.player.z],[1,0,1]);
+ step3D(game,p,{yaw,useSeat:true},.02);
+ assert.equal(game.player.seated,null);
+ assert.deepEqual([game.player.x,game.player.y,game.player.z],[2.25,0,1]);
+});
+test('壁越しのイスには座れず、座っているイスが消えたら操作に戻る',()=>{
+ const p=fresh3D(),chair=furniture('chair',1,1),wall=constructionPart('wall',0,1,0,90);
+ p.objects=[chair,wall];
+ const game=create3D(p,{testSpawn:{x:-.65,y:0,z:1}});
+ assert.equal(nearbyChair(game,-Math.PI/2),null);
+ game.objects=game.objects.filter(o=>o.id!==wall.id);
+ step3D(game,p,{yaw:-Math.PI/2,useSeat:true},.02);
+ assert.ok(game.player.seated);
+ game.objects=[];
+ step3D(game,p,{z:-1},.02);
+ assert.equal(game.player.seated,null);
+ assert.ok(game.player.z<1);
 });
 test('全方向でモデルの各板・脚と物理用のパーツが一致する',()=>{
  for(const kind of kinds)for(const phase of [0,90,180,270]){const o=furniture(kind,1,1);while((o.rotation||0)!==phase)rotatePiece(o);const root=makeFurnitureModel(o,material);root.position.set(o.x,o.y,o.z);root.updateMatrixWorld(true);for(const solid of furnitureSolids(o)){const ray=new T.Raycaster(new T.Vector3(solid.x,solid.y+solid.h/2,solid.z+10),new T.Vector3(0,0,-1));assert.ok(ray.intersectObject(root,true).length);}const color=furnitureGeometry(kind).getAttribute('color');assert.ok(color);assert.ok(new Set(Array.from(color.array)).size>3);}
