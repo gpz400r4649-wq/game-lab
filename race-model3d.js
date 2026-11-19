@@ -71,3 +71,28 @@ export function updateRaceGateNumber(model,number){
  const sign=new T.Sprite(new T.SpriteMaterial({map:texture,depthWrite:false}));sign.position.y=3.31;sign.scale.set(1.48,.74,1);
  model.add(sign);model.userData.number=sign;
 }
+
+export function createLapGateView(scene){
+ const group=new T.Group();
+ group.name='automatic-lap-gates';
+ scene.add(group);
+ let markers=null;
+ return function sync(laps,racing){
+  const next=laps?.markers??null;
+  if(next!==markers){
+   for(const gate of group.children)gate.userData.number.material.dispose();
+   group.clear();
+   markers=next;
+   markers?.forEach((marker,index)=>{
+    const gate=makeRaceGateModel(marker);
+    gate.position.set(marker.x,marker.y,marker.z);
+    updateRaceGateNumber(gate,index+2);
+    group.add(gate);
+   });
+  }
+  if(!laps)return;
+  const started=laps.startedAt!==null;
+  group.children.forEach((gate,index)=>
+   updateRaceGateModel(gate,racing&&started&&index===laps.nextMarker,started&&index<laps.nextMarker));
+ };
+}

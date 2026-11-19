@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {create3D,fresh3D,part,step3D,validate3D} from '../engine3d.js';
 import {DEFAULT_CAR_TUNING,F1_TOP_SPEED_KMH,fitRaceGate,moveRaceGate,raceGateHeading,raceGateWidth,updateRaceGates,updateRoadGateWidths} from '../race3d.js';
-import {makeCarModel,makeRaceGateModel,updateCarModel} from '../race-model3d.js';
-import {Quaternion,Vector3} from '../vendor/three.module.min.js';
+import {createLapGateView,makeCarModel,makeRaceGateModel,updateCarModel} from '../race-model3d.js';
+import {Quaternion,Scene,Vector3} from '../vendor/three.module.min.js';
 
 function tick(game,project,seconds,input){
  for(let step=0;step<Math.round(seconds/.02);step++)step3D(game,project,input,.02);
@@ -237,6 +237,34 @@ test('道路に結びつけない１つのゲートでも、進行方向に戻�
  assert.equal(game.car.laps.completed,0);
  cross(2,-2,10);
  assert.equal(game.state,'won');
+});
+
+test('自動の通過地点を判定と同じ場所と幅のゲートにし、次のゲートを光らせる',()=>{
+ const labels=[],context={beginPath(){},roundRect(){},fill(){},fillText(label){labels.push(label);}};
+ const oldDocument=globalThis.document;
+ globalThis.document={createElement:()=>({getContext:()=>context})};
+ try{
+  const scene=new Scene(),sync=createLapGateView(scene);
+  const markers=[{x:20,y:0,z:-8,gateYaw:Math.PI/2,gateWidth:16},{x:0,y:0,z:-20,gateYaw:0,gateWidth:12}];
+  const laps={markers,startedAt:0,nextMarker:0};
+  sync(laps,true);
+  const [group]=scene.children,[first,second]=group.children;
+  assert.deepEqual(labels,['2','3']);
+  assert.deepEqual(first.position.toArray(),[20,0,-8]);
+  assert.equal(first.rotation.y,Math.PI/2);
+  assert.deepEqual(first.userData.lights.map(light=>light.position.x),[-8,8]);
+  const light=gate=>gate.userData.lights[0].material;
+  const active=light(first);
+  assert.notEqual(light(second),active);
+  laps.nextMarker=1;sync(laps,true);
+  assert.equal(light(second),active);
+  assert.notEqual(light(first),active);
+  sync(null,false);
+  assert.equal(group.children.length,0);
+ }finally{
+  if(oldDocument===undefined)delete globalThis.document;
+  else globalThis.document=oldDocument;
+ }
 });
 
 
