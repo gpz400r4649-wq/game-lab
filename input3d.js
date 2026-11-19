@@ -66,9 +66,35 @@ export function bindGameAction(button,action){
  button.addEventListener('click',e=>{if(button.disabled)return;if((e.isTrusted&&e.detail===0)||Date.now()-lastPointer>700)action();});
 }
 
+function bindCarPedal(button){
+ let pointer=null,amount=0;
+ button.setAttribute('data-game-action','');
+ function setLevel(level){
+  amount=level;
+  button.style.setProperty('--pedal-level',`${Math.round(level*100)}%`);
+  button.classList.toggle('is-held',level>0);
+ }
+ function follow(event){
+  const {top,height}=button.getBoundingClientRect();
+  const position=(event.clientY-top)/height;
+  setLevel(Math.max(0,Math.min(1,(.9-position)/.8)));
+ }
+ function reset(){pointer=null;setLevel(0);}
+ button.addEventListener('pointerdown',event=>{
+  if(pointer!==null)return;
+  event.preventDefault();
+  pointer=event.pointerId;button.setPointerCapture(pointer);follow(event);
+ });
+ button.addEventListener('pointermove',event=>{if(event.pointerId===pointer)follow(event);});
+ for(const type of ['pointerup','pointercancel','lostpointercapture'])button.addEventListener(type,event=>{
+  if(event.pointerId===pointer)reset();
+ });
+ return {read:()=>amount,reset};
+}
+
 export function createCarControls({wheel,rim,accelerator,brake,reverse}){
- let pointer=null,steering=0,accelerating=false,braking=false,backing=false;
- for(const control of [wheel,accelerator,brake])control.setAttribute('data-game-action','');
+ let pointer=null,steering=0,backing=false;
+ wheel.setAttribute('data-game-action','');
  function setSteering(value){
   steering=Math.max(-1,Math.min(1,value));
   rim.style.transform=`rotate(${steering*95}deg)`;
@@ -88,26 +114,17 @@ export function createCarControls({wheel,rim,accelerator,brake,reverse}){
   if(event.pointerId!==pointer)return;
   pointer=null;setSteering(0);
  });
- const stopAccelerator=bindHeldButton(accelerator,()=>{
-  accelerating=true;accelerator.classList.add('is-held');
- },()=>{
-  accelerating=false;accelerator.classList.remove('is-held');
- });
- const stopBrake=bindHeldButton(brake,()=>{
-  braking=true;brake.classList.add('is-held');
- },()=>{
-  braking=false;brake.classList.remove('is-held');
- });
+ const acceleratorPedal=bindCarPedal(accelerator),brakePedal=bindCarPedal(brake);
  const setReverse=enabled=>{
   backing=enabled;
   reverse.setAttribute('aria-pressed',String(backing));
  };
  bindGameAction(reverse,()=>setReverse(!backing));
  return {
-  read:()=>({x:steering,z:accelerating?(backing?1:-1):0,brake:braking}),
+  read:()=>({x:steering,z:acceleratorPedal.read()*(backing?1:-1)||0,brake:brakePedal.read()}),
   setSpeed:speed=>{reverse.disabled=Math.abs(speed)>.35;},
   reset({direction=false}={}){
-   pointer=null;setSteering(0);stopAccelerator();stopBrake();
+   pointer=null;setSteering(0);acceleratorPedal.reset();brakePedal.reset();
    if(direction){setReverse(false);reverse.disabled=false;}
   }
  };

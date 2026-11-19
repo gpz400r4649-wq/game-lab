@@ -60,23 +60,25 @@ export function createCarRun(objects,heading=0,spawn,tuning=DEFAULT_CAR_TUNING,l
 
 export function carMotion(car,input,grounded,dt,roadSurface=null){
  const throttle=Math.max(-1,Math.min(1,-(input.z||0)));
+ const pedal=Math.abs(throttle),brake=Math.max(0,Math.min(1,Number(input.brake)||0));
  const steer=Math.max(-1,Math.min(1,input.x||0));
  const {maxSpeed,acceleration,steering,braking,mass,grip}=car.tuning;
  car.steering=approach(car.steering,steer*STEERING_LIMIT,dt*(steer?2.1:2.7));
  const wheel=car.steering/STEERING_LIMIT;
  const turning=grounded?wheel**2:0;
- const target=input.brake?0:throttle*(throttle<0?REVERSE_SPEED:maxSpeed)*(1-.36*turning/grip);
+ const target=brake?0:throttle*(throttle<0?REVERSE_SPEED:maxSpeed)*(1-.36*turning/grip);
  const speed=Math.abs(car.speed);
- car.brakePressure=input.brake?Math.min(1,car.brakePressure+dt/.28):0;
+ car.brakePressure=brake?approach(car.brakePressure,brake,dt/.28):0;
  const grade=grounded&&roadSurface?
   -(roadSurface.slopeX*Math.sin(car.heading)+roadSurface.slopeZ*Math.cos(car.heading))*Math.sign(throttle||car.speed):0;
- let rate=Math.max(.8,acceleration/mass-6*grade);
- if(input.brake){
+ const approachFactor=.45+.55*Math.min(1,Math.abs(target-car.speed)/4);
+ let rate=Math.max(.35,acceleration/mass*(.2+.8*pedal)-6*grade)*approachFactor;
+ if(brake){
   const highSpeed=Math.max(0,Math.min(1,(speed-18)/65));
-  rate=braking*(.52+.48*highSpeed)*(.33+.67*car.brakePressure);
+  rate=braking*(.52+.48*highSpeed)*(.33*brake+.67*car.brakePressure);
  }else if(input.coast&&throttle===0)rate=Math.max(.35,2+3*turning+6*grade);
  else if(car.speed!==0&&Math.sign(car.speed)!==Math.sign(target))rate=12;
- else if(turning&&speed>Math.abs(target))rate=4+speed*.05;
+ else if(speed>Math.abs(target))rate=Math.max(.35,2+(2+speed*.05)*turning+6*grade);
  car.speed=approach(car.speed,target,dt*rate);
  if(grounded&&car.speed!==0){
   const movingSpeed=Math.abs(car.speed);

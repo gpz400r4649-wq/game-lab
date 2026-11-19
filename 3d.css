@@ -679,12 +679,17 @@ html:not(.car-workshop) #road-open3 { display:none; }
  background:#505d7c; border:3px solid #303a54; border-radius:50%;
 }
 .car-pedals3 { display:grid; justify-items:end; gap:6px; }
+.car-pedal-toolbar3 { display:flex; align-items:center; justify-content:space-between; gap:5px; width:100%; }
+.car-pedal-toolbar3 span { padding:3px 5px; border-radius:6px; background:#faf9ffef; color:#37415b; font-size:10px; line-height:1.25; }
 .car-pedal-row3 { display:flex; align-items:end; gap:9px; }
 .car-pedals3 button { color:#fff; border:2px solid #fff9; box-shadow:0 3px 8px #202d5644; font-weight:750; }
-#car-brake3,#car-accelerator3 { width:74px; padding:0 3px; border-radius:14px; font-size:12px; }
-#car-brake3 { height:67px; background:#9f405e; }
-#car-accelerator3 { height:88px; background:#337747; }
-#car-brake3.is-held,#car-accelerator3.is-held { transform:translateY(3px); filter:brightness(.78); box-shadow:none; }
+#car-brake3,#car-accelerator3 {
+ width:74px; padding:0 3px; border-radius:14px; font-size:12px;
+ background:linear-gradient(to top,var(--pedal-fill) var(--pedal-level,0%),var(--pedal-base) var(--pedal-level,0%));
+}
+#car-brake3 { height:67px; --pedal-base:#733249; --pedal-fill:#aa3a5a; }
+#car-accelerator3 { height:88px; --pedal-base:#285638; --pedal-fill:#2b744a; }
+#car-brake3.is-held,#car-accelerator3.is-held { border-color:#fff; box-shadow:none; }
 #car-reverse3 { min-width:74px; min-height:44px; padding:0 8px; background:#475477; font-size:11px; }
 #car-reverse3[aria-pressed="true"] { background:#7450bd; box-shadow:0 0 0 2px #dac9ff; }
 #car-reverse3:disabled { opacity:.6; }

@@ -3,7 +3,7 @@ import {courseStart,nearestRoad} from './road3d.js?v=20261119x';
 import {createRoadView} from './road-model3d.js?v=20261119x';
 import {createRoadEditor} from './road-ui3d.js?v=20261119x';
 import {createLapGateView,makeCarModel,updateCarModel,makeRaceGateModel,updateRaceGateModel,updateRaceGateNumber} from './race-model3d.js?v=20261119w';
-import {CAR_TUNING,DEFAULT_CAR_TUNING,RACE_LAP_OPTIONS,fitRaceGate,orderedRaceGates,turnRaceGate} from './race3d.js?v=20261119za';
+import {CAR_TUNING,DEFAULT_CAR_TUNING,RACE_LAP_OPTIONS,fitRaceGate,orderedRaceGates,turnRaceGate} from './race3d.js?v=20261119zb';
 import {assemblyCandidate,assemblyCopies,saveAssembly,temporarySpawn} from './assembly3d.js?v=20261119p';
 import {createSupplyUI,createSupplyView} from './supply-ui3d.js?v=20261119d';
 import {FURNITURE_PRESETS,configureFurniture,isFurniture} from './furniture3d.js?v=20261119d';
@@ -15,7 +15,7 @@ import {createPlayerRulesUI} from './player-rules-ui3d.js?v=20261119d';
 import {fencePresetKey,floorPresetKey,FLOOR_PRESETS,configureBuildingPart,FENCE_PRESETS,RAMP_PRESETS,ROOF_PRESETS} from './architecture3d.js?v=20261119o';
 import {makeHalfFloorGeometries,makeDiagonalWallGeometry,makeCornerRampGeometry,makeFenceModel,fenceGeometry,makeRoofSlopeGeometry,makeGableGeometry} from './architecture-model3d.js?v=20261119d';
 import {createChoiceControl,enhanceChoiceControl} from './choices3d.js?v=20261119d';
-import {groupSteps,groupCandidate,commitGroup,copyGroupNearby} from './group-edit3d.js?v=20261119za';
+import {groupSteps,groupCandidate,commitGroup,copyGroupNearby} from './group-edit3d.js?v=20261119zb';
 import {initializeCharacterDefaults,synchronizeCharacterDefaults,inheritNewCharacter} from './character-defaults3d.js?v=20261119d';
 import {nearbyActor,trade,companionsAt} from './actor3d.js?v=20261119d';
 import {giveAllyGun,giftableGun,recruitTarget,allyAttackDistance} from './ally3d.js?v=20261119d';
@@ -40,13 +40,13 @@ import {worldSize,worldHalf,coordinateLimit} from './world3d.js?v=20261119d';
 import {createWorldUI} from './world-ui3d.js?v=20261119d';
 import {configureNumericInput} from './numeric3d.js?v=20261119d';
 import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261119d';
-import {installGameTouchGuard,bindHeldButton,bindGameAction,createCarControls,createGamePageMode} from './input3d.js?v=20261119y';
+import {installGameTouchGuard,bindHeldButton,bindGameAction,createCarControls,createGamePageMode} from './input3d.js?v=20261119zb';
 import {actionsFor} from './events3d.js?v=20261119d';
 import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261119d';
 import {rotatePiece,BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,topAt,editorPlacementReason,editorPlacementBlocker,blockPlacement} from './building3d.js?v=20261119p';
 import {createToolsUI} from './tools3d.js?v=20261119d';
 import * as T from './vendor/three.module.min.js';
-import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,nearbyChair} from './engine3d.js?v=20261119za';
+import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,nearbyChair} from './engine3d.js?v=20261119zb';
 import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261119x';
 document.querySelectorAll('.setting-choices').forEach(enhanceChoiceControl);
 const $=s=>document.querySelector(s),view=$('#viewport');
@@ -624,7 +624,7 @@ function raceTime(seconds){
 function driveFrame(dt){
  const controls=carControls.read();
  const throttle=controls.z+Number(keys.has('s')||keys.has('arrowdown'))-Number(keys.has('w')||keys.has('arrowup'));
- const brake=controls.brake||keys.has(' ');
+ const brake=keys.has(' ')?1:controls.brake;
  if(game.state==='playing')step3D(game,project,{
   x:controls.x+Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft')),
   z:throttle,brake,coast:true,yaw:game.car.heading

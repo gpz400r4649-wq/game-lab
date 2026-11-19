@@ -41,6 +41,18 @@ test('アクセルを離した車は惰性で走り、ブレーキはそれよ�
  tick(braking,p,1,{brake:true});assert.equal(braking.car.speed,0);
 });
 
+test('ペダルを軽く踏むと加速や減速を控えめにできる',()=>{
+ const p=fresh3D('car'),half=create3D(p),full=create3D(p);
+ tick(half,p,.6,{z:-.5,coast:true});
+ tick(full,p,.6,{z:-1,coast:true});
+ assert.ok(half.car.speed>0&&half.car.speed<full.car.speed);
+ tick(half,p,3,{z:-.5,coast:true});
+ assert.equal(half.car.speed,6.25);
+ const strongBefore=full.car.speed=half.car.speed;
+ tick(half,p,.25,{brake:.25});tick(full,p,.25,{brake:1});
+ assert.ok(half.car.speed<strongBefore&&half.car.speed>full.car.speed);
+});
+
 test('ハンドルを大きく切るほどスピードが落ち、短いブレーキで急停止しない',()=>{
  const p=fresh3D('car');
  const [straight,smallTurn,fullTurn,lightBrake]=Array.from({length:4},()=>create3D(p));
