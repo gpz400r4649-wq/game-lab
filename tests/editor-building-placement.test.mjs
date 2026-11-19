@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {constructionPart,snapEditorPiece,editorPlacementReason,gridStep,makeTool,placement} from '../building3d.js';
+import {configureBuildingPart} from '../architecture3d.js';
 const spawn={x:24,y:0,z:24},up={x:0,y:1,z:0};
 test('床の上面の広い端から四方向へ、同じ階でつなげる',()=>{
  for(const y of [0,3,6,57])for(const [dx,dz]of [[1,0],[-1,0],[0,1],[0,-1]]){
@@ -46,6 +47,22 @@ test('薄い壁の上面は端を押しても下と同じ向き・位置で積�
   const next=snapEditorPiece(constructionPart('wall'),{x:wall.x+(rotation===0?offset:0),y:y+3,z:wall.z+(rotation===90?offset:0)},wall,up);
   assert.deepEqual([next.x,next.y,next.z,next.rotation],[wall.x,y+3,wall.z,rotation]);assert.equal(editorPlacementReason(next,[wall],spawn),'');
  }
+});
+test('壁の端は別の壁の途中にT字でつながり、互いに突き抜ける配置は拒否する',()=>{
+ const existing=constructionPart('wall',0,0,0,90);
+ const end=constructionPart('wall',2,0);
+ assert.equal(editorPlacementReason(end,[existing],spawn),'');
+ assert.equal(editorPlacementReason(existing,[end],spawn),'');
+ assert.notEqual(editorPlacementReason({...end,x:0},[existing],spawn),'');
+ assert.notEqual(editorPlacementReason({...end,x:1},[existing],spawn),'');
+});
+test('半段の床の端に小さな壁を置くと、高さと既存の壁とのつなぎ目がそろう',()=>{
+ const floor=constructionPart('halfFloor',1,0,1.5);
+ const wall=configureBuildingPart(constructionPart('wall'),'quarterWall');
+ const next=snapEditorPiece(wall,{x:1,y:1.75,z:1.92},floor,up);
+ assert.deepEqual([next.x,next.y,next.z,next.rotation],[1,1.5,2,0]);
+ const side=constructionPart('wall',0,2,1.5,90);
+ assert.equal(editorPlacementReason(next,[floor,side],spawn),'');
 });
 test('床の延長は既存の部品・マップ外への配置を許さない',()=>{
  const floor=constructionPart('floor',24,0,0),next=snapEditorPiece(constructionPart('floor'),{x:25.5,y:.25,z:0},floor,up);

@@ -104,7 +104,7 @@ export function snapEditorPiece(o,point,target=null,normal=null,world=60){
   if(target&&normal?.y>.5){
     if(borderPart(target)&&['floor','roof'].includes(o.type))Object.assign(o,borderAnchor(target));
     const top=topAt(target,point.x,point.z);
-    o.y=o.type==='floor'?floorSupportHeight(target,point):o.type==='wall'&&target.type==='ramp'?Math.floor((target.y+.05)/3)*3:o.type==='roof'?(target.type==='floor'?snap(target.y,3)+3:Math.ceil((top-.02)/3)*3):['wall','door'].includes(o.type)?snap(top,3):top;
+    o.y=o.type==='floor'?floorSupportHeight(target,point):o.type==='wall'&&target.type==='ramp'?Math.floor((target.y+.05)/3)*3:o.type==='roof'?(target.type==='floor'?snap(target.y,3)+3:Math.ceil((top-.02)/3)*3):borderPart(o)&&target.type==='floor'?target.y:['wall','door'].includes(o.type)?snap(top,3):top;
   }else if(target&&normal?.y<-.5)o.y=Math.max(0,target.y-o.h);
   else if(side)o.y=target.y;
   else o.y=o.type==='roof'?3:['wall','floor','box'].includes(o.type)?0:o.y;
@@ -119,7 +119,13 @@ function joins(a,b){
    if(borderPart(other)){const turned=(other.rotation||0)%180===90,axis=turned?'x':'z',extent=turned?diagonal.w:diagonal.d;if(Math.abs(other[axis]-diagonal[axis])>=extent/2-.02)return true;}
    return !footprintsIntersect(a,b);
   }
-  if(borderPart(a)&&borderPart(b)&&(a.rotation||0)%180!==(b.rotation||0)%180){const tx=(a.rotation||0)%180===90?a.w:b.w,tz=(a.rotation||0)%180===90?b.d:a.d;return (a.w+b.w)/2-Math.abs(a.x-b.x)<=Math.max(.26,tx/2+.02)&&(a.d+b.d)/2-Math.abs(a.z-b.z)<=Math.max(.26,tz/2+.02);}
+  if(borderPart(a)&&borderPart(b)&&(a.rotation||0)%180!==(b.rotation||0)%180){
+    const [alongZ,alongX]=(a.rotation||0)%180===90?[a,b]:[b,a];
+    // A wall end can meet the face of another wall in a T, or meet its end
+    // in a corner. Two walls that both extend beyond the join still collide.
+    return Math.abs(alongX.x-alongZ.x)>=alongX.w/2-.02||
+           Math.abs(alongZ.z-alongX.z)>=alongZ.d/2-.02;
+  }
   const wall=borderPart(a)?a:borderPart(b)?b:null,other=wall===a?b:a;
   if(wall&&other.type==='floor'){
     if(Math.abs(a.y-b.y)<.02)return true;

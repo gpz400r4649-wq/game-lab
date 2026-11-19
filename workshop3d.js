@@ -7,7 +7,7 @@ import {createChoiceControl} from './choices3d.js?v=20261119d';
 import {sharedDefaultsType,applyBlockDefaults,sharedKeys,synchronizeCharacterDefaults,useCharacterDefaults,inheritNewCharacter,writeCharacterDefaults} from './character-defaults3d.js?v=20261119d';
 import {copyEnemySettings,ENEMY_COPY_GROUPS} from './enemy-batch3d.js?v=20261119d';
 import {ACTOR_HATS} from './actor3d.js?v=20261119d';
-import {makeTool} from './building3d.js?v=20261119o';
+import {makeTool} from './building3d.js?v=20261119p';
 import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261119d';
 import {openWaypointEditor} from './waypoint-ui3d.js?v=20261119d';
 import {openPatrolEditor} from './patrol-ui3d.js?v=20261119d';
@@ -23,7 +23,7 @@ import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261119d
 import {actionsFor} from './events3d.js?v=20261119d';
 import {renderEventEditor} from './event-editor3d.js?v=20261119d';
 import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261119d';
-import {alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261119o';
+import {alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261119p';
 import {part,ENEMY_SCALES,PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261119d';
 
 const ICONS={raceGate:'🏁',actor:'💬',plate:'▣',ally:'🛡',weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};

@@ -1,4 +1,4 @@
-import {GRID_PARTS,GRID,editorPlacementReason,topAt} from './building3d.js?v=20261119o';
+import {GRID_PARTS,GRID,editorPlacementReason,topAt} from './building3d.js?v=20261119p';
 import {MAX_PARTS} from './limits3d.js?v=20261119d';
 import {coordinateLimit} from './world3d.js?v=20261119d';
 

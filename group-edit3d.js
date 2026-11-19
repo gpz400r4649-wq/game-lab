@@ -1,5 +1,5 @@
 import {isFurniture} from './furniture3d.js?v=20261119d';
-import {gridStep,editorPlacementReason} from './building3d.js?v=20261119o';
+import {gridStep,editorPlacementReason} from './building3d.js?v=20261119p';
 import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261119d';
 import {coordinateLimit} from './world3d.js?v=20261119d';
 import {rangeCell,validMoveRange,validAttackRange} from './enemy-range3d.js?v=20261119d';
