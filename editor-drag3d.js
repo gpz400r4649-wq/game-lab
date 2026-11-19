@@ -1,5 +1,5 @@
 import {fitRaceGate} from './race3d.js?v=20261119d';
-import {alignPiece,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261119d';
+import {alignPiece,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261119n';
 import {coordinateLimit} from './world3d.js?v=20261119d';
 export function dragCandidate(original,grab,point,objects,spawn,world){
  if(!point||![point.x,point.z,grab.x,grab.z].every(Number.isFinite))return null;

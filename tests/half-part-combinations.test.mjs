@@ -4,6 +4,8 @@ import * as T from '../vendor/three.module.min.js';
 import {configureBuildingPart,halfFloorMask,halfFloorMasks} from '../architecture3d.js';
 import {makeHalfFloorGeometries} from '../architecture-model3d.js';
 import {part,fresh3D,create3D,movePlayer,validate3D} from '../engine3d.js';
+import {configureDoor} from '../doors3d.js';
+import {dragCandidate} from '../editor-drag3d.js';
 import {constructionPart,snapEditorPiece,rotatePiece,editorPlacementReason,gridStep,placement,makeTool,blockTemplate,giveBlock,placeBlock,keepStructures} from '../building3d.js';
 import {createStructureRenderer} from '../structure-render3d.js';
 const spawn={x:20,y:0,z:20};
@@ -22,6 +24,30 @@ test('向きの違うハーフ床２枚を同じマスの同じ高さへ置け�
 });
 test('ハーフ床の上を押しても、L字にする床を隣のマスへ追い出さない',()=>{
  const [a]=floors(),b=snapEditorPiece(constructionPart('halfFloor',0,1,0,90),{x:.2,y:.25,z:.9},a,{x:0,y:1,z:0});assert.deepEqual([b.x,b.y,b.z,b.rotation],[0,0,1,90]);assert.equal(editorPlacementReason(b,[a],spawn),'');
+});
+test('ハーフ床は半段でも壁や窓の端にそろい、壁を横切らない',()=>{
+ for(const rotation of [0,90])for(const side of [-1,1]){
+  const x=rotation===90?side*2:0,z=rotation===0?side*2:0;
+  const wall=constructionPart('wall',x,z,3,rotation);
+  const window=configureDoor(part('door',x,z),'windowGlass');
+  window.y=3;
+  window.rotation=rotation;
+  if(rotation===90)[window.w,window.d]=[window.d,window.w];
+  const floor=constructionPart('halfFloor',rotation===90?side:0,rotation===0?side:0,4.5,rotation===90?0:90);
+  const across=rotation===90?{...floor,x}:{...floor,z};
+  for(const border of [wall,window]){
+   assert.equal(editorPlacementReason(floor,[border],spawn),'');
+   assert.notEqual(editorPlacementReason(across,[border],spawn),'');
+   const start={...floor,x:floor.x-x*2,z:floor.z-z*2};
+   assert.deepEqual(dragCandidate(start,start,floor,[start,border],spawn,60),{piece:floor,reason:''});
+   const game={objects:[border],player:{x:5,y:4.5,z:5}};
+   const surface={...part('platform'),y:4,h:.5};
+   const aimed={...floor,surface,normal:{x:0,y:1,z:0}};
+   const built=placement(game,makeTool('halfFloor'),aimed,floor.rotation);
+   assert.equal(built.piece.y,floor.y);
+   assert.equal(built.valid,true,built.reason);
+  }
+ }
 });
 test('建築銃と拾った床からもL字を作れ、拾った壁は中央にも置ける',()=>{
  const p=fresh3D();p.objects=[floors()[0]];const g=create3D(p),tool=makeTool('halfFloor'),r=placement(g,tool,{x:0,y:0,z:.8},90);assert.ok(r.valid,r.reason);assert.deepEqual([r.piece.x,r.piece.z],[0,1]);giveBlock(g,blockTemplate(floors()[1]));const built=placeBlock(g,{buildPoint:{x:0,y:0,z:.8},buildRotation:90});assert.ok(built.valid,built.reason);keepStructures(p,g);assert.equal(p.objects.length,2);assert.ok(validate3D(p));
