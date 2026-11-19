@@ -595,7 +595,20 @@ aside>#group-tools3{padding:0;margin:0;border:0;background:transparent;border-ra
 .car-workshop #block-open3 { grid-column:1/-1; }
 
 html:not(.car-workshop) #road-open3 { display:none; }
-.car-workshop #road-open3 { grid-column:1/-1; }
+#race-rules-open3[hidden] { display:none; }
+#race-rules3 { width:min(580px,calc(100% - 24px)); max-width:none; padding:0; }
+.race-rules-content { padding:12px 16px 16px; }
+.race-rules-content h3 { margin:0 0 8px; }
+#race-rules-guide3 { margin:10px 0 0; }
+#car-lap-hud3 {
+ display:grid; grid-template-columns:auto auto; gap:3px 8px; padding:7px 9px;
+ border-radius:10px; background:#faf9ffef; color:#3a315b; border:1px solid #d8cff2;
+ letter-spacing:normal; font-variant-numeric:tabular-nums;
+}
+#car-lap-hud3[hidden] { display:none; }
+#car-lap-hud3 span { padding:0; background:none; }
+#car-lap-progress3 { grid-column:1/-1; font-size:13px; }
+#car-lap-hud3 strong, #car-lap-hud3 span { text-align:right; }
 #car-settings-open3[hidden] { display:none; }
 .car-workshop #car-settings-open3 { grid-column:1/-1; }
 #car-settings3 { width:min(680px,calc(100% - 24px)); max-width:none; max-height:92dvh; padding:0; }

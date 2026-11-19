@@ -3,7 +3,7 @@ import {courseStart} from './road3d.js?v=20261119s';
 import {createRoadView} from './road-model3d.js?v=20261119d';
 import {createRoadEditor} from './road-ui3d.js?v=20261119s';
 import {makeCarModel,updateCarModel,makeRaceGateModel,updateRaceGateModel,updateRaceGateNumber} from './race-model3d.js?v=20261119d';
-import {CAR_TUNING,DEFAULT_CAR_TUNING,fitRaceGate,orderedRaceGates,turnRaceGate} from './race3d.js?v=20261119s';
+import {CAR_TUNING,DEFAULT_CAR_TUNING,RACE_LAP_OPTIONS,fitRaceGate,orderedRaceGates,turnRaceGate} from './race3d.js?v=20261119t';
 import {assemblyCandidate,assemblyCopies,saveAssembly,temporarySpawn} from './assembly3d.js?v=20261119p';
 import {createSupplyUI,createSupplyView} from './supply-ui3d.js?v=20261119d';
 import {FURNITURE_PRESETS,configureFurniture,isFurniture} from './furniture3d.js?v=20261119d';
@@ -15,7 +15,7 @@ import {createPlayerRulesUI} from './player-rules-ui3d.js?v=20261119d';
 import {fencePresetKey,floorPresetKey,FLOOR_PRESETS,configureBuildingPart,FENCE_PRESETS,RAMP_PRESETS,ROOF_PRESETS} from './architecture3d.js?v=20261119o';
 import {makeHalfFloorGeometries,makeDiagonalWallGeometry,makeCornerRampGeometry,makeFenceModel,fenceGeometry,makeRoofSlopeGeometry,makeGableGeometry} from './architecture-model3d.js?v=20261119d';
 import {createChoiceControl,enhanceChoiceControl} from './choices3d.js?v=20261119d';
-import {groupSteps,groupCandidate,commitGroup,copyGroupNearby} from './group-edit3d.js?v=20261119s';
+import {groupSteps,groupCandidate,commitGroup,copyGroupNearby} from './group-edit3d.js?v=20261119t';
 import {initializeCharacterDefaults,synchronizeCharacterDefaults,inheritNewCharacter} from './character-defaults3d.js?v=20261119d';
 import {nearbyActor,trade,companionsAt} from './actor3d.js?v=20261119d';
 import {giveAllyGun,giftableGun,recruitTarget,allyAttackDistance} from './ally3d.js?v=20261119d';
@@ -46,7 +46,7 @@ import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261119d';
 import {rotatePiece,BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,topAt,editorPlacementReason,editorPlacementBlocker,blockPlacement} from './building3d.js?v=20261119p';
 import {createToolsUI} from './tools3d.js?v=20261119d';
 import * as T from './vendor/three.module.min.js';
-import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,nearbyChair} from './engine3d.js?v=20261119s';
+import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,nearbyChair} from './engine3d.js?v=20261119t';
 import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261119s';
 document.querySelectorAll('.setting-choices').forEach(enhanceChoiceControl);
 const $=s=>document.querySelector(s),view=$('#viewport');
@@ -310,6 +310,27 @@ if(carTemplate){
  opener.onclick=()=>{sync();dialog.showModal();};
  reset.onclick=()=>{delete project.carTuning;save();sync();};
  $('#car-tuning-try3').onclick=()=>{dialog.close();setMode('play');};
+
+ const raceOpener=$('#race-rules-open3'),raceDialog=$('#race-rules3');
+ const lapChoices=enhanceChoiceControl($('#race-lap-choices3'));
+ lapChoices.setAttribute('aria-labelledby','race-laps-title3');
+ for(const count of RACE_LAP_OPTIONS)lapChoices.add(new Option(count?`${count}しゅう`:'ゲートを１回ずつ',count));
+ function syncRaceRules(){
+  const count=project.raceLaps||0;
+  lapChoices.value=count;
+  const guide=!count?'ゲートをじゅんばんに１回ずつとおるとゴール。':
+   orderedRaceGates(project.objects).length<2?'ゲートを２ついじょうおこう。１ばんはスタートとゴールだよ。':
+   '１ばんでスタート。のこりのゲートをじゅんばんにとおって、１ばんにもどると１しゅう。';
+  $('#race-rules-guide3').textContent=guide;
+ }
+ raceOpener.hidden=false;
+ raceOpener.onclick=()=>{syncRaceRules();raceDialog.showModal();};
+ lapChoices.onchange=()=>{
+  const count=Number(lapChoices.value);
+  if(count)project.raceLaps=count;
+  else delete project.raceLaps;
+  save();syncRaceRules();
+ };
 }
 function advancedInspector(){const el=$('#inspector3');el.replaceChildren();const o=editedObject();if(!o){el.innerHTML='<p class="empty">何もない場所から、はじめよう。<br>敵も足場も、自分でついかできるよ。</p>';return;}const title=document.createElement('div');title.className='inspector-heading';setReadingText(title,PARTS[o.type]);el.append(title);const pos=document.createElement('div');pos.className='position-fields';for(const [k,label,min,max] of [['x','横 X',-coordinateLimit(project),coordinateLimit(project)],['y','高さ Y',0,MAX_BUILD_Y],['z','奥行 Z',-coordinateLimit(project),coordinateLimit(project)]])field(pos,label,o[k],min,max,.5,n=>o[k]=n);el.append(pos);if(o.type==='box'||o.type==='platform'){for(const [k,label] of [['w','はば'],['h','たかさ'],['d','おくゆき']])field(el,label,o[k],.5,10,.5,n=>o[k]=n);}
 if(o.type==='enemy'){field(el,'体力',o.hp,1,500,1,n=>o.hp=Math.round(n));const loop=document.createElement('div');loop.className='loop';setReadingText(loop,'⚑ ゲーム開始 → ずっとくり返す');o.program.forEach((b,i)=>{const block=document.createElement('div');block.className='block';const select=createChoiceControl();select.setAttribute('aria-label',`3Dの${i+1}番目のうごき`);Object.entries(BEHAVIORS).forEach(([k,v])=>select.add(new Option(kanaText(v),k)));select.value=b.action;select.onchange=()=>{b.action=select.value;save();rebuild();inspector();};block.append(select);field(block,'速さ',b.speed,.5,8,.5,n=>b.speed=n);const row=document.createElement('div');row.className='block-controls';for(const [name,disabled,fn] of [['↑',i===0,()=>[o.program[i-1],o.program[i]]=[o.program[i],o.program[i-1]]],['↓',i===o.program.length-1,()=>[o.program[i+1],o.program[i]]=[o.program[i],o.program[i+1]]],['×',false,()=>o.program.splice(i,1)]]){const btn=document.createElement('button');setReadingText(btn,name);btn.disabled=disabled;btn.setAttribute('aria-label',name==='×'?'3Dブロックを削除':name==='↑'?'3Dブロックを上へ':'3Dブロックを下へ');btn.onclick=()=>{fn();save();inspector();};row.append(btn);}block.append(row);loop.append(block);});const add=document.createElement('button');setReadingText(add,'＋ うごきを追加');add.disabled=o.program.length>=8;add.onclick=()=>{o.program.push({action:'patrol',speed:2});save();inspector();};loop.append(add);el.append(loop);}
@@ -319,7 +340,7 @@ function advancedWeaponFields(){const el=$('#weapon3');el.replaceChildren();fiel
 $('#title3').oninput=()=>{project.title=$('#title3').value;save();};
 const setGamePageMode=createGamePageMode(document);let joystickPointer=null;const resetTouchGuard=installGameTouchGuard(view,()=>mode==='play');let resetFire=()=>{},resetEditorNavigation=()=>{};
 function resetInput(){if(look?.drag)finishEditorDrag(false);resetEditorNavigation();resetTouchGuard();resetFire();joystickPointer=null;keys.clear();stick={x:0,z:0};fireHeld=false;firePressed=false;jumpPressed=false;doorPressed=false;seatPressed=false;seatButton.hidden=true;look=null;$('#stick3 .edit-stick-thumb').style.transform='';}
-function setMode(next,{resumeHere=true,spawn=null}={}){carAudio.stop();closeStageExtra();placementContact.visible=placementBlocker.visible=false;testSpawn=next==='play'?spawn:null;const resume=resumeHere&&mode==='play'&&next==='edit'?editorViewFromPlay(game?.player,game?.car?.heading??yaw,pitch,project):null;closeLiveRangeEditor();if(resume){editTarget.set(resume.target.x,resume.target.y,resume.target.z);editYaw=resume.yaw;editPitch=resume.pitch;editDistance=resume.distance;}if(next==='play')resetGroupSelection();mode=next;$('.stage-toolbar').classList.toggle('is-playing',mode==='play');$('#editor-tools3').hidden=mode==='play';$('#retry3').hidden=mode!=='play';$('#talk3').hidden=$('#escort-count3').hidden=true;$('#ally-range-toggle3').hidden=true;allyCommand=null;giftButton.hidden=allyButton.hidden=formationButton.hidden=true;syncHistoryButtons();setGamePageMode(mode==='play');resetInput();$('#edit3').classList.toggle('active',mode==='edit');$('#play3').classList.toggle('active',mode==='play');for(const id of ['#play-hud','#controls3','#crosshair','#hotbar3'])$(id).hidden=mode!=='play';$('#use-door3').hidden=true;$('#stats3').hidden=mode==='play';$('#speedometer3').hidden=carSoundButton.hidden=mode!=='play'||project.template!=='car';carSoundButton.disabled=false;$('#score3').hidden=false;$('#editor-nav3').hidden=mode==='play';$('#orbit-pad').hidden=mode==='play';$('#lost3').hidden=true;setReadingText($('#mode3'),mode==='play'?(perspective==='fps'?'自分の目で見る世界':'うしろから見る世界'):'つくるモード');$('aside').inert=mode==='play';$('#title3').disabled=mode==='play';editorPointer=null;if(mode==='play'){game=create3D(project,{testSpawn});startAllyRanges();playRanges.start(game.objects,selected);enemyMessages.reset();toolsUI.reset();buildCount=-1;lastMessageId=0;yaw=0;pitch=-.05;setReadingText($('#hint3'),project.template==='car'?'スティックで すすむ・まがる · 右でブレーキ / PC: 矢印・スペース':'左で移動 · 景色をドラッグで見わたす · 右でジャンプと発射 / PC: WASD・Space・F');}else setReadingText($('#hint3'),'左下のスティックでカメラを移動 · ドラッグで見わたす / PC: WASD・矢印、Eで上、Qで下');toolsUI.renderHotbar();syncPlacementUI();rebuild();renderer.domElement.focus({preventScroll:true});}
+function setMode(next,{resumeHere=true,spawn=null}={}){carAudio.stop();closeStageExtra();placementContact.visible=placementBlocker.visible=false;testSpawn=next==='play'?spawn:null;const resume=resumeHere&&mode==='play'&&next==='edit'?editorViewFromPlay(game?.player,game?.car?.heading??yaw,pitch,project):null;closeLiveRangeEditor();if(resume){editTarget.set(resume.target.x,resume.target.y,resume.target.z);editYaw=resume.yaw;editPitch=resume.pitch;editDistance=resume.distance;}if(next==='play')resetGroupSelection();mode=next;$('.stage-toolbar').classList.toggle('is-playing',mode==='play');$('#editor-tools3').hidden=mode==='play';$('#retry3').hidden=mode!=='play';$('#talk3').hidden=$('#escort-count3').hidden=true;$('#ally-range-toggle3').hidden=true;allyCommand=null;giftButton.hidden=allyButton.hidden=formationButton.hidden=true;syncHistoryButtons();setGamePageMode(mode==='play');resetInput();$('#edit3').classList.toggle('active',mode==='edit');$('#play3').classList.toggle('active',mode==='play');for(const id of ['#play-hud','#controls3','#crosshair','#hotbar3'])$(id).hidden=mode!=='play';$('#use-door3').hidden=true;$('#stats3').hidden=mode==='play';$('#car-lap-hud3').hidden=true;$('#speedometer3').hidden=carSoundButton.hidden=mode!=='play'||project.template!=='car';carSoundButton.disabled=false;$('#score3').hidden=false;$('#editor-nav3').hidden=mode==='play';$('#orbit-pad').hidden=mode==='play';$('#lost3').hidden=true;setReadingText($('#mode3'),mode==='play'?(perspective==='fps'?'自分の目で見る世界':'うしろから見る世界'):'つくるモード');$('aside').inert=mode==='play';$('#title3').disabled=mode==='play';editorPointer=null;if(mode==='play'){game=create3D(project,{testSpawn});startAllyRanges();playRanges.start(game.objects,selected);enemyMessages.reset();toolsUI.reset();buildCount=-1;lastMessageId=0;yaw=0;pitch=-.05;setReadingText($('#hint3'),project.template==='car'?'スティックで すすむ・まがる · 右でブレーキ / PC: 矢印・スペース':'左で移動 · 景色をドラッグで見わたす · 右でジャンプと発射 / PC: WASD・Space・F');}else setReadingText($('#hint3'),'左下のスティックでカメラを移動 · ドラッグで見わたす / PC: WASD・矢印、Eで上、Qで下');toolsUI.renderHotbar();syncPlacementUI();rebuild();renderer.domElement.focus({preventScroll:true});}
 function syncHistoryButtons(){$('#edit-history3').hidden=mode!=='edit';$('#undo3').disabled=!editHistory.canUndo;$('#redo3').disabled=!editHistory.canRedo;}
 function restoreHistory(direction){if(mode!=='edit')return;closeLiveRangeEditor();resetInput();editHistory.record(project);const next=direction==='undo'?editHistory.undo():editHistory.redo();if(!next)return;project=next;if(!project.objects.some(o=>o.id===selected))selected=null;editorPointer=null;$('#title3').value=project.title;spawnMark.position.set(project.spawn.x,.015,project.spawn.z);restoringHistory=true;try{save();}finally{restoringHistory=false;}workshop.palette();rebuild();objectList();inspector();weaponFields();toast(direction==='undo'?'ひとつ前にもどしたよ':'もどした編集をやりなおしたよ');}
 $('#undo3').onclick=()=>restoreHistory('undo');$('#redo3').onclick=()=>restoreHistory('redo');syncHistoryButtons();
@@ -536,7 +557,7 @@ const effectPool=[],bulletPool=[];function syncGameMeshes(){
   if(o.type==='enemy')mesh.rotation.y=enemyYaw(o,game.player);if(o.type==='ally')mesh.rotation.y=o.heading||0;if(o.type==='plate')mesh.userData.pad.position.y=o.pressed?.075:.13;
   if(['star','key','weapon','blockItem'].includes(o.type))mesh.rotation.y=game.time;
   if(o.type==='door')updateDoorModel(mesh,o);
-  if(o.type==='raceGate'&&game.car){const index=game.car.gates.findIndex(gate=>gate.id===o.id);updateRaceGateModel(mesh,index===game.car.nextGate,index<game.car.nextGate);}
+  if(o.type==='raceGate'&&game.car){const index=game.car.gates.findIndex(gate=>gate.id===o.id);const {laps,nextGate}=game.car;const passed=laps?laps.startedAt!==null&&index>0&&(nextGate===0||index<nextGate):index<nextGate;updateRaceGateModel(mesh,game.state==='playing'&&index===nextGate,passed);}
  if(o.type==='goal')mesh.userData.portal.material=conditionMet(o,game)?materials.ready:materials.goal;
   if(o.type==='checkpoint')mesh.userData.flag.material=game.checkpoint?.id===o.id?materials.ready:materials.checkpoint;
  }
@@ -580,6 +601,12 @@ function visibleHit(hit){let o=hit.object;while(o){if(!o.visible)return false;o=
 function buildTarget(){ray.setFromCamera(new T.Vector2(0,0),camera);const hit=ray.intersectObjects([...objectsGroup.children,ground],true).find(h=>h.point.distanceTo(new T.Vector3(game.player.x,game.player.y+1.35,game.player.z))<8&&visibleHit(h));if(hit){const p=hit.point.clone();if(hit.face)p.addScaledVector(hit.face.normal.clone().transformDirection(hit.object.matrixWorld),.03);const surface=game.objects.find(o=>o.id===objectId(hit.object))||null,normal=hit.face?hit.face.normal.clone().transformDirection(hit.object.matrixWorld):null;return {x:p.x,y:p.y,z:p.z,surface,normal};}const p=game.player;return {x:p.x-Math.sin(yaw)*6,y:Math.floor(p.y/3)*3,z:p.z-Math.cos(yaw)*6};}
 function updateGhost(point){const tool=project.loadout[game.equipped],building=!!game.blockEquipped||(tool&&tool.effect!=='shoot');ghost.visible=!!building;if(!building)return;const result=game.blockEquipped?blockPlacement(game,point,toolsUI.getRotation(yaw),toolsUI.getLevel()):placement(game,tool,point,toolsUI.getRotation(yaw),toolsUI.getLevel()),o=result.piece;setReadingText($('#build-status3'),result.reason);$('#build-status3').classList.toggle('blocked',!result.valid);if(!o){ghost.visible=false;return;}showGhost(o,result.valid);}
 
+function raceTime(seconds){
+ if(seconds===null)return '—';
+ const hundredths=Math.max(0,Math.floor(seconds*100));
+ const minutes=Math.floor(hundredths/6000),rest=Math.floor(hundredths/100)%60;
+ return `${minutes}:${String(rest).padStart(2,'0')}.${String(hundredths%100).padStart(2,'0')}`;
+}
 function driveFrame(dt){
  const throttle=stick.z+Number(keys.has('s')||keys.has('arrowdown'))-Number(keys.has('w')||keys.has('arrowup'));
  const brake=fireHeld||firePressed||keys.has(' ');
@@ -600,11 +627,22 @@ function driveFrame(dt){
  if(speedLabel.textContent!==speedNow)speedLabel.textContent=speedNow;
  if(peakLabel.textContent!==speedPeak)peakLabel.textContent=speedPeak;
  $('#speed-bar3').style.transform=`scaleX(${Math.min(1,speedFraction)})`;
- const gateScore=$('#score3');gateScore.hidden=!car.gates.length;
- if(car.gates.length)setReadingText(gateScore,`ゲート ${car.nextGate} / ${car.gates.length}`);
+ const {laps}=car,gateScore=$('#score3');
+ gateScore.hidden=!laps&&!car.gates.length;
+ if(laps){
+  $('#car-lap-hud3').hidden=false;
+  setReadingText($('#car-lap-progress3'),`${Math.min(laps.completed+1,laps.count)} / ${laps.count} しゅう`);
+  const lapTime=laps.finishedAt!==null?laps.last:laps.lapStartedAt===null?null:game.time-laps.lapStartedAt;
+  setReadingText($('#car-lap-time3'),raceTime(lapTime));
+  setReadingText($('#car-lap-best3'),raceTime(laps.best));
+  setReadingText(gateScore,car.gates.length<2?'ゲートを２ついじょうおこう':laps.finishedAt!==null?'ゴール！':
+   laps.startedAt===null?'スタート：ゲート 1':car.nextGate===0?'ゲート 1 にもどろう':`つぎは ゲート ${car.nextGate+1}`);
+ }else if(car.gates.length)setReadingText(gateScore,`ゲート ${car.nextGate} / ${car.gates.length}`);
  $('#lost3').hidden=game.state==='playing';
  setReadingText($('#result-title3'),game.state==='won'?'ゴール！':'もういちど');
- setReadingText($('#result-note3'),game.state==='won'?'ゲートをぜんぶとおったよ！':'ブレーキをつかって、もういちどはしってみよう');
+ setReadingText($('#result-note3'),game.state==='won'?(laps?
+  `ぜんぶで ${raceTime(laps.finishedAt-laps.startedAt)}　ベスト ${raceTime(laps.best)}`:'ゲートをぜんぶとおったよ！'):
+  'ブレーキをつかって、もういちどはしってみよう');
 }
 function frame(time){const dt=lastTime?Math.min((time-lastTime)/1000,.033):0;lastTime=time;const w=view.clientWidth,h=view.clientHeight;const size=renderer.getSize(new T.Vector2());if(size.x!==w||size.y!==h){renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}if(mode==='play'&&game.car){driveFrame(dt);}else if(mode==='play'){positionCamera();ray.setFromCamera(new T.Vector2(0,0),camera);const hit=ray.intersectObjects(objectsGroup.children,true).find(visibleHit),target=hit?hit.point:ray.ray.at(80,new T.Vector3()),origin=new T.Vector3(game.player.x,game.player.y+1.35,game.player.z),aim=target.clone().sub(origin).normalize(),buildPoint=buildTarget(),wasSeated=!!game.player.seated;if(!talkDialog.open)step3D(game,project,{x:stick.x+(keys.has('d')||keys.has('arrowright')?1:0)-(keys.has('a')||keys.has('arrowleft')?1:0),z:stick.z+(keys.has('s')||keys.has('arrowdown')?1:0)-(keys.has('w')||keys.has('arrowup')?1:0),allyCommand,yaw,aim,aimTarget:target,getShotOrigin:()=>{positionCamera();return worldGunMuzzle((perspective==='fps'?gun:carriedGun).children[0]);},buildPoint,buildRotation:toolsUI.getRotation(yaw),buildLevel:toolsUI.getLevel(),jump:jumpPressed,useDoor:doorPressed,useSeat:seatPressed,fire:fireHeld||firePressed||keys.has('f')},dt);if(!wasSeated&&game.player.seated)yaw=game.player.seated.yaw;allyCommand=null;jumpPressed=false;doorPressed=false;seatPressed=false;firePressed=false;syncGameMeshes();updateSeatButton();showAllyCommands();const door=game.state==='playing'?nearbyDoor(game,yaw):null;$('#use-door3').hidden=!door;if(door)setReadingText($('#use-door3'),isSlidingDoor(door)?(doorInteraction(door,game.player).open?'近くのふすまをしめる':'近くのふすまをあける'):(door.open?'ドアをしめる':'ドアをあける'));updateGhost(buildPoint);setReadingText($('#hp3'),game.player.maxHp>10?'♥ '+Math.max(0,game.player.hp)+' / '+game.player.maxHp:'♥'.repeat(Math.max(0,game.player.hp))+'♡'.repeat(game.player.maxHp-Math.max(0,game.player.hp)));setReadingText($('#score3'),`✦ ${game.stars}　⚿ ${game.keys}　得点 ${game.score}`);$('#lost3').hidden=game.state==='playing';setReadingText($('#result-title3'),game.state==='won'?'ステージクリア！':'もう一度チャレンジ！');setReadingText($('#result-note3'),game.state==='won'?'自分のルールで、ちゃんとゲームになったね！':'セーブポイントを置くと、途中からやり直せるよ。');}else{const typing=document.activeElement?.matches('input,select,textarea'),dialogOpen=!!document.querySelector('dialog[open]');if(!typing&&!dialogOpen&&!look?.drag){const nav=editorNavigation.read();moveEditorCamera(editTarget,{x:nav.x+Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft')),z:nav.z+Number(keys.has('s')||keys.has('arrowdown'))-Number(keys.has('w')||keys.has('arrowup')),y:nav.y+Number(keys.has('e'))-Number(keys.has('q')),fast:keys.has('shift')},editYaw,editDistance,dt,project,editPitch);}else editorNavigation.reset();$('#hit-info3').hidden=true;positionCamera();updateEditorGhost();effectPool.forEach(m=>m.visible=false);bulletPool.forEach(m=>m.visible=false);setReadingText($('#stats3'),`${worldSize(project)}m × ${worldSize(project)}m · ${project.objects.length} パーツ`);}const rangeEditing=mode==='edit'&&isLiveRangeEditing();updateAttackContext(rangeEditing);floorRangeView.update(rangeEditing,editedObject());rangeOverlay.material.depthTest=!rangeEditing;rangeOverlay.renderOrder=rangeEditing?1:0;playRanges.update(game,mode==='play',time);positionCamera();enemyMessages.update(game,mode==='play',playRanges.getTarget(),camera,time);animatePickupGuns(time);supplyView(mode==='play'?game?.supply:null);renderer.render(scene,camera);requestAnimationFrame(frame);}
 renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();carAudio.stop();$('#loading').hidden=false;setReadingText($('#loading'),'3Dの表示が中断されました。ページを再読み込みしてください。作品は自動保存されています。');});const toolsUI=createToolsUI({openBlockSettings:()=>$('#block-open3').click(),onCatalogChange:()=>{rebuild();inspector();renderPlayerRules();},onAppearanceChange:()=>rebuild(),$,getProject:()=>project,getGame:()=>game,getMode:()=>mode,field,save,refresh:()=>syncGameMeshes(),finishBuilding:count=>{selected=null;setMode('edit');objectList();inspector();toast(count+'個の建築を作品に残しました');}});

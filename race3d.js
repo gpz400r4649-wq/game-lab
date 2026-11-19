@@ -10,6 +10,7 @@ export const CAR_TUNING=Object.freeze({
 export const DEFAULT_CAR_TUNING=Object.freeze(Object.fromEntries(
  Object.entries(CAR_TUNING).map(([key,levels])=>[key,levels[1]])
 ));
+export const RACE_LAP_OPTIONS=Object.freeze([0,1,2,3,5]);
 const REVERSE_SPEED=4;
 const OLD_CAR_TOP_SPEEDS=new Map([[8,30/3.6],[12,45/3.6],[18,65/3.6],[361.6/3.6,F1_TOP_SPEED_KMH/3.6]]);
 
@@ -37,9 +38,10 @@ export function moveRaceGate(objects,gate,position){
  return index+1;
 }
 
-export function createCarRun(objects,heading=0,spawn,tuning=DEFAULT_CAR_TUNING){
+export function createCarRun(objects,heading=0,spawn,tuning=DEFAULT_CAR_TUNING,lapCount=0){
  const gates=orderedRaceGates(objects);
- return {tuning:{...tuning},speed:0,actualSpeed:0,peakSpeed:0,heading,wheelAngle:0,steering:0,gates,nextGate:0,startsInFirst:!!(spawn&&gates[0]&&inGate(spawn,gates[0]))};
+ return {tuning:{...tuning},speed:0,actualSpeed:0,peakSpeed:0,heading,wheelAngle:0,steering:0,gates,nextGate:0,startsInFirst:!!(spawn&&gates[0]&&inGate(spawn,gates[0])),
+  laps:lapCount?{count:lapCount,completed:0,startedAt:null,lapStartedAt:null,finishedAt:null,best:null,last:null}:null};
 }
 
 export function carMotion(car,input,grounded,dt){
@@ -111,8 +113,49 @@ function inGate(player,gate){
  return Math.abs(x)<raceGateWidth(gate)/2&&Math.abs(z)<GATE_DEPTH/2+.4&&player.y>=gate.y-.15&&player.y<gate.y+gate.h-.8;
 }
 
-export function updateRaceGates(game,before,notify){
+function crossedLapGate(before,after,gate,launch){
+ const angle=raceGateHeading(gate),sin=Math.sin(angle),cos=Math.cos(angle);
+ const depth=point=>(point.x-gate.x)*sin+(point.z-gate.z)*cos;
+ const a=depth(before),b=depth(after);
+ if(a===b||gate.gateYaw!==undefined&&b>=a)return false;
+ const t=a/(a-b);
+ if(t>=0&&t<1)return inGate({
+  x:before.x+(after.x-before.x)*t,y:before.y+(after.y-before.y)*t,z:before.z+(after.z-before.z)*t
+ },gate);
+ return launch&&inGate(before,gate)&&Math.abs(b)>=GATE_DEPTH/2+.4;
+}
+
+function updateLaps(game,before,notify,time){
+ const {car}=game,laps=car.laps;
+ if(car.gates.length<2)return;
+ const gate=car.gates[car.nextGate];
+ const launching=laps.startedAt===null;
+ if(!crossedLapGate(before,game.player,gate,launching&&car.startsInFirst))return;
+ if(launching){
+  laps.startedAt=laps.lapStartedAt=time;
+  car.nextGate=1;
+  return;
+ }
+ if(car.nextGate>0){
+  car.nextGate=(car.nextGate+1)%car.gates.length;
+  return;
+ }
+ laps.last=time-laps.lapStartedAt;
+ laps.best=laps.best===null?laps.last:Math.min(laps.best,laps.last);
+ laps.completed++;
+ if(laps.completed===laps.count){
+  laps.finishedAt=time;
+  game.state='won';
+ }else{
+  laps.lapStartedAt=time;
+  car.nextGate=1;
+  notify(`${laps.completed}しゅう めを はしったよ！`);
+ }
+}
+
+export function updateRaceGates(game,before,notify,time=game.time){
  const car=game.car;
+ if(car.laps){updateLaps(game,before,notify,time);return;}
  if(!car.gates.length||car.nextGate>=car.gates.length)return;
  const gate=car.gates[car.nextGate];
  const wasIn=inGate(before,gate),isIn=inGate(game.player,gate);

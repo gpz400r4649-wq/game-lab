@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {create3D,fresh3D,part,step3D,validate3D} from '../engine3d.js';
-import {DEFAULT_CAR_TUNING,F1_TOP_SPEED_KMH,fitRaceGate,moveRaceGate,raceGateHeading,raceGateWidth,updateRoadGateWidths} from '../race3d.js';
+import {DEFAULT_CAR_TUNING,F1_TOP_SPEED_KMH,fitRaceGate,moveRaceGate,raceGateHeading,raceGateWidth,updateRaceGates,updateRoadGateWidths} from '../race3d.js';
 import {makeCarModel,makeRaceGateModel,updateCarModel} from '../race-model3d.js';
 import {Quaternion,Vector3} from '../vendor/three.module.min.js';
 
@@ -141,6 +141,60 @@ test('スタートに置いた最初のゲートは、そのまま走り抜け�
  const p=fresh3D('car');p.roads=[{id:'straight',width:8,closed:false,points:[{x:0,z:0},{x:0,z:-20}]}];
  p.objects=[fitRaceGate(part('raceGate'),p.roads,{x:0,y:0,z:0})];
  const g=create3D(p);tick(g,p,.8,{z:-1});assert.equal(g.state,'won');
+});
+
+test('周回レースはスタートで計り始め、ゲートの順番を守った周だけ数える',()=>{
+ const p=fresh3D('car');
+ p.raceLaps=2;
+ const road={id:'straight',width:8,closed:false,points:[{x:0,z:0},{x:0,z:-30}]};
+ p.roads=[road];
+ p.objects=[0,-10,-20].map((z,index)=>({...fitRaceGate(part('raceGate'),[road],{x:0,y:0,z}),gateOrder:index+1}));
+ const game=create3D(validate3D(JSON.parse(JSON.stringify(p))));
+ const cross=(z,time,{reverse=false,x=0,y=0}={})=>{
+  const side=reverse?-2:2;
+  Object.assign(game.player,{x,y,z:z-side});
+  updateRaceGates(game,{x,y,z:z+side},()=>{},time);
+ };
+ assert.equal(game.car.laps.startedAt,null);
+ cross(0,1,{reverse:true});
+ assert.equal(game.car.laps.startedAt,null);
+ cross(0,2);
+ assert.equal(game.car.laps.startedAt,2);
+ cross(-20,3);
+ cross(0,4);
+ assert.equal(game.car.laps.completed,0);
+ assert.equal(game.car.nextGate,1);
+ cross(-10,5,{y:4});
+ cross(-10,6,{x:5});
+ assert.equal(game.car.nextGate,1);
+ cross(-10,7);
+ cross(-20,8);
+ cross(0,12);
+ assert.equal(game.car.laps.completed,1);
+ assert.equal(game.car.laps.best,10);
+ assert.equal(game.state,'playing');
+ cross(-10,13);
+ cross(-20,15);
+ cross(0,20);
+ assert.equal(game.car.laps.best,8);
+ assert.equal(game.car.laps.finishedAt-game.car.laps.startedAt,18);
+ assert.equal(game.state,'won');
+ assert.throws(()=>validate3D({...p,raceLaps:99}),/しゅうかい/);
+});
+
+test('周回の最初のゲート上から走り出すと計測を開始し、ゲートが１つなら周回を数えない',()=>{
+ const p=fresh3D('car');
+ p.raceLaps=1;
+ p.roads=[{id:'straight',width:8,closed:false,points:[{x:0,z:0},{x:0,z:-20}]}];
+ p.objects=[0,-10].map((z,index)=>({...fitRaceGate(part('raceGate'),p.roads,{x:0,y:0,z}),gateOrder:index+1}));
+ const game=create3D(p);
+ tick(game,p,.5,{z:-1});
+ assert.notEqual(game.car.laps.startedAt,null);
+ assert.equal(game.car.nextGate,1);
+ const incomplete={...p,objects:p.objects.slice(0,1)},run=create3D(incomplete);
+ tick(run,incomplete,.5,{z:-1});
+ assert.equal(run.car.laps.startedAt,null);
+ assert.equal(run.state,'playing');
 });
 
 
