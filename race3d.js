@@ -49,7 +49,7 @@ export function createCarRun(objects,heading=0,spawn,tuning=DEFAULT_CAR_TUNING,l
  const first=gates[0],road=lapCount&&gates.length===1&&roads.find(item=>item.closed&&item.id===first.gateRoadId);
  const markers=road?lapRoadMarkers(road,first,raceGateHeading(first)).map(point=>
   ({x:point.x,y:point.y||0,z:point.z,h:first.h,gateWidth:road.width,gateYaw:point.heading})):[];
- return {tuning:{...tuning},speed:0,actualSpeed:0,peakSpeed:0,heading,wheelAngle:0,steering:0,gates,nextGate:0,startsInFirst:!!(spawn&&gates[0]&&inGate(spawn,gates[0])),
+ return {tuning:{...tuning},speed:0,actualSpeed:0,peakSpeed:0,heading,wheelAngle:0,steering:0,brakePressure:0,gates,nextGate:0,startsInFirst:!!(spawn&&gates[0]&&inGate(spawn,gates[0])),
   laps:lapCount?{count:lapCount,completed:0,startedAt:null,lapStartedAt:null,finishedAt:null,best:null,last:null,autoStart,markers,nextMarker:0,direction:0}:null};
 }
 
@@ -57,9 +57,17 @@ export function carMotion(car,input,grounded,dt){
  const throttle=Math.max(-1,Math.min(1,-(input.z||0)));
  const steer=Math.max(-1,Math.min(1,input.x||0));
  const {maxSpeed,acceleration,steering,braking}=car.tuning;
- const target=input.brake?0:throttle*(throttle<0?REVERSE_SPEED:maxSpeed);
- const slowing=input.brake||Math.sign(car.speed)!==Math.sign(target);
- const rate=input.brake?braking:input.coast&&throttle===0?2:slowing?12:acceleration;
+ const turning=grounded?steer**2:0;
+ const target=input.brake?0:throttle*(throttle<0?REVERSE_SPEED:maxSpeed)*(1-.36*turning);
+ const speed=Math.abs(car.speed);
+ car.brakePressure=input.brake?Math.min(1,car.brakePressure+dt/.28):0;
+ let rate=acceleration;
+ if(input.brake){
+  const highSpeed=Math.max(0,Math.min(1,(speed-18)/65));
+  rate=braking*(.52+.48*highSpeed)*(.33+.67*car.brakePressure);
+ }else if(input.coast&&throttle===0)rate=2+3*turning;
+ else if(Math.sign(car.speed)!==Math.sign(target))rate=12;
+ else if(turning&&speed>Math.abs(target))rate=4+speed*.05;
  car.speed=approach(car.speed,target,dt*rate);
  if(grounded){
   const turnFactor=Math.min(1,Math.abs(car.speed)/2)*(1-.45*Math.min(1,Math.abs(car.speed)/maxSpeed));

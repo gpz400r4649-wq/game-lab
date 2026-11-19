@@ -24,7 +24,7 @@ test('車は加速・旋回・ブレーキ・バックができ、壁で止ま�
  const p=fresh3D('car'),g=create3D(p);
  tick(g,p,.6,{z:-1});const before=g.player.z;
  tick(g,p,.5,{x:1,z:-1});assert.ok(g.player.x>0);assert.ok(g.player.z<before);
- tick(g,p,.6,{z:-1,brake:true});assert.equal(g.car.speed,0);
+ tick(g,p,1.2,{z:-1,brake:true});assert.equal(g.car.speed,0);
  assert.equal(g.car.actualSpeed,0);assert.ok(g.car.peakSpeed>3);assert.equal(create3D(p).car.peakSpeed,0);
  const stop=g.player.z;tick(g,p,.8,{z:1});assert.ok(g.player.z>stop);
  const wall=part('wall',0,0);p.objects=[wall];const stopped=create3D(p);
@@ -37,7 +37,23 @@ test('アクセルを離した車は惰性で走り、ブレーキはそれよ�
  tick(rolling,p,.3,{coast:true});
  tick(braking,p,.3,{coast:true,brake:true});
  assert.ok(rolling.car.speed>7&&rolling.car.speed<8);
- assert.ok(braking.car.speed<2);
+ assert.ok(braking.car.speed>4&&braking.car.speed<rolling.car.speed);
+ tick(braking,p,1,{brake:true});assert.equal(braking.car.speed,0);
+});
+
+test('ハンドルを大きく切るほどスピードが落ち、短いブレーキで急停止しない',()=>{
+ const p=fresh3D('car');
+ const [straight,smallTurn,fullTurn,lightBrake]=Array.from({length:4},()=>create3D(p));
+ for(const run of [straight,smallTurn,fullTurn,lightBrake])run.car.speed=12.5;
+ tick(straight,p,.5,{z:-1,coast:true});
+ tick(smallTurn,p,.5,{x:.3,z:-1,coast:true});
+ tick(fullTurn,p,.5,{x:1,z:-1,coast:true});
+ assert.ok(straight.car.speed>smallTurn.car.speed&&smallTurn.car.speed>fullTurn.car.speed);
+ assert.ok(fullTurn.car.speed>0);
+ tick(lightBrake,p,.08,{brake:true,coast:true});
+ assert.ok(lightBrake.car.speed>11.8);
+ tick(lightBrake,p,.5,{brake:true,coast:true});
+ assert.ok(lightBrake.car.speed<8);
 });
 
 test('車のせっていは保存でき、速さ・加速・ハンドル・ブレーキに反映される',()=>{
