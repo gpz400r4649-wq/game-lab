@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {constructionPart,snapEditorPiece,editorPlacementReason} from '../building3d.js';
+import {constructionPart,snapEditorPiece,editorPlacementReason,gridStep,makeTool,placement} from '../building3d.js';
 const spawn={x:24,y:0,z:24},up={x:0,y:1,z:0};
 test('床の上面の広い端から四方向へ、同じ階でつなげる',()=>{
  for(const y of [0,3,6,57])for(const [dx,dz]of [[1,0],[-1,0],[0,1],[0,-1]]){
@@ -12,6 +12,33 @@ test('床の上面の広い端から四方向へ、同じ階でつなげる',()=
 test('床の中央では勝手に隣へずらさず、重複を知らせる',()=>{
  const floor=constructionPart('floor',0,0,6),next=snapEditorPiece(constructionPart('floor'),{x:.2,y:6.25,z:.2},floor,up);
  assert.equal(next.x,0);assert.equal(next.z,0);assert.ok(editorPlacementReason(next,[floor],spawn));
+});
+test('ふつうの床とハーフ床は半段の壁につながり、移動も1.5m刻みになる',()=>{
+ const wall={...constructionPart('wall',0,2,3),wallHalf:'halfHorizontal',h:1.5};
+ const game={objects:[wall],player:{x:8,y:3,z:0}};
+ const point={x:1,y:4.5,z:2};
+ for(const type of ['floor','halfFloor']){
+  const piece=snapEditorPiece(constructionPart(type),point,wall,up);
+  assert.equal(gridStep(piece,'y'),1.5);
+  assert.equal(piece.y,4.5);
+  assert.equal(editorPlacementReason(piece,[wall],spawn),'');
+  const testRun=placement(game,makeTool(type),{...point,surface:wall,normal:up});
+  assert.ok(testRun.valid,testRun.reason);
+  assert.equal(testRun.piece.y,piece.y);
+ }
+});
+test('床の側面や下面の端をねらっても、つないだ床が板1枚ぶん下がらない',()=>{
+ for(const y of [1.5,4.25])for(const normal of [up,{x:1,y:0,z:0},{x:0,y:-1,z:0}]){
+  const target=constructionPart('floor',0,0,y);
+  const point={x:1.95,y:y+(normal.y>0?.25:0),z:0};
+  const next=snapEditorPiece(constructionPart('floor'),point,target,normal);
+  assert.deepEqual([next.x,next.y,next.z],[4,y,0]);
+  assert.equal(editorPlacementReason(next,[target],spawn),'');
+  const game={objects:[target],player:{x:-5,y,z:0}};
+  const testRun=placement(game,makeTool('floor'),{...point,surface:target,normal});
+  assert.ok(testRun.valid,testRun.reason);
+  assert.deepEqual([testRun.piece.x,testRun.piece.y,testRun.piece.z],[4,y,0]);
+ }
 });
 test('薄い壁の上面は端を押しても下と同じ向き・位置で積める',()=>{
  for(const rotation of [0,90])for(const y of [0,3,6,54])for(const offset of [-1.95,0,1.95]){

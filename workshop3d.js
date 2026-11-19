@@ -7,7 +7,7 @@ import {createChoiceControl} from './choices3d.js?v=20261119d';
 import {sharedDefaultsType,applyBlockDefaults,sharedKeys,synchronizeCharacterDefaults,useCharacterDefaults,inheritNewCharacter,writeCharacterDefaults} from './character-defaults3d.js?v=20261119d';
 import {copyEnemySettings,ENEMY_COPY_GROUPS} from './enemy-batch3d.js?v=20261119d';
 import {ACTOR_HATS} from './actor3d.js?v=20261119d';
-import {makeTool} from './building3d.js?v=20261119d';
+import {makeTool} from './building3d.js?v=20261119m';
 import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261119d';
 import {openWaypointEditor} from './waypoint-ui3d.js?v=20261119d';
 import {openPatrolEditor} from './patrol-ui3d.js?v=20261119d';
@@ -23,7 +23,7 @@ import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261119d
 import {actionsFor} from './events3d.js?v=20261119d';
 import {renderEventEditor} from './event-editor3d.js?v=20261119d';
 import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261119d';
-import {alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261119d';
+import {alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261119m';
 import {part,ENEMY_SCALES,PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261119d';
 
 const ICONS={raceGate:'🏁',actor:'💬',plate:'▣',ally:'🛡',weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
@@ -403,7 +403,7 @@ export function createWorkshop(api){
     const dialog=document.createElement('dialog'),heading=document.createElement('h2'),note=document.createElement('p'),grid=document.createElement('div'),cancel=document.createElement('button');dialog.className='architecture-picker';grid.className='architecture-choices';
     const entries=kind==='box'?Object.entries(FURNITURE_PRESETS).map(([key,name])=>['box',key,name]):kind==='floor'?Object.entries(FLOOR_PRESETS).map(([key,name])=>['floor',key,name]):kind==='door'?Object.entries(DOOR_PRESETS).filter(([key,p])=>!p.window&&key!=='slide').map(([key,p])=>['door',key,p.name]):kind==='roof'?Object.entries(ROOF_PRESETS).map(([key,name])=>[key.startsWith('gable')?'wall':'roof',key,name]):kind==='ramp'?Object.entries(RAMP_PRESETS).map(([key,name])=>['ramp',key,name]):[...Object.entries(FENCE_PRESETS).map(([key,name])=>['wall',key,name]),...Object.entries(DOOR_PRESETS).filter(([,p])=>p.window).map(([key,p])=>['door',key,p.name])];
     setReadingText(heading,kind==='box'?'つくえ・いす・ブロックをえらぶ':kind==='floor'?'どの床を置く？':kind==='door'?'どのドアを置く？':kind==='roof'?'三角屋根のパーツをえらぶ':kind==='ramp'?'どのスロープを置く？':'かべ・まど・さくをえらぶ');
-    setReadingText(note,kind==='box'?'つくえは半マスずつそろうよ。天板の端や横を押すと、すきまなくつながるよ。ながづくえには、いすを３つ並べられるよ。':kind==='floor'?'ハーフの床は半マスの広さ。２枚で１マスになるよ。90度回すと向きが変わるよ。':kind==='door'?'普通のドアは半マスの幅で、残りは壁だよ。ふすまは半マス幅の扉が２枚・４枚。近くの１枚が動くよ。近づいて「あける」で開け閉めできるよ。':kind==='roof'?'ななめ屋根の高い端を押すと、反対向きの屋根がつながるよ。三角のかべは屋根の端を押すと、向きと高さがそろうよ。90°ずつ回して使えるよ。':kind==='ramp'?'角のスロープは90°ずつ回して、２つの方向につながる角に合わせよう。':'かべと同じ１マスのはばだよ。開くまどは、たしかめる画面で近づいて「あける」を押そう。');
+    setReadingText(note,kind==='box'?'つくえは半マスずつそろうよ。天板の端や横を押すと、すきまなくつながるよ。ながづくえには、いすを３つ並べられるよ。':kind==='floor'?'ハーフの床は半マスの広さ。２枚で１マスになるよ。90度回すと向きが変わるよ。置いた床は「いどう」で1.5mずつ上げ下げできるよ。':kind==='door'?'普通のドアは半マスの幅で、残りは壁だよ。ふすまは半マス幅の扉が２枚・４枚。近くの１枚が動くよ。近づいて「あける」で開け閉めできるよ。':kind==='roof'?'ななめ屋根の高い端を押すと、反対向きの屋根がつながるよ。三角のかべは屋根の端を押すと、向きと高さがそろうよ。90°ずつ回して使えるよ。':kind==='ramp'?'角のスロープは90°ずつ回して、２つの方向につながる角に合わせよう。':'かべと同じ１マスのはばだよ。開くまどは、たしかめる画面で近づいて「あける」を押そう。');
     for(const [type,key,name]of entries){const button=document.createElement('button'),icon=document.createElement('span'),caption=document.createElement('span');button.type='button';button.dataset.preset=key;icon.className='architecture-icon';icon.innerHTML=kind==='box'&&key!=='box'?furnitureIcon(key):architectureIcon(key==='box'?'wall':key);setReadingText(caption,name);button.append(icon,caption);button.onclick=()=>{setTool(type,key);dialog.close();dialog.remove();};grid.append(button);}
     setReadingText(cancel,'もどる');cancel.onclick=()=>{dialog.close();dialog.remove();};dialog.oncancel=()=>dialog.remove();dialog.append(heading,note,grid,cancel);document.body.append(dialog);dialog.showModal();
   }

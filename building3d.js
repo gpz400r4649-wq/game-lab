@@ -8,6 +8,7 @@ import {SHOT_DEFAULTS,LIMITS,PROJECTILES,IMPACTS,DESTRUCTIBLE_TYPES,validImpacts
 // Shared by editor, gameplay and placement preview. No browser dependency.
 export const BUILD_TYPES={wall:'壁',floor:'床',roof:'屋根',ramp:'スロープ',diagonal:'ななめの壁',halfFloor:'ハーフの床'};
 export const GRID={cell:4,layer:3,size:60};
+const HALF_LAYER=GRID.layer/2;
 export const GRID_PARTS=new Set(['box','platform','moving','bounce','hazard','door','wall','floor','roof','ramp']);
 const snap=(value,step=GRID.cell,offset=0)=>Math.round((value-offset)/step)*step+offset;
 function boundedGrid(value,extent,offset=0,world=60,step=4){extent=Math.max(step/2,extent);const lo=Math.ceil((-worldHalf(world)+extent-offset)/step)*step+offset,hi=Math.floor((worldHalf(world)-extent-offset)/step)*step+offset;return Math.max(lo,Math.min(hi,snap(value,step,offset)));}
@@ -17,7 +18,7 @@ export function alignPiece(o,world=60){
  if(!GRID_PARTS.has(o.type))return o;if(isFurniture(o)){o.x=boundedGrid(o.x,o.w/2,1,world,2);o.z=boundedGrid(o.z,o.d/2,1,world,2);return o;}if(o.floorHalf){const turned=(o.rotation||0)%180===90;o.x=boundedGrid(o.x,o.w/2,turned?0:1,world,turned?4:2);o.z=boundedGrid(o.z,o.d/2,turned?1:0,world,turned?2:4);return o;}const bordered=['wall','door'].includes(o.type)&&!isDiagonal(o),turned=bordered&&(o.rotation||0)%180===90,half=o.wallHalf==='halfVertical',longOffset=half?1:o.type==='door'&&(turned?o.d:o.w)>=7.9?2:0;
  o.x=boundedGrid(o.x,o.w/2,turned?(o.wallHalf?0:2):longOffset,world,bordered?2:4);o.z=boundedGrid(o.z,o.d/2,bordered&&!turned?(o.wallHalf?0:2):longOffset,world,bordered?2:4);return o;
 }
-export function gridStep(o,axis){if(axis!=='y'&&borderPart(o))return 2;if(isFurniture(o))return axis==='y'?.25:2;if(o.wallHalf&&axis===((o.rotation||0)%180===90?'x':'z'))return 2;if(o.floorHalf&&axis===((o.rotation||0)%180===90?'z':'x'))return 2;if(o.wallHalf==='halfVertical'&&axis===((o.rotation||0)%180===90?'z':'x'))return 2;if(o.wallHalf==='halfHorizontal'&&axis==='y')return 1.5;return GRID_PARTS.has(o.type)?axis==='y'?(['box','wall','floor','roof','ramp','door'].includes(o.type)?3:.5):4:axis==='y'?.5:1;}
+export function gridStep(o,axis){if(axis!=='y'&&borderPart(o))return 2;if(isFurniture(o))return axis==='y'?.25:2;if(o.wallHalf&&axis===((o.rotation||0)%180===90?'x':'z'))return 2;if(o.floorHalf&&axis===((o.rotation||0)%180===90?'z':'x'))return 2;if(o.wallHalf==='halfVertical'&&axis===((o.rotation||0)%180===90?'z':'x'))return 2;if(axis==='y'&&(o.type==='floor'||o.wallHalf==='halfHorizontal'))return HALF_LAYER;return GRID_PARTS.has(o.type)?axis==='y'?(['box','wall','roof','ramp','door'].includes(o.type)?3:.5):4:axis==='y'?.5:1;}
 const borderPart=o=>o&&['wall','door'].includes(o.type)&&!isDiagonal(o);
 function orientBorder(o,rotation){const phase=o.type==='door'||o.wallHalf?rotation:rotation%180;if((o.rotation||0)%180!==phase%180)[o.w,o.d]=[o.d,o.w];o.rotation=phase;}
 function borderAnchor(o){
@@ -28,7 +29,26 @@ function borderAnchor(o){
 function rampFloorAnchor(ramp,normal,floor,point=null){
  const angle=(ramp.rotation||0)*Math.PI/180,high={x:-Math.sin(angle),z:-Math.cos(angle)},dot=(normal?.x||0)*high.x+(normal?.z||0)*high.z,side=normal&&Math.abs(normal.y)<.5;
  const low=side&&dot<-.5,dir=side&&Math.abs(dot)<.5?normal:low?{x:-high.x,z:-high.z}:high;
- return {x:snap(floor.w===2&&!dir.x&&point?point.x:ramp.x+dir.x*(ramp.w+floor.w)/2,floor.w===2?2:4,floor.w===2?1:0),z:snap(floor.d===2&&!dir.z&&point?point.z:ramp.z+dir.z*(ramp.d+floor.d)/2,floor.d===2?2:4,floor.d===2?1:0),y:snap(low?ramp.y:ramp.y+ramp.h,3)};
+ return {x:snap(floor.w===2&&!dir.x&&point?point.x:ramp.x+dir.x*(ramp.w+floor.w)/2,floor.w===2?2:4,floor.w===2?1:0),z:snap(floor.d===2&&!dir.z&&point?point.z:ramp.z+dir.z*(ramp.d+floor.d)/2,floor.d===2?2:4,floor.d===2?1:0),y:snap(low?ramp.y:ramp.y+ramp.h,HALF_LAYER)};
+}
+function adjacentFloorAnchor(floor,point,target,normal){
+ const anchor={x:point.x,y:target.y,z:point.z};
+ if(!normal)return anchor;
+ const side=Math.abs(normal.y)<.5;
+ // Crossing half floors can share a cell and form an L at the same height.
+ if(!side&&floor.floorHalf&&target.floorHalf&&(floor.rotation||0)!==(target.rotation||0))return anchor;
+ const dx=point.x-target.x,dz=point.z-target.z,edgeX=Math.abs(dx)/(target.w/2),edgeZ=Math.abs(dz)/(target.d/2);
+ if(!side&&Math.max(edgeX,edgeZ)<.5)return anchor;
+ const axis=side?(Math.abs(normal.x)>.5?'x':'z'):(edgeX>edgeZ?'x':'z'),size=axis==='x'?'w':'d';
+ const direction=Math.sign(side?normal[axis]:axis==='x'?dx:dz);
+ const other=axis==='x'?'z':'x';
+ if(!side)anchor[other]=target[other];
+ anchor[axis]=target[axis]+direction*(target[size]+floor[size])/2;
+ return anchor;
+}
+function floorSupportHeight(target,point){
+ const top=topAt(target,point.x,point.z);
+ return target.type==='roof'||target.wallGable?snap(top,HALF_LAYER):top;
 }
 export function snapEditorPiece(o,point,target=null,normal=null,world=60){
   o.x=point.x;o.z=point.z;
@@ -59,12 +79,7 @@ export function snapEditorPiece(o,point,target=null,normal=null,world=60){
     const dx=point.x-target.x,dz=point.z-target.z,axis=Math.abs(dx)/(target.w/2)>Math.abs(dz)/(target.d/2)?'x':'z',offset=point[axis]-target[axis],extent=target[axis==='x'?'w':'d']/2;
     if(Math.abs(offset)>=extent*.5){const direction=Math.sign(offset)||1,angle=(target.rotation||0)*Math.PI/180,high=axis==='x'?-Math.sin(angle):-Math.cos(angle),alongSlope=Math.abs(high)>.5,atPeak=alongSlope&&direction*high>0;o.x=target.x;o.z=target.z;o[axis]+=direction*(target[axis==='x'?'w':'d']+o[axis==='x'?'w':'d'])/2;o.y=target.y-(alongSlope&&!atPeak?target.h:0);o.rotation=atPeak?((target.rotation||0)+180)%360:target.rotation||0;return alignPiece(o,world);}
   }
-  if(o.floorHalf&&target?.floorHalf&&normal?.y>.5&&(o.rotation||0)!==(target.rotation||0)){o.y=target.y;return alignPiece(o,world);}
-  // A floor's broad top edge is easier to aim at than its 25 cm side.
-  if(o.type==='floor'&&target?.type==='floor'&&normal?.y>.5){
-    const dx=point.x-target.x,dz=point.z-target.z,edgeX=Math.abs(dx)/ (target.w/2),edgeZ=Math.abs(dz)/(target.d/2);
-    if(Math.max(edgeX,edgeZ)>=.5){o.x=target.x;o.z=target.z;o.y=target.y;if(edgeX>edgeZ)o.x+=Math.sign(dx)*(target.w+o.w)/2;else o.z+=Math.sign(dz)*(target.d+o.d)/2;return alignPiece(o,world);}
-  }
+  if(o.type==='floor'&&target?.type==='floor'){Object.assign(o,adjacentFloorAnchor(o,point,target,normal));return alignPiece(o,world);}
   // Walls, doors and windows share the same edge of the grid.
   // Use the existing piece's orientation instead of guessing from a thin frame's hit point.
   if(borderPart(o)&&borderPart(target)&&normal&&Math.abs(normal.y)>.5){
@@ -88,7 +103,7 @@ export function snapEditorPiece(o,point,target=null,normal=null,world=60){
   if(target&&normal?.y>.5){
     if(borderPart(target)&&['floor','roof'].includes(o.type))Object.assign(o,borderAnchor(target));
     const top=topAt(target,point.x,point.z);
-    o.y=o.type==='wall'&&target.type==='ramp'?Math.floor((target.y+.05)/3)*3:o.type==='roof'?(target.type==='floor'?snap(target.y,3)+3:Math.ceil((top-.02)/3)*3):['wall','floor','door'].includes(o.type)?snap(top,3):top;
+    o.y=o.type==='floor'?floorSupportHeight(target,point):o.type==='wall'&&target.type==='ramp'?Math.floor((target.y+.05)/3)*3:o.type==='roof'?(target.type==='floor'?snap(target.y,3)+3:Math.ceil((top-.02)/3)*3):['wall','door'].includes(o.type)?snap(top,3):top;
   }else if(target&&normal?.y<-.5)o.y=Math.max(0,target.y-o.h);
   else if(side)o.y=target.y;
   else o.y=o.type==='roof'?3:['wall','floor','box'].includes(o.type)?0:o.y;
@@ -182,12 +197,22 @@ export function placement(g,tool,point,rotation=0,level=0){
   if(tool.effect==='halfFloor'){if(rotated)z=snap(point.z,2,1);else x=snap(point.x,2,1);}
   // Rotate around the aimed cell, including the opposite two edges.
   if(tool.effect==='wall'){if(rotated)x+=rotation===90?2:-2;else z+=rotation===0?2:-2;}
-  const base=tool.effect==='wall'&&point.surface?.type==='ramp'?Math.floor((point.surface.y+.05)/3)*3:Math.floor((Math.max(0,point.y)+.08)/3)*3;
+  const surface=point.surface,normal=point.normal,isFloor=['floor','halfFloor'].includes(tool.effect);
+  const base=tool.effect==='wall'&&surface?.type==='ramp'?Math.floor((surface.y+.05)/3)*3:Math.floor((Math.max(0,point.y)+.08)/3)*3;
   const roofOffset=tool.effect==='roof'&&!(borderPart(point.surface)&&point.normal?.y>.5)?3:0;
   const rampBase=tool.effect==='ramp'&&point.surface?.type==='floor'&&point.normal?.y>.5?point.surface.y+point.surface.h:base;
-  let y=rampBase+level*3+roofOffset;
-  if(['floor','halfFloor'].includes(tool.effect)&&point.surface?.type==='ramp'){const anchor=rampFloorAnchor(point.surface,point.normal,{w:tool.effect==='halfFloor'&&!rotated?2:4,d:tool.effect==='halfFloor'&&rotated?2:4},point);x=anchor.x;z=anchor.z;y=anchor.y+level*3;}
-  const piece=constructionPart(tool.effect,x,z,y,tool.effect==='ramp'?rotation:rotated?90:0);
+  const piece=constructionPart(tool.effect,x,z,rampBase+level*3+roofOffset,tool.effect==='ramp'?rotation:rotated?90:0);
+  if(isFloor&&surface?.type==='ramp'){
+    Object.assign(piece,rampFloorAnchor(surface,normal,piece,point));
+    piece.y+=level*3;
+  }else if(isFloor&&surface?.type==='floor'){
+    const anchor=adjacentFloorAnchor(piece,point,surface,normal);
+    piece.x=snap(anchor.x,piece.w===2?2:4,piece.w===2?1:0);
+    piece.z=snap(anchor.z,piece.d===2?2:4,piece.d===2?1:0);
+    piece.y=anchor.y+level*3;
+  }else if(isFloor&&surface&&normal?.y>.5)piece.y=floorSupportHeight(surface,point)+level*3;
+  x=piece.x;z=piece.z;
+  const y=piece.y;
   const no=reason=>({piece,valid:false,reason});
   if(g.objects.length>=MAX_PARTS)return no(`部品は全部で${MAX_PARTS}個まで置けます`);
   if(Math.abs(x)>coordinateLimit(g)||Math.abs(z)>coordinateLimit(g)||Math.abs(x)+piece.w/2>worldHalf(g)||Math.abs(z)+piece.d/2>worldHalf(g)||y<0||y>MAX_BUILD_Y)return no('ステージの中に置こう');
