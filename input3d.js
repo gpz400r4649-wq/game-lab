@@ -65,3 +65,50 @@ export function bindGameAction(button,action){
  for(const type of ['pointercancel','lostpointercapture'])button.addEventListener(type,e=>{if(pointer?.id===e.pointerId){pointer=null;lastPointer=Date.now();}});
  button.addEventListener('click',e=>{if(button.disabled)return;if((e.isTrusted&&e.detail===0)||Date.now()-lastPointer>700)action();});
 }
+
+export function createCarControls({wheel,rim,accelerator,brake,reverse}){
+ let pointer=null,steering=0,accelerating=false,braking=false,backing=false;
+ for(const control of [wheel,accelerator,brake])control.setAttribute('data-game-action','');
+ function setSteering(value){
+  steering=Math.max(-1,Math.min(1,value));
+  rim.style.transform=`rotate(${steering*95}deg)`;
+ }
+ function steer(event){
+  const {left,width}=wheel.getBoundingClientRect();
+  const amount=(event.clientX-left-width/2)/(width*.36);
+  setSteering(Math.abs(amount)<.08?0:amount);
+ }
+ wheel.addEventListener('pointerdown',event=>{
+  if(pointer!==null)return;
+  event.preventDefault();
+  pointer=event.pointerId;wheel.setPointerCapture(pointer);steer(event);
+ });
+ wheel.addEventListener('pointermove',event=>{if(event.pointerId===pointer)steer(event);});
+ for(const type of ['pointerup','pointercancel','lostpointercapture'])wheel.addEventListener(type,event=>{
+  if(event.pointerId!==pointer)return;
+  pointer=null;setSteering(0);
+ });
+ const stopAccelerator=bindHeldButton(accelerator,()=>{
+  accelerating=true;accelerator.classList.add('is-held');
+ },()=>{
+  accelerating=false;accelerator.classList.remove('is-held');
+ });
+ const stopBrake=bindHeldButton(brake,()=>{
+  braking=true;brake.classList.add('is-held');
+ },()=>{
+  braking=false;brake.classList.remove('is-held');
+ });
+ const setReverse=enabled=>{
+  backing=enabled;
+  reverse.setAttribute('aria-pressed',String(backing));
+ };
+ bindGameAction(reverse,()=>setReverse(!backing));
+ return {
+  read:()=>({x:steering,z:accelerating?(backing?1:-1):0,brake:braking}),
+  setSpeed:speed=>{reverse.disabled=Math.abs(speed)>.35;},
+  reset({direction=false}={}){
+   pointer=null;setSteering(0);stopAccelerator();stopBrake();
+   if(direction){setReverse(false);reverse.disabled=false;}
+  }
+ };
+}

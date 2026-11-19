@@ -59,7 +59,8 @@ export function carMotion(car,input,grounded,dt){
  const {maxSpeed,acceleration,steering,braking}=car.tuning;
  const target=input.brake?0:throttle*(throttle<0?REVERSE_SPEED:maxSpeed);
  const slowing=input.brake||Math.sign(car.speed)!==Math.sign(target);
- car.speed=approach(car.speed,target,dt*(input.brake?braking:slowing?12:acceleration));
+ const rate=input.brake?braking:input.coast&&throttle===0?2:slowing?12:acceleration;
+ car.speed=approach(car.speed,target,dt*rate);
  if(grounded){
   const turnFactor=Math.min(1,Math.abs(car.speed)/2)*(1-.45*Math.min(1,Math.abs(car.speed)/maxSpeed));
   car.heading-=steer*turnFactor*steering*Math.sign(car.speed)*dt;

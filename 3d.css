@@ -649,3 +649,48 @@ html:not(.car-workshop) #road-open3 { display:none; }
 #car-sound3[aria-pressed="true"] { color:white; background:#694cb7; border-color:#694cb7; }
 #car-sound3 b { margin-inline-start:3px; }
 #car-sound3[hidden] { display:none; }
+
+#car-controls3 {
+ position:absolute; inset:auto 23px 24px; z-index:2;
+ display:flex; justify-content:space-between; align-items:end; gap:12px;
+ pointer-events:none;
+}
+#car-controls3[hidden] { display:none; }
+#car-wheel3,.car-pedals3 button { pointer-events:auto; touch-action:none; }
+#car-wheel3 {
+ width:116px; height:116px; padding:6px; border:1px solid #ffffffa0; border-radius:50%;
+ background:#f6f7ff9e; box-shadow:0 2px 10px #202d5655; cursor:grab;
+}
+#car-wheel3:active { cursor:grabbing; }
+#car-wheel-rim3 {
+ position:relative; width:100%; height:100%; border:10px solid #303a54; border-radius:50%;
+ box-shadow:0 0 0 2px #cdd8eb,inset 0 0 0 2px #566483;
+}
+#car-wheel-rim3::before {
+ content:""; position:absolute; left:50%; top:-10px; width:12px; height:5px;
+ background:#bcabf9; border-radius:0 0 3px 3px; transform:translateX(-50%);
+}
+#car-wheel-rim3 i { position:absolute; left:0; top:calc(50% - 4px); width:50%; height:8px; background:#303a54; transform-origin:right center; }
+#car-wheel-rim3 i:nth-child(2) { transform:rotate(140deg); }
+#car-wheel-rim3 i:nth-child(3) { transform:rotate(250deg); }
+#car-wheel-rim3 b {
+ position:absolute; left:50%; top:50%; width:26px; height:26px; transform:translate(-50%,-50%);
+ background:#505d7c; border:3px solid #303a54; border-radius:50%;
+}
+.car-pedals3 { display:grid; justify-items:end; gap:6px; }
+.car-pedal-row3 { display:flex; align-items:end; gap:9px; }
+.car-pedals3 button { color:#fff; border:2px solid #fff9; box-shadow:0 3px 8px #202d5644; font-weight:750; }
+#car-brake3,#car-accelerator3 { width:74px; padding:0 3px; border-radius:14px; font-size:12px; }
+#car-brake3 { height:67px; background:#9f405e; }
+#car-accelerator3 { height:88px; background:#337747; }
+#car-brake3.is-held,#car-accelerator3.is-held { transform:translateY(3px); filter:brightness(.78); box-shadow:none; }
+#car-reverse3 { min-width:74px; min-height:44px; padding:0 8px; background:#475477; font-size:11px; }
+#car-reverse3[aria-pressed="true"] { background:#7450bd; box-shadow:0 0 0 2px #dac9ff; }
+#car-reverse3:disabled { opacity:.6; }
+@media(max-width:700px){
+ #car-controls3 { inset:auto 16px 18px; }
+ #car-wheel3 { width:96px; height:96px; }
+ #car-brake3,#car-accelerator3 { width:64px; }
+ #car-brake3 { height:59px; }
+ #car-accelerator3 { height:75px; }
+}

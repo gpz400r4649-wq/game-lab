@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {installGameTouchGuard,bindHeldButton,createGamePageMode} from '../input3d.js';
+import {installGameTouchGuard,bindHeldButton,createCarControls,createGamePageMode} from '../input3d.js';
 class Surface extends EventTarget{setPointerCapture(){}contains(t){return t===this||t?.inside===this;}}
 function emit(surface,type,props={}){const e=new Event(type,{cancelable:true});for(const [key,value] of Object.entries(props))Object.defineProperty(e,key,{value});surface.dispatchEvent(e);return e.defaultPrevented;}
 const finger=(identifier,target,x=100,y=100)=>({identifier,target,clientX:x,clientY:y});
@@ -33,3 +33,31 @@ test('プレイ中だけページ拡大設定を制限し、編集では元の�
 });
 test('別の指の終了イベントで連射を解除しない',()=>{const fire=new Surface();let firing=false,count=0;bindHeldButton(fire,()=>{firing=true;count++;},()=>firing=false);emit(fire,'pointerdown',{pointerId:2});for(const type of ['pointerup','pointercancel','lostpointercapture'])emit(fire,type,{pointerId:1});assert.ok(firing);assert.equal(count,1);emit(fire,'pointerup',{pointerId:2});assert.equal(firing,false);});
 test('発射に２本触れた場合も最後の指まで連射する',()=>{const fire=new Surface();let firing=false;const reset=bindHeldButton(fire,()=>firing=true,()=>firing=false);emit(fire,'pointerdown',{pointerId:1});emit(fire,'pointerdown',{pointerId:2});emit(fire,'pointerup',{pointerId:1});assert.ok(firing);emit(fire,'lostpointercapture',{pointerId:1});assert.ok(firing);emit(fire,'pointercancel',{pointerId:2});assert.equal(firing,false);emit(fire,'pointerdown',{pointerId:5});reset();assert.equal(firing,false);});
+test('ハンドルとペダルは同時に押せ、片方の指を離してももう片方がきく',()=>{
+ const control=()=>Object.assign(new Surface(),{disabled:false,setAttribute(){},classList:{add(){},remove(){}}});
+ const wheel=Object.assign(control(),{getBoundingClientRect:()=>({left:0,width:100})});
+ const accelerator=control(),brake=control(),reverse=control(),rim={style:{}};
+ const controls=createCarControls({wheel,rim,accelerator,brake,reverse});
+ emit(wheel,'pointerdown',{pointerId:1,clientX:80});
+ emit(accelerator,'pointerdown',{pointerId:2});
+ assert.ok(controls.read().x>.8);
+ assert.equal(controls.read().z,-1);
+ emit(brake,'pointerdown',{pointerId:3});
+ assert.equal(controls.read().brake,true);
+ emit(accelerator,'pointerup',{pointerId:2});
+ assert.equal(controls.read().z,0);
+ assert.ok(controls.read().x>.8);
+ emit(wheel,'pointercancel',{pointerId:1});
+ emit(brake,'pointerup',{pointerId:3});
+ controls.setSpeed(4);
+ assert.equal(reverse.disabled,true);
+ controls.setSpeed(0);
+ emit(reverse,'pointerdown',{pointerId:4,clientX:0,clientY:0});
+ emit(reverse,'pointerup',{pointerId:4,clientX:0,clientY:0});
+ emit(accelerator,'pointerdown',{pointerId:5});
+ assert.equal(controls.read().z,1);
+ controls.reset({direction:true});
+ assert.deepEqual(controls.read(),{x:0,z:0,brake:false});
+ emit(accelerator,'pointerdown',{pointerId:6});
+ assert.equal(controls.read().z,-1);
+});

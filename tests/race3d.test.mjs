@@ -31,6 +31,15 @@ test('車は加速・旋回・ブレーキ・バックができ、壁で止ま�
  tick(stopped,p,3,{z:-1});assert.ok(stopped.player.z>=1);assert.ok(stopped.car.speed<1);
 });
 
+test('アクセルを離した車は惰性で走り、ブレーキはそれより強く止める',()=>{
+ const p=fresh3D('car'),rolling=create3D(p),braking=create3D(p);
+ rolling.car.speed=braking.car.speed=8;
+ tick(rolling,p,.3,{coast:true});
+ tick(braking,p,.3,{coast:true,brake:true});
+ assert.ok(rolling.car.speed>7&&rolling.car.speed<8);
+ assert.ok(braking.car.speed<2);
+});
+
 test('車のせっていは保存でき、速さ・加速・ハンドル・ブレーキに反映される',()=>{
  const base=fresh3D('car');
  const tuning={maxSpeed:65/3.6,acceleration:10,steering:3.2,braking:32};

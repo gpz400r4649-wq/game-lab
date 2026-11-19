@@ -15,7 +15,7 @@ import {createPlayerRulesUI} from './player-rules-ui3d.js?v=20261119d';
 import {fencePresetKey,floorPresetKey,FLOOR_PRESETS,configureBuildingPart,FENCE_PRESETS,RAMP_PRESETS,ROOF_PRESETS} from './architecture3d.js?v=20261119o';
 import {makeHalfFloorGeometries,makeDiagonalWallGeometry,makeCornerRampGeometry,makeFenceModel,fenceGeometry,makeRoofSlopeGeometry,makeGableGeometry} from './architecture-model3d.js?v=20261119d';
 import {createChoiceControl,enhanceChoiceControl} from './choices3d.js?v=20261119d';
-import {groupSteps,groupCandidate,commitGroup,copyGroupNearby} from './group-edit3d.js?v=20261119x';
+import {groupSteps,groupCandidate,commitGroup,copyGroupNearby} from './group-edit3d.js?v=20261119y';
 import {initializeCharacterDefaults,synchronizeCharacterDefaults,inheritNewCharacter} from './character-defaults3d.js?v=20261119d';
 import {nearbyActor,trade,companionsAt} from './actor3d.js?v=20261119d';
 import {giveAllyGun,giftableGun,recruitTarget,allyAttackDistance} from './ally3d.js?v=20261119d';
@@ -40,13 +40,13 @@ import {worldSize,worldHalf,coordinateLimit} from './world3d.js?v=20261119d';
 import {createWorldUI} from './world-ui3d.js?v=20261119d';
 import {configureNumericInput} from './numeric3d.js?v=20261119d';
 import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261119d';
-import {installGameTouchGuard,bindHeldButton,bindGameAction,createGamePageMode} from './input3d.js?v=20261119d';
+import {installGameTouchGuard,bindHeldButton,bindGameAction,createCarControls,createGamePageMode} from './input3d.js?v=20261119y';
 import {actionsFor} from './events3d.js?v=20261119d';
 import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261119d';
 import {rotatePiece,BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,topAt,editorPlacementReason,editorPlacementBlocker,blockPlacement} from './building3d.js?v=20261119p';
 import {createToolsUI} from './tools3d.js?v=20261119d';
 import * as T from './vendor/three.module.min.js';
-import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,nearbyChair} from './engine3d.js?v=20261119x';
+import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,nearbyChair} from './engine3d.js?v=20261119y';
 import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261119x';
 document.querySelectorAll('.setting-choices').forEach(enhanceChoiceControl);
 const $=s=>document.querySelector(s),view=$('#viewport');
@@ -58,10 +58,13 @@ if(carTemplate){
  document.documentElement.classList.add('car-workshop');document.title='つくるラボ — 3Dくるまづくり';
  $('#edition3').textContent='3Dくるまづくり';
  const link=$('#template-link3');link.href='3d.html';link.textContent='3D版へ';
- setReadingText($('#fire3'),'ブレーキ');
 }
 let enemyRangeView='attackRange';
 let project=fresh3D(carTemplate?'car':undefined),selected=null,tool='select',doorPreset='key',piecePresets={box:'box',floor:'floor',wall:'wall',ramp:'ramp',roof:'roof'},weaponPresetId='@random',mode='edit',perspective='tps',game=null,yaw=0,pitch=-.05,editYaw=.55,editPitch=.7,editDistance=30,editTarget=new T.Vector3(0,0,0),stick={x:0,z:0},keys=new Set(),fireHeld=false,firePressed=false,jumpPressed=false,doorPressed=false,look=null,saveTimer,toastTimer,lastTime=0;
+const carControls=carTemplate?createCarControls({
+ wheel:$('#car-wheel3'),rim:$('#car-wheel-rim3'),accelerator:$('#car-accelerator3'),
+ brake:$('#car-brake3'),reverse:$('#car-reverse3')
+}):null;
 let commonPreview=null,commonCamera=null,stageExtra=null,testSpawn=null;
 const carSoundButton=$('#car-sound3');
 const carSoundLabel=carSoundButton.querySelector('b');
@@ -340,8 +343,8 @@ function advancedWeaponFields(){const el=$('#weapon3');el.replaceChildren();fiel
 // The workshop builds the component library and its beginner controls.
 $('#title3').oninput=()=>{project.title=$('#title3').value;save();};
 const setGamePageMode=createGamePageMode(document);let joystickPointer=null;const resetTouchGuard=installGameTouchGuard(view,()=>mode==='play');let resetFire=()=>{},resetEditorNavigation=()=>{};
-function resetInput(){if(look?.drag)finishEditorDrag(false);resetEditorNavigation();resetTouchGuard();resetFire();joystickPointer=null;keys.clear();stick={x:0,z:0};fireHeld=false;firePressed=false;jumpPressed=false;doorPressed=false;seatPressed=false;seatButton.hidden=true;look=null;$('#stick3 .edit-stick-thumb').style.transform='';}
-function setMode(next,{resumeHere=true,spawn=null}={}){carAudio.stop();closeStageExtra();placementContact.visible=placementBlocker.visible=false;testSpawn=next==='play'?spawn:null;const resume=resumeHere&&mode==='play'&&next==='edit'?editorViewFromPlay(game?.player,game?.car?.heading??yaw,pitch,project):null;closeLiveRangeEditor();if(resume){editTarget.set(resume.target.x,resume.target.y,resume.target.z);editYaw=resume.yaw;editPitch=resume.pitch;editDistance=resume.distance;}if(next==='play')resetGroupSelection();mode=next;$('.stage-toolbar').classList.toggle('is-playing',mode==='play');$('#editor-tools3').hidden=mode==='play';$('#retry3').hidden=mode!=='play';$('#talk3').hidden=$('#escort-count3').hidden=true;$('#ally-range-toggle3').hidden=true;allyCommand=null;giftButton.hidden=allyButton.hidden=formationButton.hidden=true;syncHistoryButtons();setGamePageMode(mode==='play');resetInput();$('#edit3').classList.toggle('active',mode==='edit');$('#play3').classList.toggle('active',mode==='play');for(const id of ['#play-hud','#controls3','#crosshair','#hotbar3'])$(id).hidden=mode!=='play';$('#use-door3').hidden=true;$('#stats3').hidden=mode==='play';$('#car-lap-hud3').hidden=true;$('#speedometer3').hidden=carSoundButton.hidden=mode!=='play'||project.template!=='car';carSoundButton.disabled=false;$('#score3').hidden=false;$('#editor-nav3').hidden=mode==='play';$('#orbit-pad').hidden=mode==='play';$('#lost3').hidden=true;setReadingText($('#mode3'),mode==='play'?(perspective==='fps'?'自分の目で見る世界':'うしろから見る世界'):'つくるモード');$('aside').inert=mode==='play';$('#title3').disabled=mode==='play';editorPointer=null;if(mode==='play'){game=create3D(project,{testSpawn});startAllyRanges();playRanges.start(game.objects,selected);enemyMessages.reset();toolsUI.reset();buildCount=-1;lastMessageId=0;yaw=0;pitch=-.05;setReadingText($('#hint3'),project.template==='car'?'スティックで すすむ・まがる · 右でブレーキ / PC: 矢印・スペース':'左で移動 · 景色をドラッグで見わたす · 右でジャンプと発射 / PC: WASD・Space・F');}else setReadingText($('#hint3'),'左下のスティックでカメラを移動 · ドラッグで見わたす / PC: WASD・矢印、Eで上、Qで下');toolsUI.renderHotbar();syncPlacementUI();rebuild();renderer.domElement.focus({preventScroll:true});}
+function resetInput(){if(look?.drag)finishEditorDrag(false);resetEditorNavigation();resetTouchGuard();resetFire();carControls?.reset();joystickPointer=null;keys.clear();stick={x:0,z:0};fireHeld=false;firePressed=false;jumpPressed=false;doorPressed=false;seatPressed=false;seatButton.hidden=true;look=null;$('#stick3 .edit-stick-thumb').style.transform='';}
+function setMode(next,{resumeHere=true,spawn=null}={}){carAudio.stop();closeStageExtra();placementContact.visible=placementBlocker.visible=false;testSpawn=next==='play'?spawn:null;const resume=resumeHere&&mode==='play'&&next==='edit'?editorViewFromPlay(game?.player,game?.car?.heading??yaw,pitch,project):null;closeLiveRangeEditor();if(resume){editTarget.set(resume.target.x,resume.target.y,resume.target.z);editYaw=resume.yaw;editPitch=resume.pitch;editDistance=resume.distance;}if(next==='play')resetGroupSelection();mode=next;$('.stage-toolbar').classList.toggle('is-playing',mode==='play');$('#editor-tools3').hidden=mode==='play';$('#retry3').hidden=mode!=='play';$('#talk3').hidden=$('#escort-count3').hidden=true;$('#ally-range-toggle3').hidden=true;allyCommand=null;giftButton.hidden=allyButton.hidden=formationButton.hidden=true;syncHistoryButtons();setGamePageMode(mode==='play');resetInput();carControls?.reset({direction:true});$('#edit3').classList.toggle('active',mode==='edit');$('#play3').classList.toggle('active',mode==='play');for(const id of ['#play-hud','#controls3','#crosshair','#hotbar3'])$(id).hidden=mode!=='play';$('#controls3').hidden=mode!=='play'||project.template==='car';$('#car-controls3').hidden=mode!=='play'||project.template!=='car';$('#use-door3').hidden=true;$('#stats3').hidden=mode==='play';$('#car-lap-hud3').hidden=true;$('#speedometer3').hidden=carSoundButton.hidden=mode!=='play'||project.template!=='car';carSoundButton.disabled=false;$('#score3').hidden=false;$('#editor-nav3').hidden=mode==='play';$('#orbit-pad').hidden=mode==='play';$('#lost3').hidden=true;setReadingText($('#mode3'),mode==='play'?(perspective==='fps'?'自分の目で見る世界':'うしろから見る世界'):'つくるモード');$('aside').inert=mode==='play';$('#title3').disabled=mode==='play';editorPointer=null;if(mode==='play'){game=create3D(project,{testSpawn});startAllyRanges();playRanges.start(game.objects,selected);enemyMessages.reset();toolsUI.reset();buildCount=-1;lastMessageId=0;yaw=0;pitch=-.05;setReadingText($('#hint3'),project.template==='car'?'左でハンドル · 右でアクセルとブレーキ / PC: 矢印・スペース':'左で移動 · 景色をドラッグで見わたす · 右でジャンプと発射 / PC: WASD・Space・F');}else setReadingText($('#hint3'),'左下のスティックでカメラを移動 · ドラッグで見わたす / PC: WASD・矢印、Eで上、Qで下');toolsUI.renderHotbar();syncPlacementUI();rebuild();renderer.domElement.focus({preventScroll:true});}
 function syncHistoryButtons(){$('#edit-history3').hidden=mode!=='edit';$('#undo3').disabled=!editHistory.canUndo;$('#redo3').disabled=!editHistory.canRedo;}
 function restoreHistory(direction){if(mode!=='edit')return;closeLiveRangeEditor();resetInput();editHistory.record(project);const next=direction==='undo'?editHistory.undo():editHistory.redo();if(!next)return;project=next;if(!project.objects.some(o=>o.id===selected))selected=null;editorPointer=null;$('#title3').value=project.title;spawnMark.position.set(project.spawn.x,.015,project.spawn.z);restoringHistory=true;try{save();}finally{restoringHistory=false;}workshop.palette();rebuild();objectList();inspector();weaponFields();toast(direction==='undo'?'ひとつ前にもどしたよ':'もどした編集をやりなおしたよ');}
 $('#undo3').onclick=()=>restoreHistory('undo');$('#redo3').onclick=()=>restoreHistory('redo');syncHistoryButtons();
@@ -611,14 +614,16 @@ function raceTime(seconds){
  return `${minutes}:${String(rest).padStart(2,'0')}.${String(hundredths%100).padStart(2,'0')}`;
 }
 function driveFrame(dt){
- const throttle=stick.z+Number(keys.has('s')||keys.has('arrowdown'))-Number(keys.has('w')||keys.has('arrowup'));
- const brake=fireHeld||firePressed||keys.has(' ');
+ const controls=carControls.read();
+ const throttle=controls.z+Number(keys.has('s')||keys.has('arrowdown'))-Number(keys.has('w')||keys.has('arrowup'));
+ const brake=controls.brake||keys.has(' ');
  if(game.state==='playing')step3D(game,project,{
-  x:stick.x+Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft')),
-  z:throttle,brake,yaw:game.car.heading
+  x:controls.x+Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft')),
+  z:throttle,brake,coast:true,yaw:game.car.heading
  },dt);
  firePressed=false;syncGameMeshes();
  const car=game.car;
+ carControls.setSpeed(car.speed);
  const speedFraction=car.actualSpeed/car.tuning.maxSpeed;
  if(game.state==='playing')carAudio.update(speedFraction,brake?0:throttle);
  else{
