@@ -76,23 +76,27 @@ export function createLapGateView(scene){
  const group=new T.Group();
  group.name='automatic-lap-gates';
  scene.add(group);
- let markers=null;
+ let previousLap=null,startGate=null,markerGates=[];
  return function sync(laps,racing){
-  const next=laps?.markers??null;
-  if(next!==markers){
+  const run=laps??null;
+  if(run!==previousLap){
    for(const gate of group.children)gate.userData.number.material.dispose();
    group.clear();
-   markers=next;
-   markers?.forEach((marker,index)=>{
+   previousLap=run;
+   function addGate(marker,number){
     const gate=makeRaceGateModel(marker);
     gate.position.set(marker.x,marker.y,marker.z);
-    updateRaceGateNumber(gate,index+2);
+    updateRaceGateNumber(gate,number);
     group.add(gate);
-   });
+    return gate;
+   }
+   startGate=laps?.autoStart?addGate(laps.autoStart,1):null;
+   markerGates=laps?.markers.map((marker,index)=>addGate(marker,index+2))??[];
   }
   if(!laps)return;
   const started=laps.startedAt!==null;
-  group.children.forEach((gate,index)=>
+  if(startGate)updateRaceGateModel(startGate,racing&&(!started||laps.nextMarker===markerGates.length),!racing);
+  markerGates.forEach((gate,index)=>
    updateRaceGateModel(gate,racing&&started&&index===laps.nextMarker,started&&index<laps.nextMarker));
  };
 }

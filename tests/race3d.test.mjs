@@ -191,10 +191,34 @@ test('周回の最初のゲート上から走り出すと計測を開始し、�
  tick(game,p,.5,{z:-1});
  assert.notEqual(game.car.laps.startedAt,null);
  assert.equal(game.car.nextGate,1);
- const incomplete={...p,objects:[]},run=create3D(incomplete);
+ const incomplete={...p,objects:[],roads:[]},run=create3D(incomplete);
  tick(run,incomplete,.5,{z:-1});
  assert.equal(run.car.laps.startedAt,null);
  assert.equal(run.state,'playing');
+});
+
+test('周回レースは手動のゲートがなければ、車の初期位置に同じ幅と向きのゲートを出す',()=>{
+ const p=fresh3D('car');
+ p.raceLaps=3;
+ p.roads=[{id:'loop',width:16,closed:true,points:[{x:-30,z:30},{x:-30,z:-30},{x:30,z:-30},{x:30,z:30}]}];
+ const before=JSON.stringify(p),run=create3D(p),gate=run.car.laps.autoStart;
+ assert.ok(gate);
+ assert.equal(run.car.gates[0],gate);
+ assert.deepEqual([gate.x,gate.y,gate.z],[run.player.x,run.player.y,run.player.z]);
+ assert.equal(raceGateWidth(gate),16);
+ assert.equal(raceGateHeading(gate),run.car.heading);
+ assert.equal(run.car.laps.markers.length,3);
+ tick(run,p,.5,{z:-1});
+ assert.notEqual(run.car.laps.startedAt,null);
+ assert.equal(run.car.laps.completed,0);
+ assert.equal(JSON.stringify(p),before);
+ const elsewhere=create3D(p,{testSpawn:{x:0,y:0,z:0}});
+ assert.deepEqual(elsewhere.car.laps.autoStart,gate);
+ assert.equal(elsewhere.car.startsInFirst,false);
+ const manual=part('raceGate',0,0);
+ const custom=create3D({...p,objects:[manual]});
+ assert.equal(custom.car.laps.autoStart,null);
+ assert.equal(custom.car.gates[0].id,manual.id);
 });
 
 test('閉じた道路では１つのゲートでスタートとゴールを兼ね、コースをひと回りしたときだけ数える',()=>{
@@ -246,10 +270,11 @@ test('自動の通過地点を判定と同じ場所と幅のゲートにし、�
  try{
   const scene=new Scene(),sync=createLapGateView(scene);
   const markers=[{x:20,y:0,z:-8,gateYaw:Math.PI/2,gateWidth:16},{x:0,y:0,z:-20,gateYaw:0,gateWidth:12}];
-  const laps={markers,startedAt:0,nextMarker:0};
+  const autoStart={x:0,y:0,z:0,gateYaw:0,gateWidth:16};
+  const laps={autoStart,markers,startedAt:0,nextMarker:0};
   sync(laps,true);
-  const [group]=scene.children,[first,second]=group.children;
-  assert.deepEqual(labels,['2','3']);
+  const [group]=scene.children,[start,first,second]=group.children;
+  assert.deepEqual(labels,['1','2','3']);
   assert.deepEqual(first.position.toArray(),[20,0,-8]);
   assert.equal(first.rotation.y,Math.PI/2);
   assert.deepEqual(first.userData.lights.map(light=>light.position.x),[-8,8]);
@@ -259,6 +284,8 @@ test('自動の通過地点を判定と同じ場所と幅のゲートにし、�
   laps.nextMarker=1;sync(laps,true);
   assert.equal(light(second),active);
   assert.notEqual(light(first),active);
+  laps.nextMarker=2;sync(laps,true);
+  assert.equal(light(start),active);
   sync(null,false);
   assert.equal(group.children.length,0);
  }finally{

@@ -1,4 +1,4 @@
-import {lapRoadMarkers,nearestRoad,ROAD_WIDTHS} from './road3d.js?v=20261119u';
+import {courseStart,lapRoadMarkers,nearestRoad,ROAD_WIDTHS} from './road3d.js?v=20261119u';
 
 export const F1_TOP_SPEED_KMH=360;
 export const CAR_TUNING=Object.freeze({
@@ -40,11 +40,17 @@ export function moveRaceGate(objects,gate,position){
 
 export function createCarRun(objects,heading=0,spawn,tuning=DEFAULT_CAR_TUNING,lapCount=0,roads=[]){
  const gates=orderedRaceGates(objects);
+ let autoStart=null;
+ if(lapCount&&!gates.length&&roads.length){
+  const road=roads[0],start=courseStart({template:'car',roads});
+  autoStart=orientWideGate({x:start.x,y:start.y,z:start.z,h:3,gateRoadId:road.id},road.width,start.heading);
+  gates.push(autoStart);
+ }
  const first=gates[0],road=lapCount&&gates.length===1&&roads.find(item=>item.closed&&item.id===first.gateRoadId);
  const markers=road?lapRoadMarkers(road,first,raceGateHeading(first)).map(point=>
   ({x:point.x,y:first.y,z:point.z,h:first.h,gateWidth:road.width,gateYaw:point.heading})):[];
  return {tuning:{...tuning},speed:0,actualSpeed:0,peakSpeed:0,heading,wheelAngle:0,steering:0,gates,nextGate:0,startsInFirst:!!(spawn&&gates[0]&&inGate(spawn,gates[0])),
-  laps:lapCount?{count:lapCount,completed:0,startedAt:null,lapStartedAt:null,finishedAt:null,best:null,last:null,markers,nextMarker:0,direction:0}:null};
+  laps:lapCount?{count:lapCount,completed:0,startedAt:null,lapStartedAt:null,finishedAt:null,best:null,last:null,autoStart,markers,nextMarker:0,direction:0}:null};
 }
 
 export function carMotion(car,input,grounded,dt){
