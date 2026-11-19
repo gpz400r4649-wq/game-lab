@@ -3,7 +3,7 @@ import {courseStart,nearestRoad} from './road3d.js?v=20261119x';
 import {createRoadView} from './road-model3d.js?v=20261119x';
 import {createRoadEditor} from './road-ui3d.js?v=20261119x';
 import {createLapGateView,makeCarModel,updateCarModel,makeRaceGateModel,updateRaceGateModel,updateRaceGateNumber} from './race-model3d.js?v=20261119w';
-import {CAR_TUNING,DEFAULT_CAR_TUNING,RACE_LAP_OPTIONS,fitRaceGate,orderedRaceGates,turnRaceGate} from './race3d.js?v=20261119x';
+import {CAR_TUNING,DEFAULT_CAR_TUNING,RACE_LAP_OPTIONS,fitRaceGate,orderedRaceGates,turnRaceGate} from './race3d.js?v=20261119za';
 import {assemblyCandidate,assemblyCopies,saveAssembly,temporarySpawn} from './assembly3d.js?v=20261119p';
 import {createSupplyUI,createSupplyView} from './supply-ui3d.js?v=20261119d';
 import {FURNITURE_PRESETS,configureFurniture,isFurniture} from './furniture3d.js?v=20261119d';
@@ -15,7 +15,7 @@ import {createPlayerRulesUI} from './player-rules-ui3d.js?v=20261119d';
 import {fencePresetKey,floorPresetKey,FLOOR_PRESETS,configureBuildingPart,FENCE_PRESETS,RAMP_PRESETS,ROOF_PRESETS} from './architecture3d.js?v=20261119o';
 import {makeHalfFloorGeometries,makeDiagonalWallGeometry,makeCornerRampGeometry,makeFenceModel,fenceGeometry,makeRoofSlopeGeometry,makeGableGeometry} from './architecture-model3d.js?v=20261119d';
 import {createChoiceControl,enhanceChoiceControl} from './choices3d.js?v=20261119d';
-import {groupSteps,groupCandidate,commitGroup,copyGroupNearby} from './group-edit3d.js?v=20261119z';
+import {groupSteps,groupCandidate,commitGroup,copyGroupNearby} from './group-edit3d.js?v=20261119za';
 import {initializeCharacterDefaults,synchronizeCharacterDefaults,inheritNewCharacter} from './character-defaults3d.js?v=20261119d';
 import {nearbyActor,trade,companionsAt} from './actor3d.js?v=20261119d';
 import {giveAllyGun,giftableGun,recruitTarget,allyAttackDistance} from './ally3d.js?v=20261119d';
@@ -46,7 +46,7 @@ import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261119d';
 import {rotatePiece,BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,topAt,editorPlacementReason,editorPlacementBlocker,blockPlacement} from './building3d.js?v=20261119p';
 import {createToolsUI} from './tools3d.js?v=20261119d';
 import * as T from './vendor/three.module.min.js';
-import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,nearbyChair} from './engine3d.js?v=20261119z';
+import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,nearbyChair} from './engine3d.js?v=20261119za';
 import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261119x';
 document.querySelectorAll('.setting-choices').forEach(enhanceChoiceControl);
 const $=s=>document.querySelector(s),view=$('#viewport');
@@ -275,19 +275,21 @@ if(carTemplate){
   ['maxSpeed','いちばん速いスピード',CAR_TUNING.maxSpeed.map(speed=>Math.round(speed*3.6)+' km/h'),speedExamples],
   ['acceleration','スピードの上がり方',['ゆっくり','ふつう','すばやい']],
   ['steering','ハンドルのきき方',['ゆるやか','ふつう','よくまがる']],
-  ['braking','ブレーキのきき方',['よわい','ふつう','つよい']]
+  ['braking','ブレーキのきき方',['よわい','ふつう','つよい']],
+  ['mass','くるまのおもさ',['かるい','ふつう','おもい'],null,'おもいと、走り出しや上り坂でゆっくり加速するよ。'],
+  ['grip','タイヤのグリップ',['よわい','ふつう','つよい'],null,'つよいと、カーブでタイヤが道をつかみやすいよ。']
  ];
  const sync=()=>{
-  const tuning=project.carTuning||DEFAULT_CAR_TUNING;
+  const tuning={...DEFAULT_CAR_TUNING,...project.carTuning};
   for(const [key,control] of Object.entries(controls))control.value=tuning[key];
   reset.disabled=Object.keys(controls).every(key=>tuning[key]===DEFAULT_CAR_TUNING[key]);
   note.hidden=tuning.maxSpeed<=CAR_TUNING.maxSpeed[2];
   if(!note.hidden){
-   const length=Math.ceil(tuning.maxSpeed**2/(2*tuning.acceleration)/10)*10;
-   note.textContent=`このスピードまで出すには、まっすぐな道が約 ${length} m いるよ。`;
+   const length=Math.ceil(tuning.maxSpeed**2*tuning.mass/(2*tuning.acceleration)/10)*10;
+   note.textContent=`このスピードまで出すには、平らな直線が約 ${length} m いるよ。`;
   }
  };
- for(const [key,label,options,examples] of rows){
+ for(const [key,label,options,examples,description] of rows){
   const card=document.createElement('section'),title=document.createElement('h3'),choice=createChoiceControl();
   title.id='car-setting-'+key;
   setReadingText(title,label);
@@ -302,12 +304,18 @@ if(carTemplate){
    }
   });
   choice.onchange=()=>{
-   project.carTuning={...(project.carTuning||DEFAULT_CAR_TUNING),[key]:Number(choice.value)};
+   project.carTuning={...DEFAULT_CAR_TUNING,...project.carTuning,[key]:Number(choice.value)};
    save();
    sync();
   };
   controls[key]=choice;
   card.append(title,choice);
+  if(description){
+   const hint=document.createElement('p');
+   hint.className='car-setting-note';
+   setReadingText(hint,description);
+   card.append(hint);
+  }
   panel.append(card);
  }
  opener.hidden=false;

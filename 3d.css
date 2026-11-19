@@ -620,6 +620,7 @@ html:not(.car-workshop) #road-open3 { display:none; }
 #car-tuning3 .setting-choices { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px; }
 #car-tuning3 .setting-choices > button { padding-inline:3px; text-align:center; }
 #car-tuning3 .car-speed-example { display:block; font-size:10px; line-height:1.35; }
+#car-tuning3 .car-setting-note { margin:6px 0 0; font-size:11px; line-height:1.55; }
 #car-speed-note3 { margin:0; padding:0 16px 10px; font-size:12px; }
 .car-settings-actions { display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; padding:0 16px 14px; }
 .car-settings-actions button { min-height:44px; }

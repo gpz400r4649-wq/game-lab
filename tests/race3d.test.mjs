@@ -80,6 +80,29 @@ test('車のせっていは保存でき、速さ・加速・ハンドル・ブ�
  assert.ok(fast.car.speed<normal.car.speed);
 });
 
+test('重い車は坂でゆっくり加速し、グリップの強い車はカーブで速度を保ちやすい',()=>{
+ const base=fresh3D('car');
+ const slope={...base,roads:[{id:'hill',width:12,closed:false,points:[{x:0,z:40},{x:0,y:15,z:-10}]}]};
+ const light=validate3D({...slope,carTuning:{...DEFAULT_CAR_TUNING,mass:.75}});
+ const heavy=validate3D({...slope,carTuning:{...DEFAULT_CAR_TUNING,mass:1.35}});
+ const lighter=create3D(light),heavier=create3D(heavy);
+ tick(lighter,light,1,{z:-1});tick(heavier,heavy,1,{z:-1});
+ assert.ok(lighter.player.y>heavier.player.y&&heavier.player.y>0);
+ assert.ok(lighter.car.speed>heavier.car.speed);
+
+ const weak=create3D({...base,carTuning:{...DEFAULT_CAR_TUNING,grip:.72}});
+ const strong=create3D({...base,carTuning:{...DEFAULT_CAR_TUNING,grip:1.24}});
+ weak.car.speed=strong.car.speed=12.5;
+ tick(weak,base,.5,{z:-1,x:1});tick(strong,base,.5,{z:-1,x:1});
+ assert.ok(strong.car.speed>weak.car.speed);
+ assert.ok(Math.abs(strong.car.heading)>Math.abs(weak.car.heading));
+ tick(strong,base,.06,{z:-1});
+ assert.ok(strong.car.steering>0&&strong.car.steering<.42);
+ tick(strong,base,.2,{z:-1});
+ assert.equal(strong.car.steering,0);
+ assert.throws(()=>validate3D({...base,carTuning:{...DEFAULT_CAR_TUNING,grip:0}}),/くるまのせってい/);
+});
+
 test('F1の最高速に届き、１フレームでゲートや壁を通りすぎない',()=>{
  const maxSpeed=F1_TOP_SPEED_KMH/3.6;
  const carTuning={...DEFAULT_CAR_TUNING,maxSpeed,acceleration:10};

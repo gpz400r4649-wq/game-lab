@@ -5,13 +5,16 @@ export const CAR_TUNING=Object.freeze({
  maxSpeed:Object.freeze([30,45,65,120,240,F1_TOP_SPEED_KMH].map(kmh=>kmh/3.6)),
  acceleration:Object.freeze([4,7,10]),
  steering:Object.freeze([1.6,2.4,3.2]),
- braking:Object.freeze([12,22,32])
+ braking:Object.freeze([12,22,32]),
+ mass:Object.freeze([.75,1,1.35]),
+ grip:Object.freeze([.72,1,1.24])
 });
 export const DEFAULT_CAR_TUNING=Object.freeze(Object.fromEntries(
  Object.entries(CAR_TUNING).map(([key,levels])=>[key,levels[1]])
 ));
 export const RACE_LAP_OPTIONS=Object.freeze([0,1,2,3,5]);
 const REVERSE_SPEED=4;
+const STEERING_LIMIT=.42;
 const OLD_CAR_TOP_SPEEDS=new Map([[8,30/3.6],[12,45/3.6],[18,65/3.6],[361.6/3.6,F1_TOP_SPEED_KMH/3.6]]);
 
 export function upgradeCarTopSpeed(maxSpeed){
@@ -19,7 +22,9 @@ export function upgradeCarTopSpeed(maxSpeed){
 }
 
 export function validCarTuning(tuning){
- return !!tuning&&Object.entries(CAR_TUNING).every(([key,levels])=>levels.includes(tuning[key]));
+ if(!tuning)return false;
+ const settings={mass:DEFAULT_CAR_TUNING.mass,grip:DEFAULT_CAR_TUNING.grip,...tuning};
+ return Object.entries(CAR_TUNING).every(([key,levels])=>levels.includes(settings[key]));
 }
 
 function approach(value,target,step){
@@ -49,31 +54,37 @@ export function createCarRun(objects,heading=0,spawn,tuning=DEFAULT_CAR_TUNING,l
  const first=gates[0],road=lapCount&&gates.length===1&&roads.find(item=>item.closed&&item.id===first.gateRoadId);
  const markers=road?lapRoadMarkers(road,first,raceGateHeading(first)).map(point=>
   ({x:point.x,y:point.y||0,z:point.z,h:first.h,gateWidth:road.width,gateYaw:point.heading})):[];
- return {tuning:{...tuning},speed:0,actualSpeed:0,peakSpeed:0,heading,wheelAngle:0,steering:0,brakePressure:0,gates,nextGate:0,startsInFirst:!!(spawn&&gates[0]&&inGate(spawn,gates[0])),
+ return {tuning:{...DEFAULT_CAR_TUNING,...tuning},speed:0,actualSpeed:0,peakSpeed:0,heading,wheelAngle:0,steering:0,brakePressure:0,gates,nextGate:0,startsInFirst:!!(spawn&&gates[0]&&inGate(spawn,gates[0])),
   laps:lapCount?{count:lapCount,completed:0,startedAt:null,lapStartedAt:null,finishedAt:null,best:null,last:null,autoStart,markers,nextMarker:0,direction:0}:null};
 }
 
-export function carMotion(car,input,grounded,dt){
+export function carMotion(car,input,grounded,dt,roadSurface=null){
  const throttle=Math.max(-1,Math.min(1,-(input.z||0)));
  const steer=Math.max(-1,Math.min(1,input.x||0));
- const {maxSpeed,acceleration,steering,braking}=car.tuning;
- const turning=grounded?steer**2:0;
- const target=input.brake?0:throttle*(throttle<0?REVERSE_SPEED:maxSpeed)*(1-.36*turning);
+ const {maxSpeed,acceleration,steering,braking,mass,grip}=car.tuning;
+ car.steering=approach(car.steering,steer*STEERING_LIMIT,dt*(steer?2.1:2.7));
+ const wheel=car.steering/STEERING_LIMIT;
+ const turning=grounded?wheel**2:0;
+ const target=input.brake?0:throttle*(throttle<0?REVERSE_SPEED:maxSpeed)*(1-.36*turning/grip);
  const speed=Math.abs(car.speed);
  car.brakePressure=input.brake?Math.min(1,car.brakePressure+dt/.28):0;
- let rate=acceleration;
+ const grade=grounded&&roadSurface?
+  -(roadSurface.slopeX*Math.sin(car.heading)+roadSurface.slopeZ*Math.cos(car.heading))*Math.sign(throttle||car.speed):0;
+ let rate=Math.max(.8,acceleration/mass-6*grade);
  if(input.brake){
   const highSpeed=Math.max(0,Math.min(1,(speed-18)/65));
   rate=braking*(.52+.48*highSpeed)*(.33+.67*car.brakePressure);
- }else if(input.coast&&throttle===0)rate=2+3*turning;
- else if(Math.sign(car.speed)!==Math.sign(target))rate=12;
+ }else if(input.coast&&throttle===0)rate=Math.max(.35,2+3*turning+6*grade);
+ else if(car.speed!==0&&Math.sign(car.speed)!==Math.sign(target))rate=12;
  else if(turning&&speed>Math.abs(target))rate=4+speed*.05;
  car.speed=approach(car.speed,target,dt*rate);
- if(grounded){
-  const turnFactor=Math.min(1,Math.abs(car.speed)/2)*(1-.45*Math.min(1,Math.abs(car.speed)/maxSpeed));
-  car.heading-=steer*turnFactor*steering*Math.sign(car.speed)*dt;
+ if(grounded&&car.speed!==0){
+  const movingSpeed=Math.abs(car.speed);
+  const turnFactor=Math.min(1,movingSpeed/2)*(1-.45*Math.min(1,movingSpeed/maxSpeed));
+  const requested=turnFactor*steering;
+  const yawRate=requested/Math.hypot(1,requested*movingSpeed/(14*grip));
+  car.heading-=wheel*yawRate*Math.sign(car.speed)*dt;
  }
- car.steering=approach(car.steering,steer*.42,dt*3);
  const distance=car.speed*dt;
  car.wheelAngle-=distance/.36;
  return {x:-Math.sin(car.heading)*distance,z:-Math.cos(car.heading)*distance};

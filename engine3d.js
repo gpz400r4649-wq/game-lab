@@ -1,5 +1,5 @@
 import {courseStart,createRoadSurfaceQuery,ROAD_DECK_DEPTH,validRoads} from './road3d.js?v=20261119x';
-import {carMotion,createCarRun,RACE_LAP_OPTIONS,updateRaceGates,upgradeCarTopSpeed,validCarTuning,validGateFit} from './race3d.js?v=20261119z';
+import {carMotion,createCarRun,RACE_LAP_OPTIONS,updateRaceGates,upgradeCarTopSpeed,validCarTuning,validGateFit} from './race3d.js?v=20261119za';
 import {validAssemblies} from './assembly3d.js?v=20261119d';
 import {validSupplyFlight,createSupplyFlight,updateSupplyFlight} from './supply3d.js?v=20261119d';
 import {isFurniture,validFurniture,furnitureSolids} from './furniture3d.js?v=20261119d';
@@ -222,7 +222,7 @@ export function step3D(g,p,input,dt){
     if(player.grounded&&player.supportId===o.id){player.x+=o.x-before.x;player.y+=o.y-before.y;player.z+=o.z-before.z;}}}
   const yaw=input.yaw||0,beforeDrive={x:player.x,y:player.y,z:player.z},fallBefore={y:player.y,grounded:player.grounded};
   if(g.car){
-    const movement=carMotion(g.car,input,player.grounded,dt);
+    const movement=carMotion(g.car,input,player.grounded,dt,player.roadSurface);
     const distance=Math.hypot(movement.x,movement.z);
     const {x,z}=beforeDrive;
     const terrain=nearbyObjects(g,Math.min(x,x+movement.x)-2,Math.min(z,z+movement.z)-2,Math.max(x,x+movement.x)+2,Math.max(z,z+movement.z)+2);
