@@ -41,6 +41,51 @@ test('アクセルを離した車は惰性で走り、ブレーキはそれよ�
  tick(braking,p,1,{brake:true});assert.equal(braking.car.speed,0);
 });
 
+test('車は壁と道路の柵に斜めから当たっても横に沿って走れる',()=>{
+ const start={x:0,y:0,z:15,heading:-.37};
+ for(const kind of ['wall','mini','highway','guardrail']){
+  const p=fresh3D('car');
+  if(kind==='wall')p.objects=Array.from({length:16},(_,i)=>({...part('wall',4,32-i*4),w:.25,d:4,rotation:90}));
+  else p.roads=[{id:'road',width:8,barrier:kind,closed:false,points:[{x:0,z:-36},{x:0,z:36}]}];
+  const game=create3D(p,{testSpawn:start});
+  tick(game,p,2,{z:-1,coast:true});
+  const before=game.player.z;
+  assert.ok(game.player.x>2.3&&game.player.x<3.2,kind);
+  tick(game,p,1,{z:-1,coast:true});
+  assert.ok(game.player.x<3.2&&game.player.z<before-5,kind);
+  assert.ok(game.car.actualSpeed>5,kind);
+ }
+});
+
+test('坂でブレーキを離すと前向きでも後ろ向きでも下り、踏むと止まる',()=>{
+ const p=fresh3D('car');
+ p.roads=[{id:'hill',width:8,closed:false,points:[{x:0,y:0,z:24},{x:0,y:8,z:-16}]}];
+ const start={x:0,y:4,z:4};
+ for(const heading of [0,Math.PI]){
+  const game=create3D(p,{testSpawn:{...start,heading}});
+  tick(game,p,.5,{brake:1,coast:true});
+  assert.equal(game.player.z,start.z);
+  tick(game,p,1.5,{coast:true});
+  assert.ok(game.player.z>start.z+.9&&game.player.y<start.y);
+  assert.equal(Math.sign(game.car.speed),heading===0?-1:1);
+  tick(game,p,1.5,{brake:1,coast:true});
+  const stopped=game.player.z;
+  tick(game,p,1,{brake:1,coast:true});
+  assert.equal(game.car.speed,0);
+  assert.equal(game.player.z,stopped);
+ }
+ const level=create3D(fresh3D('car'),{testSpawn:{...start,y:0,heading:0}});
+ tick(level,fresh3D('car'),1,{coast:true});
+ assert.equal(level.player.z,start.z);
+});
+
+test('道路をひかずに置いたスロープでも車は下りに転がる',()=>{
+ const p=fresh3D('car');p.objects=[part('ramp',0,0)];
+ const game=create3D(p,{testSpawn:{x:0,y:p.objects[0].h/2,z:0,heading:0}});
+ tick(game,p,1,{coast:true});
+ assert.ok(game.player.z>.5&&game.player.y<p.objects[0].h/2);
+});
+
 test('ペダルを軽く踏むと加速や減速を控えめにできる',()=>{
  const p=fresh3D('car'),half=create3D(p),full=create3D(p);
  tick(half,p,.6,{z:-.5,coast:true});

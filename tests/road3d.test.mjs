@@ -220,7 +220,7 @@ test('十字路と丁字路では白線と柵が切れ、分かれ道に入れ�
   assert.equal(runs.length,2);
   assert.ok(Math.abs(runs[0][1]-32/72)<1e-6&&Math.abs(runs[1][0]-40/72)<1e-6);
   const query=createRoadBarrierQuery(p.roads,p);
-  const blocked=(x,z)=>query({x,y:0,z:z*2.3},{x,y:0,z:z*3.2},0);
+  const blocked=(x,z)=>!!query({x,y:0,z:z*2.3},{x,y:0,z:z*3.2},0);
   assert.equal(blocked(0,1),false);
   assert.equal(blocked(0,-1),crossing===branch);
   assert.equal(blocked(10,1),true);

@@ -1,5 +1,5 @@
-import {courseStart,createRoadBarrierQuery,createRoadSurfaceQuery,ROAD_DECK_DEPTH,validRoads} from './road3d.js?v=20261120d';
-import {carMotion,createCarRun,RACE_LAP_OPTIONS,updateRaceGates,upgradeCarTopSpeed,validCarTuning,validGateFit} from './race3d.js?v=20261119zb';
+import {courseStart,createRoadBarrierQuery,createRoadSurfaceQuery,ROAD_DECK_DEPTH,validRoads} from './road3d.js?v=20261120e';
+import {carMotion,createCarRun,RACE_LAP_OPTIONS,updateRaceGates,upgradeCarTopSpeed,validCarTuning,validGateFit} from './race3d.js?v=20261120e';
 import {validAssemblies} from './assembly3d.js?v=20261119d';
 import {validSupplyFlight,createSupplyFlight,updateSupplyFlight} from './supply3d.js?v=20261119d';
 import {isFurniture,validFurniture,furnitureSolids} from './furniture3d.js?v=20261119d';
@@ -183,7 +183,7 @@ export function movePlayer(p,objects,dx,dz,dt,jump,world=60){
  if(p.y<=0){p.y=0;p.vy=0;p.grounded=true;p.supportId=null;}
 }
 
-function moveCarWithRoad(game,terrain,dx,dz,dt){
+function advanceCarOnTerrain(game,terrain,dx,dz,dt){
  const p=game.player;
  const before={x:p.x,y:p.y,z:p.z,vy:p.vy,grounded:p.grounded,supportId:p.supportId,roadSurface:p.roadSurface};
  movePlayer(p,terrain,dx,dz,dt,false,game);
@@ -206,13 +206,42 @@ function moveCarWithRoad(game,terrain,dx,dz,dt){
  }
  p.roadSurface=support;
  if(support)Object.assign(p,{y:support.y,vy:0,grounded:true,supportId:null});
- if(game.roadBarrierBlocked(before,p,game.car.heading))Object.assign(p,before);
+}
+
+function moveCarWithRoad(game,terrain,dx,dz,dt){
+ const p=game.player,heading=game.car.heading;
+ for(let attempt=0;attempt<3;attempt++){
+  const before={x:p.x,y:p.y,z:p.z,vy:p.vy,grounded:p.grounded,supportId:p.supportId,roadSurface:p.roadSurface};
+  advanceCarOnTerrain(game,terrain,dx,dz,dt);
+  if(p.x===before.x&&p.z===before.z)return;
+  const hit=game.roadBarrierContact(before,p,heading);
+  if(!hit)return;
+  const movedX=p.x-before.x,movedZ=p.z-before.z;
+  Object.assign(p,before);
+  const travel=Math.max(0,hit.time-.001);
+  if(travel>0){
+   advanceCarOnTerrain(game,terrain,movedX*travel,movedZ*travel,dt*travel);
+   if(game.roadBarrierContact(before,p,heading))Object.assign(p,before);
+  }
+  const into=Math.min(0,movedX*hit.nx+movedZ*hit.nz),remaining=1-travel;
+  dx=(movedX-into*hit.nx)*remaining;dz=(movedZ-into*hit.nz)*remaining;dt*=remaining;
+  if(Math.hypot(dx,dz)<.00001)return;
+ }
+}
+
+function carGroundSlope(player,objects){
+ if(player.roadSurface||!player.supportId)return player.roadSurface;
+ const ramp=objects.find(o=>o.id===player.supportId);
+ if(!ramp||!['ramp','roof'].includes(ramp.type))return null;
+ const {x,z}=player;
+ return {slopeX:(topAt(ramp,x+.05,z)-topAt(ramp,x-.05,z))*10,
+  slopeZ:(topAt(ramp,x,z+.05)-topAt(ramp,x,z-.05))*10};
 }
 
 // Convert the former shooting behavior without changing saved movement or range.
 export function upgradeEnemy(o){if(o.type!=='enemy')return o;if(o.moveRange)o.moveRange=worldMoveRange(o.moveRange,o);const shot=o.program.find(b=>b.action==='shoot');o.attackEnabled??=!!shot;o.attackSpeed??=shot?.speed??3;o.program=o.program.filter(b=>b.action!=='shoot');return o;}
 export function enemyWeapon(o,catalog=[]){return catalog.find(t=>t.id===o.enemyWeaponId&&t.effect==='shoot')||null;}
-export function create3D(p,{testSpawn}={}){synchronizeCharacterDefaults(p);const start=testSpawn||courseStart(p);const inventory=(p.loadout||[]).filter(t=>!t.pickupOnly).map(t=>t.id);const game={playerHitsAlly:p.playerHitsAlly===true,inventoryCounts:Object.fromEntries(inventory.map(id=>[id,1])),buildSelection:{},worldSize:worldSize(p),inventory,toolCatalog:structuredClone(p.loadout||[]),drops:[],blockInventory:[],blockEquipped:null,supply:createSupplyFlight(p),player:{...start,vy:0,grounded:true,hp:p.playerRules?.hp??5,maxHp:p.playerRules?.hp??5,walkSpeed:p.playerRules?.speed??5,jumpSpeed:p.playerRules?Math.sqrt(38*p.playerRules.jumpHeight):7,invincible:0},objects:structuredClone(p.objects).map(upgradeEnemy).map(o=>({...o,heading:(o.facing||0)*Math.PI/180,routeTravel:false,patrolNext:0,waypointIndex:0,waypointFrom:0,waypointDirection:1,waypointFinished:false,lootDropped:false,foundPlayer:false,vy:0,grounded:false,supportId:null,chaseGraceRemaining:0,navigation:null,roamTarget:null,previousRoamCell:null,roamStep:0,maxHp:o.hp,settings:o.settings||settingsFor(o.type),origin:{x:o.x,y:o.y,z:o.z},hidden:o.type==='enemy'&&o.startsHidden===true})),bullets:[],effects:[],hitInfo:null,buildings:[],recoilPitch:0,equipped:p.loadout?p.loadout.findIndex(t=>inventory.includes(t.id)):0,time:0,cooldown:0,score:0,stars:0,keys:0,checkpoint:null,message:'',messageId:0,state:'playing'};game.allies=game.objects.filter(o=>o.type==='ally');for(const ally of game.allies){ally.recruited=false;ally.following=false;ally.nextShot=0;}game.actors=game.objects.filter(o=>o.type==='actor');game.plates=game.objects.filter(o=>o.type==='plate');const controlled=new Set(game.plates.map(o=>o.doorId));game.plateDoors=game.objects.filter(o=>o.type==='door'&&controlled.has(o.id));for(const door of game.plateDoors)door.plateControlled=true;game.formation='line';if(p.template==='car'){game.car=createCarRun(game.objects,start.heading,start,p.carTuning,p.raceLaps,p.roads);game.player.collisionRadius=.9;game.roadSurfaces=createRoadSurfaceQuery(p.roads,p);game.roadBarrierBlocked=createRoadBarrierQuery(p.roads,p);}return game;}
+export function create3D(p,{testSpawn}={}){synchronizeCharacterDefaults(p);const start=testSpawn||courseStart(p);const inventory=(p.loadout||[]).filter(t=>!t.pickupOnly).map(t=>t.id);const game={playerHitsAlly:p.playerHitsAlly===true,inventoryCounts:Object.fromEntries(inventory.map(id=>[id,1])),buildSelection:{},worldSize:worldSize(p),inventory,toolCatalog:structuredClone(p.loadout||[]),drops:[],blockInventory:[],blockEquipped:null,supply:createSupplyFlight(p),player:{...start,vy:0,grounded:true,hp:p.playerRules?.hp??5,maxHp:p.playerRules?.hp??5,walkSpeed:p.playerRules?.speed??5,jumpSpeed:p.playerRules?Math.sqrt(38*p.playerRules.jumpHeight):7,invincible:0},objects:structuredClone(p.objects).map(upgradeEnemy).map(o=>({...o,heading:(o.facing||0)*Math.PI/180,routeTravel:false,patrolNext:0,waypointIndex:0,waypointFrom:0,waypointDirection:1,waypointFinished:false,lootDropped:false,foundPlayer:false,vy:0,grounded:false,supportId:null,chaseGraceRemaining:0,navigation:null,roamTarget:null,previousRoamCell:null,roamStep:0,maxHp:o.hp,settings:o.settings||settingsFor(o.type),origin:{x:o.x,y:o.y,z:o.z},hidden:o.type==='enemy'&&o.startsHidden===true})),bullets:[],effects:[],hitInfo:null,buildings:[],recoilPitch:0,equipped:p.loadout?p.loadout.findIndex(t=>inventory.includes(t.id)):0,time:0,cooldown:0,score:0,stars:0,keys:0,checkpoint:null,message:'',messageId:0,state:'playing'};game.allies=game.objects.filter(o=>o.type==='ally');for(const ally of game.allies){ally.recruited=false;ally.following=false;ally.nextShot=0;}game.actors=game.objects.filter(o=>o.type==='actor');game.plates=game.objects.filter(o=>o.type==='plate');const controlled=new Set(game.plates.map(o=>o.doorId));game.plateDoors=game.objects.filter(o=>o.type==='door'&&controlled.has(o.id));for(const door of game.plateDoors)door.plateControlled=true;game.formation='line';if(p.template==='car'){game.car=createCarRun(game.objects,start.heading,start,p.carTuning,p.raceLaps,p.roads);game.player.collisionRadius=.9;game.roadSurfaces=createRoadSurfaceQuery(p.roads,p);game.roadBarrierContact=createRoadBarrierQuery(p.roads,p);}return game;}
 export function conditionMet(o,g){const s=o.settings||settingsFor(o.type);return (s.condition==='allies'&&companionsAt(o,g)>=s.required)||s.condition==='touch'||(s.condition==='stars'&&g.stars>=s.required)||(s.condition==='keys'&&g.keys>=s.required)||(s.condition==='enemies'&&!g.objects.some(x=>x.type==='enemy'&&x.hp>0));}
 export function conditionHint(o,g){const s=o.settings||settingsFor(o.type);if(s.condition==='allies')return 'なかま '+companionsAt(o,g)+' / '+s.required;if(s.condition==='unset')return 'クリア条件が未設定';if(s.condition==='touch')return o.type==='door'?'いつでも':'ふれるだけ';if(s.condition==='enemies')return `のこりの敵 ${g.objects.filter(x=>x.type==='enemy'&&x.hp>0).length} 体`;return `${s.condition==='stars'?'星':'カギ'} ${s.condition==='stars'?g.stars:g.keys} / ${s.required}`;}
 function inside(b,o,r=0){return Math.abs(b.x-o.x)<o.w/2+r&&Math.abs(b.z-o.z)<o.d/2+r&&b.y>o.y-r&&b.y<topAt(o,b.x,b.z)+r;}
@@ -224,8 +253,8 @@ export function step3D(g,p,input,dt){
   const yaw=input.yaw||0,beforeDrive={x:player.x,y:player.y,z:player.z},fallBefore={y:player.y,grounded:player.grounded};
   if(g.car){
     const beforeHeading=g.car.heading;
-    const movement=carMotion(g.car,input,player.grounded,dt,player.roadSurface);
-    if(g.car.heading!==beforeHeading&&g.roadBarrierBlocked(beforeDrive,beforeDrive,g.car.heading)){
+    const movement=carMotion(g.car,input,player.grounded,dt,carGroundSlope(player,g.objects));
+    if(g.car.heading!==beforeHeading&&g.roadBarrierContact(beforeDrive,beforeDrive,g.car.heading)){
       g.car.heading=beforeHeading;
       movement.x=-Math.sin(beforeHeading)*g.car.speed*dt;
       movement.z=-Math.cos(beforeHeading)*g.car.speed*dt;

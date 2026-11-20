@@ -215,7 +215,7 @@ export function createRoadOpenings(roads,half){
 
 export function createRoadBarrierQuery(roads=[],world){
  const fenced=roads.filter(road=>Object.hasOwn(ROAD_BARRIERS,road.barrier));
- if(!fenced.length)return ()=>false;
+ if(!fenced.length)return ()=>null;
  const barriers=[],half=worldHalf(world);
  const openings=createRoadOpenings(roads,half);
  for(const road of fenced){
@@ -240,16 +240,16 @@ export function createRoadBarrierQuery(roads=[],world){
  // The rendered car is longer than it is wide. Sweep its full outline, including the nose and rear.
  const halfWidth=.87,halfLength=1.27,carHeight=1.4;
  return (before,after,heading)=>{
-  if(!barriers.length)return false;
   const right={x:Math.cos(heading),z:-Math.sin(heading)},forward={x:-right.z,z:right.x};
   const move={x:after.x-before.x,z:after.z-before.z},stationary=!move.x&&!move.z;
   const left=Math.min(before.x,after.x)-1.8,rightEdge=Math.max(before.x,after.x)+1.8;
   const near=Math.min(before.z,after.z)-1.8,far=Math.max(before.z,after.z)+1.8;
+  let contact=null;
   for(const edge of barriers){
    if(rightEdge<edge.minX||left>edge.maxX||far<edge.minZ||near>edge.maxZ)continue;
    const {a,b,length,along,normal,profile}=edge;
    const start={x:before.x-(a.x+b.x)/2,z:before.z-(a.z+b.z)/2};
-   let enter=0,exit=1,initiallyOverlaps=true;
+   let enter=0,exit=1,entryAxis=null,initiallyOverlaps=true;
    for(const axis of [right,forward,along,normal]){
     const reach=halfWidth*Math.abs(dot(right,axis))+halfLength*Math.abs(dot(forward,axis))+
       (length/2+.01)*Math.abs(dot(along,axis))+profile.thickness/2*Math.abs(dot(normal,axis));
@@ -258,11 +258,13 @@ export function createRoadBarrierQuery(roads=[],world){
     if(Math.abs(speed)<1e-8){if(Math.abs(position)>=reach)exit=-1;}
     else{
      const first=(-reach-position)/speed,last=(reach-position)/speed;
-     enter=Math.max(enter,Math.min(first,last));exit=Math.min(exit,Math.max(first,last));
+     const entry=Math.min(first,last);
+     if(entry>=enter){enter=entry;entryAxis=axis;}
+     exit=Math.min(exit,Math.max(first,last));
     }
     if(exit<=enter)break;
    }
-   if(exit<=enter)continue;
+   if(exit<=enter||(contact&&contact.time<=enter))continue;
    const alongStart=dot(start,along)+length/2,alongSpeed=dot(move,along);
    const deckAt=t=>(a.y||0)+((b.y||0)-(a.y||0))*Math.max(0,Math.min(1,(alongStart+t*alongSpeed)/length));
    const clearance=t=>before.y+(after.y-before.y)*t-deckAt(t)-.025;
@@ -278,9 +280,12 @@ export function createRoadBarrierQuery(roads=[],world){
     const side=dot(start,normal),across=dot(move,normal);
     if(!across||side*across>=0)continue;
    }
-   return true;
+   const axis=entryAxis||normal;
+   const sign=stationary?Math.sign(dot(start,axis))||1:-Math.sign(dot(move,axis));
+   contact={time:enter,nx:axis.x*sign,nz:axis.z*sign};
+   if(enter===0)break;
   }
-  return false;
+  return contact;
  };
 }
 

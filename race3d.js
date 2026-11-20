@@ -69,17 +69,25 @@ export function carMotion(car,input,grounded,dt,roadSurface=null){
  const target=brake?0:throttle*(throttle<0?REVERSE_SPEED:maxSpeed)*(1-.36*turning/grip);
  const speed=Math.abs(car.speed);
  car.brakePressure=brake?approach(car.brakePressure,brake,dt/.28):0;
- const grade=grounded&&roadSurface?
-  -(roadSurface.slopeX*Math.sin(car.heading)+roadSurface.slopeZ*Math.cos(car.heading))*Math.sign(throttle||car.speed):0;
+ const incline=grounded&&roadSurface?
+  -(roadSurface.slopeX*Math.sin(car.heading)+roadSurface.slopeZ*Math.cos(car.heading)):0;
+ const grade=incline*Math.sign(throttle||car.speed);
+ const gravity=-8*incline/Math.hypot(1,incline);
  const approachFactor=.45+.55*Math.min(1,Math.abs(target-car.speed)/4);
  let rate=Math.max(.35,acceleration/mass*(.2+.8*pedal)-6*grade)*approachFactor;
  if(brake){
   const highSpeed=Math.max(0,Math.min(1,(speed-18)/65));
-  rate=braking*(.52+.48*highSpeed)*(.33*brake+.67*car.brakePressure);
- }else if(input.coast&&throttle===0)rate=Math.max(.35,2+3*turning+6*grade);
- else if(car.speed!==0&&Math.sign(car.speed)!==Math.sign(target))rate=12;
- else if(speed>Math.abs(target))rate=Math.max(.35,2+(2+speed*.05)*turning+6*grade);
- car.speed=approach(car.speed,target,dt*rate);
+  const pressure=speed<.05?brake:.33*brake+.67*car.brakePressure;
+  rate=braking*(.52+.48*highSpeed)*pressure;
+  car.speed=approach(car.speed+gravity*dt,0,dt*rate);
+ }else if(!throttle&&(input.coast||gravity)){
+  const resistance=Math.min(2+3*turning,.1+speed*.45)+Math.max(0,speed-maxSpeed)*2;
+  car.speed=approach(car.speed+gravity*dt,0,dt*resistance);
+ }else{
+  if(car.speed!==0&&Math.sign(car.speed)!==Math.sign(target))rate=12;
+  else if(speed>Math.abs(target))rate=Math.max(.35,2+(2+speed*.05)*turning+6*grade);
+  car.speed=approach(car.speed,target,dt*rate);
+ }
  if(grounded&&car.speed!==0){
   const movingSpeed=Math.abs(car.speed);
   const turnFactor=Math.min(1,movingSpeed/2)*(1-.45*Math.min(1,movingSpeed/maxSpeed));
