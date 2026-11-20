@@ -1,13 +1,18 @@
-import {fitRaceGate} from './race3d.js?v=20261119x';
-import {courseStart} from './road3d.js?v=20261119x';
+import {fitRaceGate} from './race3d.js?v=20261120o';
+import {courseStart} from './road3d.js?v=20261120o';
 import {alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261119p';
 import {coordinateLimit,worldHalf} from './world3d.js?v=20261119d';
 import {nearbyObjects} from './spatial3d.js?v=20261119d';
 import {MAX_PARTS} from './limits3d.js?v=20261119d';
+import {fitTownPart,townPlacementReason} from './town3d.js?v=20261120o';
 export function dragCandidate(original,grab,point,objects,spawn,world){
  if(!point||![point.x,point.z,grab.x,grab.z].every(Number.isFinite))return null;
  const piece={...original,x:original.x+point.x-grab.x,z:original.z+point.z-grab.z},limit=coordinateLimit(world);
  piece.x=Math.max(-limit,Math.min(limit,piece.x));piece.z=Math.max(-limit,Math.min(limit,piece.z));
+ if(piece.type==='town'){
+  fitTownPart(piece,world?.roads||[],piece);
+  return {piece,reason:townPlacementReason(piece,objects,world)};
+ }
  if(GRID_PARTS.has(piece.type))alignPiece(piece,world);else if(piece.type==='raceGate'&&world?.roads?.length)fitRaceGate(piece,world.roads,piece);else{piece.x=Math.round(piece.x);piece.z=Math.round(piece.z);}
  return {piece,reason:editorPlacementReason(piece,objects.filter(o=>o.id!==original.id),spawn,world)};
 }
@@ -24,6 +29,11 @@ export function findDuplicatePosition(project,original){
   if(Math.abs(piece.x)>limit||Math.abs(piece.z)>limit)return null;
   if(grid)alignPiece(piece,project);
   else if(piece.type==='raceGate')fitRaceGate(piece,project.roads||[],piece);
+  else if(piece.type==='town'){
+   fitTownPart(piece,project.roads||[],piece);
+   if(piece.x===original.x&&piece.z===original.z||townPlacementReason(piece,project.objects,project))return null;
+   return piece;
+  }
   if(piece.x===original.x&&piece.z===original.z)return null;
   const left=piece.x-piece.w/2,right=piece.x+piece.w/2,near=piece.z-piece.d/2,far=piece.z+piece.d/2;
   if(left< -half||right>half||near< -half||far>half)return null;

@@ -1,7 +1,8 @@
-import {updateRoadGateWidths} from './race3d.js?v=20261119x';
-import {MAX_ROADS,MAX_ROAD_POINTS,MAX_ROAD_HEIGHT,ROAD_HEIGHT_STEP,ROAD_WIDTHS,roadPoint,roadGridSites,nearestRoadHandle,roadPointsFit,traceRoadPoints,validRoads} from './road3d.js?v=20261120c';
+import {updateRoadGateWidths} from './race3d.js?v=20261120o';
+import {MAX_ROADS,MAX_ROAD_POINTS,MAX_ROAD_HEIGHT,ROAD_HEIGHT_STEP,ROAD_WIDTHS,roadPoint,roadGridSites,roadConnection,nearestRoadHandle,roadPointsFit,traceRoadPoints,validRoads} from './road3d.js?v=20261120o';
 import {mountLiveRangeEditor} from './range-panel3d.js?v=20261119d';
 import {setStageRangePainter} from './stage-range3d.js?v=20261119d';
+import {refitTownParts} from './town3d.js?v=20261120o';
 
 export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickHandle,pointerAtHeight,focusHeight,toast}){
  const dialog=$('#road-dialog3'),list=$('#road-list3'),add=$('#road-add3');
@@ -25,13 +26,13 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickH
 
  function applyRoads(next){
   const project=getProject();
-  project.objects=updateRoadGateWidths(project.objects,project.roads||[],next);
+  project.objects=refitTownParts(updateRoadGateWidths(project.objects,project.roads||[],next),next,project);
   project.roads=next;save();rebuild();
  }
  function openEditor(original){
   dialog.close();
   let draft=structuredClone(original),selected=-1,pointer=null,mode=original.points.length?'move':'add',returnToList=false,cameraRestore=null;
-  let traceFrame=null;
+  let traceFrame=null,straight=false;
   const history=[];
   const panel=document.createElement('section'),heading=document.createElement('div'),title=document.createElement('h2'),controls=document.createElement('div');
   panel.className='range-live-panel';heading.className='range-live-heading';controls.className='stage-range-tools road-editor-tools';
@@ -60,6 +61,11 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickH
   }
   const barrier=styleChoices('barrier','さく',[[undefined,'なし'],['mini','ミニよんく'],['highway','こうそくどうろ'],['guardrail','ガードレール']]);
   const markings=styleChoices('markings','どうろの線',[[undefined,'レース'],['street','ふつうのどうろ']]);
+  const sidewalk=styleChoices('sidewalk','ほどう',[[undefined,'なし'],['left','ひだり'],['right','みぎ'],['both','りょうがわ']]);
+  const drawing=document.createElement('div');drawing.className='road-style-choices';drawing.setAttribute('role','group');drawing.setAttribute('aria-label','道のひきかた');
+  const drawingButtons=[[false,'カーブ'],[true,'まっすぐ']].map(([value,label])=>{
+   const control=button(label,()=>{if(pointer)return;straight=value;mode='add';refresh();});drawing.append(control);return [value,control];
+  });
   const loop=button('つないで１しゅう',()=>{
    if(!draft.closed&&!roadPointsFit(draft.points,true)){toast('はじめとおわりをすこしはなして、３かしょいじょうえらぼう');return;}
    remember();draft.closed=!draft.closed;refresh();
@@ -90,7 +96,7 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickH
   const raise=button('＋ あげる',()=>changeHeight(ROAD_HEIGHT_STEP));
   heightTools.append(heightLabel,lower,raise);
   const help=document.createElement('span');help.className='road-editor-hint';help.setAttribute('role','status');
-  controls.append(widthChoices,...modes.map(([,control])=>control),loop,undo,remove,done,cancel,heightTools,barrier.box,markings.box,help);
+  controls.append(widthChoices,...modes.map(([,control])=>control),drawing,loop,undo,remove,done,cancel,heightTools,barrier.box,markings.box,sidewalk.box,help);
   const finish=mountLiveRangeEditor(panel,()=>{
    setStageRangePainter(null);stopTracePreview();view.showDraft(null);view.showSnap([],null);cameraRestore?.();
    if(returnToList){renderList();dialog.showModal();}
@@ -106,7 +112,8 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickH
   }
   function refresh(){
    widths.forEach((control,index)=>control.setAttribute('aria-pressed',String(draft.width===ROAD_WIDTHS[index])));
-   barrier.sync();markings.sync();
+   barrier.sync();markings.sync();sidewalk.sync();
+   for(const [value,control] of drawingButtons)control.setAttribute('aria-pressed',String(mode==='add'&&straight===value));
    loop.setAttribute('aria-pressed',String(draft.closed));
    for(const [key,control] of modes)control.setAttribute('aria-pressed',String(key===mode));
    loop.disabled=draft.points.length<3;undo.disabled=!history.length;remove.disabled=selected<0;
@@ -125,11 +132,12 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickH
    if(!pointer.dragged&&Math.hypot(ground.x-grab.x,ground.z-grab.z)<.45)return;
    pointer.dragged=true;
    const target={x:origin.x+ground.x-grab.x,z:origin.z+ground.z-grab.z};
-   const project=getProject(),point=roadPoint(target,project);
-   if(point&&origin.y!==undefined)point.y=origin.y;
-   view.showSnap(roadGridSites(target,project),point);
+   const project=getProject(),join=findConnection(target,origin.y||0),point=join?{x:join.x,y:join.y,z:join.z}:roadPoint(target,project);
+   if(point&&!join&&origin.y!==undefined)point.y=origin.y;
+   if(point&&origin.corner)point.corner=origin.corner;
+   showGuide(target,point,join);
    if(!point)return;
-   const from=draft.points[index];if(from.x===point.x&&from.z===point.z)return;
+   const from=draft.points[index];if(from.x===point.x&&from.z===point.z&&(from.y||0)===(point.y||0))return;
    const points=draft.points.map((item,i)=>i===index?point:item);
    if(!roadPointsFit(points,draft.closed))return;
    pointer.before??=structuredClone(draft);draft.points=points;refresh();
@@ -142,15 +150,18 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickH
    if(traceFrame!==null)cancelAnimationFrame(traceFrame);
    traceFrame=null;
   }
+  function findConnection(target,height){const p=getProject();return roadConnection((p.roads||[]).filter(road=>road.id!==draft.id),target,height,p);}
+  function showGuide(target,point,connection){view.showSnap(connection?[connection]:roadGridSites(target,getProject()),connection||point);}
   function tracePoints(){
-   const {samples,tip}=pointer.trace;
-   return traceRoadPoints(draft,[...samples,tip],getProject());
+   const {samples,tip,first,last}=pointer.trace;
+   return traceRoadPoints(draft,[...samples,tip],getProject(),{straight,first,last});
   }
   function extendTrace(ground){
    const target=traceGround(ground),project=getProject();
    if(!roadPoint(target,project))return;
    const trace=pointer.trace,last=trace.samples.at(-1);
    trace.tip={x:target.x,z:target.z};
+   trace.last=findConnection(target,draft.points.at(-1)?.y||trace.first?.y||0);
    const start=trace.samples[0];
    const from=pointer.grab?.pointerEvent,to=ground?.pointerEvent;
    const movedOnScreen=!from||!to||Math.hypot(from.clientX-to.clientX,from.clientY-to.clientY)>=5;
@@ -163,7 +174,7 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickH
    }
    if(traceFrame===null)traceFrame=requestAnimationFrame(()=>{
     traceFrame=null;
-    view.showSnap([],null);
+    view.showSnap(trace.last?[trace.last]:[],trace.last);
     view.showDraft({...draft,points:tracePoints()},-1);
    });
   }
@@ -171,7 +182,7 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickH
    if(!canceled)extendTrace(ground);
    stopTracePreview();
    if(!canceled&&(pointer.dragged||pointer.index<0)){
-    const points=pointer.dragged?tracePoints():traceRoadPoints(draft,pointer.trace.samples,getProject());
+    const points=pointer.dragged?tracePoints():traceRoadPoints(draft,pointer.trace.samples,getProject(),{straight,first:pointer.trace.first});
     if(points!==draft.points){remember();draft.points=points;selected=points.length-1;}
    }
    view.showSnap([],null);refresh();
@@ -194,8 +205,9 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickH
    }
    const project=getProject(),target=mode==='add'?traceGround(ground):ground,point=roadPoint(target,project);
    const lastHeight=draft.points.at(-1)?.y||0;
+   const join=mode==='add'?findConnection(target,lastHeight):null;
    if(point&&lastHeight)point.y=lastHeight;
-   if(mode==='add')view.showSnap(roadGridSites(target,project),point);
+   if(mode==='add')showGuide(target,point,join);
    if(!point||kind!=='start')return !!pointer;
    const picked=ground?.pointerEvent?pickHandle(ground.pointerEvent):-1;
    selected=picked>=0?picked:mode==='move'?nearestRoadHandle(draft.points,ground):draft.points.findIndex(existing=>existing.x===point.x&&existing.z===point.z);
@@ -209,7 +221,7 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickH
    if(mode==='move'){refresh();return true;}
    if(draft.points.length>=MAX_ROAD_POINTS){toast('てんは64こまでおけるよ');refresh();return true;}
    const start=selected>=0?draft.points[selected]:target;
-   pointer.index=selected;pointer.trace={samples:[{x:start.x,z:start.z}],tip:{x:start.x,z:start.z}};
+   pointer.index=selected;pointer.trace={samples:[{x:start.x,z:start.z}],tip:{x:start.x,z:start.z},first:selected<0?join:null,last:null};
    refresh();return true;
   });
   cameraRestore=focusRoad(draft.points);refresh();

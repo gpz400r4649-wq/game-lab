@@ -30,6 +30,7 @@ jobs:
           cp furniture3d.js furniture-model3d.js project-storage3d.js assets3d.js asset-ui3d.js move-map-ui3d.js public/
           cp character-defaults3d.js enemy-batch3d.js actor3d.js ally3d.js enemy-loot3d.js history3d.js door-model3d.js floor-edit3d.js waypoint-ui3d.js patrol-route3d.js patrol-ui3d.js stage-range3d.js fan-controls3d.js range-direction3d.js range-panel3d.js map-stick3d.js editor-drag3d.js group-edit3d.js assembly3d.js supply3d.js supply-ui3d.js race3d.js race-model3d.js road3d.js road-model3d.js road-ui3d.js public/
           cp enemy-messages3d.js play-ranges3d.js enemy-ai3d.js enemy-range3d.js enemy-range-ui3d.js public/
+          cp road-network3d.js town3d.js town-traffic3d.js town-model3d.js town-ui3d.js public/
           cp enemy-behavior-presets3d.js enemy-behavior-ui3d.js public/
           cp workshop3d.js world3d.js world-ui3d.js limits3d.js structure-render3d.js spatial3d.js public/
           cp fall-damage3d.js player-rules-ui3d.js architecture3d.js architecture-model3d.js ally-range-preview3d.js choices3d.js building3d.js tools3d.js editor-camera3d.js appearance3d.js gun-model3d.js doors3d.js muzzle3d.js public/

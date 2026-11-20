@@ -1,9 +1,10 @@
 import * as T from './vendor/three.module.min.js';
-import {ROAD_BARRIERS,ROAD_DECK_DEPTH,createRoadOpenings,roadBarrierOffset,roadSections,roadVertex,sampleRoad} from './road3d.js?v=20261120b';
+import {ROAD_BARRIERS,ROAD_DECK_DEPTH,createRoadOpenings,roadBarrierOffset,roadSections,roadVertex,sampleRoad} from './road3d.js?v=20261120o';
 
 const asphalt=new T.MeshStandardMaterial({color:0x333c4e,roughness:.98,side:T.DoubleSide});
 const edges=new T.MeshBasicMaterial({color:0xe2e6ef,side:T.DoubleSide});
 const centre=new T.MeshBasicMaterial({color:0xf3d88b,side:T.DoubleSide});
+const paving=new T.MeshStandardMaterial({color:0xb6b3ad,roughness:.95,side:T.DoubleSide});
 const barrierMaterials={mini:0xd26755,highway:0xb3b9bf,guardrail:0x94a6b8};
 for(const [kind,color] of Object.entries(barrierMaterials))barrierMaterials[kind]=new T.MeshStandardMaterial({color,roughness:.8,side:T.DoubleSide});
 const draftSurface=new T.MeshStandardMaterial({color:0x404c6f,roughness:.95,side:T.DoubleSide});
@@ -12,7 +13,7 @@ const pegShape=new T.SphereGeometry(.65,12,8),pegMaterial=new T.MeshBasicMateria
 function roadMesh(road,half,preview,openings){
  const shape=road.closed&&road.points.length<3?{...road,closed:false}:road;
  const path=roadSections(sampleRoad(shape),shape.closed),group=new T.Group();
- const pavement=[],borders=[],line=[],barriers=[];
+ const pavement=[],borders=[],line=[],barriers=[],walk=[];
  const profile=ROAD_BARRIERS[road.barrier],street=road.markings==='street';
  const at=(point,offset,height)=>{
   const {x,y,z}=roadVertex(point,offset,half);
@@ -46,6 +47,16 @@ function roadMesh(road,half,preview,openings){
    strip(pavement,b,a,-radius,radius,height-ROAD_DECK_DEPTH);
   }
   const edgeInset=profile?.thickness ? profile.thickness/2+.19 : .16;
+  for(const [side,sideName] of [[-1,'left'],[1,'right']])if(road.sidewalk==='both'||road.sidewalk===sideName){
+   for(const [start,end] of visibleRuns(a,b,side*(radius+1))){
+    const l=blend(a,b,start),r=blend(a,b,end),inner=side*radius,outer=side*(radius+2);
+    strip(walk,l,r,Math.min(inner,outer),Math.max(inner,outer),height+.13);
+    for(const offset of [inner,outer]){
+     const p=at(l,offset,height),q=at(r,offset,height),s=at(l,offset,height+.13),t=at(r,offset,height+.13);
+     walk.push(...p,...q,...t,...p,...t,...s);
+    }
+   }
+  }
   for(const edge of [-radius+edgeInset+.055,radius-edgeInset-.055]){
    for(const [start,end] of visibleRuns(a,b,edge))strip(borders,blend(a,b,start),blend(a,b,end),edge-.055,edge+.055,height+.008);
   }
@@ -69,7 +80,7 @@ function roadMesh(road,half,preview,openings){
   }
   travelled+=length;
  }
- for(const [index,[vertices,material]] of [[pavement,preview?draftSurface:asphalt],[borders,edges],[line,street?edges:centre],[barriers,barrierMaterials[road.barrier]]].entries()){
+ for(const [index,[vertices,material]] of [[pavement,preview?draftSurface:asphalt],[borders,edges],[line,street?edges:centre],[barriers,barrierMaterials[road.barrier]],[walk,paving]].entries()){
   if(!vertices.length)continue;
   const geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.Float32BufferAttribute(vertices,3));geometry.computeVertexNormals();
   const mesh=new T.Mesh(geometry,material);

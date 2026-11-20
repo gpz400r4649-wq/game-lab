@@ -4,7 +4,8 @@ import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261119d';
 import {coordinateLimit} from './world3d.js?v=20261119d';
 import {rangeCell,validMoveRange,validAttackRange} from './enemy-range3d.js?v=20261119d';
 import {validPatrolRoute,validWaypoints} from './patrol-route3d.js?v=20261119d';
-import {validate3D} from './engine3d.js?v=20261120n';
+import {validate3D} from './engine3d.js?v=20261120o';
+import {fitTownPart,townPlacementReason} from './town3d.js?v=20261120o';
 export function groupSteps(objects){
  const steps={x:1,y:0.25,z:1};
  for(const part of objects){
@@ -25,6 +26,7 @@ export function groupCandidate(project,ids,delta,{copy=false}={}){
  const steps=groupSteps(sources),dx=Math.round(delta.x/steps.x)*steps.x,dz=Math.round(delta.z/steps.z)*steps.z,dy=Math.round(delta.y/steps.y)*steps.y,limit=coordinateLimit(project);
  const pieces=sources.map(source=>{
   const next=structuredClone(source);next.x+=dx;next.y+=dy;next.z+=dz;
+  if(next.type==='town')fitTownPart(next,project.roads||[],next);
   for(const key of ['moveRange','searchRange','attackRange'])if(next[key]?.space==='world')next[key].cells=next[key].cells.map(([x,z])=>[x+rangeCell(next.x)-rangeCell(source.x),z+rangeCell(next.z)-rangeCell(source.z)]);
   for(const key of ['patrolRoute','waypoints'])if(next[key])for(const point of next[key]){point.x+=dx;point.z+=dz;}
   return next;
@@ -35,7 +37,7 @@ export function groupCandidate(project,ids,delta,{copy=false}={}){
   if(Math.abs(piece.x)>limit||Math.abs(piece.z)>limit||piece.y<0||piece.y>MAX_BUILD_Y){reason='ステージの中に置こう';break;}
   if(!validPatrolRoute(piece.patrolRoute,limit)||!validWaypoints(piece.waypoints,limit)||!validMoveRange(piece.moveRange)||!validAttackRange(piece.searchRange)||!validAttackRange(piece.attackRange)){reason='コースやはんいがステージの外に出るよ';break;}
   // The parts already fit each other; check only against parts outside the group.
-  reason=editorPlacementReason(piece,obstacles,project.spawn,project);if(reason)break;
+  reason=editorPlacementReason(piece,obstacles,project.spawn,project)||(piece.type==='town'?townPlacementReason(piece,obstacles,project):'');if(reason)break;
  }
  return {pieces,reason,delta:{x:dx,y:dy,z:dz}};
 }
@@ -46,6 +48,7 @@ export function commitGroup(project,ids,delta,{copy=false}={}){
   piece.id=mapping.get(piece.id);
   for(const key of ['events','destroyEvents'])for(const action of piece[key]||[])if(['openDoor','spawnEnemy'].includes(action.type)&&mapping.has(action.target))action.target=mapping.get(action.target);
   if(mapping.has(piece.doorId))piece.doorId=mapping.get(piece.doorId);
+  if(mapping.has(piece.townFleet?.targetId))piece.townFleet.targetId=mapping.get(piece.townFleet.targetId);
  }
  const replacements=new Map(result.pieces.map(o=>[o.id,o]));
  const candidate={...project,objects:copy?[...project.objects,...result.pieces]:project.objects.map(o=>replacements.get(o.id)||o)};

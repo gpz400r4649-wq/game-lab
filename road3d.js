@@ -55,12 +55,12 @@ export function roadPointsFit(points,closed){
  return points.every((point,index)=>!index||fits(points[index-1],point))&&(!closed||fits(points[0],points.at(-1)));
 }
 
-export function traceRoadPoints(road,samples,world){
+export function traceRoadPoints(road,samples,world,{straight=false,first=null,last=null}={}){
  if(!samples.length||road.points.length>=MAX_ROAD_POINTS)return road.points;
  // Keep the ends and the bends of a stroke, leaving out small finger movements.
  const ends=new Set([0,samples.length-1]),spans=[[0,samples.length-1]];
  const tolerance=Math.max(1.25,road.width*.16);
- while(spans.length&&ends.size<MAX_ROAD_POINTS-road.points.length){
+ while(!straight&&spans.length&&ends.size<MAX_ROAD_POINTS-road.points.length){
   const [start,end]=spans.pop(),a=samples[start],b=samples[end];
   const dx=b.x-a.x,dz=b.z-a.z,length2=dx*dx+dz*dz;
   let index=-1,furthest=tolerance;
@@ -74,10 +74,18 @@ export function traceRoadPoints(road,samples,world){
  }
  const points=[...road.points],height=points.at(-1)?.y||0;
  for(const index of [...ends].sort((a,b)=>a-b)){
-  const point=roadPoint(samples[index],world);
+  const connection=index===samples.length-1?last||(!index?first:null):index===0?first:null;
+  let raw=samples[index];
+  if(straight&&!connection&&points.length&&index===samples.length-1){
+   const origin=points.at(-1),dx=raw.x-origin.x,dz=raw.z-origin.z,angle=Math.atan2(dz,dx),step=Math.PI/4;
+   const snapped=Math.round(angle/step)*step;
+   if(Math.abs(angle-snapped)<.12){const length=Math.hypot(dx,dz);raw={x:origin.x+Math.cos(snapped)*length,z:origin.z+Math.sin(snapped)*length};}
+  }
+  const point=connection?{x:connection.x,y:connection.y,z:connection.z}:roadPoint(raw,world)||roadPoint(samples[index],world);
   const limit=index===samples.length-1?MAX_ROAD_POINTS:MAX_ROAD_POINTS-1;
   if(!point||points.length>=limit)continue;
-  if(height)point.y=height;
+  if(!connection&&height)point.y=height;
+  if(straight)point.corner='straight';
   if(points.length&&distance(points.at(-1),point)<MIN_SPACING)continue;
   points.push(point);
  }
@@ -95,7 +103,8 @@ export function validRoads(roads,world){
   if(road.barrier!==undefined&&(typeof road.barrier!=='string'||!Object.hasOwn(ROAD_BARRIERS,road.barrier)))return false;
   if(road.markings!==undefined&&road.markings!=='street')return false;
   if(!road.points.every(p=>p&&Number.isFinite(p.x)&&Number.isFinite(p.z)&&Math.abs(p.x)<=limit&&Math.abs(p.z)<=limit&&
-   (p.y===undefined||Number.isFinite(p.y)&&p.y>=0&&p.y<=MAX_ROAD_HEIGHT))||!roadPointsFit(road.points,road.closed))return false;
+   (p.corner===undefined||p.corner==='straight')&&(p.y===undefined||Number.isFinite(p.y)&&p.y>=0&&p.y<=MAX_ROAD_HEIGHT))||!roadPointsFit(road.points,road.closed))return false;
+  if(road.sidewalk!==undefined&&!['left','right','both'].includes(road.sidewalk))return false;
   ids.add(road.id);
  }
  return true;
@@ -108,7 +117,7 @@ export function sampleRoad(road){
  if(points.length<3)return points.map(point=>({...point}));
  const path=[];
  for(const [index,point] of points.entries()){
-  if(!closed&&(index===0||index===points.length-1)){path.push({...point});continue;}
+  if(point.corner==='straight'||!closed&&(index===0||index===points.length-1)){path.push({...point});continue;}
   const previous=points[(index+points.length-1)%points.length],next=points[(index+1)%points.length];
   const from=distance(previous,point),to=distance(next,point);
   if(from<.001||to<.001){path.push({...point});continue;}
@@ -336,21 +345,41 @@ function closestOnPath(path,point,maxGap,last=path.length-1,maxHeightGap=Infinit
   const x=a.x+dx*fraction,z=a.z+dz*fraction,y=(a.y||0)+((b.y||0)-(a.y||0))*fraction;
   const vertical=Number.isFinite(point.y)?Math.abs(y-point.y):0;
   const gap=(x-point.x)**2+(z-point.z)**2,score=gap+vertical**2;
-  if(vertical<=maxHeightGap&&score<best){best=score;nearest={x,y,z,heading:Math.atan2(-dx,-dz),gap,score,index,fraction};}
+  if(vertical<=maxHeightGap&&score<best){best=score;nearest={x,y,z,heading:Math.atan2(-dx,-dz),grade:((b.y||0)-(a.y||0))/Math.sqrt(length),gap,score,index,fraction};}
  }
  return nearest;
 }
 
-export function nearestRoad(roads,point,maxHeightGap=Infinity){
+export function nearestRoad(roads,point,maxHeightGap=Infinity,extra=.65){
  let nearest=null;
  for(const road of roads||[]){
-  const match=closestOnPath(savedRoadPath(road),point,road.width/2+.65,undefined,maxHeightGap);
+  const match=closestOnPath(savedRoadPath(road),point,road.width/2+extra,undefined,maxHeightGap);
   if(match&&(!nearest||match.score<nearest.score)){
-   const {x,y,z,heading,gap,score}=match;
-   nearest={x,y,z,heading,gap,score,width:road.width,roadId:road.id};
+   const {x,y,z,heading,grade,gap,score}=match;
+   nearest={x,y,z,heading,grade,gap,score,width:road.width,roadId:road.id};
   }
  }
  return nearest;
+}
+
+export function roadConnection(roads,point,height,world){
+ if(!roadPoint(point,world))return null;
+ const limit=coordinateLimit(world),sameLevel=p=>Math.abs((p.y||0)-height)<=.3;
+ let best=2.5,connection=null;
+ for(const road of roads){
+  const path=savedRoadPath(road);
+  if(!road.closed)for(const end of [path[0],path.at(-1)]){
+   if(!end||!sameLevel(end))continue;
+   const gap=distance(point,end);
+   if(gap<best){connection={x:end.x,y:end.y||0,z:end.z};best=gap;}
+  }
+ }
+ if(connection)return connection;
+ for(const road of roads){
+  const fit=closestOnPath(savedRoadPath(road),{...point,y:height},best,undefined,.3);
+  if(fit&&Math.abs(fit.x)<=limit&&Math.abs(fit.z)<=limit){connection=fit;best=Math.sqrt(fit.score);}
+ }
+ return connection;
 }
 
 export function lapRoadMarkers(road,point,heading){
