@@ -113,6 +113,20 @@ test('ハンドルを大きく切るほどスピードが落ち、短いブレ�
  assert.ok(lightBrake.car.speed<8);
 });
 
+test('ハンドルをいっぱいに切っても高速ではゆるく曲がり、低速では小回りがきく',()=>{
+ const p=fresh3D('car');p.carTuning={...DEFAULT_CAR_TUNING,maxSpeed:120/3.6};
+ const slow=create3D(p),fast=create3D(p),dt=.02;
+ slow.car.speed=3;fast.car.speed=20;
+ for(const game of [slow,fast]){
+  game.car.steering=.42;
+  step3D(game,p,{x:1,z:-1},dt);
+ }
+ const slowYaw=Math.abs(slow.car.heading)/dt,fastYaw=Math.abs(fast.car.heading)/dt;
+ assert.ok(slowYaw>1.25);
+ assert.ok(fastYaw>0&&fastYaw<slowYaw);
+ assert.ok(fastYaw*fast.car.speed<10);
+});
+
 test('車のせっていは保存でき、速さ・加速・ハンドル・ブレーキに反映される',()=>{
  const base=fresh3D('car');
  const tuning={maxSpeed:65/3.6,acceleration:10,steering:3.2,braking:32};

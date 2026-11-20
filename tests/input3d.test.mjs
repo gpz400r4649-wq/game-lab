@@ -40,7 +40,7 @@ test('ハンドルとペダルは同時に押せ、片方の指を離しても�
  const controls=createCarControls({wheel,rim,accelerator,brake,reverse});
  emit(wheel,'pointerdown',{pointerId:1,clientX:80});
  emit(accelerator,'pointerdown',{pointerId:2,clientY:50});
- assert.ok(controls.read().x>.8);
+ assert.ok(controls.read().x>.35&&controls.read().x<.5);
  assert.equal(controls.read().z,-.5);
  emit(accelerator,'pointermove',{pointerId:2,clientY:5});
  assert.equal(controls.read().z,-1);
@@ -48,8 +48,17 @@ test('ハンドルとペダルは同時に押せ、片方の指を離しても�
  assert.ok(Math.abs(controls.read().brake-.25)<.001);
  emit(accelerator,'pointerup',{pointerId:2});
  assert.equal(controls.read().z,0);
- assert.ok(controls.read().x>.8);
+ assert.ok(controls.read().x>.35&&controls.read().x<.5);
+ emit(wheel,'pointermove',{pointerId:1,clientX:55});
+ assert.ok(controls.read().x<.01);
+ emit(wheel,'pointermove',{pointerId:1,clientX:100});
+ assert.equal(controls.read().x,1);
+ assert.equal(rim.style.transform,'rotate(180deg)');
+ emit(wheel,'pointermove',{pointerId:1,clientX:0});
+ assert.equal(controls.read().x,-1);
+ assert.equal(rim.style.transform,'rotate(-180deg)');
  emit(wheel,'pointercancel',{pointerId:1});
+ assert.equal(rim.style.transform,'rotate(0deg)');
  emit(brake,'pointerup',{pointerId:3});
  controls.setSpeed(4);
  assert.equal(reverse.disabled,true);

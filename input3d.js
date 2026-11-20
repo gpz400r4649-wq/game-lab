@@ -94,15 +94,17 @@ function bindCarPedal(button){
 
 export function createCarControls({wheel,rim,accelerator,brake,reverse}){
  let pointer=null,steering=0,backing=false;
+ const wheelTravel=180,deadZone=.08;
  wheel.setAttribute('data-game-action','');
  function setSteering(value){
-  steering=Math.max(-1,Math.min(1,value));
-  rim.style.transform=`rotate(${steering*95}deg)`;
+  const travel=Math.max(-1,Math.min(1,value));
+  const amount=Math.max(0,(Math.abs(travel)-deadZone)/(1-deadZone));
+  steering=Math.sign(travel)*amount**1.5;
+  rim.style.transform=`rotate(${Math.sign(travel)*amount*wheelTravel}deg)`;
  }
  function steer(event){
   const {left,width}=wheel.getBoundingClientRect();
-  const amount=(event.clientX-left-width/2)/(width*.36);
-  setSteering(Math.abs(amount)<.08?0:amount);
+  setSteering((event.clientX-left-width/2)/(width/2));
  }
  wheel.addEventListener('pointerdown',event=>{
   if(pointer!==null)return;

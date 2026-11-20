@@ -15,6 +15,7 @@ export const DEFAULT_CAR_TUNING=Object.freeze(Object.fromEntries(
 export const RACE_LAP_OPTIONS=Object.freeze([0,1,2,3,5]);
 const REVERSE_SPEED=4;
 const STEERING_LIMIT=.42;
+const CORNERING_ACCELERATION=10;
 const OLD_CAR_TOP_SPEEDS=new Map([[8,30/3.6],[12,45/3.6],[18,65/3.6],[361.6/3.6,F1_TOP_SPEED_KMH/3.6]]);
 
 export function upgradeCarTopSpeed(maxSpeed){
@@ -92,7 +93,7 @@ export function carMotion(car,input,grounded,dt,roadSurface=null){
   const movingSpeed=Math.abs(car.speed);
   const turnFactor=Math.min(1,movingSpeed/2)*(1-.45*Math.min(1,movingSpeed/maxSpeed));
   const requested=turnFactor*steering;
-  const yawRate=requested/Math.hypot(1,requested*movingSpeed/(14*grip));
+  const yawRate=requested/Math.hypot(1,requested*movingSpeed/(CORNERING_ACCELERATION*grip));
   car.heading-=wheel*yawRate*Math.sign(car.speed)*dt;
  }
  const distance=car.speed*dt;
