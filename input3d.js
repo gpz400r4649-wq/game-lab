@@ -93,7 +93,7 @@ function bindCarPedal(button){
 }
 
 export function createCarControls({stick,thumb,accelerator,brake,reverse}){
- let pointer=null,steering=0,backing=false;
+ let pointer=null,steering=0,reverseHeld=false;
  const deadZone=.08;
  stick.setAttribute('data-game-action','');
  function setSteering(value,travelDistance=0){
@@ -117,17 +117,23 @@ export function createCarControls({stick,thumb,accelerator,brake,reverse}){
   pointer=null;setSteering(0);
  });
  const acceleratorPedal=bindCarPedal(accelerator),brakePedal=bindCarPedal(brake);
- const setReverse=enabled=>{
-  backing=enabled;
-  reverse.setAttribute('aria-pressed',String(backing));
- };
- bindGameAction(reverse,()=>setReverse(!backing));
+ const reverseKeys=new Set();
+ const backing=()=>reverseHeld||reverseKeys.size>0;
+ const showReverse=()=>reverse.classList.toggle('is-held',backing());
+ reverse.setAttribute('data-game-action','');
+ const resetReverse=bindHeldButton(reverse,()=>{reverseHeld=true;showReverse();},()=>{reverseHeld=false;showReverse();});
+ for(const type of ['keydown','keyup'])reverse.addEventListener(type,event=>{
+  if(event.key!==' '&&event.key!=='Enter')return;
+  event.preventDefault();event.stopPropagation();
+  if(type==='keydown')reverseKeys.add(event.key);else reverseKeys.delete(event.key);
+  showReverse();
+ });
+ reverse.addEventListener('blur',()=>{reverseKeys.clear();showReverse();});
  return {
-  read:()=>({x:steering,z:acceleratorPedal.read()*(backing?1:-1)||0,brake:brakePedal.read()}),
-  setSpeed:speed=>{reverse.disabled=Math.abs(speed)>.35;},
-  reset({direction=false}={}){
+  read:()=>({x:steering,z:backing()?1:-acceleratorPedal.read()||0,brake:brakePedal.read()}),
+  reset(){
    pointer=null;setSteering(0);acceleratorPedal.reset();brakePedal.reset();
-   if(direction){setReverse(false);reverse.disabled=false;}
+   reverseKeys.clear();resetReverse();
   }
  };
 }
