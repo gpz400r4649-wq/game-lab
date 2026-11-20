@@ -55,6 +55,37 @@ export function roadPointsFit(points,closed){
  return points.every((point,index)=>!index||fits(points[index-1],point))&&(!closed||fits(points[0],points.at(-1)));
 }
 
+export function traceRoadPoints(road,samples,world){
+ if(!samples.length||road.points.length>=MAX_ROAD_POINTS)return road.points;
+ // Keep the ends and the bends of a stroke, leaving out small finger movements.
+ const ends=new Set([0,samples.length-1]),spans=[[0,samples.length-1]];
+ const tolerance=Math.max(1.25,road.width*.16);
+ while(spans.length&&ends.size<MAX_ROAD_POINTS-road.points.length){
+  const [start,end]=spans.pop(),a=samples[start],b=samples[end];
+  const dx=b.x-a.x,dz=b.z-a.z,length2=dx*dx+dz*dz;
+  let index=-1,furthest=tolerance;
+  for(let i=start+1;i<end;i++){
+   const x=samples[i].x-a.x,z=samples[i].z-a.z;
+   const t=length2?Math.max(0,Math.min(1,(x*dx+z*dz)/length2)):0;
+   const gap=Math.hypot(x-t*dx,z-t*dz);
+   if(gap>furthest){index=i;furthest=gap;}
+  }
+  if(index>=0){ends.add(index);spans.push([start,index],[index,end]);}
+ }
+ const points=[...road.points],height=points.at(-1)?.y||0;
+ for(const index of [...ends].sort((a,b)=>a-b)){
+  const point=roadPoint(samples[index],world);
+  const limit=index===samples.length-1?MAX_ROAD_POINTS:MAX_ROAD_POINTS-1;
+  if(!point||points.length>=limit)continue;
+  if(height)point.y=height;
+  if(points.length&&distance(points.at(-1),point)<MIN_SPACING)continue;
+  points.push(point);
+ }
+ // A drag almost back to the first point should still allow the loop tool.
+ if(points.length>2&&points.length>road.points.length&&distance(points[0],points.at(-1))<MIN_SPACING)points.pop();
+ return points.length>road.points.length&&roadPointsFit(points,road.closed)?points:road.points;
+}
+
 export function validRoads(roads,world){
  if(roads===undefined)return true;
  if(!Array.isArray(roads)||roads.length>MAX_ROADS)return false;

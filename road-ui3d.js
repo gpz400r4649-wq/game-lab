@@ -1,5 +1,5 @@
 import {updateRoadGateWidths} from './race3d.js?v=20261119x';
-import {MAX_ROADS,MAX_ROAD_POINTS,MAX_ROAD_HEIGHT,ROAD_HEIGHT_STEP,ROAD_WIDTHS,roadPoint,roadGridSites,nearestRoadHandle,roadPointsFit,validRoads} from './road3d.js?v=20261120b';
+import {MAX_ROADS,MAX_ROAD_POINTS,MAX_ROAD_HEIGHT,ROAD_HEIGHT_STEP,ROAD_WIDTHS,roadPoint,roadGridSites,nearestRoadHandle,roadPointsFit,traceRoadPoints,validRoads} from './road3d.js?v=20261120c';
 import {mountLiveRangeEditor} from './range-panel3d.js?v=20261119d';
 import {setStageRangePainter} from './stage-range3d.js?v=20261119d';
 
@@ -31,6 +31,7 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickH
  function openEditor(original){
   dialog.close();
   let draft=structuredClone(original),selected=-1,pointer=null,mode=original.points.length?'move':'add',returnToList=false,cameraRestore=null;
+  let traceFrame=null;
   const history=[];
   const panel=document.createElement('section'),heading=document.createElement('div'),title=document.createElement('h2'),controls=document.createElement('div');
   panel.className='range-live-panel';heading.className='range-live-heading';controls.className='stage-range-tools road-editor-tools';
@@ -70,7 +71,8 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickH
    if(!roadPointsFit(draft.points,draft.closed))draft.closed=false;
    refresh();
   });
-  const modes=[['add','てんをたす'],['move','てんをうごかす'],['camera','カメラをうごかす']].map(([key,label])=>[key,button(label,()=>{
+  const modes=[['add','ひく・てんをたす'],['move','てんをうごかす'],['camera','カメラをうごかす']].map(([key,label])=>[key,button(label,()=>{
+   if(pointer)return;
    mode=key;view.showSnap([],null);refresh();
   })]);
   const done=button('できた',()=>{
@@ -90,7 +92,7 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickH
   const help=document.createElement('span');help.className='road-editor-hint';help.setAttribute('role','status');
   controls.append(widthChoices,...modes.map(([,control])=>control),loop,undo,remove,done,cancel,heightTools,barrier.box,markings.box,help);
   const finish=mountLiveRangeEditor(panel,()=>{
-   setStageRangePainter(null);view.showDraft(null);view.showSnap([],null);cameraRestore?.();
+   setStageRangePainter(null);stopTracePreview();view.showDraft(null);view.showSnap([],null);cameraRestore?.();
    if(returnToList){renderList();dialog.showModal();}
   },{showDetails:false});
   function remember(snapshot=draft){history.push(structuredClone(snapshot));if(history.length>40)history.shift();}
@@ -112,7 +114,7 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickH
    const height=draft.points[selected]?.y||0;
    heightLabel.textContent=selected<0?'てんをえらぶと高さをかえられるよ':`てん ${selected+1} の高さ ${height}m`;
    lower.disabled=selected<0||height<=0;raise.disabled=selected<0||height>=MAX_ROAD_HEIGHT;
-   const text=mode==='camera'?'ドラッグでカメラをうごかそう':mode==='move'?'うごかしたいてんをドラッグしよう':'１マスの９つのてんからえらぼう';
+   const text=mode==='camera'?'ドラッグでカメラをうごかそう':mode==='move'?'うごかしたいてんをドラッグしよう':'ステージをなぞってどうろをひこう。タップでてんをおけるよ。';
    if(help.textContent!==text)help.textContent=text;
    view.showDraft(draft,selected);
   }
@@ -132,37 +134,83 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickH
    if(!roadPointsFit(points,draft.closed))return;
    pointer.before??=structuredClone(draft);draft.points=points;refresh();
   }
+  function traceGround(ground){
+   const height=draft.points.at(-1)?.y||0;
+   return height&&ground?.pointerEvent?pointerAtHeight(ground.pointerEvent,height):ground;
+  }
+  function stopTracePreview(){
+   if(traceFrame!==null)cancelAnimationFrame(traceFrame);
+   traceFrame=null;
+  }
+  function tracePoints(){
+   const {samples,tip}=pointer.trace;
+   return traceRoadPoints(draft,[...samples,tip],getProject());
+  }
+  function extendTrace(ground){
+   const target=traceGround(ground),project=getProject();
+   if(!roadPoint(target,project))return;
+   const trace=pointer.trace,last=trace.samples.at(-1);
+   trace.tip={x:target.x,z:target.z};
+   const start=trace.samples[0];
+   const from=pointer.grab?.pointerEvent,to=ground?.pointerEvent;
+   const movedOnScreen=!from||!to||Math.hypot(from.clientX-to.clientX,from.clientY-to.clientY)>=5;
+   pointer.dragged||=movedOnScreen&&Math.hypot(start.x-target.x,start.z-target.z)>=1;
+   if(!pointer.dragged)return;
+   if(Math.hypot(last.x-target.x,last.z-target.z)>=1){
+    // Bound the cost of long strokes without losing the start or the live end.
+    if(trace.samples.length>=512)trace.samples=trace.samples.filter((_,i)=>i%2===0);
+    trace.samples.push(trace.tip);
+   }
+   if(traceFrame===null)traceFrame=requestAnimationFrame(()=>{
+    traceFrame=null;
+    view.showSnap([],null);
+    view.showDraft({...draft,points:tracePoints()},-1);
+   });
+  }
+  function finishTrace(ground,canceled){
+   if(!canceled)extendTrace(ground);
+   stopTracePreview();
+   if(!canceled&&(pointer.dragged||pointer.index<0)){
+    const points=pointer.dragged?tracePoints():traceRoadPoints(draft,pointer.trace.samples,getProject());
+    if(points!==draft.points){remember();draft.points=points;selected=points.length-1;}
+   }
+   view.showSnap([],null);refresh();
+  }
   setStageRangePainter((kind,id,ground,canceled)=>{
    if(kind==='end'){
     if(pointer?.id!==id)return false;
-    if(!canceled)moveHandle(ground);
-    if(pointer.before){if(canceled)draft=pointer.before;else remember(pointer.before);refresh();}
+    if(pointer.trace)finishTrace(ground,canceled);
+    else{
+     if(!canceled)moveHandle(ground);
+     if(pointer.before){if(canceled)draft=pointer.before;else remember(pointer.before);refresh();}
+    }
     pointer=null;return true;
    }
    if(mode==='camera')return false;
-   if(kind==='move'&&pointer){if(pointer.id!==id)return false;moveHandle(ground);return true;}
+   if(kind==='move'&&pointer){if(pointer.id!==id)return false;if(pointer.trace)extendTrace(ground);else moveHandle(ground);return true;}
    if(kind==='start'){
     if(pointer)return true;
     pointer={id,index:-1,grab:ground,before:null,dragged:false};
    }
-   const project=getProject(),point=roadPoint(ground,project);
+   const project=getProject(),target=mode==='add'?traceGround(ground):ground,point=roadPoint(target,project);
    const lastHeight=draft.points.at(-1)?.y||0;
    if(point&&lastHeight)point.y=lastHeight;
-   if(mode==='add')view.showSnap(roadGridSites(ground,project),point);
+   if(mode==='add')view.showSnap(roadGridSites(target,project),point);
    if(!point||kind!=='start')return !!pointer;
    const picked=ground?.pointerEvent?pickHandle(ground.pointerEvent):-1;
    selected=picked>=0?picked:mode==='move'?nearestRoadHandle(draft.points,ground):draft.points.findIndex(existing=>existing.x===point.x&&existing.z===point.z);
    if(selected<0&&mode==='add')selected=nearestRoadHandle(draft.points,ground,1);
-   if(selected>=0){
+   const lastPoint=draft.points.length-1;
+   if(selected>=0&&(mode==='move'||selected!==lastPoint||draft.closed)){
     pointer.index=selected;pointer.origin=draft.points[selected];
     if(ground.pointerEvent&&pointer.origin.y)pointer.grab=pointerAtHeight(ground.pointerEvent,pointer.origin.y)||ground;
     view.showSnap([],null);refresh();return true;
    }
    if(mode==='move'){refresh();return true;}
-   if(draft.points.length>=MAX_ROAD_POINTS){toast('てんは64こまでおけるよ');return true;}
-   const points=[...draft.points,point];
-   if(!roadPointsFit(points,draft.closed)){toast('てんをすこしはなしておこう');return true;}
-   remember();draft.points=points;selected=points.length-1;refresh();return true;
+   if(draft.points.length>=MAX_ROAD_POINTS){toast('てんは64こまでおけるよ');refresh();return true;}
+   const start=selected>=0?draft.points[selected]:target;
+   pointer.index=selected;pointer.trace={samples:[{x:start.x,z:start.z}],tip:{x:start.x,z:start.z}};
+   refresh();return true;
   });
   cameraRestore=focusRoad(draft.points);refresh();
  }

@@ -3,12 +3,34 @@ import assert from 'node:assert/strict';
 import {Scene} from '../vendor/three.module.min.js';
 import {createRoadView} from '../road-model3d.js';
 import {makeTrafficSignal,updateTrafficSignal} from '../race-model3d.js';
-import {ROAD_BARRIERS,createRoadBarrierQuery,createRoadOpenings,createRoadSurfaceQuery,roadPoint,roadGridSites,sampleRoad,validRoads} from '../road3d.js';
+import {ROAD_BARRIERS,MAX_ROAD_POINTS,createRoadBarrierQuery,createRoadOpenings,createRoadSurfaceQuery,roadPoint,roadGridSites,sampleRoad,traceRoadPoints,validRoads} from '../road3d.js';
 import {create3D,fresh3D,part,step3D,validate3D} from '../engine3d.js';
 import {fitRaceGate,updateRaceGates,updateRoadGateWidths} from '../race3d.js';
 import {resizeReason} from '../world3d.js';
 
 const turn=()=>({id:'first',width:8,closed:false,points:[{x:-20,z:0},{x:0,z:0},{x:0,z:-20}]});
+
+test('なぞった道路は小さなぶれを省き、曲がり角と終点をグリッドにそろえる',()=>{
+ const road={id:'trace',width:8,closed:false,points:[]};
+ const straight=Array.from({length:41},(_,i)=>({x:-20+i,z:i%2?.7:0}));
+ assert.deepEqual(traceRoadPoints(road,straight,60),[{x:-20,z:0},{x:20,z:0}]);
+ const curve=[...straight.slice(0,21),...Array.from({length:15},(_,i)=>({x:0,z:i+1}))];
+ const points=traceRoadPoints(road,curve,60);
+ assert.deepEqual(points,[{x:-20,z:0},{x:0,z:0},{x:0,z:16}]);
+ assert.equal(validRoads([{...road,points}],60),true);
+ assert.deepEqual(road.points,[]);
+});
+
+test('なぞって道路をのばすと、元の点と高さを保って上限内で終点まで届く',()=>{
+ const points=Array.from({length:MAX_ROAD_POINTS-1},(_,i)=>({x:-100+i*2,y:6,z:0}));
+ const road={id:'raised',width:8,closed:false,points};
+ const next=traceRoadPoints(road,[points.at(-1),{x:28,z:8},{x:50,z:2}],240);
+ assert.equal(next.length,MAX_ROAD_POINTS);
+ assert.deepEqual(next.slice(0,-1),points);
+ assert.deepEqual(next.at(-1),{x:50,y:6,z:2});
+ assert.equal(validRoads([{...road,points:next}],240),true);
+ assert.equal(traceRoadPoints(road,[points.at(-1)],240),points);
+});
 
 test('曲がり角は滑らかにつながり、一周の道路は最初につながる',()=>{
  const road=turn(),path=sampleRoad(road);
