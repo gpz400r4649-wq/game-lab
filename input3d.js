@@ -99,12 +99,12 @@ export function createCarControls({wheel,rim,accelerator,brake,reverse}){
  function setSteering(value){
   const travel=Math.max(-1,Math.min(1,value));
   const amount=Math.max(0,(Math.abs(travel)-deadZone)/(1-deadZone));
-  steering=Math.sign(travel)*amount**1.5;
+  steering=Math.sign(travel)*amount*(.8+.2*amount);
   rim.style.transform=`rotate(${Math.sign(travel)*amount*wheelTravel}deg)`;
  }
  function steer(event){
   const {left,width}=wheel.getBoundingClientRect();
-  setSteering((event.clientX-left-width/2)/(width/2));
+  setSteering((event.clientX-left-width/2)/(width*.45));
  }
  wheel.addEventListener('pointerdown',event=>{
   if(pointer!==null)return;

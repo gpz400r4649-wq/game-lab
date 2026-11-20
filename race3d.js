@@ -15,7 +15,7 @@ export const DEFAULT_CAR_TUNING=Object.freeze(Object.fromEntries(
 export const RACE_LAP_OPTIONS=Object.freeze([0,1,2,3,5]);
 const REVERSE_SPEED=4;
 const STEERING_LIMIT=.42;
-const CORNERING_ACCELERATION=10;
+const CORNERING_ACCELERATION=12.5;
 const OLD_CAR_TOP_SPEEDS=new Map([[8,30/3.6],[12,45/3.6],[18,65/3.6],[361.6/3.6,F1_TOP_SPEED_KMH/3.6]]);
 
 export function upgradeCarTopSpeed(maxSpeed){

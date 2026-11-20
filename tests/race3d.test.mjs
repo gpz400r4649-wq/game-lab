@@ -124,7 +124,8 @@ test('ハンドルをいっぱいに切っても高速ではゆるく曲がり�
  const slowYaw=Math.abs(slow.car.heading)/dt,fastYaw=Math.abs(fast.car.heading)/dt;
  assert.ok(slowYaw>1.25);
  assert.ok(fastYaw>0&&fastYaw<slowYaw);
- assert.ok(fastYaw*fast.car.speed<10);
+ const corneringAcceleration=fastYaw*fast.car.speed;
+ assert.ok(corneringAcceleration>10.5&&corneringAcceleration<12.5);
 });
 
 test('車のせっていは保存でき、速さ・加速・ハンドル・ブレーキに反映される',()=>{
