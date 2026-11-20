@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.min.js';
-import {TOWN_PARTS} from './town3d.js?v=20261120o';
+import {TOWN_PARTS,houseGarage} from './town3d.js?v=20261120p';
 import {makeCarModel,updateCarModel} from './race-model3d.js?v=20261120o';
 
 const mat=color=>new T.MeshStandardMaterial({color,roughness:.85});
@@ -22,7 +22,8 @@ export function makeTownModel(part,preview){
   else for(let x=-w/2+.25;x<=w/2-.15;x+=.65)box(chalk,x,.042,0,Math.min(.38,w/5),.014,d);
   return group;
  }
- if(part.townDriveway)box(asphalt,0,.155,-(d+part.townDriveway)/2,Math.min(4,w),.065,part.townDriveway+.04);
+ const house=kind==='house'?houseGarage(part):null;
+ if(part.townDriveway)box(asphalt,house?.garageX||0,.155,-(d+part.townDriveway)/2,house?house.garageWidth-.18:Math.min(4,w),.065,part.townDriveway+.04);
  if(kind==='parking'||kind==='garage'){
   box(asphalt,0,.055,0,w,.11,d);
   for(let i=0;i<=6;i++)box(chalk,(i-3)*(w-.35)/6,.113,.85,.055,.014,3.6);
@@ -43,14 +44,20 @@ export function makeTownModel(part,preview){
   return group;
  }
  const height=kind==='house'?h*.72:h-.22;
- box(wall,0,height/2,0,w,height,d);
- if(kind==='house'){
+ const facadeWidth=house?.houseWidth||w,facadeX=house?.houseX||0;
+ box(wall,facadeX,height/2,0,facadeWidth,height,d);
+ if(house){
+  const {garageWidth,garageX,garageHeight}=house;
+  box(asphalt,garageX,.035,0,garageWidth,.07,d);
+  box(wall,w/2-.08,garageHeight/2,0,.16,garageHeight,d);
+  box(wall,garageX,garageHeight/2,d/2-.08,garageWidth,garageHeight,.16);
+  box(shade,garageX,garageHeight-.12,0,garageWidth+.12,.24,d+.1);
   const mesh=new T.Mesh(gable,preview||roof);
-  mesh.rotation.set(Math.PI/2,0,0);mesh.scale.set(w*.61,d+.23,1.05);
-  mesh.position.y=height+.35;group.add(mesh);
+  mesh.rotation.set(Math.PI/2,0,0);mesh.scale.set(facadeWidth*.61,d+.23,1.05);
+  mesh.position.set(facadeX,height+.35,0);group.add(mesh);
  }else box(shade,0,h-.13,0,w+.24,.26,d+.22);
- box(door,0,1.1,-d/2-.027,kind==='house'?1.06:1.65,2.2,.07);
- const windows=kind==='school'?[-4,-2,2,4]:[-w*.29,w*.29];
+ box(door,facadeX,1.1,-d/2-.027,house?Math.min(1.06,facadeWidth*.24):1.65,2.2,.07);
+ const windows=kind==='school'?[-4,-2,2,4]:[facadeX-facadeWidth*.29,facadeX+facadeWidth*.29];
  for(const x of windows){
   box(glass,x,1.62,-d/2-.03,kind==='house'?1:1.35,1.08,.09);
   if(kind==='school')box(glass,x,3.85,-d/2-.03,1.35,1.14,.09);

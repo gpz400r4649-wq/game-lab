@@ -1,8 +1,8 @@
 import {setReadingText} from './readings3d.js?v=20261119d';
 import {createChoiceControl} from './choices3d.js?v=20261119d';
 import {createRoadNetwork} from './road-network3d.js?v=20261120o';
-import {townRoute,raceRoute} from './town-traffic3d.js?v=20261120o';
-import {ARRIVAL_TYPES,DEFAULT_FLEET,DEFAULT_RIVAL,MAX_RIVALS,MAX_TOWN_CARS,RIVAL_SPEEDS,RIVAL_CORNERS,TOWN_PARTS} from './town3d.js?v=20261120o';
+import {townRoute,raceRoute} from './town-traffic3d.js?v=20261120p';
+import {ARRIVAL_TYPES,DEFAULT_FLEET,DEFAULT_RIVAL,MAX_RIVALS,MAX_TOWN_CARS,RIVAL_SPEEDS,RIVAL_CORNERS,TOWN_PARTS} from './town3d.js?v=20261120p';
 
 function elem(tag,text,className){
  const el=document.createElement(tag);
@@ -24,20 +24,22 @@ export function installTownUI({$,getProject,getSelected,save,view,showRoute,fiel
  function render(){
   const p=getProject(),places=p.objects.filter(part=>part.type==='town'&&TOWN_PARTS[part.townKind]?.capacity);
   const labels=places.map((part,i)=>[part.id,TOWN_PARTS[part.townKind].name+' '+(i+1)]);
-  if(!places.some(part=>part.id===current))current=places[0]?.id;
+  if(!places.some(part=>part.id===current))current=(places.find(part=>part.townKind==='house')||places[0])?.id;
   body.replaceChildren();
-  if(!places.length){body.append(elem('p','まちのパーツから、ちゅうしゃじょうかガレージをおこう。'));return;}
+  if(!places.length){body.append(elem('p','まちのパーツから、出発するいえと行き先のちゅうしゃじょうをおこう。'));return;}
   const total=places.reduce((sum,part)=>sum+(part.townFleet?.count||0),0);
-  const source=places.find(part=>part.id===current),fleet={...DEFAULT_FLEET,...source.townFleet};
+  const source=places.find(part=>part.id===current);
   const capacity=TOWN_PARTS[source.townKind].capacity;
-  const max=Math.max(0,Math.min(capacity,MAX_TOWN_CARS-total+fleet.count));
-  const change=patch=>{source.townFleet={...DEFAULT_FLEET,...source.townFleet,...patch};save();render();};
+  const max=Math.max(0,Math.min(capacity,MAX_TOWN_CARS-total+(source.townFleet?.count||0)));
+  const fleet={...DEFAULT_FLEET,count:source.townKind==='house'?Math.min(1,max):0,...source.townFleet};
+  const update=patch=>{source.townFleet={...fleet,...source.townFleet,...patch};};
+  const change=patch=>{update(patch);save();render();};
   choices(body,'しゅっぱつする場所',labels,current,id=>{current=id;render();});
   choices(body,'くるまの数',Array.from({length:max+1},(_,i)=>[i,i?i+'だい':'なし']),fleet.count,count=>change({count:Number(count)}));
   choices(body,'行き先',[['','まだえらばない'],...labels.filter(([id])=>id!==current)],fleet.targetId,id=>change({targetId:id}));
   const numbers=elem('div',null,'town-numbers');
-  field(numbers,'何びょう後に出る？',fleet.delay,0,60,1,value=>{source.townFleet={...DEFAULT_FLEET,...source.townFleet,delay:value};return value;});
-  field(numbers,'何びょうごとに出る？',fleet.interval,1,30,1,value=>{source.townFleet={...DEFAULT_FLEET,...source.townFleet,interval:value};return value;});
+  field(numbers,'何びょう後に出る？',fleet.delay,0,60,1,value=>{update({delay:value});return value;});
+  if(capacity>1)field(numbers,'何びょうごとに出る？',fleet.interval,1,30,1,value=>{update({interval:value});return value;});
   body.append(numbers);
   choices(body,'はしる速さ',[[20,'ゆっくり'],[35,'ふつう'],[50,'はやい']],fleet.speed,speed=>change({speed:Number(speed)}));
   choices(body,'着いたらどうする？',Object.entries(ARRIVAL_TYPES),fleet.arrival,arrival=>change({arrival}));
@@ -52,7 +54,12 @@ export function installTownUI({$,getProject,getSelected,save,view,showRoute,fiel
  }
  $('#town-route-close3').onclick=clear;
  function clear(){activeRoute=null;view.showRoute(null);$('#town-route-close3').hidden=true;}
- opener.onclick=()=>{clear();current=getSelected()?.id||current;render();dialog.showModal();};
+ opener.onclick=()=>{
+  clear();
+  const selected=getSelected(),hasHomes=getProject().objects.some(part=>part.type==='town'&&part.townKind==='house');
+  if(selected?.townKind==='house'||!hasHomes)current=selected?.id||current;
+  render();dialog.showModal();
+ };
  opener.hidden=false;
  return {clear,refresh(){
   if(!activeRoute)return;

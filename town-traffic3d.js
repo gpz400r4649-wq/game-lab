@@ -1,7 +1,7 @@
 import {createRoadNetwork} from './road-network3d.js?v=20261120o';
 import {courseStart,savedRoadPath} from './road3d.js?v=20261120o';
 import {orderedRaceGates,trafficSignalPhase} from './race3d.js?v=20261120o';
-import {DEFAULT_FLEET,MAX_TOWN_CARS,TOWN_PARTS,townLocal} from './town3d.js?v=20261120o';
+import {DEFAULT_FLEET,MAX_TOWN_CARS,TOWN_PARTS,houseGarage,townLocal} from './town3d.js?v=20261120p';
 
 const gap=(a,b)=>Math.hypot(b.x-a.x,b.z-a.z);
 const near=(a,b)=>gap(a,b)<.01&&Math.abs(a.y-b.y)<.04;
@@ -33,13 +33,19 @@ function setLane(points,amount){
 
 function parkingPath(part,slot){
  const capacity=TOWN_PARTS[part.townKind].capacity;
- const x=(slot%capacity-(capacity-1)/2)*(part.w-.35)/capacity;
- return [townLocal(part,x,.7),townLocal(part,x,-part.d/2+.75),townLocal(part,0,-part.d/2-(part.townDriveway||0))];
+ const entrance=part.townKind==='house'?houseGarage(part).garageX:0;
+ const x=entrance+(slot%capacity-(capacity-1)/2)*(part.w-.35)/capacity;
+ return [townLocal(part,x,.7),townLocal(part,x,-part.d/2+.75),townLocal(part,entrance,-part.d/2-(part.townDriveway||0))];
 }
 
 export function townRoute(network,source,target,slot=0){
  if(!source?.townRoadId||!target?.townRoadId||source.id===target.id)return null;
- const road=network.route(source.townAnchor,target.townAnchor,{fromRoad:source.townRoadId,toRoad:target.townRoadId});
+ const roadAnchor=part=>{
+  if(part.townKind!=='house')return part.townAnchor;
+  const entrance=townLocal(part,houseGarage(part).garageX,0);
+  return {...part.townAnchor,x:part.townAnchor.x+entrance.x-part.x,z:part.townAnchor.z+entrance.z-part.z};
+ };
+ const road=network.route(roadAnchor(source),roadAnchor(target),{fromRoad:source.townRoadId,toRoad:target.townRoadId});
  if(!road?.length||road.length<2||gap(road[0],road.at(-1))<.05&&road.length===2)return null;
  return shapePath([...parkingPath(source,slot),...setLane(road,.95),...parkingPath(target,slot).reverse()]);
 }

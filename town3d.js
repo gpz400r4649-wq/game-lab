@@ -4,7 +4,7 @@ import {worldHalf,coordinateLimit} from './world3d.js?v=20261119d';
 export const TOWN_PARTS=Object.freeze({
  crosswalk:{name:'おうだんほどう',icon:'▥',w:8,h:.5,d:2.4,marking:true},
  stopLine:{name:'とまる線',icon:'▬',w:8,h:.5,d:.5,marking:true},
- house:{name:'いえ',icon:'⌂',w:6,h:4,d:5,solid:true},
+ house:{name:'いえ',icon:'⌂',w:9,h:4,d:5,solid:true,capacity:1},
  shop:{name:'おみせ',icon:'▤',w:8,h:4,d:6,solid:true},
  school:{name:'がっこう',icon:'▦',w:12,h:6,d:8,solid:true},
  parking:{name:'ちゅうしゃじょう',icon:'Ⓟ',w:12,h:.5,d:7,capacity:6},
@@ -22,6 +22,7 @@ export const DEFAULT_FLEET={count:0,targetId:'',interval:4,delay:1,arrival:'retu
 const textId=value=>typeof value==='string'&&value.length<=80;
 const within=(value,min,max)=>Number.isFinite(value)&&value>=min&&value<=max;
 const angle=value=>Math.atan2(Math.sin(value),Math.cos(value));
+const hasSidewalk=(road,side)=>road?.sidewalk==='both'||road?.sidewalk===(side<0?'left':'right');
 export function validRivals(values){
  return values===undefined||Array.isArray(values)&&values.length<=MAX_RIVALS&&values.every(value=>value&&RIVAL_SPEEDS.includes(value.speed)&&RIVAL_CORNERS.includes(value.corner));
 }
@@ -44,6 +45,17 @@ export function configureTownPart(part,kind='house'){
  return Object.assign(part,{townKind:kind,townHeading:0,w,h,d});
 }
 
+export function upgradeTownHouse(part,roads=[]){
+ if(part.townKind!=='house'||part.townDriveway||!part.townRoadId)return;
+ const road=roads.find(road=>road.id===part.townRoadId);
+ if(road)part.townDriveway=hasSidewalk(road,part.townSide)?2.65:.65;
+}
+
+export function houseGarage(part){
+ const garageWidth=part.w*.4,houseWidth=part.w-garageWidth;
+ return {houseWidth,houseX:-garageWidth/2,garageWidth,garageX:houseWidth/2,garageHeight:part.h*.64};
+}
+
 export function fitTownPart(part,roads,point,sideOverride=null){
  const spec=TOWN_PARTS[part.townKind];
  const fit=nearestRoad(roads,point,1.2,spec.marking?0:12);
@@ -51,12 +63,12 @@ export function fitTownPart(part,roads,point,sideOverride=null){
  const right={x:Math.cos(fit.heading),z:-Math.sin(fit.heading)};
  const side=sideOverride||((point.x-fit.x)*right.x+(point.z-fit.z)*right.z<0?-1:1);
  const road=roads.find(road=>road.id===fit.roadId);
- const hasWalk=road.sidewalk==='both'||road.sidewalk===(side<0?'left':'right');
- const setback=fit.width/2+spec.d/2+(hasWalk?2:0)+.65;
+ const hasWalk=hasSidewalk(road,side),size=part.townKind==='house'?part:spec;
+ const setback=fit.width/2+size.d/2+(hasWalk?2:0)+.65;
  const distance=spec.marking?(part.townKind==='stopLine'?side*fit.width/4:0):side*setback;
  const heading=spec.marking?fit.heading:fit.heading+side*Math.PI/2;
- const width=spec.marking?(part.townKind==='stopLine'?fit.width/2:fit.width-.5):spec.w;
- return Object.assign(part,{x:fit.x+right.x*distance,y:fit.y,z:fit.z+right.z*distance,w:width,h:spec.h,d:spec.d,
+ const width=spec.marking?(part.townKind==='stopLine'?fit.width/2:fit.width-.5):size.w;
+ return Object.assign(part,{x:fit.x+right.x*distance,y:fit.y,z:fit.z+right.z*distance,w:width,h:size.h,d:size.d,
   townHeading:angle(heading),townRoadId:fit.roadId,townSide:side,townAnchor:{x:fit.x,y:fit.y,z:fit.z},
   townDriveway:spec.capacity?(hasWalk?2:0)+.65:0,townGrade:spec.marking?Math.max(-1,Math.min(1,fit.grade)):0});
 }
@@ -101,10 +113,19 @@ export function townSolids(part){
  if(!TOWN_PARTS[part.townKind].solid)return [];
  const cells=[];
  // Short sections keep the collision shape close to the outline of an angled building.
- const size=Math.min(2,part.d),count=Math.ceil(part.w/size),depth=Math.ceil(part.d/size);
- const w=part.w/count,d=part.d/depth,cos=Math.abs(Math.cos(part.townHeading)),sin=Math.abs(Math.sin(part.townHeading));
- for(let i=0;i<count;i++)for(let j=0;j<depth;j++){
-  cells.push({...part,...townLocal(part,(i+.5)*w-part.w/2,(j+.5)*d-part.d/2),type:'box',w:w*cos+d*sin,d:w*sin+d*cos,sourceBlockId:part.id});
+ const cos=Math.abs(Math.cos(part.townHeading)),sin=Math.abs(Math.sin(part.townHeading));
+ function addArea(x,z,width,depth,h){
+  const cols=Math.ceil(width/2),rows=Math.ceil(depth/2),w=width/cols,d=depth/rows;
+  for(let i=0;i<cols;i++)for(let j=0;j<rows;j++){
+   const position=townLocal(part,x+(i+.5)*w-width/2,z+(j+.5)*d-depth/2);
+   cells.push({...part,...position,type:'box',w:w*cos+d*sin,d:w*sin+d*cos,h,sourceBlockId:part.id});
+  }
  }
+ if(part.townKind==='house'){
+  const {houseWidth,houseX,garageWidth,garageX,garageHeight}=houseGarage(part);
+  addArea(houseX,0,houseWidth,part.d,part.h);
+  addArea(part.w/2-.08,0,.16,part.d,garageHeight);
+  addArea(garageX,part.d/2-.08,garageWidth,.16,garageHeight);
+ }else addArea(0,0,part.w,part.d,part.h);
  return cells;
 }

@@ -5,10 +5,10 @@ import {fencePresetKey,floorPresetKey,FLOOR_PRESETS,RAMP_PRESETS,FENCE_PRESETS,R
 import {renderAllyRangePreview} from './ally-range-preview3d.js?v=20261119d';
 import {createChoiceControl} from './choices3d.js?v=20261119d';
 import {sharedDefaultsType,applyBlockDefaults,sharedKeys,synchronizeCharacterDefaults,useCharacterDefaults,inheritNewCharacter,writeCharacterDefaults} from './character-defaults3d.js?v=20261119d';
-import {copyEnemySettings,ENEMY_COPY_GROUPS} from './enemy-batch3d.js?v=20261120o';
+import {copyEnemySettings,ENEMY_COPY_GROUPS} from './enemy-batch3d.js?v=20261120p';
 import {ACTOR_HATS} from './actor3d.js?v=20261119d';
 import {makeTool} from './building3d.js?v=20261119p';
-import {findDuplicatePosition} from './editor-drag3d.js?v=20261120o';
+import {findDuplicatePosition} from './editor-drag3d.js?v=20261120p';
 import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261119d';
 import {openWaypointEditor} from './waypoint-ui3d.js?v=20261119d';
 import {openPatrolEditor} from './patrol-ui3d.js?v=20261119d';
@@ -25,8 +25,8 @@ import {actionsFor} from './events3d.js?v=20261119d';
 import {renderEventEditor} from './event-editor3d.js?v=20261119d';
 import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261119d';
 import {alignPiece,gridStep,editorPlacementReason} from './building3d.js?v=20261119p';
-import {part,ENEMY_SCALES,PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261120o';
-import {TOWN_PARTS} from './town3d.js?v=20261120o';
+import {part,ENEMY_SCALES,PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261120p';
+import {TOWN_PARTS} from './town3d.js?v=20261120p';
 
 const ICONS={trafficSignal:'🚦',raceGate:'🏁',actor:'💬',plate:'▣',ally:'🛡',weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
 const DESCRIPTIONS={trafficSignal:'90°まわして道に向けよう。たしかめると、あお・きいろ・あかに切りかわるよ。',raceGate:'数字が小さいゲートからじゅんばんにとおるよ。ぜんぶとおるとゴール！',actor:'名前とせりふを書こう。交換する品を置くとお店になるよ。',plate:'踏んでいる間、えらんだドアが開くよ。',ally:'近くで「ついてきて」と呼ぶと、一緒に戦うよ。',weapon:'地面に置いて、ふれると拾える銃。持ちもの・銃づくりで用意した銃をえらぼう。',ramp:'低いほうから歩くと、そのまま登れるスロープ。回して好きな向きにつなげよう。',wall:'家を囲う壁。向きを変えてつなげよう。',floor:'家の床と天井に使える板。壁の内側にぴったり合うよ。',roof:'壁の上にのせる三角屋根。向きを変えて家を仕上げよう。',
@@ -428,8 +428,9 @@ export function createWorkshop(api){
    dialog.className='architecture-picker';grid.className='architecture-choices';
    setReadingText(heading,'まちのパーツ');setReadingText(note,'どうろや、そのすぐよこをおそう。入口がどうろの方を向くよ。');
    for(const [key,{icon,name}] of Object.entries(TOWN_PARTS)){
+    if(key==='garage')continue;
     const button=document.createElement('button');button.dataset.townKind=key;
-    setReadingText(button,icon+' '+name);button.onclick=()=>{setTool('town',key);dialog.close();};grid.append(button);
+    setReadingText(button,icon+' '+name+(key==='house'?'（ガレージつき）':''));button.onclick=()=>{setTool('town',key);dialog.close();};grid.append(button);
    }
    close.textContent='とじる';close.onclick=()=>dialog.close();dialog.onclose=()=>dialog.remove();
    dialog.append(heading,note,grid,close);document.body.append(dialog);dialog.showModal();

@@ -6,7 +6,7 @@ import {createRoadNetwork} from '../road-network3d.js';
 import {createRoadView} from '../road-model3d.js';
 import {roadConnection,sampleRoad,traceRoadPoints} from '../road3d.js';
 import {fitRaceGate} from '../race3d.js';
-import {DEFAULT_FLEET,configureTownPart,fitTownPart,refitTownParts} from '../town3d.js';
+import {DEFAULT_FLEET,configureTownPart,fitTownPart,houseGarage,refitTownParts,townLocal,townSolids} from '../town3d.js';
 import {townRaceRank,townRoute} from '../town-traffic3d.js';
 
 const road=(id,x,z,a,b,y=0)=>({id,width:8,closed:false,points:[{x,z,y},{x:a,z:b,y}]});
@@ -78,4 +78,28 @@ test('レースのあいてがゲート間を走り、先着するとプレイ�
  advance(game,p,30,{z:-.25,coast:true});
  assert.equal(game.state,'won');assert.ok(game.town.rivals[0].finishedAt>0);
  assert.deepEqual(townRaceRank(game),{rank:2,total:2});
+});
+
+test('家に付いたガレージから車が出て、駐車場で待って家に帰る',()=>{
+ const p=fresh3D('car');p.roads=[{...main,sidewalk:'both'}];
+ const house=places(p.roads,'house',-24,9,'east'),parking=places(p.roads,'parking',24,-9,'east');
+ house.townFleet={...DEFAULT_FLEET,count:1,targetId:parking.id};
+ p.objects=[house,parking];
+ const garage=houseGarage(house),inside=townLocal(house,garage.garageX,0);
+ assert.equal(house.townDriveway,2.65);
+ assert.ok(townSolids(house).every(box=>Math.abs(box.x-inside.x)>=box.w/2+.9||Math.abs(box.z-inside.z)>=box.d/2+.9));
+ const game=create3D(validate3D(p),{testSpawn:{x:-85,y:0,z:-80,heading:0}}),[car]=game.town.cars;
+ assert.ok(Math.abs(car.x-inside.x)<.01);
+ advance(game,p,3);assert.equal(car.phase,'out');assert.ok(car.z<inside.z-1);
+ advance(game,p,36);assert.equal(car.phase,'parked');assert.ok(Math.hypot(car.x-inside.x,car.z-inside.z)<.8);
+});
+
+test('保存済みの家にも車の出入口が付き、道路を直しても家のはばが変わらない',()=>{
+ const p=fresh3D('car');p.roads=[{...main,sidewalk:'both'}];
+ const previousHouse={...places(p.roads,'house',-24,9,'east'),w:6,townDriveway:0};
+ p.objects=[previousHouse];
+ const [house]=validate3D(p).objects;
+ assert.equal(house.w,6);assert.equal(house.townDriveway,2.65);
+ const [refitted]=refitTownParts([house],[{...main,width:12}],p);
+ assert.equal(refitted.w,6);assert.equal(refitted.townDriveway,.65);
 });
