@@ -89,7 +89,7 @@ function bindCarPedal(button){
  for(const type of ['pointerup','pointercancel','lostpointercapture'])button.addEventListener(type,event=>{
   if(event.pointerId===pointer)reset();
  });
- return {read:()=>amount,reset};
+ return {read:()=>amount,held:()=>pointer!==null,reset};
 }
 
 export function createCarControls({stick,thumb,accelerator,brake,reverse}){
@@ -131,6 +131,7 @@ export function createCarControls({stick,thumb,accelerator,brake,reverse}){
  reverse.addEventListener('blur',()=>{reverseKeys.clear();showReverse();});
  return {
   read:()=>({x:steering,z:backing()?1:-acceleratorPedal.read()||0,brake:brakePedal.read()}),
+  brakeHeld:brakePedal.held,
   reset(){
    pointer=null;setSteering(0);acceleratorPedal.reset();brakePedal.reset();
    reverseKeys.clear();resetReverse();

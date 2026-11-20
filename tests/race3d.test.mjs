@@ -263,6 +263,18 @@ test('タイヤの転がる角度を変えても車軸の向きは変わらず�
 });
 
 
+test('ブレーキを踏むと停車中でも後ろのランプが点灯し、離すと戻る',()=>{
+ const model=makeCarModel(),other=makeCarModel(),car={speed:0,wheelAngle:0,steering:0};
+ const lights=model.userData.brakeLights;
+ assert.equal(lights.length,2);
+ const off=lights[0].material;
+ updateCarModel(model,car,true);
+ assert.ok(lights.every(light=>light.material.isMeshBasicMaterial&&light.material!==off));
+ assert.equal(other.userData.brakeLights[0].material,off);
+ updateCarModel(model,car,false);
+ assert.ok(lights.every(light=>light.material===off));
+});
+
 test('最初の道路のはじめを向いて走り出し、ここからためすは選んだ場所を使う',()=>{
  const p=fresh3D('car');
  p.roads=[{id:'first',width:8,closed:false,points:[{x:12,z:20},{x:32,z:20}]},

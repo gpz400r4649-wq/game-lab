@@ -64,6 +64,12 @@ test('左右のスティックとペダルは同時に押せ、片方の指を�
  emit(stick,'pointercancel',{pointerId:1});
  assert.equal(thumb.style.transform,'translateX(0px)');
  emit(brake,'pointerup',{pointerId:3});
+ assert.equal(controls.brakeHeld(),false);
+ emit(brake,'pointerdown',{pointerId:3,clientY:98});
+ assert.equal(controls.read().brake,0);
+ assert.equal(controls.brakeHeld(),true);
+ emit(brake,'pointercancel',{pointerId:3});
+ assert.equal(controls.brakeHeld(),false);
  emit(reverse,'pointerdown',{pointerId:4});
  assert.equal(controls.read().z,1);
  emit(accelerator,'pointerdown',{pointerId:5,clientY:5});

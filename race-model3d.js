@@ -2,7 +2,8 @@ import * as T from './vendor/three.module.min.js';
 import {CAR_WHEELBASE,raceGateWidth,raceGateHeading} from './race3d.js?v=20261120l';
 
 const material=(color)=>new T.MeshStandardMaterial({color,roughness:.8});
-const body=material(0x7563db),trim=material(0x443b7d),glass=material(0x86d7de),tire=material(0x27364a),hub=material(0xaabbd2),lamp=material(0xffeeaa),tail=material(0xe77b91);
+const body=material(0x7563db),trim=material(0x443b7d),glass=material(0x86d7de),tire=material(0x27364a),hub=material(0xaabbd2),lamp=material(0xffeeaa),tail=material(0x6c2638);
+const brakeLamp=new T.MeshBasicMaterial({color:0xff3344,toneMapped:false});
 const gateFrame=material(0x7e83ad),gateReady=material(0x50d5bd),gatePassed=material(0x557978),gateAccent=material(0xf2f4fc);
 const unit=new T.BoxGeometry(),wheelShape=new T.CylinderGeometry(.36,.36,.2,16),hubShape=new T.CylinderGeometry(.16,.16,.025,12);
 function box(parent,mat,x,y,z,w,h,d){
@@ -37,7 +38,7 @@ export function updateTrafficSignal(model,rotation,time){
 }
 
 export function makeCarModel(){
- const model=new T.Group(),wheels=[];
+ const model=new T.Group(),wheels=[],brakeLights=[];
  box(model,body,0,.58,0,1.66,.58,2.45);
  box(model,trim,0,.37,0,1.7,.15,2.44);
  box(model,glass,0,.99,.17,1.36,.59,1.24);
@@ -45,7 +46,7 @@ export function makeCarModel(){
  box(model,trim,0,.79,-.82,1.5,.12,.54);
  for(const side of [-1,1]){
   box(model,lamp,side*.52,.58,-1.23,.36,.19,.045);
-  box(model,tail,side*.55,.6,1.23,.26,.16,.05);
+  brakeLights.push(box(model,tail,side*.55,.6,1.23,.26,.16,.05));
   for(const end of [-1,1]){
    const steering=new T.Group(),axle=new T.Group(),wheel=new T.Group();
    steering.position.set(side*.83,.36,end*CAR_WHEELBASE/2);
@@ -56,14 +57,16 @@ export function makeCarModel(){
   }
  }
  model.userData.wheels=wheels;
+ model.userData.brakeLights=brakeLights;
  return model;
 }
 
-export function updateCarModel(model,car){
+export function updateCarModel(model,car,braking=false){
  for(const {wheel,steering,front} of model.userData.wheels){
   steering.rotation.y=front?-car.steering:0;
   wheel.rotation.y=car.wheelAngle;
  }
+ for(const light of model.userData.brakeLights)light.material=braking?brakeLamp:tail;
 }
 
 export function makeRaceGateModel(part){
