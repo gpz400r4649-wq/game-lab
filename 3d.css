@@ -659,7 +659,7 @@ html:not(.car-workshop) #road-open3 { display:none; }
 }
 #car-controls3[hidden] { display:none; }
 #car-stick3,.car-pedals3 button { pointer-events:auto; touch-action:none; }
-#car-stick3 { width:224px; min-width:0; border-radius:999px; cursor:ew-resize; }
+#car-stick3 { width:224px; height:58px; min-width:0; border-radius:999px; cursor:ew-resize; }
 #car-stick3::before {
  content:""; position:absolute; inset-inline:18px; top:calc(50% - 2px); height:4px;
  border-radius:2px; background:#e1d8f2; pointer-events:none;
@@ -681,7 +681,7 @@ html:not(.car-workshop) #road-open3 { display:none; }
 #car-reverse3.is-held { background:#7450bd; box-shadow:0 0 0 2px #dac9ff; }
 @media(max-width:700px){
  #car-controls3 { inset:auto 16px 18px; }
- #car-stick3 { width:200px; }
+ #car-stick3 { width:200px; height:54px; }
  #car-brake3,#car-accelerator3 { width:64px; }
  #car-brake3 { height:59px; }
  #car-accelerator3 { height:75px; }
