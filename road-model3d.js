@@ -1,16 +1,19 @@
 import * as T from './vendor/three.module.min.js';
-import {ROAD_DECK_DEPTH,roadSections,roadVertex,sampleRoad} from './road3d.js?v=20261119x';
+import {ROAD_BARRIERS,ROAD_DECK_DEPTH,roadBarrierOffset,roadSections,roadVertex,sampleRoad} from './road3d.js?v=20261120a';
 
 const asphalt=new T.MeshStandardMaterial({color:0x333c4e,roughness:.98,side:T.DoubleSide});
 const edges=new T.MeshBasicMaterial({color:0xe2e6ef,side:T.DoubleSide});
 const centre=new T.MeshBasicMaterial({color:0xf3d88b,side:T.DoubleSide});
+const barrierMaterials={mini:0xd26755,highway:0xb3b9bf,guardrail:0x94a6b8};
+for(const [kind,color] of Object.entries(barrierMaterials))barrierMaterials[kind]=new T.MeshStandardMaterial({color,roughness:.8,side:T.DoubleSide});
 const draftSurface=new T.MeshStandardMaterial({color:0x404c6f,roughness:.95,side:T.DoubleSide});
 const pegShape=new T.SphereGeometry(.65,12,8),pegMaterial=new T.MeshBasicMaterial({color:0xa88bff,depthTest:false}),pickedMaterial=new T.MeshBasicMaterial({color:0xffde88,depthTest:false});
 
 function roadMesh(road,half,preview){
  const shape=road.closed&&road.points.length<3?{...road,closed:false}:road;
  const path=roadSections(sampleRoad(shape),shape.closed),group=new T.Group();
- const pavement=[],borders=[],line=[];
+ const pavement=[],borders=[],line=[],barriers=[];
+ const profile=ROAD_BARRIERS[road.barrier],street=road.markings==='street';
  const at=(point,offset,height)=>{
   const {x,y,z}=roadVertex(point,offset,half);
   return [x,y+height,z];
@@ -19,6 +22,14 @@ function roadMesh(road,half,preview){
  function strip(buffer,a,b,min,max,level){
   const p=at(a,min,level),q=at(a,max,level),r=at(b,max,level),s=at(b,min,level);
   buffer.push(...p,...q,...r,...p,...r,...s);
+ }
+ function rail(a,b,offset,base,top,thickness){
+  const left=offset-thickness/2,right=offset+thickness/2;
+  strip(barriers,a,b,left,right,height+top);
+  for(const side of [left,right]){
+   const p=at(a,side,height+base),q=at(b,side,height+base),r=at(b,side,height+top),s=at(a,side,height+top);
+   barriers.push(...p,...q,...r,...p,...r,...s);
+  }
  }
  const blend=(a,b,t)=>Object.fromEntries(['x','y','z','nx','nz'].map(key=>[key,(a[key]||0)+((b[key]||0)-(a[key]||0))*t]));
  let travelled=0;
@@ -33,19 +44,31 @@ function roadMesh(road,half,preview){
    }
    strip(pavement,b,a,-radius,radius,height-ROAD_DECK_DEPTH);
   }
-  strip(borders,a,b,-radius+.16,-radius+.27,height+.008);
-  strip(borders,a,b,radius-.27,radius-.16,height+.008);
+  const edgeInset=profile?.thickness ? profile.thickness/2+.19 : .16;
+  strip(borders,a,b,-radius+edgeInset,-radius+edgeInset+.11,height+.008);
+  strip(borders,a,b,radius-edgeInset-.11,radius-edgeInset,height+.008);
   for(let mark=Math.floor(travelled/5)*5;mark<travelled+length;mark+=5){
    const start=Math.max(0,(mark-travelled)/length),end=Math.min(1,(mark+2.4-travelled)/length);
-   if(end>start)strip(line,blend(a,b,start),blend(a,b,end),-.065,.065,height+.009);
+   if(end>start&&(!street||road.width>=8))strip(line,blend(a,b,start),blend(a,b,end),-.065,.065,height+.009);
+  }
+  if(profile)for(const side of [-1,1]){
+   const offset=roadBarrierOffset(road,side);
+   rail(a,b,offset,profile.bottom,profile.height,profile.thickness);
+   if(road.barrier==='guardrail'){
+    for(let post=Math.floor(travelled/4)*4;post<travelled+length;post+=4){
+     const start=Math.max(0,(post-travelled)/length),end=Math.min(1,(post+.18-travelled)/length);
+     if(end>start)rail(blend(a,b,start),blend(a,b,end),offset,0,profile.bottom,.16);
+    }
+   }
   }
   travelled+=length;
  }
- for(const [index,[vertices,material]] of [[pavement,preview?draftSurface:asphalt],[borders,edges],[line,centre]].entries()){
+ for(const [index,[vertices,material]] of [[pavement,preview?draftSurface:asphalt],[borders,edges],[line,street?edges:centre],[barriers,barrierMaterials[road.barrier]]].entries()){
   if(!vertices.length)continue;
   const geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.Float32BufferAttribute(vertices,3));geometry.computeVertexNormals();
   const mesh=new T.Mesh(geometry,material);
   if(index===0)mesh.userData.roadSurface=true;
+  if(index===3)mesh.userData.roadBarrier=true;
   group.add(mesh);
  }
  return group;

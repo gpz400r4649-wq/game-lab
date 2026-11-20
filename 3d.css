@@ -629,6 +629,7 @@ html:not(.car-workshop) #road-open3 { display:none; }
 .road-list-row button:first-child { flex:1; }
 .road-width-choices { display:flex; gap:3px; padding-right:5px; border-right:1px solid #dce3ed; }
 .road-height-tools { display:flex; flex-wrap:wrap; align-items:center; gap:4px; padding-inline:4px; font-size:11px; }
+.road-style-choices { display:flex; flex-wrap:wrap; align-items:center; gap:4px; padding-inline:4px; font-size:11px; }
 .road-editor-hint { align-self:center; padding-inline:4px; font-size:11px; color:#53637b; }
 
 #speedometer3 {

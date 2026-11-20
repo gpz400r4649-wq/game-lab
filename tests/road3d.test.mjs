@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Scene} from '../vendor/three.module.min.js';
 import {createRoadView} from '../road-model3d.js';
-import {createRoadSurfaceQuery,roadPoint,roadGridSites,sampleRoad,validRoads} from '../road3d.js';
+import {ROAD_BARRIERS,createRoadBarrierQuery,createRoadSurfaceQuery,roadPoint,roadGridSites,sampleRoad,validRoads} from '../road3d.js';
 import {create3D,fresh3D,part,step3D,validate3D} from '../engine3d.js';
 import {fitRaceGate,updateRaceGates,updateRoadGateWidths} from '../race3d.js';
 import {resizeReason} from '../world3d.js';
@@ -116,4 +116,43 @@ test('保存した立体道路の見た目と編集ハンドルも道路の高�
  assert.ok(mesh.geometry.boundingBox.max.y>6);
  view.showDraft(road,1);
  assert.equal(view.handles()[1].position.y,6.34);
+});
+
+test('道路ごとの柵と白い中央線を保存し、坂に沿って描く',()=>{
+ const p=fresh3D('car'),scene=new Scene(),view=createRoadView(scene);
+ for(const [barrier,profile] of Object.entries(ROAD_BARRIERS)){
+  const road={...bridge(),barrier,markings:'street'};
+  p.roads=[road,underpass()];
+  assert.deepEqual(validate3D(JSON.parse(JSON.stringify(p))).roads,p.roads);
+  view.sync(p.roads,120);
+  const [upper,lower]=scene.children[0].children;
+  const fence=upper.children.find(mesh=>mesh.userData.roadBarrier);
+  fence.geometry.computeBoundingBox();
+  const {min,max}=fence.geometry.boundingBox;
+  assert.ok(Math.abs(max.y-6-.025-profile.height)<.001);
+  assert.ok(min.y<.03&&min.x<-3.8&&max.x>3.8);
+  assert.equal(upper.children[2].material.color.getHex(),0xe2e6ef);
+  assert.equal(lower.children[2].material.color.getHex(),0xf3d88b);
+  assert.ok(!lower.children.some(mesh=>mesh.userData.roadBarrier));
+ }
+ assert.equal(validRoads([{...bridge(),barrier:'unknown'}],p),false);
+ assert.equal(validRoads([{...bridge(),markings:'unknown'}],p),false);
+});
+
+test('走っている車は柵を通り抜けず、立体交差の下の道は走れる',()=>{
+ const p=fresh3D('car'),road={id:'flat',width:8,closed:false,points:[{x:0,z:-36},{x:0,z:36}]};
+ const start={x:0,y:0,z:0,heading:-Math.PI/2};
+ for(const barrier of [...Object.keys(ROAD_BARRIERS),undefined]){
+  p.roads=[{...road,barrier}];
+  const g=create3D(p,{testSpawn:start});
+  for(let i=0;i<100;i++)step3D(g,p,{z:-1},.02);
+  assert.ok(barrier?g.player.x>2&&g.player.x<3.1:g.player.x>8);
+ }
+ p.roads=[{...bridge(),barrier:'guardrail'},underpass()];
+ const query=createRoadBarrierQuery(p.roads,p);
+ assert.ok(query({x:2.6,y:6,z:0},{x:3.2,y:6,z:0},.9));
+ assert.ok(!query({x:2.6,y:0,z:0},{x:3.2,y:0,z:0},.9));
+ const lower=create3D(p,{testSpawn:{...start,x:-14}});
+ for(let i=0;i<200;i++)step3D(lower,p,{z:-1},.02);
+ assert.ok(lower.player.x>8&&lower.player.y===0);
 });

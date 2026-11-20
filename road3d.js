@@ -8,6 +8,11 @@ export const MAX_ROAD_POINTS=64;
 export const ROAD_HEIGHT_STEP=1.5;
 export const MAX_ROAD_HEIGHT=MAX_BUILD_Y;
 export const ROAD_DECK_DEPTH=.32;
+export const ROAD_BARRIERS=Object.freeze({
+ mini:{height:.45,thickness:.16,bottom:0},
+ highway:{height:1.05,thickness:.38,bottom:0},
+ guardrail:{height:.83,thickness:.14,bottom:.54}
+});
 const ROAD_GRID_STEP=GRID.cell/2;
 const MIN_SPACING=ROAD_GRID_STEP;
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
@@ -56,6 +61,8 @@ export function validRoads(roads,world){
  const limit=coordinateLimit(world),ids=new Set();
  for(const road of roads){
   if(!road||typeof road.id!=='string'||!road.id||road.id.length>80||ids.has(road.id)||!ROAD_WIDTHS.includes(road.width)||typeof road.closed!=='boolean'||!Array.isArray(road.points)||road.points.length<2||road.points.length>MAX_ROAD_POINTS)return false;
+  if(road.barrier!==undefined&&(typeof road.barrier!=='string'||!Object.hasOwn(ROAD_BARRIERS,road.barrier)))return false;
+  if(road.markings!==undefined&&road.markings!=='street')return false;
   if(!road.points.every(p=>p&&Number.isFinite(p.x)&&Number.isFinite(p.z)&&Math.abs(p.x)<=limit&&Math.abs(p.z)<=limit&&
    (p.y===undefined||Number.isFinite(p.y)&&p.y>=0&&p.y<=MAX_ROAD_HEIGHT))||!roadPointsFit(road.points,road.closed))return false;
   ids.add(road.id);
@@ -111,6 +118,42 @@ export function roadSections(path,closed){
 export function roadVertex(point,offset,half){
  const clip=value=>Math.max(-half,Math.min(half,value));
  return {x:clip(point.x+point.nx*offset),y:point.y||0,z:clip(point.z+point.nz*offset)};
+}
+
+export function roadBarrierOffset(road,side){return side*(road.width/2-.12);}
+
+export function createRoadBarrierQuery(roads=[],world){
+ const barriers=[],half=worldHalf(world);
+ for(const road of roads){
+  const profile=ROAD_BARRIERS[road.barrier];
+  if(!profile)continue;
+  const sections=roadSections(savedRoadPath(road),road.closed);
+  for(const side of [-1,1]){
+   const offset=roadBarrierOffset(road,side);
+   const points=sections.map(section=>roadVertex(section,offset,half));
+   for(let i=1;i<points.length;i++){
+    const a=points[i-1],b=points[i],dx=b.x-a.x,dz=b.z-a.z,length2=dx*dx+dz*dz;
+    if(length2<1e-8)continue;
+    barriers.push({a,b,dx,dz,length2,profile,minX:Math.min(a.x,b.x),maxX:Math.max(a.x,b.x),minZ:Math.min(a.z,b.z),maxZ:Math.max(a.z,b.z)});
+   }
+  }
+ }
+ function project(point,edge){
+  const {a,b,dx,dz,length2}=edge;
+  const t=Math.max(0,Math.min(1,((point.x-a.x)*dx+(point.z-a.z)*dz)/length2));
+  return {distance2:(point.x-a.x-t*dx)**2+(point.z-a.z-t*dz)**2,y:a.y+t*(b.y-a.y)};
+ }
+ return (before,after,radius)=>{
+  if(before.x===after.x&&before.z===after.z)return false;
+  for(const edge of barriers){
+   const reach=radius+edge.profile.thickness/2;
+   if(after.x<edge.minX-reach||after.x>edge.maxX+reach||after.z<edge.minZ-reach||after.z>edge.maxZ+reach)continue;
+   const hit=project(after,edge);
+   if(hit.distance2>=reach*reach||after.y>=hit.y+edge.profile.height||after.y+1.25<=hit.y)continue;
+   if(hit.distance2<project(before,edge).distance2)return true;
+  }
+  return false;
+ };
 }
 
 export function createRoadSurfaceQuery(roads=[],world){

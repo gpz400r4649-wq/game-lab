@@ -1,5 +1,5 @@
 import {updateRoadGateWidths} from './race3d.js?v=20261119x';
-import {MAX_ROADS,MAX_ROAD_POINTS,MAX_ROAD_HEIGHT,ROAD_HEIGHT_STEP,ROAD_WIDTHS,roadPoint,roadGridSites,nearestRoadHandle,roadPointsFit,validRoads} from './road3d.js?v=20261119x';
+import {MAX_ROADS,MAX_ROAD_POINTS,MAX_ROAD_HEIGHT,ROAD_HEIGHT_STEP,ROAD_WIDTHS,roadPoint,roadGridSites,nearestRoadHandle,roadPointsFit,validRoads} from './road3d.js?v=20261120a';
 import {mountLiveRangeEditor} from './range-panel3d.js?v=20261119d';
 import {setStageRangePainter} from './stage-range3d.js?v=20261119d';
 
@@ -42,6 +42,23 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickH
     if(draft.width!==width){remember();draft.width=width;refresh();}
    });widthChoices.append(control);return control;
   });
+  function styleChoices(key,caption,choices){
+   const box=document.createElement('div'),label=document.createElement('span');
+   box.className='road-style-choices';box.setAttribute('role','group');box.setAttribute('aria-label',caption);
+   label.textContent=caption;box.append(label);
+   const buttons=choices.map(([value,text])=>{
+    const control=button(text,()=>{
+     if(draft[key]===value)return;
+     remember();
+     if(value===undefined)delete draft[key];else draft[key]=value;
+     refresh();
+    });
+    box.append(control);return [value,control];
+   });
+   return {box,sync(){for(const [value,control] of buttons)control.setAttribute('aria-pressed',String(draft[key]===value));}};
+  }
+  const barrier=styleChoices('barrier','さく',[[undefined,'なし'],['mini','ミニよんく'],['highway','こうそくどうろ'],['guardrail','ガードレール']]);
+  const markings=styleChoices('markings','どうろの線',[[undefined,'レース'],['street','ふつうのどうろ']]);
   const loop=button('つないで１しゅう',()=>{
    if(!draft.closed&&!roadPointsFit(draft.points,true)){toast('はじめとおわりをすこしはなして、３かしょいじょうえらぼう');return;}
    remember();draft.closed=!draft.closed;refresh();
@@ -71,7 +88,7 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickH
   const raise=button('＋ あげる',()=>changeHeight(ROAD_HEIGHT_STEP));
   heightTools.append(heightLabel,lower,raise);
   const help=document.createElement('span');help.className='road-editor-hint';help.setAttribute('role','status');
-  controls.append(widthChoices,...modes.map(([,control])=>control),loop,undo,remove,done,cancel,heightTools,help);
+  controls.append(widthChoices,...modes.map(([,control])=>control),loop,undo,remove,done,cancel,heightTools,barrier.box,markings.box,help);
   const finish=mountLiveRangeEditor(panel,()=>{
    setStageRangePainter(null);view.showDraft(null);view.showSnap([],null);cameraRestore?.();
    if(returnToList){renderList();dialog.showModal();}
@@ -87,6 +104,7 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickH
   }
   function refresh(){
    widths.forEach((control,index)=>control.setAttribute('aria-pressed',String(draft.width===ROAD_WIDTHS[index])));
+   barrier.sync();markings.sync();
    loop.setAttribute('aria-pressed',String(draft.closed));
    for(const [key,control] of modes)control.setAttribute('aria-pressed',String(key===mode));
    loop.disabled=draft.points.length<3;undo.disabled=!history.length;remove.disabled=selected<0;
