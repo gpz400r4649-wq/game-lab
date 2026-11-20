@@ -9,6 +9,33 @@ function box(parent,mat,x,y,z,w,h,d){
  const mesh=new T.Mesh(unit,mat);mesh.position.set(x,y,z);mesh.scale.set(w,h,d);parent.add(mesh);return mesh;
 }
 
+const signalPole=material(0x7c8b92),signalCase=material(0x273138),signalLens=new T.SphereGeometry(1,12,8);
+const signalLamps=[0xef4138,0xffc337,0x42ecb2].map(color=>({
+ on:new T.MeshBasicMaterial({color}),off:new T.MeshBasicMaterial({color:new T.Color(color).multiplyScalar(.14)})
+}));
+
+export function makeTrafficSignal(part,previewMaterial){
+ const model=new T.Group(),frame=previewMaterial||signalPole,housing=previewMaterial||signalCase;
+ box(model,frame,0,.07,0,.55,.14,.55);
+ box(model,frame,0,1.47,0,.14,2.8,.14);
+ box(model,housing,0,2.88,-.085,.39,1,.28);
+ model.userData.signalLamps=signalLamps.map(({on},index)=>{
+  const lens=new T.Mesh(signalLens,previewMaterial||on);
+  lens.scale.set(.12,.12,.04);lens.position.set(0,3.18-index*.3,-.223);model.add(lens);return lens;
+ });
+ model.rotation.y=(part.rotation||0)*Math.PI/180;
+ return model;
+}
+
+export function updateTrafficSignal(model,rotation,time){
+ // Perpendicular signals have opposite phases, with one second of all red in between.
+ const phase=(time+(rotation%180===90?11:0))%22;
+ const active=phase<8?2:phase<10?1:0;
+ if(model.userData.activeLamp===active)return;
+ model.userData.activeLamp=active;
+ model.userData.signalLamps.forEach((lens,index)=>{lens.material=signalLamps[index][index===active?'on':'off'];});
+}
+
 export function makeCarModel(){
  const model=new T.Group(),wheels=[];
  box(model,body,0,.58,0,1.66,.58,2.45);

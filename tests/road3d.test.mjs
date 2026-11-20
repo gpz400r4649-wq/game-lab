@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Scene} from '../vendor/three.module.min.js';
 import {createRoadView} from '../road-model3d.js';
-import {ROAD_BARRIERS,createRoadBarrierQuery,createRoadSurfaceQuery,roadPoint,roadGridSites,sampleRoad,validRoads} from '../road3d.js';
+import {makeTrafficSignal,updateTrafficSignal} from '../race-model3d.js';
+import {ROAD_BARRIERS,createRoadBarrierQuery,createRoadOpenings,createRoadSurfaceQuery,roadPoint,roadGridSites,sampleRoad,validRoads} from '../road3d.js';
 import {create3D,fresh3D,part,step3D,validate3D} from '../engine3d.js';
 import {fitRaceGate,updateRaceGates,updateRoadGateWidths} from '../race3d.js';
 import {resizeReason} from '../world3d.js';
@@ -38,8 +39,8 @@ test('道幅がマップ端に達しても舗装が外へ出ず、編集中だ�
   const vertices=mesh.geometry.getAttribute('position');
   for(let i=0;i<vertices.count;i++){assert.ok(Math.abs(vertices.getX(i))<=30);assert.ok(Math.abs(vertices.getZ(i))<=30);}
  }
- view.showDraft(road,1);assert.equal(model.visible,false);assert.equal(draft.children.length,3);
- view.showDraft(null);assert.equal(model.visible,true);assert.equal(draft.children.length,0);
+ view.showDraft(road,1);assert.equal(saved.children[0].visible,false);assert.equal(draft.children.length,3);
+ view.showDraft(null);assert.equal(saved.children[0].visible,true);assert.equal(draft.children.length,0);
 });
 
 
@@ -155,4 +156,45 @@ test('走っている車は柵を通り抜けず、立体交差の下の道は�
  const lower=create3D(p,{testSpawn:{...start,x:-14}});
  for(let i=0;i<200;i++)step3D(lower,p,{z:-1},.02);
  assert.ok(lower.player.x>8&&lower.player.y===0);
+});
+
+test('十字路と丁字路では白線と柵が切れ、分かれ道に入れる',()=>{
+ const p=fresh3D('car'),main={...underpass(),barrier:'highway',markings:'street'};
+ const branch={id:'branch',width:8,closed:false,barrier:'guardrail',markings:'street',points:[{x:0,z:0},{x:0,z:36}]};
+ const scene=new Scene(),view=createRoadView(scene);
+ for(const crossing of [branch,{...branch,points:[{x:0,z:-36},branch.points[1]]}]){
+  p.roads=[main,crossing];
+  const runs=createRoadOpenings(p.roads,120)(main.id,{x:-36,y:0,z:3.88},{x:36,y:0,z:3.88});
+  assert.equal(runs.length,2);
+  assert.ok(Math.abs(runs[0][1]-32/72)<1e-6&&Math.abs(runs[1][0]-40/72)<1e-6);
+  const query=createRoadBarrierQuery(p.roads,p);
+  const blocked=(x,z)=>query({x,y:0,z:z*2.6},{x,y:0,z:z*3.2},.9);
+  assert.equal(blocked(0,1),false);
+  assert.equal(blocked(0,-1),crossing===branch);
+  assert.equal(blocked(10,1),true);
+  const g=create3D(p,{testSpawn:{x:0,y:0,z:0,heading:Math.PI}});
+  for(let i=0;i<120;i++)step3D(g,p,{z:-1},.02);
+  assert.ok(g.player.z>8);
+  view.sync(p.roads,120);
+  for(const mesh of scene.children[0].children[0].children.slice(1)){
+   const vertices=mesh.geometry.getAttribute('position');
+   for(let i=0;i<vertices.count;i++)if(crossing!==branch||vertices.getZ(i)>0)assert.ok(Math.abs(vertices.getX(i))>3.999);
+  }
+ }
+ view.sync([main],120);view.showDraft(branch);
+ const draftOpening=scene.children[0].children[0].children.find(mesh=>mesh.userData.roadBarrier);
+ const vertices=draftOpening.geometry.getAttribute('position');
+ for(let i=0;i<vertices.count;i++)if(vertices.getZ(i)>0)assert.ok(Math.abs(vertices.getX(i))>3.999);
+});
+
+test('交差点の信号機は向きを保存し、直角の道では交互に青になる',()=>{
+ const p=fresh3D('car'),signal=part('trafficSignal'),side={...part('trafficSignal'),rotation:90};
+ p.objects=[signal,side];
+ assert.equal(validate3D(p).objects[1].rotation,90);
+ const front=makeTrafficSignal(signal),cross=makeTrafficSignal(side);
+ assert.equal(cross.rotation.y,Math.PI/2);
+ for(const [second,expected] of [[0,[2,0]],[8,[1,0]],[10,[0,0]],[11,[0,2]],[19,[0,1]],[21,[0,0]],[22,[2,0]]]){
+  updateTrafficSignal(front,signal.rotation,second);updateTrafficSignal(cross,side.rotation,second);
+  assert.deepEqual([front.userData.activeLamp,cross.userData.activeLamp],expected);
+ }
 });

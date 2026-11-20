@@ -122,8 +122,69 @@ export function roadVertex(point,offset,half){
 
 export function roadBarrierOffset(road,side){return side*(road.width/2-.12);}
 
+// Keep the portions of a line that are outside other roads at the same level.
+export function createRoadOpenings(roads,half){
+ if(roads.length<2)return ()=>[[0,1]];
+ const cell=16,buckets=new Map(),long=[],triangles=[];
+ for(const road of roads){
+  const sections=roadSections(savedRoadPath(road),road.closed),radius=road.width/2;
+  const sides=sections.map(point=>[roadVertex(point,-radius,half),roadVertex(point,radius,half)]);
+  for(let i=1;i<sides.length;i++){
+   const [a,b]=sides[i-1],[d,c]=sides[i];
+   for(const [p,q,r] of [[a,b,c],[a,c,d]]){
+    const ux=q.x-p.x,uz=q.z-p.z,vx=r.x-p.x,vz=r.z-p.z,det=ux*vz-uz*vx;
+    if(Math.abs(det)<1e-8)continue;
+    const t={id:road.id,p,ux,uz,vx,vz,det,uy:q.y-p.y,vy:r.y-p.y,minX:Math.min(p.x,q.x,r.x),maxX:Math.max(p.x,q.x,r.x),minZ:Math.min(p.z,q.z,r.z),maxZ:Math.max(p.z,q.z,r.z)};
+    triangles.push(t);
+    const left=Math.floor(t.minX/cell),right=Math.floor(t.maxX/cell),near=Math.floor(t.minZ/cell),far=Math.floor(t.maxZ/cell);
+    if((right-left+1)*(far-near+1)>64){long.push(t);continue;}
+    for(let x=left;x<=right;x++)for(let z=near;z<=far;z++){
+     const key=x+':'+z;
+     if(!buckets.has(key))buckets.set(key,[]);
+     buckets.get(key).push(t);
+    }
+   }
+  }
+ }
+ function coordinates(t,point){
+  const x=point.x-t.p.x,z=point.z-t.p.z;
+  const u=(x*t.vz-z*t.vx)/t.det,v=(t.ux*z-t.uz*x)/t.det;
+  const height=point.y-(t.p.y+u*t.uy+v*t.vy);
+  return [u,v,1-u-v,.25+height,.25-height];
+ }
+ return (id,a,b)=>{
+  const cuts=[],minX=Math.min(a.x,b.x),maxX=Math.max(a.x,b.x),minZ=Math.min(a.z,b.z),maxZ=Math.max(a.z,b.z);
+  const left=Math.floor(minX/cell),right=Math.floor(maxX/cell),near=Math.floor(minZ/cell),far=Math.floor(maxZ/cell);
+  let candidates=triangles;
+  if((right-left+1)*(far-near+1)<=64){
+   candidates=new Set(long);
+   for(let x=left;x<=right;x++)for(let z=near;z<=far;z++)for(const t of buckets.get(x+':'+z)||[])candidates.add(t);
+  }
+  for(const t of candidates){
+   if(t.id===id||maxX<t.minX||minX>t.maxX||maxZ<t.minZ||minZ>t.maxZ)continue;
+    const first=coordinates(t,a),last=coordinates(t,b);
+    let start=0,end=1;
+    for(let i=0;i<first.length&&start<end;i++){
+     const f=first[i]+1e-8,l=last[i]+1e-8;
+     if(f<0&&l<0){end=0;break;}
+     if(f<0)start=Math.max(start,f/(f-l));
+     if(l<0)end=Math.min(end,f/(f-l));
+    }
+    if(end-start>1e-7)cuts.push([start,end]);
+  }
+  const runs=[];let cursor=0;
+  for(const [start,end] of cuts.sort((a,b)=>a[0]-b[0])){
+   if(start-cursor>1e-7)runs.push([cursor,start]);
+   cursor=Math.max(cursor,end);
+  }
+  if(1-cursor>1e-7)runs.push([cursor,1]);
+  return runs;
+ };
+}
+
 export function createRoadBarrierQuery(roads=[],world){
  const barriers=[],half=worldHalf(world);
+ const openings=createRoadOpenings(roads,half);
  for(const road of roads){
   const profile=ROAD_BARRIERS[road.barrier];
   if(!profile)continue;
@@ -132,16 +193,19 @@ export function createRoadBarrierQuery(roads=[],world){
    const offset=roadBarrierOffset(road,side);
    const points=sections.map(section=>roadVertex(section,offset,half));
    for(let i=1;i<points.length;i++){
-    const a=points[i-1],b=points[i],dx=b.x-a.x,dz=b.z-a.z,length2=dx*dx+dz*dz;
-    if(length2<1e-8)continue;
-    barriers.push({a,b,dx,dz,length2,profile,minX:Math.min(a.x,b.x),maxX:Math.max(a.x,b.x),minZ:Math.min(a.z,b.z),maxZ:Math.max(a.z,b.z)});
+    const from=points[i-1],to=points[i];
+    for(const [start,end] of openings(road.id,from,to)){
+     const a=lerp(from,to,start),b=lerp(from,to,end),dx=b.x-a.x,dz=b.z-a.z,length2=dx*dx+dz*dz;
+     if(length2<1e-8)continue;
+     barriers.push({a,b,dx,dz,length2,profile,minX:Math.min(a.x,b.x),maxX:Math.max(a.x,b.x),minZ:Math.min(a.z,b.z),maxZ:Math.max(a.z,b.z)});
+    }
    }
   }
  }
  function project(point,edge){
   const {a,b,dx,dz,length2}=edge;
   const t=Math.max(0,Math.min(1,((point.x-a.x)*dx+(point.z-a.z)*dz)/length2));
-  return {distance2:(point.x-a.x-t*dx)**2+(point.z-a.z-t*dz)**2,y:a.y+t*(b.y-a.y)};
+  return {distance2:(point.x-a.x-t*dx)**2+(point.z-a.z-t*dz)**2,y:(a.y||0)+t*((b.y||0)-(a.y||0))};
  }
  return (before,after,radius)=>{
   if(before.x===after.x&&before.z===after.z)return false;

@@ -1,8 +1,8 @@
 import {createCarAudio} from './car-audio3d.js?v=20261119g';
-import {courseStart,nearestRoad} from './road3d.js?v=20261120a';
-import {createRoadView} from './road-model3d.js?v=20261120a';
-import {createRoadEditor} from './road-ui3d.js?v=20261120a';
-import {createLapGateView,makeCarModel,updateCarModel,makeRaceGateModel,updateRaceGateModel,updateRaceGateNumber} from './race-model3d.js?v=20261119w';
+import {courseStart,nearestRoad} from './road3d.js?v=20261120b';
+import {createRoadView} from './road-model3d.js?v=20261120b';
+import {createRoadEditor} from './road-ui3d.js?v=20261120b';
+import {createLapGateView,makeCarModel,updateCarModel,makeRaceGateModel,updateRaceGateModel,updateRaceGateNumber,makeTrafficSignal,updateTrafficSignal} from './race-model3d.js?v=20261120b';
 import {CAR_TUNING,DEFAULT_CAR_TUNING,RACE_LAP_OPTIONS,fitRaceGate,orderedRaceGates,turnRaceGate} from './race3d.js?v=20261119zb';
 import {assemblyCandidate,assemblyCopies,saveAssembly,temporarySpawn} from './assembly3d.js?v=20261119p';
 import {createSupplyUI,createSupplyView} from './supply-ui3d.js?v=20261119d';
@@ -15,7 +15,7 @@ import {createPlayerRulesUI} from './player-rules-ui3d.js?v=20261119d';
 import {fencePresetKey,floorPresetKey,FLOOR_PRESETS,configureBuildingPart,FENCE_PRESETS,RAMP_PRESETS,ROOF_PRESETS} from './architecture3d.js?v=20261119o';
 import {makeHalfFloorGeometries,makeDiagonalWallGeometry,makeCornerRampGeometry,makeFenceModel,fenceGeometry,makeRoofSlopeGeometry,makeGableGeometry} from './architecture-model3d.js?v=20261119d';
 import {createChoiceControl,enhanceChoiceControl} from './choices3d.js?v=20261119d';
-import {groupSteps,groupCandidate,commitGroup,copyGroupNearby} from './group-edit3d.js?v=20261120a';
+import {groupSteps,groupCandidate,commitGroup,copyGroupNearby} from './group-edit3d.js?v=20261120b';
 import {initializeCharacterDefaults,synchronizeCharacterDefaults,inheritNewCharacter} from './character-defaults3d.js?v=20261119d';
 import {nearbyActor,trade,companionsAt} from './actor3d.js?v=20261119d';
 import {giveAllyGun,giftableGun,recruitTarget,allyAttackDistance} from './ally3d.js?v=20261119d';
@@ -46,8 +46,8 @@ import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261119d';
 import {rotatePiece,BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,topAt,editorPlacementReason,editorPlacementBlocker,blockPlacement} from './building3d.js?v=20261119p';
 import {createToolsUI} from './tools3d.js?v=20261119d';
 import * as T from './vendor/three.module.min.js';
-import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,nearbyChair} from './engine3d.js?v=20261120a';
-import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261119x';
+import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,nearbyChair} from './engine3d.js?v=20261120b';
+import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261120b';
 document.querySelectorAll('.setting-choices').forEach(enhanceChoiceControl);
 const $=s=>document.querySelector(s),view=$('#viewport');
 const seatButton=$('#use-seat3');
@@ -212,6 +212,7 @@ function addActorHat(mesh,hat='yellow'){
 }
 function partModel(o){let mesh=new T.Group();
   if(o.type==='raceGate')mesh=makeRaceGateModel(o);
+  else if(o.type==='trafficSignal')mesh=makeTrafficSignal(o);
   else if(isFurniture(o)){mesh=makeFurnitureModel(o,materials.furniture);}
   else if(Object.hasOwn(BUILD_TYPES,o.type)){mesh=structureModel(o);}
   else if(['box','platform'].includes(o.type)){box(mesh,materials[o.type],0,o.h/2,0,o.w,o.h,o.d);}
@@ -376,7 +377,7 @@ function updateEditorDrag(event,drag){if(drag.group){updateGroupDrag(event,drag)
  dragPreview.position.set(candidate.piece.x,candidate.piece.y,candidate.piece.z);ghostMaterial.color.set(candidate.reason?0xee8592:0x53d9b4);dragPreview.visible=true;dragPreview.updateMatrixWorld(true);selectionBox.setFromObject(dragPreview);if(drag.original.type==='enemy'){if(drag.original[enemyRangeView]?.space!=='world')rangeOverlay.position.set(candidate.piece.x-drag.original.x,0,candidate.piece.z-drag.original.z);}}
 function finishEditorDrag(commit){const drag=look?.drag;if(!drag)return;if(drag.group){finishGroupDrag(drag,commit);return;}const result=drag.candidate,o=project.objects.find(o=>o.id===drag.original.id);if(commit&&drag.started&&result&&!result.reason&&o){if(o.type==='raceGate')Object.assign(o,result.piece);else{o.x=result.piece.x;o.z=result.piece.z;}save();}else if(commit&&result?.reason)toast(result.reason);const source=meshes.get(drag.original.id);if(source){source.visible=true;if(o)source.position.set(o.x,o.y,o.z);}dragPreview.clear();dragPreview.visible=false;rangeOverlay.position.set(0,0,0);surface.classList.remove('is-object-dragging');structureRenderer.sync(project.objects,meshes);if(look)look.drag=null;updateSelection();if(commit&&drag.started){rebuild();objectList();inspector();}}
 function canRotateSelectedPart(){
- const piece=editedObject();return mode==='edit'&&!multiSelect&&!commonPreview&&!isLiveRangeEditing()&&!!piece&&(['wall','floor','roof','ramp','door','raceGate'].includes(piece.type)||isFurniture(piece));
+ const piece=editedObject();return mode==='edit'&&!multiSelect&&!commonPreview&&!isLiveRangeEditing()&&!!piece&&(['wall','floor','roof','ramp','door','raceGate','trafficSignal'].includes(piece.type)||isFurniture(piece));
 }
 function syncSelectedPartActions(){
  $('#rotate-selected3').hidden=!canRotateSelectedPart();
@@ -396,6 +397,7 @@ $('#placement-close3').onclick=closePlacementPanel;
 $('#placement-panel3').addEventListener('toggle',positionPlacementPanel,true);window.addEventListener('resize',positionPlacementPanel);
 function rotateSelectedPart(){
  if(!canRotateSelectedPart())return;resetInput();const piece=editedObject(),candidate=structuredClone(piece);if(candidate.type==='raceGate')turnRaceGate(candidate);
+ else if(candidate.type==='trafficSignal')candidate.rotation=((candidate.rotation||0)+90)%360;
  else rotatePiece(candidate,project);
  const reason=editorPlacementReason(candidate,project.objects.filter(object=>object.id!==piece.id),project.spawn,project);
  if(reason){toast(reason);return;}Object.assign(piece,candidate);save();rebuild();inspector();
@@ -571,6 +573,7 @@ const effectPool=[],bulletPool=[];function syncGameMeshes(){
   if(o.type==='enemy')mesh.rotation.y=enemyYaw(o,game.player);if(o.type==='ally')mesh.rotation.y=o.heading||0;if(o.type==='plate')mesh.userData.pad.position.y=o.pressed?.075:.13;
   if(['star','key','weapon','blockItem'].includes(o.type))mesh.rotation.y=game.time;
   if(o.type==='door')updateDoorModel(mesh,o);
+  if(o.type==='trafficSignal')updateTrafficSignal(mesh,o.rotation,game.time);
   if(o.type==='raceGate'&&game.car){const index=game.car.gates.findIndex(gate=>gate.id===o.id);const {laps,nextGate}=game.car;const passed=laps?laps.startedAt!==null&&index>0&&(nextGate===0||index<nextGate):index<nextGate;const ready=!laps||laps.startedAt===null||laps.nextMarker>=laps.markers.length;updateRaceGateModel(mesh,game.state==='playing'&&ready&&index===nextGate,passed);}
  if(o.type==='goal')mesh.userData.portal.material=conditionMet(o,game)?materials.ready:materials.goal;
   if(o.type==='checkpoint')mesh.userData.flag.material=game.checkpoint?.id===o.id?materials.ready:materials.checkpoint;
@@ -584,8 +587,8 @@ const effectPool=[],bulletPool=[];function syncGameMeshes(){
  const stamp=game.inventory.join(',')+':'+Object.entries(game.inventoryCounts||{}).map(([id,count])=>id+'='+count).join(',')+':'+game.equipped+':'+game.blockEquipped+':'+game.blockInventory.map(s=>s.id+'='+s.count).join(',');if(buildCount!==game.buildings.length||inventoryStamp!==stamp){buildCount=game.buildings.length;inventoryStamp=stamp;toolsUI.renderHotbar();}
  if(game.messageId!==lastMessageId){lastMessageId=game.messageId;toast(game.message);}
 }
-function editorCandidate(event){if(tool==='select'||tool==='erase')return null;const surfaces=tool==='raceGate'?roadView?.surfaces()||[]:[];const hit=hits(event,[objectsGroup,ground,...surfaces]).find(visibleHit);if(!hit)return null;const target=project.objects.find(o=>o.id===objectId(hit.object))||null,normal=hit.face?hit.face.normal.clone().transformDirection(hit.object.matrixWorld):null,piece=snapEditorPiece(tool==='box'?configureFurniture(part(tool),piecePresets.box):tool==='door'?configureDoor(part(tool),doorPreset):tool==='weapon'?{...part(tool),weaponId:weaponPresetId}:configureBuildingPart(part(tool),piecePresets[tool]),hit.point,target,normal,project);if(piece.type==='enemy')Object.assign(piece,defaultEnemyRanges(piece));if(piece.type==='raceGate'){const roadId=hit.object.userData.roadSurface?hit.object.parent.userData.roadId:null;fitRaceGate(piece,roadId?project.roads.filter(road=>road.id===roadId):project.roads,hit.point);piece.gateOrder=Math.min(MAX_PARTS,1+project.objects.reduce((max,part)=>part.type==='raceGate'?Math.max(max,part.gateOrder):max,0));}const reason=editorPlacementReason(piece,project.objects,courseStart(project),project);return {piece,reason,blocker:reason?editorPlacementBlocker(piece,project.objects):null};}
-function showGhost(o,valid){const shape=[o.type,o.furnitureKind||'',o.roofStyle||'',o.wallGable||'',o.doorVariant||'',o.wallStyle||'',o.rampStyle||'',o.rotation||0,o.gateYaw??'',o.w,o.h,o.d,o.floorHalf?halfFloorMask(o,mode==='play'?game?.objects||[]:project.objects):3].join(':');if(shape!==ghostShape){ghost.clear();if(isFurniture(o))ghost.add(makeFurnitureModel(o,ghostMaterial));else if(Object.hasOwn(BUILD_TYPES,o.type))ghost.add(structureModel(o,ghostMaterial));else if(o.type==='raceGate'){const gate=makeRaceGateModel(o);gate.traverse(child=>{if(child.isMesh)child.material=ghostMaterial;});ghost.add(gate);}else if(o.type==='door')ghost.add(makeDoorModel(o,{door:ghostMaterial,wall:ghostMaterial,dark:ghostMaterial,star:ghostMaterial,glass:ghostMaterial,white:ghostMaterial}));else box(ghost,ghostMaterial,0,o.h/2,0,o.w,o.h,o.d);ghostShape=shape;}ghost.position.set(o.x,o.y,o.z);ghostMaterial.color.set(valid?0x53d9b4:0xee8592);ghost.visible=true;}
+function editorCandidate(event){if(tool==='select'||tool==='erase')return null;const surfaces=['raceGate','trafficSignal'].includes(tool)?roadView?.surfaces()||[]:[];const hit=hits(event,[objectsGroup,ground,...surfaces]).find(visibleHit);if(!hit)return null;const target=project.objects.find(o=>o.id===objectId(hit.object))||null,normal=hit.face?hit.face.normal.clone().transformDirection(hit.object.matrixWorld):null,piece=snapEditorPiece(tool==='box'?configureFurniture(part(tool),piecePresets.box):tool==='door'?configureDoor(part(tool),doorPreset):tool==='weapon'?{...part(tool),weaponId:weaponPresetId}:configureBuildingPart(part(tool),piecePresets[tool]),hit.point,target,normal,project);if(piece.type==='enemy')Object.assign(piece,defaultEnemyRanges(piece));if(piece.type==='trafficSignal'&&hit.object.userData.roadSurface)piece.y=Math.max(0,hit.point.y-.025);if(piece.type==='raceGate'){const roadId=hit.object.userData.roadSurface?hit.object.parent.userData.roadId:null;fitRaceGate(piece,roadId?project.roads.filter(road=>road.id===roadId):project.roads,hit.point);piece.gateOrder=Math.min(MAX_PARTS,1+project.objects.reduce((max,part)=>part.type==='raceGate'?Math.max(max,part.gateOrder):max,0));}const reason=editorPlacementReason(piece,project.objects,courseStart(project),project);return {piece,reason,blocker:reason?editorPlacementBlocker(piece,project.objects):null};}
+function showGhost(o,valid){const shape=[o.type,o.furnitureKind||'',o.roofStyle||'',o.wallGable||'',o.doorVariant||'',o.wallStyle||'',o.rampStyle||'',o.rotation||0,o.gateYaw??'',o.w,o.h,o.d,o.floorHalf?halfFloorMask(o,mode==='play'?game?.objects||[]:project.objects):3].join(':');if(shape!==ghostShape){ghost.clear();if(isFurniture(o))ghost.add(makeFurnitureModel(o,ghostMaterial));else if(Object.hasOwn(BUILD_TYPES,o.type))ghost.add(structureModel(o,ghostMaterial));else if(o.type==='trafficSignal')ghost.add(makeTrafficSignal(o,ghostMaterial));else if(o.type==='raceGate'){const gate=makeRaceGateModel(o);gate.traverse(child=>{if(child.isMesh)child.material=ghostMaterial;});ghost.add(gate);}else if(o.type==='door')ghost.add(makeDoorModel(o,{door:ghostMaterial,wall:ghostMaterial,dark:ghostMaterial,star:ghostMaterial,glass:ghostMaterial,white:ghostMaterial}));else box(ghost,ghostMaterial,0,o.h/2,0,o.w,o.h,o.d);ghostShape=shape;}ghost.position.set(o.x,o.y,o.z);ghostMaterial.color.set(valid?0x53d9b4:0xee8592);ghost.visible=true;}
 const placementContact=new T.LineLoop(new T.BufferGeometry().setFromPoints([
  new T.Vector3(-.5,0,-.5),new T.Vector3(.5,0,-.5),new T.Vector3(.5,0,.5),new T.Vector3(-.5,0,.5)
 ]),new T.LineBasicMaterial({color:0x248e79,depthTest:false}));
@@ -596,7 +599,7 @@ scene.add(placementContact,placementBlocker);
 function updateEditorGhost(){
  syncPlacementUI();
  ghost.visible=placementContact.visible=placementBlocker.visible=false;
- if(stageExtra||placementLook||isLiveRangeEditing()||look?.drag||!editorPointer||!withinSurface(editorPointer)||(!GRID_PARTS.has(tool)&&tool!=='raceGate'))return;
+ if(stageExtra||placementLook||isLiveRangeEditing()||look?.drag||!editorPointer||!withinSurface(editorPointer)||(!GRID_PARTS.has(tool)&&!['raceGate','trafficSignal'].includes(tool)))return;
  const candidate=editorCandidate(editorPointer);if(!candidate)return;
  const {piece,reason,blocker}=candidate;
  showGhost(piece,!reason);
