@@ -1,4 +1,4 @@
-import {courseStart,createRoadBarrierQuery,createRoadSurfaceQuery,ROAD_DECK_DEPTH,validRoads} from './road3d.js?v=20261120b';
+import {courseStart,createRoadBarrierQuery,createRoadSurfaceQuery,ROAD_DECK_DEPTH,validRoads} from './road3d.js?v=20261120d';
 import {carMotion,createCarRun,RACE_LAP_OPTIONS,updateRaceGates,upgradeCarTopSpeed,validCarTuning,validGateFit} from './race3d.js?v=20261119zb';
 import {validAssemblies} from './assembly3d.js?v=20261119d';
 import {validSupplyFlight,createSupplyFlight,updateSupplyFlight} from './supply3d.js?v=20261119d';
@@ -206,7 +206,7 @@ function moveCarWithRoad(game,terrain,dx,dz,dt){
  }
  p.roadSurface=support;
  if(support)Object.assign(p,{y:support.y,vy:0,grounded:true,supportId:null});
- if(game.roadBarrierBlocked(before,p,bodyRadius(p)))Object.assign(p,before);
+ if(game.roadBarrierBlocked(before,p,game.car.heading))Object.assign(p,before);
 }
 
 // Convert the former shooting behavior without changing saved movement or range.
@@ -223,7 +223,13 @@ export function step3D(g,p,input,dt){
     if(player.grounded&&player.supportId===o.id){player.x+=o.x-before.x;player.y+=o.y-before.y;player.z+=o.z-before.z;}}}
   const yaw=input.yaw||0,beforeDrive={x:player.x,y:player.y,z:player.z},fallBefore={y:player.y,grounded:player.grounded};
   if(g.car){
+    const beforeHeading=g.car.heading;
     const movement=carMotion(g.car,input,player.grounded,dt,player.roadSurface);
+    if(g.car.heading!==beforeHeading&&g.roadBarrierBlocked(beforeDrive,beforeDrive,g.car.heading)){
+      g.car.heading=beforeHeading;
+      movement.x=-Math.sin(beforeHeading)*g.car.speed*dt;
+      movement.z=-Math.cos(beforeHeading)*g.car.speed*dt;
+    }
     const distance=Math.hypot(movement.x,movement.z);
     const {x,z}=beforeDrive;
     const terrain=nearbyObjects(g,Math.min(x,x+movement.x)-2,Math.min(z,z+movement.z)-2,Math.max(x,x+movement.x)+2,Math.max(z,z+movement.z)+2);

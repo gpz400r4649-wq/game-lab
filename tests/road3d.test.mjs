@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {Scene} from '../vendor/three.module.min.js';
 import {createRoadView} from '../road-model3d.js';
 import {makeTrafficSignal,updateTrafficSignal} from '../race-model3d.js';
-import {ROAD_BARRIERS,MAX_ROAD_POINTS,createRoadBarrierQuery,createRoadOpenings,createRoadSurfaceQuery,roadPoint,roadGridSites,sampleRoad,traceRoadPoints,validRoads} from '../road3d.js';
+import {ROAD_BARRIERS,MAX_ROAD_POINTS,createRoadBarrierQuery,createRoadOpenings,createRoadSurfaceQuery,roadBarrierOffset,roadPoint,roadGridSites,roadSections,roadVertex,sampleRoad,traceRoadPoints,validRoads} from '../road3d.js';
 import {create3D,fresh3D,part,step3D,validate3D} from '../engine3d.js';
 import {fitRaceGate,updateRaceGates,updateRoadGateWidths} from '../race3d.js';
 import {resizeReason} from '../world3d.js';
@@ -173,11 +173,41 @@ test('走っている車は柵を通り抜けず、立体交差の下の道は�
  }
  p.roads=[{...bridge(),barrier:'guardrail'},underpass()];
  const query=createRoadBarrierQuery(p.roads,p);
- assert.ok(query({x:2.6,y:6,z:0},{x:3.2,y:6,z:0},.9));
- assert.ok(!query({x:2.6,y:0,z:0},{x:3.2,y:0,z:0},.9));
+ assert.ok(query({x:2.3,y:6,z:0},{x:3.2,y:6,z:0},-Math.PI/2));
+ assert.ok(!query({x:2.3,y:0,z:0},{x:3.2,y:0,z:0},-Math.PI/2));
  const lower=create3D(p,{testSpawn:{...start,x:-14}});
  for(let i=0;i<200;i++)step3D(lower,p,{z:-1},.02);
  assert.ok(lower.player.x>8&&lower.player.y===0);
+});
+
+test('車の先端と後ろが接触し、一度の移動で柵の向こうに飛び越せない',()=>{
+ const p=fresh3D('car'),road={id:'straight',width:8,closed:false,points:[{x:0,z:-36},{x:0,z:36}]};
+ for(const barrier of Object.keys(ROAD_BARRIERS)){
+  p.roads=[{...road,barrier}];
+  const query=createRoadBarrierQuery(p.roads,p),at=x=>({x,y:0,z:0});
+  assert.ok(query(at(2.1),at(2.61),Math.PI/2));
+  assert.ok(query(at(2.1),at(2.61),-Math.PI/2));
+  assert.ok(query(at(0),at(8),-Math.PI/2));
+  assert.ok(query(at(2.7),at(2.7),Math.PI/2));
+  assert.ok(!query(at(2.7),at(2.7),0));
+  assert.ok(!query(at(2.7),at(2.3),-Math.PI/2));
+  const car=create3D(p,{testSpawn:{...at(0),heading:-Math.PI/2}});
+  car.car.speed=100;
+  step3D(car,p,{z:-1},.033);
+  assert.ok(car.player.x>1.5&&car.player.x+1.27<=3.88-ROAD_BARRIERS[barrier].thickness/2);
+ }
+});
+
+test('坂のあるカーブの途中でも柵に当たる',()=>{
+ const p=fresh3D('car'),road={...turn(),barrier:'mini',points:[{x:-20,y:0,z:0},{x:0,y:4,z:0},{x:0,y:6,z:-20}]};
+ p.roads=[road];
+ const query=createRoadBarrierQuery(p.roads,p),sections=roadSections(sampleRoad(road),false);
+ const offset=roadBarrierOffset(road,1),a=roadVertex(sections[6],offset,120),b=roadVertex(sections[7],offset,120);
+ const length=Math.hypot(b.x-a.x,b.z-a.z),nx=(b.z-a.z)/length,nz=(a.x-b.x)/length;
+ const middle={x:(a.x+b.x)/2,y:(a.y+b.y)/2,z:(a.z+b.z)/2};
+ const side=(distance,y=middle.y)=>({x:middle.x+distance*nx,y,z:middle.z+distance*nz});
+ assert.ok(query(side(2),side(-2),Math.atan2(nx,nz)));
+ assert.ok(!query(side(2,0),side(-2,0),Math.atan2(nx,nz)));
 });
 
 test('十字路と丁字路では白線と柵が切れ、分かれ道に入れる',()=>{
@@ -190,7 +220,7 @@ test('十字路と丁字路では白線と柵が切れ、分かれ道に入れ�
   assert.equal(runs.length,2);
   assert.ok(Math.abs(runs[0][1]-32/72)<1e-6&&Math.abs(runs[1][0]-40/72)<1e-6);
   const query=createRoadBarrierQuery(p.roads,p);
-  const blocked=(x,z)=>query({x,y:0,z:z*2.6},{x,y:0,z:z*3.2},.9);
+  const blocked=(x,z)=>query({x,y:0,z:z*2.3},{x,y:0,z:z*3.2},0);
   assert.equal(blocked(0,1),false);
   assert.equal(blocked(0,-1),crossing===branch);
   assert.equal(blocked(10,1),true);

@@ -214,11 +214,12 @@ export function createRoadOpenings(roads,half){
 }
 
 export function createRoadBarrierQuery(roads=[],world){
+ const fenced=roads.filter(road=>Object.hasOwn(ROAD_BARRIERS,road.barrier));
+ if(!fenced.length)return ()=>false;
  const barriers=[],half=worldHalf(world);
  const openings=createRoadOpenings(roads,half);
- for(const road of roads){
+ for(const road of fenced){
   const profile=ROAD_BARRIERS[road.barrier];
-  if(!profile)continue;
   const sections=roadSections(savedRoadPath(road),road.closed);
   for(const side of [-1,1]){
    const offset=roadBarrierOffset(road,side);
@@ -226,26 +227,58 @@ export function createRoadBarrierQuery(roads=[],world){
    for(let i=1;i<points.length;i++){
     const from=points[i-1],to=points[i];
     for(const [start,end] of openings(road.id,from,to)){
-     const a=lerp(from,to,start),b=lerp(from,to,end),dx=b.x-a.x,dz=b.z-a.z,length2=dx*dx+dz*dz;
-     if(length2<1e-8)continue;
-     barriers.push({a,b,dx,dz,length2,profile,minX:Math.min(a.x,b.x),maxX:Math.max(a.x,b.x),minZ:Math.min(a.z,b.z),maxZ:Math.max(a.z,b.z)});
+     const a=lerp(from,to,start),b=lerp(from,to,end),length=distance(a,b);
+     if(length<.0001)continue;
+     const along={x:(b.x-a.x)/length,z:(b.z-a.z)/length};
+     const normal={x:-along.z,z:along.x};
+     barriers.push({a,b,length,along,normal,profile,minX:Math.min(a.x,b.x),maxX:Math.max(a.x,b.x),minZ:Math.min(a.z,b.z),maxZ:Math.max(a.z,b.z)});
     }
    }
   }
  }
- function project(point,edge){
-  const {a,b,dx,dz,length2}=edge;
-  const t=Math.max(0,Math.min(1,((point.x-a.x)*dx+(point.z-a.z)*dz)/length2));
-  return {distance2:(point.x-a.x-t*dx)**2+(point.z-a.z-t*dz)**2,y:(a.y||0)+t*((b.y||0)-(a.y||0))};
- }
- return (before,after,radius)=>{
-  if(before.x===after.x&&before.z===after.z)return false;
+ const dot=(a,b)=>a.x*b.x+a.z*b.z;
+ // The rendered car is longer than it is wide. Sweep its full outline, including the nose and rear.
+ const halfWidth=.87,halfLength=1.27,carHeight=1.4;
+ return (before,after,heading)=>{
+  if(!barriers.length)return false;
+  const right={x:Math.cos(heading),z:-Math.sin(heading)},forward={x:-right.z,z:right.x};
+  const move={x:after.x-before.x,z:after.z-before.z},stationary=!move.x&&!move.z;
+  const left=Math.min(before.x,after.x)-1.8,rightEdge=Math.max(before.x,after.x)+1.8;
+  const near=Math.min(before.z,after.z)-1.8,far=Math.max(before.z,after.z)+1.8;
   for(const edge of barriers){
-   const reach=radius+edge.profile.thickness/2;
-   if(after.x<edge.minX-reach||after.x>edge.maxX+reach||after.z<edge.minZ-reach||after.z>edge.maxZ+reach)continue;
-   const hit=project(after,edge);
-   if(hit.distance2>=reach*reach||after.y>=hit.y+edge.profile.height||after.y+1.25<=hit.y)continue;
-   if(hit.distance2<project(before,edge).distance2)return true;
+   if(rightEdge<edge.minX||left>edge.maxX||far<edge.minZ||near>edge.maxZ)continue;
+   const {a,b,length,along,normal,profile}=edge;
+   const start={x:before.x-(a.x+b.x)/2,z:before.z-(a.z+b.z)/2};
+   let enter=0,exit=1,initiallyOverlaps=true;
+   for(const axis of [right,forward,along,normal]){
+    const reach=halfWidth*Math.abs(dot(right,axis))+halfLength*Math.abs(dot(forward,axis))+
+      (length/2+.01)*Math.abs(dot(along,axis))+profile.thickness/2*Math.abs(dot(normal,axis));
+    const position=dot(start,axis),speed=dot(move,axis);
+    initiallyOverlaps&&=Math.abs(position)<reach;
+    if(Math.abs(speed)<1e-8){if(Math.abs(position)>=reach)exit=-1;}
+    else{
+     const first=(-reach-position)/speed,last=(reach-position)/speed;
+     enter=Math.max(enter,Math.min(first,last));exit=Math.min(exit,Math.max(first,last));
+    }
+    if(exit<=enter)break;
+   }
+   if(exit<=enter)continue;
+   const alongStart=dot(start,along)+length/2,alongSpeed=dot(move,along);
+   const deckAt=t=>(a.y||0)+((b.y||0)-(a.y||0))*Math.max(0,Math.min(1,(alongStart+t*alongSpeed)/length));
+   const clearance=t=>before.y+(after.y-before.y)*t-deckAt(t)-.025;
+   const samples=[clearance(enter),clearance(exit)];
+   if(alongSpeed)for(const boundary of [0,length]){
+    const t=(boundary-alongStart)/alongSpeed;
+    if(t>enter&&t<exit)samples.push(clearance(t));
+   }
+   if(Math.min(...samples)>=profile.height||Math.max(...samples)<=-carHeight)continue;
+   const startHeight=clearance(0);
+   if(initiallyOverlaps&&!stationary&&startHeight<profile.height&&startHeight>-carHeight){
+    // Let a car already touching a fence back away on its own side.
+    const side=dot(start,normal),across=dot(move,normal);
+    if(!across||side*across>=0)continue;
+   }
+   return true;
   }
   return false;
  };
