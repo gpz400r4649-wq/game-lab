@@ -92,27 +92,27 @@ function bindCarPedal(button){
  return {read:()=>amount,reset};
 }
 
-export function createCarControls({wheel,rim,accelerator,brake,reverse}){
+export function createCarControls({stick,thumb,accelerator,brake,reverse}){
  let pointer=null,steering=0,backing=false;
- const wheelTravel=180,deadZone=.08;
- wheel.setAttribute('data-game-action','');
- function setSteering(value){
+ const deadZone=.08;
+ stick.setAttribute('data-game-action','');
+ function setSteering(value,travelDistance=0){
   const travel=Math.max(-1,Math.min(1,value));
   const amount=Math.max(0,(Math.abs(travel)-deadZone)/(1-deadZone));
   steering=Math.sign(travel)*amount*(.8+.2*amount);
-  rim.style.transform=`rotate(${Math.sign(travel)*amount*wheelTravel}deg)`;
+  thumb.style.transform=`translateX(${travel*travelDistance}px)`;
  }
  function steer(event){
-  const {left,width}=wheel.getBoundingClientRect();
-  setSteering((event.clientX-left-width/2)/(width*.45));
+  const {left,width}=stick.getBoundingClientRect();
+  setSteering((event.clientX-left-width/2)/(width*.45),width*.25);
  }
- wheel.addEventListener('pointerdown',event=>{
+ stick.addEventListener('pointerdown',event=>{
   if(pointer!==null)return;
   event.preventDefault();
-  pointer=event.pointerId;wheel.setPointerCapture(pointer);steer(event);
+  pointer=event.pointerId;stick.setPointerCapture(pointer);steer(event);
  });
- wheel.addEventListener('pointermove',event=>{if(event.pointerId===pointer)steer(event);});
- for(const type of ['pointerup','pointercancel','lostpointercapture'])wheel.addEventListener(type,event=>{
+ stick.addEventListener('pointermove',event=>{if(event.pointerId===pointer)steer(event);});
+ for(const type of ['pointerup','pointercancel','lostpointercapture'])stick.addEventListener(type,event=>{
   if(event.pointerId!==pointer)return;
   pointer=null;setSteering(0);
  });

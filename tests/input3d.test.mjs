@@ -33,12 +33,12 @@ test('プレイ中だけページ拡大設定を制限し、編集では元の�
 });
 test('別の指の終了イベントで連射を解除しない',()=>{const fire=new Surface();let firing=false,count=0;bindHeldButton(fire,()=>{firing=true;count++;},()=>firing=false);emit(fire,'pointerdown',{pointerId:2});for(const type of ['pointerup','pointercancel','lostpointercapture'])emit(fire,type,{pointerId:1});assert.ok(firing);assert.equal(count,1);emit(fire,'pointerup',{pointerId:2});assert.equal(firing,false);});
 test('発射に２本触れた場合も最後の指まで連射する',()=>{const fire=new Surface();let firing=false;const reset=bindHeldButton(fire,()=>firing=true,()=>firing=false);emit(fire,'pointerdown',{pointerId:1});emit(fire,'pointerdown',{pointerId:2});emit(fire,'pointerup',{pointerId:1});assert.ok(firing);emit(fire,'lostpointercapture',{pointerId:1});assert.ok(firing);emit(fire,'pointercancel',{pointerId:2});assert.equal(firing,false);emit(fire,'pointerdown',{pointerId:5});reset();assert.equal(firing,false);});
-test('ハンドルとペダルは同時に押せ、片方の指を離してももう片方がきく',()=>{
+test('左右のスティックとペダルは同時に押せ、片方の指を離してももう片方がきく',()=>{
  const control=()=>Object.assign(new Surface(),{disabled:false,setAttribute(){},classList:{toggle(){}},style:{setProperty(){}},getBoundingClientRect:()=>({top:0,height:100})});
- const wheel=Object.assign(control(),{getBoundingClientRect:()=>({left:0,width:100})});
- const accelerator=control(),brake=control(),reverse=control(),rim={style:{}};
- const controls=createCarControls({wheel,rim,accelerator,brake,reverse});
- emit(wheel,'pointerdown',{pointerId:1,clientX:80});
+ const stick=Object.assign(control(),{getBoundingClientRect:()=>({left:0,width:100})});
+ const accelerator=control(),brake=control(),reverse=control(),thumb={style:{}};
+ const controls=createCarControls({stick,thumb,accelerator,brake,reverse});
+ emit(stick,'pointerdown',{pointerId:1,clientX:80});
  emit(accelerator,'pointerdown',{pointerId:2,clientY:50});
  assert.ok(controls.read().x>.55&&controls.read().x<.65);
  assert.equal(controls.read().z,-.5);
@@ -49,16 +49,20 @@ test('ハンドルとペダルは同時に押せ、片方の指を離しても�
  emit(accelerator,'pointerup',{pointerId:2});
  assert.equal(controls.read().z,0);
  assert.ok(controls.read().x>.55&&controls.read().x<.65);
- emit(wheel,'pointermove',{pointerId:1,clientX:55});
+ emit(stick,'pointermove',{pointerId:1,clientX:55});
  assert.ok(controls.read().x>0&&controls.read().x<.04);
- emit(wheel,'pointermove',{pointerId:1,clientX:100});
+ emit(stick,'pointermove',{pointerId:1,clientX:100});
  assert.equal(controls.read().x,1);
- assert.equal(rim.style.transform,'rotate(180deg)');
- emit(wheel,'pointermove',{pointerId:1,clientX:0});
+ assert.equal(thumb.style.transform,'translateX(25px)');
+ emit(stick,'pointermove',{pointerId:1,clientX:100,clientY:180});
+ emit(stick,'pointermove',{pointerId:2,clientX:0,clientY:180});
+ assert.equal(controls.read().x,1);
+ assert.equal(thumb.style.transform,'translateX(25px)');
+ emit(stick,'pointermove',{pointerId:1,clientX:0});
  assert.equal(controls.read().x,-1);
- assert.equal(rim.style.transform,'rotate(-180deg)');
- emit(wheel,'pointercancel',{pointerId:1});
- assert.equal(rim.style.transform,'rotate(0deg)');
+ assert.equal(thumb.style.transform,'translateX(-25px)');
+ emit(stick,'pointercancel',{pointerId:1});
+ assert.equal(thumb.style.transform,'translateX(0px)');
  emit(brake,'pointerup',{pointerId:3});
  controls.setSpeed(4);
  assert.equal(reverse.disabled,true);
