@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.min.js';
-import {raceGateWidth,raceGateHeading} from './race3d.js?v=20261119d';
+import {CAR_WHEELBASE,raceGateWidth,raceGateHeading} from './race3d.js?v=20261120l';
 
 const material=(color)=>new T.MeshStandardMaterial({color,roughness:.8});
 const body=material(0x7563db),trim=material(0x443b7d),glass=material(0x86d7de),tire=material(0x27364a),hub=material(0xaabbd2),lamp=material(0xffeeaa),tail=material(0xe77b91);
@@ -48,7 +48,7 @@ export function makeCarModel(){
   box(model,tail,side*.55,.6,1.23,.26,.16,.05);
   for(const end of [-1,1]){
    const steering=new T.Group(),axle=new T.Group(),wheel=new T.Group();
-   steering.position.set(side*.83,.36,end*.82);
+   steering.position.set(side*.83,.36,end*CAR_WHEELBASE/2);
    // The cylinder rolls on its local Y axis, which the axle points along the car’s X axis.
    axle.rotation.z=-Math.PI/2;
    const tread=new T.Mesh(wheelShape,tire),cap=new T.Mesh(hubShape,hub);cap.position.y=side*.113;

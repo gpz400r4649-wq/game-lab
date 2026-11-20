@@ -1,6 +1,7 @@
 import {courseStart,lapRoadMarkers,nearestRoad,ROAD_WIDTHS} from './road3d.js?v=20261119x';
 
 export const F1_TOP_SPEED_KMH=360;
+export const CAR_WHEELBASE=1.64;
 export const CAR_TUNING=Object.freeze({
  maxSpeed:Object.freeze([30,45,65,120,240,F1_TOP_SPEED_KMH].map(kmh=>kmh/3.6)),
  acceleration:Object.freeze([4,7,10]),
@@ -96,8 +97,9 @@ export function carMotion(car,input,grounded,dt,roadSurface=null){
   const movingSpeed=Math.abs(car.speed);
   const turnFactor=Math.min(1,movingSpeed/2)*(1-.45*Math.min(1,movingSpeed/maxSpeed));
   const requested=turnFactor*steering;
-  const yawRate=requested/Math.hypot(1,requested*movingSpeed/(CORNERING_ACCELERATION*grip));
-  car.heading-=wheel*yawRate*Math.sign(car.speed)*dt;
+  const gripYawRate=Math.abs(wheel)*requested/Math.hypot(1,requested*movingSpeed/(CORNERING_ACCELERATION*grip));
+  const rollingYawRate=movingSpeed*Math.abs(Math.tan(car.steering))/CAR_WHEELBASE;
+  car.heading-=Math.sign(wheel*car.speed)*Math.min(gripYawRate,rollingYawRate)*dt;
  }
  const distance=car.speed*dt;
  car.wheelAngle-=distance/.36;

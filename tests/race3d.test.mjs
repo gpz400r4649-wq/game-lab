@@ -122,10 +122,26 @@ test('ハンドルをいっぱいに切っても高速ではゆるく曲がり�
   step3D(game,p,{x:1,z:-1},dt);
  }
  const slowYaw=Math.abs(slow.car.heading)/dt,fastYaw=Math.abs(fast.car.heading)/dt;
- assert.ok(slowYaw>1.25);
+ assert.ok(slowYaw>.4&&slowYaw<1);
  assert.ok(fastYaw>0&&fastYaw<slowYaw);
  const corneringAcceleration=fastYaw*fast.car.speed;
  assert.ok(corneringAcceleration>10.5&&corneringAcceleration<12.5);
+});
+
+test('発進直後やバックでは車体がその場で回らず、進んだ距離に合わせて曲がる',()=>{
+ const p=fresh3D('car');
+ const headings=[];
+ for(const direction of [-1,1]){
+  const game=create3D(p);const start={...game.player};
+  tick(game,p,.5,{x:1,brake:1,coast:true});
+  assert.equal(game.car.heading,0);
+  tick(game,p,.6,{x:1,z:direction*.25,coast:true});
+  const turned=game.car.heading,travel=Math.hypot(game.player.x-start.x,game.player.z-start.z);
+  assert.ok(travel>.15&&Math.abs(turned)>.02);
+  assert.ok(Math.abs(turned)/travel<.28);
+  headings.push(turned);
+ }
+ assert.ok(headings[0]<0&&headings[1]>0);
 });
 
 test('車のせっていは保存でき、速さ・加速・ハンドル・ブレーキに反映される',()=>{
