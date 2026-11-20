@@ -1,5 +1,5 @@
 import {courseStart,createRoadBarrierQuery,createRoadSurfaceQuery,ROAD_DECK_DEPTH,validRoads} from './road3d.js?v=20261120e';
-import {carMotion,createCarRun,RACE_LAP_OPTIONS,updateRaceGates,upgradeCarTuning,validCarTuning,validGateFit} from './race3d.js?v=20261120l';
+import {carMotion,createCarRun,RACE_LAP_OPTIONS,updateRaceGates,upgradeCarTuning,validCarTuning,validGateFit} from './race3d.js?v=20261120n';
 import {validAssemblies} from './assembly3d.js?v=20261119d';
 import {validSupplyFlight,createSupplyFlight,updateSupplyFlight} from './supply3d.js?v=20261119d';
 import {isFurniture,validFurniture,furnitureSolids} from './furniture3d.js?v=20261119d';

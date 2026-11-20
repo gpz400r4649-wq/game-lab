@@ -146,7 +146,7 @@ test('発進直後やバックでは車体がその場で回らず、進んだ�
 
 test('車のせっていは保存でき、速さ・加速・ハンドル・ブレーキに反映される',()=>{
  const base=fresh3D('car');
- const tuning={maxSpeed:65/3.6,acceleration:10,steering:5,braking:32};
+ const tuning={maxSpeed:65/3.6,acceleration:10,steering:6,braking:32};
  const tuned=validate3D(JSON.parse(JSON.stringify({...base,carTuning:tuning})));
  assert.deepEqual(tuned.carTuning,tuning);
  for(const [oldSpeed,kmh] of [[8,30],[12,45],[18,65]]){
@@ -171,13 +171,12 @@ test('車のせっていは保存でき、速さ・加速・ハンドル・ブ�
 test('これまでのよくまがると同じ効き方を、新しい標準とする',()=>{
  const base=fresh3D('car');
  const saved=steering=>validate3D({...base,carTuning:{...DEFAULT_CAR_TUNING,acceleration:4,steering}});
- assert.equal(create3D(base).car.tuning.steering,4);
- assert.equal(saved(3.2).carTuning.steering,4);
- assert.equal(saved(2.4).carTuning.steering,4);
+ assert.equal(create3D(base).car.tuning.steering,5);
+ for(const steering of [2.4,3.2,4])assert.equal(saved(steering).carTuning.steering,5);
  assert.equal(saved(2.4).carTuning.acceleration,4);
  assert.equal(saved(1.6).carTuning.steering,1.6);
- assert.equal(saved(4).carTuning.steering,4);
  assert.equal(saved(5).carTuning.steering,5);
+ assert.equal(saved(6).carTuning.steering,6);
 });
 
 test('重い車は坂でゆっくり加速し、グリップの強い車はカーブで速度を保ちやすい',()=>{
