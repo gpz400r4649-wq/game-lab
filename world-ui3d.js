@@ -1,4 +1,4 @@
-import {courseStart,savedRoadPath} from './road3d.js?v=20261125a';
+import {courseStart,savedRoadPath} from './road3d.js?v=20261125c';
 import {createChoiceControl} from './choices3d.js?v=20261119d';
 import {MAX_PARTS} from './limits3d.js?v=20261119d';
 import {worldSize,coordinateLimit,WORLD_SIZES,resizeReason,spawnReason} from './world3d.js?v=20261119d';

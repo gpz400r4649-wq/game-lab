@@ -1,9 +1,9 @@
 import {createCarAudio} from './car-audio3d.js?v=20261119g';
-import {courseStart,nearestRoad} from './road3d.js?v=20261125a';
-import {createRoadView} from './road-model3d.js?v=20261125a';
-import {createRoadEditor} from './road-ui3d.js?v=20261125b';
-import {createLapGateView,makeCarModel,updateCarModel,makeRaceGateModel,updateRaceGateModel,updateRaceGateNumber,makeTrafficSignal,updateTrafficSignal} from './race-model3d.js?v=20261125a';
-import {CAR_TUNING,DEFAULT_CAR_TUNING,RACE_LAP_OPTIONS,fitRaceGate,orderedRaceGates,turnRaceGate} from './race3d.js?v=20261125a';
+import {courseStart,nearestRoad} from './road3d.js?v=20261125c';
+import {createRoadView} from './road-model3d.js?v=20261125c';
+import {createRoadEditor} from './road-ui3d.js?v=20261125c';
+import {createLapGateView,makeCarModel,updateCarModel,makeRaceGateModel,updateRaceGateModel,updateRaceGateNumber,makeTrafficSignal,updateTrafficSignal} from './race-model3d.js?v=20261125c';
+import {CAR_TUNING,DEFAULT_CAR_TUNING,RACE_LAP_OPTIONS,fitRaceGate,orderedRaceGates,turnRaceGate} from './race3d.js?v=20261125c';
 import {assemblyCandidate,assemblyCopies,saveAssembly,temporarySpawn} from './assembly3d.js?v=20261119p';
 import {createSupplyUI,createSupplyView} from './supply-ui3d.js?v=20261124a';
 import {FURNITURE_PRESETS,configureFurniture,isFurniture} from './furniture3d.js?v=20261119d';
@@ -15,7 +15,7 @@ import {createPlayerRulesUI} from './player-rules-ui3d.js?v=20261119d';
 import {fencePresetKey,floorPresetKey,FLOOR_PRESETS,configureBuildingPart,FENCE_PRESETS,RAMP_PRESETS,ROOF_PRESETS} from './architecture3d.js?v=20261119o';
 import {makeHalfFloorGeometries,makeDiagonalWallGeometry,makeCornerRampGeometry,makeFenceModel,fenceGeometry,makeRoofSlopeGeometry,makeGableGeometry} from './architecture-model3d.js?v=20261119d';
 import {createChoiceControl,enhanceChoiceControl} from './choices3d.js?v=20261119d';
-import {groupSteps,groupCandidate,commitGroup,copyGroupNearby} from './group-edit3d.js?v=20261125a';
+import {groupSteps,groupCandidate,commitGroup,copyGroupNearby} from './group-edit3d.js?v=20261125c';
 import {initializeCharacterDefaults,synchronizeCharacterDefaults,inheritNewCharacter} from './character-defaults3d.js?v=20261119d';
 import {nearbyActor,trade,companionsAt} from './actor3d.js?v=20261119d';
 import {giveAllyGun,giftableGun,recruitTarget,allyAttackDistance} from './ally3d.js?v=20261119d';
@@ -27,7 +27,7 @@ import {stageRangePointer} from './stage-range3d.js?v=20261124a';
 import {createEnemyMessages} from './enemy-messages3d.js?v=20261119d';
 import {createPlayRanges} from './play-ranges3d.js?v=20261124a';
 import {closeLiveRangeEditor,isLiveRangeEditing} from './enemy-range-ui3d.js?v=20261124a';
-import {dragCandidate} from './editor-drag3d.js?v=20261125a';
+import {dragCandidate} from './editor-drag3d.js?v=20261125c';
 import {rangeWorldCells,enemyYaw,defaultEnemyRanges,MOVE_MAX_CELLS} from './enemy-range3d.js?v=20261119d';
 import {ROBOT_BARREL,TPS_GUN_MOUNT} from './muzzle3d.js?v=20261119d';
 import {DOOR_PRESETS,configureDoor,doorInteraction,isSlidingDoor,nearbyDoor} from './doors3d.js?v=20261119d';
@@ -37,21 +37,21 @@ import {editorViewFromPlay,moveEditorCamera,createEditorNavigation} from './edit
 import {createStructureRenderer,isBatchedStructure} from './structure-render3d.js?v=20261119d';
 import {MAX_PARTS,MAX_PROJECT_BYTES,MAX_BUILD_Y} from './limits3d.js?v=20261119d';
 import {worldSize,worldHalf,coordinateLimit} from './world3d.js?v=20261119d';
-import {createWorldUI} from './world-ui3d.js?v=20261125a';
+import {createWorldUI} from './world-ui3d.js?v=20261125c';
 import {configureNumericInput} from './numeric3d.js?v=20261119d';
 import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261119d';
 import {installGameTouchGuard,bindHeldButton,bindGameAction,createCarControls,createGamePageMode} from './input3d.js?v=20261120m';
 import {actionsFor} from './events3d.js?v=20261119d';
 import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261119d';
 import {rotatePiece,BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,topAt,editorPlacementReason,editorPlacementBlocker,blockPlacement} from './building3d.js?v=20261119p';
-import {createToolsUI} from './tools3d.js?v=20261125a';
+import {createToolsUI} from './tools3d.js?v=20261125c';
 import * as T from './vendor/three.module.min.js';
-import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,nearbyChair} from './engine3d.js?v=20261125a';
-import {TOWN_PARTS,configureTownPart,fitTownPart,townPlacementReason} from './town3d.js?v=20261125a';
-import {createTownView,makeTownModel} from './town-model3d.js?v=20261125a';
-import {townRaceRank} from './town-traffic3d.js?v=20261125a';
-import {installTownUI,renderRivalSettings} from './town-ui3d.js?v=20261125a';
-import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261125a';
+import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,nearbyChair} from './engine3d.js?v=20261125c';
+import {TOWN_PARTS,configureTownPart,fitTownPart,townPlacementReason} from './town3d.js?v=20261125c';
+import {createTownView,makeTownModel} from './town-model3d.js?v=20261125c';
+import {townRaceRank} from './town-traffic3d.js?v=20261125c';
+import {installTownUI,renderRivalSettings} from './town-ui3d.js?v=20261125c';
+import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261125c';
 document.querySelectorAll('.setting-choices').forEach(enhanceChoiceControl);
 const $=s=>document.querySelector(s),view=$('#viewport');
 const seatButton=$('#use-seat3');
@@ -263,7 +263,14 @@ function rebuild(){synchronizeCharacterDefaults(project);updateWorld();roadView?
 const patrolOverlay=createPatrolOverlay(scene);
 const playRanges=createPlayRanges(scene),enemyMessages=createEnemyMessages();
 function updateSelection(){const o=editedObject(),mesh=meshes.get(o?.id);showAllyRange(mode==='edit'&&o?.type==='ally'?o:null);if(mode==='edit'&&o?.type==='enemy'&&mesh){mesh.position.set(o.x,o.y,o.z);mesh.rotation.y=(o.facing||0)*Math.PI/180;}selectionBox.visible=!!mesh&&mode==='edit';if(mesh)selectionBox.setFromObject(mesh);patrolOverlay.show(mode==='edit'&&o?.type==='enemy'&&['patrolRoute','waypoints'].includes(enemyRangeView)?o[enemyRangeView]:null,o?.y||0,enemyRangeView==='waypoints'&&(o?.routeEnd||'loop')==='loop');rangeOverlay.visible=mode==='edit'&&o?.type==='enemy'&&!!o[enemyRangeView]?.cells;if(rangeOverlay.visible){const m=new T.Matrix4(),range=o[enemyRangeView];rangeOverlay.material.color.set({attackRange:0xed7890,moveRange:0x469edf,searchRange:0xdcb52b}[enemyRangeView]);rangeOverlay.count=range.cells.length;const half=worldSize(project)/2;rangeWorldCells(range,o).forEach(([x,z],i)=>{const wx=x*4,wz=z*4,left=Math.max(-half,wx-1.925),right=Math.min(half,wx+1.925),front=Math.max(-half,wz-1.925),back=Math.min(half,wz+1.925);m.makeScale(Math.max(0,right-left)/3.85,1,Math.max(0,back-front)/3.85).setPosition((left+right)/2,enemyEditHeight(o)+.025,(front+back)/2);rangeOverlay.setMatrixAt(i,m);});rangeOverlay.instanceMatrix.needsUpdate=true;}updateGroupSelection();syncSelectedPartActions();}
-function save(){synchronizeCharacterDefaults(project);if(!restoringHistory)editHistory.record(project);syncHistoryButtons();clearTimeout(saveTimer);setReadingText($('#saved3'),'保存中…');saveTimer=setTimeout(()=>{try{localStorage.setItem(KEY,stringifyStoredProject(project));setReadingText($('#saved3'),'✓ このブラウザに保存しました');}catch{setReadingText($('#saved3'),'保存できません。ファイルに保存してください');}},250);}
+function flushSave(){
+ if(!saveTimer)return;
+ clearTimeout(saveTimer);saveTimer=null;
+ try{localStorage.setItem(KEY,stringifyStoredProject(project));setReadingText($('#saved3'),'✓ このブラウザに保存しました');}
+ catch{setReadingText($('#saved3'),'保存できません。ファイルに保存してください');}
+}
+function save(){synchronizeCharacterDefaults(project);if(!restoringHistory)editHistory.record(project);syncHistoryButtons();clearTimeout(saveTimer);setReadingText($('#saved3'),'保存中…');saveTimer=setTimeout(flushSave,250);}
+window.addEventListener('pagehide',flushSave);
 function field(parent,name,value,min,max,step,fn){
  const l=document.createElement('label');l.className='field';const s=document.createElement('span');setReadingText(s,name);const input=document.createElement('input');input.setAttribute('aria-label',name);
  const toggleSign=configureNumericInput(input,{value,min,max,step,onValue:n=>{const result=fn(n);save();rebuild();return result;},onCommit:()=>{save();rebuild();}});
@@ -700,13 +707,18 @@ $('#common-preview-back3').onclick=()=>workshop.resumeBasic();$('#common-preview
 function renderPlayerRules(){playerRulesUI.render();}
 function weaponFields(){workshop.weapons();renderPlayerRules();}
 if(carTemplate)roadEditor=createRoadEditor({$,getProject:()=>project,save,rebuild,view:roadView,toast,
+ pickRoad:event=>{
+  const hit=hits(event,roadView.surfaces()).find(visibleHit);
+  return hit?{id:hit.object.parent.userData.roadId,point:hit.point}:null;
+ },
  pickHandle:event=>hits(event,roadView.handles())[0]?.object.userData.roadHandle??-1,
  pointerAtHeight:pointOnDragPlane,
  isOnStage:withinSurface,
  focusHeight:height=>{if(Math.abs(height-editTarget.y)>24)editTarget.y=height;},
  setRoadView:angled=>{editPitch=angled?.82:Math.PI/2-.02;},
- focusRoad:points=>{
+ focusRoad:(points,keepView)=>{
  closeStageExtra();resetGroupSelection();resetInput();selected=null;updateSelection();
+ if(keepView)return ()=>{};
  const original={target:editTarget.clone(),yaw:editYaw,pitch:editPitch,distance:editDistance};
  if(points.length){
   const xs=points.map(point=>point.x),zs=points.map(point=>point.z);

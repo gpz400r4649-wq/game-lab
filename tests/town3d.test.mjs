@@ -4,7 +4,7 @@ import {Scene} from '../vendor/three.module.min.js';
 import {create3D,fresh3D,part,step3D,validate3D} from '../engine3d.js';
 import {createRoadNetwork} from '../road-network3d.js';
 import {createRoadView} from '../road-model3d.js';
-import {roadConnection,roadPiecePlacement,sampleRoad,traceRoadPoints,validRoads} from '../road3d.js';
+import {roadConnection,roadPiecePlacement,sampleRoad,splitRoadAt,traceRoadPoints,validRoads} from '../road3d.js';
 import {fitRaceGate} from '../race3d.js';
 import {DEFAULT_FLEET,configureTownPart,fitTownPart,houseGarage,refitTownParts,townLocal,townSolids} from '../town3d.js';
 import {townRaceRank,townRoute} from '../town-traffic3d.js';
@@ -15,6 +15,20 @@ const advance=(g,p,seconds,input={coast:true})=>{
  for(let i=0;i<Math.round(seconds/.025);i++)step3D(g,p,input,.025);
 };
 const places=(roads,kind,x,z,roadId)=>fitTownPart(configureTownPart(part('town'),kind),roads.filter(r=>r.id===roadId),{x,y:0,z});
+
+test('押した道路の１区間を取り除き、残りの道を保つ',()=>{
+ const points=[-12,-4,4,12].map(x=>({x,y:0,z:0}));
+ const road={id:'street',width:8,closed:false,sidewalk:'both',points};
+ const pieces=splitRoadAt(road,{x:0,y:0,z:0});
+ assert.deepEqual(pieces.map(piece=>piece.points),[points.slice(0,2),points.slice(2)]);
+ assert.equal(pieces[0].id,road.id);
+ assert.equal(pieces[1].sidewalk,'both');
+ assert.equal(validRoads(pieces,240),true);
+ const square=points.map((point,i)=>({x:i<2?0:8,y:0,z:i===0||i===3?0:8}));
+ const [opened]=splitRoadAt({...road,points:square,closed:true},{x:4,y:0,z:8});
+ assert.deepEqual(opened.points,[square[2],square[3],square[0],square[1]]);
+ assert.equal(opened.closed,false);
+});
 
 test('道路を１区間ずつ置き、選んだ向きに上り・下りをつなげる',()=>{
  const road={id:'pieces',width:8,closed:false,points:[]};

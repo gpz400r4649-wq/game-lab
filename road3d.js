@@ -55,6 +55,28 @@ export function roadPointsFit(points,closed){
  return points.every((point,index)=>!index||fits(points[index-1],point))&&(!closed||fits(points[0],points.at(-1)));
 }
 
+export function roadSegmentAt(road,point){
+ const {points,closed}=road;
+ let nearest=0,best=Infinity;
+ for(let i=0;i<points.length-(closed?0:1);i++){
+  const a=points[i],b=points[(i+1)%points.length],dx=b.x-a.x,dz=b.z-a.z;
+  const t=Math.max(0,Math.min(1,((point.x-a.x)*dx+(point.z-a.z)*dz)/(dx*dx+dz*dz)));
+  const projection=lerp(a,b,t);
+  const cost=distance(point,projection)**2+((point.y||0)-(projection.y||0))**2;
+  if(cost<best){best=cost;nearest=i;}
+ }
+ return {index:nearest,a:points[nearest],b:points[(nearest+1)%points.length]};
+}
+
+export function splitRoadAt(road,point){
+ const {points,closed}=road,{index:nearest}=roadSegmentAt(road,point);
+ const pieces=closed?[points.slice(nearest+1).concat(points.slice(0,nearest+1))]:
+  [points.slice(0,nearest+1),points.slice(nearest+1)];
+ return pieces.filter(piece=>piece.length>=2).map((piece,index)=>({
+  ...road,id:index?crypto.randomUUID():road.id,points:piece,closed:false
+ }));
+}
+
 export function roadPiecePlacement(road,aim,world,{start=null,height=0,grade=0,connections=[]}={}){
  if(!roadPoint(aim,world)||road.closed)return null;
  const tail=road.points.at(-1),origin=tail||start||roadPoint(aim,world);

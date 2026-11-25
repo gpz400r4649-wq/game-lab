@@ -1,6 +1,6 @@
 import * as T from './vendor/three.module.min.js';
-import {TOWN_PARTS,houseGarage} from './town3d.js?v=20261125a';
-import {makeCarModel,updateCarModel} from './race-model3d.js?v=20261125a';
+import {TOWN_PARTS,houseGarage} from './town3d.js?v=20261125c';
+import {makeCarModel,updateCarModel} from './race-model3d.js?v=20261125c';
 
 const mat=color=>new T.MeshStandardMaterial({color,roughness:.85});
 const chalk=new T.MeshBasicMaterial({color:0xf9f5ed}),asphalt=mat(0x4c5360),wall=mat(0xe2c5a7),

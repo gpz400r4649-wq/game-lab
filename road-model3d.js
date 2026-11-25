@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.min.js';
-import {ROAD_BARRIERS,ROAD_DECK_DEPTH,createRoadOpenings,roadBarrierOffset,roadSections,roadVertex,sampleRoad} from './road3d.js?v=20261125a';
+import {ROAD_BARRIERS,ROAD_DECK_DEPTH,createRoadOpenings,roadBarrierOffset,roadSections,roadVertex,sampleRoad} from './road3d.js?v=20261125c';
 
 const asphalt=new T.MeshStandardMaterial({color:0x333c4e,roughness:.98,side:T.DoubleSide});
 const edges=new T.MeshBasicMaterial({color:0xe2e6ef,side:T.DoubleSide});
@@ -109,7 +109,19 @@ export function createRoadView(scene){
   for(const road of roads){const model=roadMesh(road,half,false,openings);model.visible=road.id!==draftId;model.userData.roadId=road.id;saved.add(model);}
   return openings;
  }
+ const eraseLine=new T.Mesh(new T.BoxGeometry(1,1,1),new T.MeshBasicMaterial({color:0xe2646b,transparent:true,opacity:.7,depthWrite:false}));
+ eraseLine.visible=false;scene.add(eraseLine);
+ const eraseDirection=new T.Vector3(),forward=new T.Vector3(0,0,1);
  return {
+  showErase(segment){
+   eraseLine.visible=!!segment;
+   if(!segment)return;
+   const {a,b}=segment,ay=a.y||0,by=b.y||0;
+   eraseDirection.set(b.x-a.x,by-ay,b.z-a.z);
+   eraseLine.position.set((a.x+b.x)/2,(ay+by)/2+.075,(a.z+b.z)/2);
+   eraseLine.scale.set(.45,.045,eraseDirection.length());
+   eraseLine.quaternion.setFromUnitVectors(forward,eraseDirection.normalize());
+  },
   surfaces(){return saved.children.filter(model=>model.visible).flatMap(model=>model.children.filter(mesh=>mesh.userData.roadSurface));},
   handles(){return draft.children.filter(mesh=>Number.isInteger(mesh.userData.roadHandle));},
   sync(next,extent){

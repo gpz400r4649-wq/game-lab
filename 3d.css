@@ -660,7 +660,8 @@ main.range-editing #city-build3 { display:none; }
 #city-parts3 .part-caption { display:inline; font-size:inherit; }
 .city-part-options .architecture-icon { width:32px; height:25px; display:inline-block; vertical-align:middle; }
 .city-part-options .architecture-icon svg { width:100%; height:100%; }
-#road-list3 { border-top:1px solid #e6eaf3; }
+#road-actions3 { border-top:1px solid #e6eaf3; }
+.road-menu-caption { flex:none; padding-inline:3px; font-size:12px; font-weight:700; }
 #road-draft3 { padding:4px 8px; }
 #road-draft3 .range-live-heading { position:static; padding:2px 0; background:transparent; border:0; }
 #road-draft3 .range-live-heading h2 { font-size:13px; }
