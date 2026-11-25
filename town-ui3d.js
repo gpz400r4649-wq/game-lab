@@ -2,9 +2,9 @@ import {setReadingText} from './readings3d.js?v=20261119d';
 import {createChoiceControl} from './choices3d.js?v=20261119d';
 import {mountLiveRangeEditor} from './range-panel3d.js?v=20261124a';
 import {setStageRangePainter} from './stage-range3d.js?v=20261124a';
-import {createRoadNetwork} from './road-network3d.js?v=20261125e';
-import {townRoute,raceRoute} from './town-traffic3d.js?v=20261125f';
-import {ARRIVAL_TYPES,DEFAULT_FLEET,DEFAULT_RIVAL,MAX_RIVALS,MAX_TOWN_CARS,RIVAL_SPEEDS,RIVAL_CORNERS,TOWN_PARTS,townParkingCapacity} from './town3d.js?v=20261125f';
+import {createRoadNetwork} from './road-network3d.js?v=20261125g';
+import {townRoute,raceRoute} from './town-traffic3d.js?v=20261125g';
+import {ARRIVAL_TYPES,DEFAULT_FLEET,DEFAULT_RIVAL,MAX_RIVALS,MAX_TOWN_CARS,RIVAL_SPEEDS,RIVAL_CORNERS,TOWN_PARTS,townParkingCapacity} from './town3d.js?v=20261125g';
 
 function elem(tag,text,className){
  const el=document.createElement(tag);

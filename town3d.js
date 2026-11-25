@@ -1,4 +1,4 @@
-import {nearestRoad} from './road3d.js?v=20261125d';
+import {nearestRoad} from './road3d.js?v=20261125g';
 import {worldHalf,coordinateLimit} from './world3d.js?v=20261119d';
 
 export const TOWN_PARTS=Object.freeze({

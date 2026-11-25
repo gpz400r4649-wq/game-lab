@@ -4,7 +4,7 @@ import {Scene} from '../vendor/three.module.min.js';
 import {create3D,fresh3D,part,step3D,validate3D} from '../engine3d.js';
 import {createRoadNetwork} from '../road-network3d.js';
 import {createRoadView} from '../road-model3d.js';
-import {roadConnection,roadPiecePlacement,sampleRoad,splitRoadAt,traceRoadPoints,validRoads} from '../road3d.js';
+import {reverseOpenRoad,roadConnection,roadPiecePlacement,sampleRoad,splitRoadAt,traceRoadPoints,validRoads} from '../road3d.js';
 import {fitRaceGate} from '../race3d.js';
 import {DEFAULT_FLEET,configureTownPart,fitTownPart,houseGarage,refitTownParts,townLocal,townSolids,visitorParking} from '../town3d.js';
 import {townRaceRank,townRoute} from '../town-traffic3d.js';
@@ -49,6 +49,25 @@ test('区間配置は開始の高さと既存道路への接続を使い、マ�
  const existing=roadPiecePlacement(road,{x:0,z:0},240,{connections:[{...main,points:[{x:-40,z:-7},{x:40,z:-7}]}]});
  assert.deepEqual(existing.end,{x:0,y:0,z:-7});
  assert.equal(roadPiecePlacement(road,{x:0,z:-28},60),null);
+});
+
+test('短い区間でも、押した既存道路へつなげられる',()=>{
+ const from=road('from',0,12,0,4);
+ const placement=roadPiecePlacement(from,{x:0,z:.5},240,{connections:[main]});
+ assert.deepEqual(placement.end,{x:0,y:0,z:0});
+ assert.equal(createRoadNetwork([main,{...from,points:placement.points}]).signals.length,3);
+});
+
+test('道をはじめから延ばしても、元の歩道側とガードレールの区間を保つ',()=>{
+ const original={...main,sidewalk:'left',segmentBarriers:{0:'guardrail'}};
+ const drawing=reverseOpenRoad(original);
+ const extension=roadPiecePlacement(drawing,{x:-48,z:0},240);
+ const result=reverseOpenRoad({...drawing,points:extension.points});
+ assert.deepEqual(result.points.slice(1),original.points);
+ assert.equal(result.points[0].x,-48);
+ assert.equal(result.sidewalk,'left');
+ assert.deepEqual(result.segmentBarriers,{1:'guardrail'});
+ assert.equal(validRoads([result],240),true);
 });
 
 test('道路の端と途中に吸い付き、高さの違う道路は接続先にしない',()=>{

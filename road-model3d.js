@@ -1,7 +1,7 @@
 import * as T from './vendor/three.module.min.js';
-import {ROAD_BARRIERS,ROAD_DECK_DEPTH,createRoadOpenings,roadBarrierOffset,roadRunBarrier,roadSections,roadVertex,sampleRoad} from './road3d.js?v=20261125d';
-import {createRoadNetwork} from './road-network3d.js?v=20261125e';
-import {makeTrafficSignal,updateTrafficSignal} from './race-model3d.js?v=20261125e';
+import {ROAD_BARRIERS,ROAD_DECK_DEPTH,createRoadOpenings,roadBarrierOffset,roadRunBarrier,roadSections,roadVertex,sampleRoad} from './road3d.js?v=20261125g';
+import {createRoadNetwork} from './road-network3d.js?v=20261125g';
+import {makeTrafficSignal,updateTrafficSignal} from './race-model3d.js?v=20261125g';
 
 const asphalt=new T.MeshStandardMaterial({color:0x333c4e,roughness:.98,side:T.DoubleSide});
 const edges=new T.MeshBasicMaterial({color:0xe2e6ef,side:T.DoubleSide});
@@ -105,7 +105,7 @@ export function createRoadView(scene){
   const dot=new T.Mesh(snapDot,snapMaterial);dot.renderOrder=5;snapGuide.add(dot);return dot;
  });
  snapGuide.visible=false;
- let stamp='',roads=[],half=30,draftId=null,draftStamp='';
+ let stamp='',roads=[],half=30,draftId=null,draftStamp='',previewIndex=null;
  function clear(group){for(const model of [...group.children]){group.remove(model);model.traverse(child=>{if(child.isMesh&&child.geometry!==pegShape)child.geometry.dispose();});}}
  function showSaved(currentDraft){
   clear(saved);
@@ -114,25 +114,44 @@ export function createRoadView(scene){
   for(const road of roads){const model=roadMesh(road,half,false,openings);model.visible=road.id!==draftId;model.userData.roadId=road.id;saved.add(model);}
   return openings;
  }
- const eraseLine=new T.Mesh(new T.BoxGeometry(1,1,1),new T.MeshBasicMaterial({color:0xe2646b,transparent:true,opacity:.7,depthWrite:false}));
+ function previewOpenings(){
+  if(previewIndex?.id!==draftId)previewIndex={id:draftId,openings:createRoadOpenings(roads.filter(road=>road.id!==draftId),half)};
+  for(const model of saved.children)model.visible=model.userData.roadId!==draftId;
+  return previewIndex.openings;
+ }
+ const eraseLine=new T.Group(),highlightShape=new T.BoxGeometry(1,1,1);
+ const highlightMaterial=new T.MeshBasicMaterial({color:0xe2646b,transparent:true,opacity:.7,depthWrite:false});
  eraseLine.visible=false;scene.add(eraseLine);
  const eraseDirection=new T.Vector3(),forward=new T.Vector3(0,0,1);
+ let highlightedPath=null,highlightedIndex=-1;
  return {
   showSegment(segment,color=0xe2646b){
    eraseLine.visible=!!segment;
    if(!segment)return;
-   eraseLine.material.color.setHex(color);
-   const {a,b}=segment,ay=a.y||0,by=b.y||0;
-   eraseDirection.set(b.x-a.x,by-ay,b.z-a.z);
-   eraseLine.position.set((a.x+b.x)/2,(ay+by)/2+.075,(a.z+b.z)/2);
-   eraseLine.scale.set(.45,.045,eraseDirection.length());
-   eraseLine.quaternion.setFromUnitVectors(forward,eraseDirection.normalize());
+   highlightMaterial.color.setHex(color);
+   const {path,index}=segment;
+   if(highlightedPath===path&&highlightedIndex===index)return;
+   highlightedPath=path;highlightedIndex=index;
+   let used=0;
+   for(let i=1;i<path.length;i++){
+    const a=path[i-1],b=path[i];
+    if(b.incomingSegment!==index)continue;
+    const mesh=eraseLine.children[used++]||new T.Mesh(highlightShape,highlightMaterial);
+    if(!mesh.parent)eraseLine.add(mesh);
+    const ay=a.y||0,by=b.y||0;
+    eraseDirection.set(b.x-a.x,by-ay,b.z-a.z);
+    mesh.position.set((a.x+b.x)/2,(ay+by)/2+.075,(a.z+b.z)/2);
+    mesh.scale.set(.55,.045,eraseDirection.length());
+    mesh.quaternion.setFromUnitVectors(forward,eraseDirection.normalize());
+    mesh.visible=true;
+   }
+   for(let i=used;i<eraseLine.children.length;i++)eraseLine.children[i].visible=false;
   },
   surfaces(){return saved.children.filter(model=>model.visible).flatMap(model=>model.children.filter(mesh=>mesh.userData.roadSurface));},
   handles(){return draft.children.filter(mesh=>Number.isInteger(mesh.userData.roadHandle));},
   sync(next,extent){
    const key=JSON.stringify([next||[],extent]);if(key===stamp)return;
-   stamp=key;roads=next||[];half=extent;draftStamp='';showSaved();
+   stamp=key;roads=next||[];half=extent;draftStamp='';previewIndex=null;showSaved();
    signals.clear();
    for(const signal of createRoadNetwork(roads).signals){
     const model=makeTrafficSignal(signal);
@@ -156,11 +175,11 @@ export function createRoadView(scene){
     dot.position.set(site.x,(point?.y||0)+.25,site.z);dot.material=active?activeMaterial:snapMaterial;dot.scale.setScalar(active?1.7:1);
    }
   },
-  showDraft(road,selected=-1){
-   const key=JSON.stringify(road);
+  showDraft(road,selected=-1,transient=false){
+   const key=JSON.stringify([road,transient]);
    if(key!==draftStamp){
     clear(draft);draftId=road?.id||null;draftStamp=key;
-    const openings=showSaved(road);
+    const openings=transient?previewOpenings():showSaved(road);
     if(road){
      draft.add(roadMesh(road,half,true,openings));
      road.points.forEach((point,index)=>{const peg=new T.Mesh(pegShape,pegMaterial);peg.position.set(point.x,(point.y||0)+.34,point.z);peg.userData.roadHandle=index;peg.renderOrder=6;draft.add(peg);});

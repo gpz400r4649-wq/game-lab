@@ -1,7 +1,7 @@
-import {createRoadNetwork} from './road-network3d.js?v=20261125e';
-import {courseStart,savedRoadPath} from './road3d.js?v=20261125d';
-import {orderedRaceGates,trafficSignalPhase} from './race3d.js?v=20261125e';
-import {DEFAULT_FLEET,MAX_TOWN_CARS,TOWN_PARTS,houseGarage,townLocal,townParkingCapacity,visitorParking} from './town3d.js?v=20261125f';
+import {createRoadNetwork} from './road-network3d.js?v=20261125g';
+import {courseStart,savedRoadPath} from './road3d.js?v=20261125g';
+import {orderedRaceGates,trafficSignalPhase} from './race3d.js?v=20261125g';
+import {DEFAULT_FLEET,MAX_TOWN_CARS,TOWN_PARTS,houseGarage,townLocal,townParkingCapacity,visitorParking} from './town3d.js?v=20261125g';
 
 const gap=(a,b)=>Math.hypot(b.x-a.x,b.z-a.z);
 const near=(a,b)=>gap(a,b)<.01&&Math.abs(a.y-b.y)<.04;

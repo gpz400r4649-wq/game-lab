@@ -56,16 +56,19 @@ export function roadPointsFit(points,closed){
 }
 
 export function roadSegmentAt(road,point){
- const {points,closed}=road;
+ const path=savedRoadPath(road,true);
  let nearest=0,best=Infinity;
- for(let i=0;i<points.length-(closed?0:1);i++){
-  const a=points[i],b=points[(i+1)%points.length],dx=b.x-a.x,dz=b.z-a.z;
-  const t=Math.max(0,Math.min(1,((point.x-a.x)*dx+(point.z-a.z)*dz)/(dx*dx+dz*dz)));
+ for(let i=1;i<path.length;i++){
+  const a=path[i-1],b=path[i],dx=b.x-a.x,dz=b.z-a.z;
+  const length2=dx*dx+dz*dz;
+  if(!length2)continue;
+  const t=Math.max(0,Math.min(1,((point.x-a.x)*dx+(point.z-a.z)*dz)/length2));
   const projection=lerp(a,b,t);
   const cost=distance(point,projection)**2+((point.y||0)-(projection.y||0))**2;
-  if(cost<best){best=cost;nearest=i;}
+  if(cost<best){best=cost;nearest=b.incomingSegment;}
  }
- return {index:nearest,a:points[nearest],b:points[(nearest+1)%points.length]};
+ const points=road.points;
+ return {index:nearest,a:points[nearest],b:points[(nearest+1)%points.length],path};
 }
 
 export function roadRunBarrier(road,end){
@@ -86,6 +89,12 @@ function remapSegmentBarriers(road,segments){
   const label=Array.isArray(old)?road.segmentBarriers[old[0]]??road.segmentBarriers[old[1]]:road.segmentBarriers[old];
   return label===undefined?[]:[[index,label]];
  }));
+}
+
+export function reverseOpenRoad(road){
+ const points=road.points.slice().reverse(),indices=Array.from({length:Math.max(0,points.length-1)},(_,index)=>points.length-2-index);
+ const sidewalk=road.sidewalk==='left'?'right':road.sidewalk==='right'?'left':road.sidewalk;
+ return {...road,points,sidewalk,segmentBarriers:remapSegmentBarriers(road,indices)};
 }
 
 export function removeRoadPoint(road,index){
@@ -117,9 +126,17 @@ export function roadPiecePlacement(road,aim,world,{start=null,height=0,grade=0,c
  const y=Math.max(0,Math.min(MAX_ROAD_HEIGHT,base+grade*ROAD_HEIGHT_STEP));
  const direction=sector*Math.PI/4;
  const end={x:origin.x+length*Math.round(Math.cos(direction)),y,z:origin.z+length*Math.round(Math.sin(direction))};
+ // A short last section can end exactly on the road the builder tapped.
+ const aimed=roadConnection(connections,aim,y,world);
+ let matchedAim=false;
+ if(aimed){
+  const ax=aimed.x-origin.x,az=aimed.z-origin.z,span=Math.hypot(ax,az);
+  matchedAim=span>=MIN_SPACING&&span<=length*1.6&&ax*x+az*z>.9*span*Math.hypot(x,z);
+  if(matchedAim)Object.assign(end,{x:aimed.x,y:aimed.y,z:aimed.z});
+ }
  const limit=coordinateLimit(world);
  if(Math.abs(end.x)>limit||Math.abs(end.z)>limit)return null;
- const join=roadConnection(connections,end,y,world);
+ const join=!matchedAim&&roadConnection(connections,end,y,world);
  if(join&&distance(end,join)<=1.25)Object.assign(end,{x:join.x,y:join.y,z:join.z});
  const previous=road.points.at(-2);
  if(previous&&distance(previous,end)<MIN_SPACING&&Math.abs((previous.y||0)-end.y)<.3)return null;
@@ -208,10 +225,11 @@ export function sampleRoad(road,withSegments=false){
  return path;
 }
 
-const roadPaths=new WeakMap();
-export function savedRoadPath(road){
- let path=roadPaths.get(road);
- if(!path){path=sampleRoad(road);roadPaths.set(road,path);}
+const roadPaths=new WeakMap(),segmentPaths=new WeakMap();
+export function savedRoadPath(road,withSegments=false){
+ const cache=withSegments?segmentPaths:roadPaths;
+ let path=cache.get(road);
+ if(!path){path=sampleRoad(road,withSegments);cache.set(road,path);}
  return path;
 }
 
@@ -241,7 +259,7 @@ export function roadBarrierOffset(road,side){return side*(road.width/2-.12);}
 
 // Keep the portions of a line that are outside other roads at the same level.
 export function createRoadOpenings(roads,half){
- if(roads.length<2)return ()=>[[0,1]];
+ if(!roads.length)return ()=>[[0,1]];
  const cell=16,buckets=new Map(),long=[],triangles=[];
  for(const road of roads){
   const sections=roadSections(savedRoadPath(road),road.closed),radius=road.width/2;

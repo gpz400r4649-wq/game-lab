@@ -1,9 +1,9 @@
 import {createCarAudio} from './car-audio3d.js?v=20261119g';
-import {courseStart,nearestRoad} from './road3d.js?v=20261125d';
-import {createRoadView} from './road-model3d.js?v=20261125e';
-import {createRoadEditor} from './road-ui3d.js?v=20261125f';
-import {createLapGateView,makeCarModel,updateCarModel,makeRaceGateModel,updateRaceGateModel,updateRaceGateNumber,makeTrafficSignal,updateTrafficSignal} from './race-model3d.js?v=20261125e';
-import {CAR_TUNING,DEFAULT_CAR_TUNING,RACE_LAP_OPTIONS,fitRaceGate,orderedRaceGates,turnRaceGate} from './race3d.js?v=20261125e';
+import {courseStart,nearestRoad} from './road3d.js?v=20261125g';
+import {createRoadView} from './road-model3d.js?v=20261125g';
+import {createRoadEditor} from './road-ui3d.js?v=20261125g';
+import {createLapGateView,makeCarModel,updateCarModel,makeRaceGateModel,updateRaceGateModel,updateRaceGateNumber,makeTrafficSignal,updateTrafficSignal} from './race-model3d.js?v=20261125g';
+import {CAR_TUNING,DEFAULT_CAR_TUNING,RACE_LAP_OPTIONS,fitRaceGate,orderedRaceGates,turnRaceGate} from './race3d.js?v=20261125g';
 import {assemblyCandidate,assemblyCopies,saveAssembly,temporarySpawn} from './assembly3d.js?v=20261119p';
 import {createSupplyUI,createSupplyView} from './supply-ui3d.js?v=20261124a';
 import {FURNITURE_PRESETS,configureFurniture,isFurniture} from './furniture3d.js?v=20261119d';
@@ -15,7 +15,7 @@ import {createPlayerRulesUI} from './player-rules-ui3d.js?v=20261119d';
 import {fencePresetKey,floorPresetKey,FLOOR_PRESETS,configureBuildingPart,FENCE_PRESETS,RAMP_PRESETS,ROOF_PRESETS} from './architecture3d.js?v=20261119o';
 import {makeHalfFloorGeometries,makeDiagonalWallGeometry,makeCornerRampGeometry,makeFenceModel,fenceGeometry,makeRoofSlopeGeometry,makeGableGeometry} from './architecture-model3d.js?v=20261119d';
 import {createChoiceControl,enhanceChoiceControl} from './choices3d.js?v=20261119d';
-import {groupSteps,groupCandidate,commitGroup,copyGroupNearby} from './group-edit3d.js?v=20261125f';
+import {groupSteps,groupCandidate,commitGroup,copyGroupNearby} from './group-edit3d.js?v=20261125g';
 import {initializeCharacterDefaults,synchronizeCharacterDefaults,inheritNewCharacter} from './character-defaults3d.js?v=20261119d';
 import {nearbyActor,trade,companionsAt} from './actor3d.js?v=20261119d';
 import {giveAllyGun,giftableGun,recruitTarget,allyAttackDistance} from './ally3d.js?v=20261119d';
@@ -27,7 +27,7 @@ import {stageRangePointer} from './stage-range3d.js?v=20261124a';
 import {createEnemyMessages} from './enemy-messages3d.js?v=20261119d';
 import {createPlayRanges} from './play-ranges3d.js?v=20261124a';
 import {closeLiveRangeEditor,isLiveRangeEditing} from './enemy-range-ui3d.js?v=20261124a';
-import {dragCandidate} from './editor-drag3d.js?v=20261125f';
+import {dragCandidate} from './editor-drag3d.js?v=20261125g';
 import {rangeWorldCells,enemyYaw,defaultEnemyRanges,MOVE_MAX_CELLS} from './enemy-range3d.js?v=20261119d';
 import {ROBOT_BARREL,TPS_GUN_MOUNT} from './muzzle3d.js?v=20261119d';
 import {DOOR_PRESETS,configureDoor,doorInteraction,isSlidingDoor,nearbyDoor} from './doors3d.js?v=20261119d';
@@ -37,21 +37,21 @@ import {CITY_TOP_PITCH,CITY_ANGLE_PITCH,cityRouteView,cityZoomLimit,editorViewFr
 import {createStructureRenderer,isBatchedStructure} from './structure-render3d.js?v=20261119d';
 import {MAX_PARTS,MAX_PROJECT_BYTES,MAX_BUILD_Y} from './limits3d.js?v=20261119d';
 import {worldSize,worldHalf,coordinateLimit} from './world3d.js?v=20261119d';
-import {createWorldUI} from './world-ui3d.js?v=20261125d';
+import {createWorldUI} from './world-ui3d.js?v=20261125g';
 import {configureNumericInput} from './numeric3d.js?v=20261119d';
 import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261119d';
 import {installGameTouchGuard,bindHeldButton,bindGameAction,createCarControls,createGamePageMode} from './input3d.js?v=20261120m';
 import {actionsFor} from './events3d.js?v=20261119d';
 import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261119d';
 import {rotatePiece,BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,topAt,editorPlacementReason,editorPlacementBlocker,blockPlacement} from './building3d.js?v=20261119p';
-import {createToolsUI} from './tools3d.js?v=20261125f';
+import {createToolsUI} from './tools3d.js?v=20261125g';
 import * as T from './vendor/three.module.min.js';
-import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,nearbyChair} from './engine3d.js?v=20261125f';
-import {TOWN_PARTS,configureTownPart,fitTownPart,townPlacementReason} from './town3d.js?v=20261125f';
-import {createTownView,makeTownModel} from './town-model3d.js?v=20261125f';
-import {townRaceRank} from './town-traffic3d.js?v=20261125f';
-import {installTownUI,renderRivalSettings} from './town-ui3d.js?v=20261125f';
-import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261125f';
+import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,nearbyChair} from './engine3d.js?v=20261125g';
+import {TOWN_PARTS,configureTownPart,fitTownPart,townPlacementReason} from './town3d.js?v=20261125g';
+import {createTownView,makeTownModel} from './town-model3d.js?v=20261125g';
+import {townRaceRank} from './town-traffic3d.js?v=20261125g';
+import {installTownUI,renderRivalSettings} from './town-ui3d.js?v=20261125g';
+import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261125g';
 document.querySelectorAll('.setting-choices').forEach(enhanceChoiceControl);
 const $=s=>document.querySelector(s),view=$('#viewport');
 const seatButton=$('#use-seat3');
@@ -381,7 +381,7 @@ $('#place-drag3').onclick=()=>{placementLook=false;editorPointer=null;syncPlacem
 function withinSurface(e){const r=surface.getBoundingClientRect();return e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom;}
 
 for(const id of ['#editor-nav3','#orbit-pad'])$(id).addEventListener('pointerdown',()=>{if(isLiveRangeEditing())surface.focus({preventScroll:true});});
-function roadEditorPointer(event){const point=pointOnDragPlane(event,enemyEditHeight(editedObject()));return point?Object.assign(point,{pointerEvent:event}):null;}
+function roadEditorPointer(event){const point=pointOnDragPlane(event,enemyEditHeight(editedObject()));return point?Object.assign(point,{pointerEvent:event}):project.template==='car'?{pointerEvent:event}:null;}
 function pointOnDragPlane(event,height){hits(event,[]);return ray.ray.intersectPlane(new T.Plane(new T.Vector3(0,1,0),-height),new T.Vector3());}
 function beginEditorDrag(drag){if(drag.started)return;drag.started=true;const source=meshes.get(drag.original.id),copy=source.clone(true);copy.position.set(0,0,0);copy.visible=true;copy.traverse(child=>{child.layers.set(0);if(child.isMesh)child.material=ghostMaterial;});dragPreview.clear();dragPreview.add(copy);source.visible=false;structureRenderer.sync(project.objects.map(o=>o.id===drag.original.id?{...o,hidden:true}:o),meshes);surface.classList.add('is-object-dragging');}
 function updateEditorDrag(event,drag){if(drag.group){updateGroupDrag(event,drag);return;}const point=pointOnDragPlane(event,drag.height),candidate=dragCandidate(drag.original,drag.grab,point,project.objects,project.spawn,project);if(!candidate)return;drag.candidate=candidate;beginEditorDrag(drag);

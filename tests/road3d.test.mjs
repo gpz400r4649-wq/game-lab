@@ -267,6 +267,12 @@ test('十字路と丁字路では白線と柵が切れ、分かれ道に入れ�
  const draftOpening=scene.children[0].children[0].children.find(mesh=>mesh.userData.roadBarrier);
  const vertices=draftOpening.geometry.getAttribute('position');
  for(let i=0;i<vertices.count;i++)if(vertices.getZ(i)>0)assert.ok(Math.abs(vertices.getX(i))>3.999);
+ view.sync([main],120);view.showDraft(null);
+ const savedModel=scene.children[0].children[0];
+ view.showDraft(branch,-1,true);
+ assert.equal(scene.children[0].children[0],savedModel);
+ view.showDraft({...branch,points:[branch.points[0],{x:0,z:26}]},-1,true);
+ assert.equal(scene.children[0].children[0],savedModel);
 });
 
 test('旧作品の手置き信号を取り除き、信号は交互に青になる',()=>{

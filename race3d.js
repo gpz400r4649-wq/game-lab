@@ -1,4 +1,4 @@
-import {courseStart,lapRoadMarkers,nearestRoad,ROAD_WIDTHS} from './road3d.js?v=20261125d';
+import {courseStart,lapRoadMarkers,nearestRoad,ROAD_WIDTHS} from './road3d.js?v=20261125g';
 
 export const F1_TOP_SPEED_KMH=360;
 export const CAR_WHEELBASE=1.64;
