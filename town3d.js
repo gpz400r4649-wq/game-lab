@@ -5,8 +5,8 @@ export const TOWN_PARTS=Object.freeze({
  crosswalk:{name:'おうだんほどう',icon:'▥',w:8,h:.5,d:2.4,marking:true},
  stopLine:{name:'とまる線',icon:'▬',w:8,h:.5,d:.5,marking:true},
  house:{name:'いえ',icon:'⌂',w:9,h:4,d:5,solid:true,capacity:1},
- shop:{name:'おみせ',icon:'▤',w:8,h:4,d:6,solid:true},
- school:{name:'がっこう',icon:'▦',w:12,h:6,d:8,solid:true},
+ shop:{name:'おみせ',icon:'▤',w:8,h:4,d:6,solid:true,visitorSlots:1},
+ school:{name:'がっこう',icon:'▦',w:12,h:6,d:8,solid:true,visitorSlots:2},
  parking:{name:'ちゅうしゃじょう',icon:'Ⓟ',w:12,h:.5,d:7,capacity:6},
  garage:{name:'ガレージ',icon:'▣',w:12,h:3.6,d:7,capacity:6},
  busStop:{name:'バスてい',icon:'▧',w:5,h:2.5,d:3,capacity:1}
@@ -45,8 +45,8 @@ export function configureTownPart(part,kind='house'){
  return Object.assign(part,{townKind:kind,townHeading:0,w,h,d});
 }
 
-export function upgradeTownHouse(part,roads=[]){
- if(part.townKind!=='house'||part.townDriveway||!part.townRoadId)return;
+export function upgradeTownDriveway(part,roads=[]){
+ if(!townParkingCapacity(part)||part.townDriveway||!part.townRoadId)return;
  const road=roads.find(road=>road.id===part.townRoadId);
  if(road)part.townDriveway=hasSidewalk(road,part.townSide)?2.65:.65;
 }
@@ -54,6 +54,18 @@ export function upgradeTownHouse(part,roads=[]){
 export function houseGarage(part){
  const garageWidth=part.w*.4,houseWidth=part.w-garageWidth;
  return {houseWidth,houseX:-garageWidth/2,garageWidth,garageX:houseWidth/2,garageHeight:part.h*.64};
+}
+
+export function townParkingCapacity(part){
+ const spec=TOWN_PARTS[part.townKind];
+ return spec?.capacity||spec?.visitorSlots||0;
+}
+
+export function visitorParking(part){
+ const slots=TOWN_PARTS[part.townKind].visitorSlots;
+ if(!slots)return null;
+ const width=Math.min(slots*2.5,part.w*.45),buildingWidth=part.w-width;
+ return {slots,width,buildingWidth,x:buildingWidth/2};
 }
 
 export function fitTownPart(part,roads,point,sideOverride=null){
@@ -70,7 +82,7 @@ export function fitTownPart(part,roads,point,sideOverride=null){
  const width=spec.marking?(part.townKind==='stopLine'?fit.width/2:fit.width-.5):size.w;
  return Object.assign(part,{x:fit.x+right.x*distance,y:fit.y,z:fit.z+right.z*distance,w:width,h:size.h,d:size.d,
   townHeading:angle(heading),townRoadId:fit.roadId,townSide:side,townAnchor:{x:fit.x,y:fit.y,z:fit.z},
-  townDriveway:spec.capacity?(hasWalk?2:0)+.65:0,townGrade:spec.marking?Math.max(-1,Math.min(1,fit.grade)):0});
+  townDriveway:townParkingCapacity(part)?(hasWalk?2:0)+.65:0,townGrade:spec.marking?Math.max(-1,Math.min(1,fit.grade)):0});
 }
 
 export function refitTownParts(objects,roads,world){
@@ -126,6 +138,9 @@ export function townSolids(part){
   addArea(houseX,0,houseWidth,part.d,part.h);
   addArea(part.w/2-.08,0,.16,part.d,garageHeight);
   addArea(garageX,part.d/2-.08,garageWidth,.16,garageHeight);
- }else addArea(0,0,part.w,part.d,part.h);
+ }else{
+  const parking=visitorParking(part);
+  addArea(parking?-parking.width/2:0,0,parking?.buildingWidth??part.w,part.d,part.h);
+ }
  return cells;
 }

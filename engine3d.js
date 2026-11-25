@@ -1,7 +1,7 @@
 import {courseStart,createRoadBarrierQuery,createRoadSurfaceQuery,ROAD_DECK_DEPTH,validRoads} from './road3d.js?v=20261125d';
 import {carMotion,createCarRun,RACE_LAP_OPTIONS,updateRaceGates,upgradeCarTuning,validCarTuning,validGateFit} from './race3d.js?v=20261125e';
-import {configureTownPart,upgradeTownHouse,validTownPart,townSolids,validRivals} from './town3d.js?v=20261125d';
-import {createTownTraffic,stepTownTraffic} from './town-traffic3d.js?v=20261125e';
+import {configureTownPart,upgradeTownDriveway,validTownPart,townSolids,validRivals} from './town3d.js?v=20261125f';
+import {createTownTraffic,stepTownTraffic} from './town-traffic3d.js?v=20261125f';
 import {validAssemblies} from './assembly3d.js?v=20261119d';
 import {validSupplyFlight,createSupplyFlight,updateSupplyFlight} from './supply3d.js?v=20261119d';
 import {isFurniture,validFurniture,furnitureSolids} from './furniture3d.js?v=20261119d';
@@ -73,7 +73,7 @@ export function validate3D(data,skipShared=false){
     if(o.type==='raceGate'&&(!Number.isInteger(o.gateOrder)||!number(o.gateOrder,1,MAX_PARTS)||!validGateFit(o)))throw Error('ゲートの順ばんをたしかめてね');
     if(o.type==='town'){
      if(p.template!=='car'||!validTownPart(o))throw Error('まちのパーツをたしかめてね');
-     upgradeTownHouse(o,p.roads);
+     upgradeTownDriveway(o,p.roads);
     }
     if(!validEvents(o))throw Error('イベントの設定を確認してください');
     const sizeLimit=o.type==='town'?16:o.type==='enemy'?Math.max(10,2*(o.enemyScale||1)):o.type==='raceGate'&&o.gateWidth!==undefined?Math.max(13,o.gateWidth+1):10;

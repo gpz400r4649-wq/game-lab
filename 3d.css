@@ -626,6 +626,10 @@ aside>#group-tools3{padding:0;margin:0;border:0;background:transparent;border-ra
 @media(max-width:540px) { #car-tuning3 { grid-template-columns:1fr; } }
 .car-workshop #palette3,.car-workshop #palette-extra3 { display:none; }
 .car-workshop [data-editor-tool][data-part=erase] { display:none; }
+.city-camera3 { display:none; }
+.car-workshop .stage-toolbar:not(.is-playing) .city-camera3 { display:flex; margin-inline:auto; flex:none; }
+.city-camera3 button { min-height:42px; font-size:11px; padding:6px 9px; white-space:nowrap; }
+.city-camera3 button[aria-pressed=true] { background:#7258c4; color:white; }
 #city-build3[hidden],#city-build3 [hidden],.stage-toolbar.is-playing ~ #city-build3,
 main.range-editing #city-build3 { display:none; }
 #city-build3 {

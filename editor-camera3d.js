@@ -2,6 +2,23 @@ import {MAX_BUILD_Y} from './limits3d.js?v=20261119d';
 import {worldHalf} from './world3d.js?v=20261119d';
 import {bindHeldButton} from './input3d.js?v=20261119d';
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+export const CITY_TOP_PITCH=Math.PI/2-.02;
+export const CITY_ANGLE_PITCH=.82;
+export const cityZoomLimit=world=>Math.max(65,worldHalf(world)*3);
+
+export function cityRouteView(path,aspect,fov,world){
+ const bounds={x:[Infinity,-Infinity],y:[Infinity,-Infinity],z:[Infinity,-Infinity]};
+ for(const point of path)for(const axis of ['x','y','z']){
+  const value=point[axis]||0;
+  const [low,high]=bounds[axis];
+  bounds[axis]=[Math.min(low,value),Math.max(high,value)];
+ }
+ const center=axis=>(bounds[axis][0]+bounds[axis][1])/2;
+ const radius=axis=>(bounds[axis][1]-bounds[axis][0])/2;
+ const vertical=Math.tan(fov*Math.PI/360);
+ const distance=Math.max(radius('z')/vertical,radius('x')/(vertical*Math.max(.35,aspect)))*1.28+radius('y')+6;
+ return {x:center('x'),y:center('y'),z:center('z'),distance:clamp(distance,32,cityZoomLimit(world))};
+}
 // Resume editing near the player's floor, with the same horizontal direction.
 export function editorViewFromPlay(player,yaw,pitch,world){
  if(!player||!['x','y','z'].every(key=>Number.isFinite(player[key])))return null;
@@ -11,7 +28,8 @@ export function editorViewFromPlay(player,yaw,pitch,world){
 // Move the camera and its orbit target together in camera-relative directions.
 export function moveEditorCamera(target,input,yaw,distance,dt,world,pitch=.7){
  let x=input.x||0,z=input.z||0,y=input.y||0;const length=Math.hypot(x,z,y);if(!length||!Number.isFinite(length))return false;if(length>1){x/=length;z/=length;y/=length;}
- const speed=clamp(distance*.55,6,28)*(input.fast?2.5:1),step=speed*clamp(dt,0,.05),half=worldHalf(world);
+ const wideView=world?.template==='car'&&distance>65;
+ const speed=(wideView?Math.max(28,distance*.42):clamp(distance*.55,6,28))*(input.fast?2.5:1),step=speed*clamp(dt,0,.05),half=worldHalf(world);
  target.x=clamp(target.x+(x*Math.cos(yaw)+z*Math.sin(yaw))*step,-half,half);
  target.z=clamp(target.z+(-x*Math.sin(yaw)+z*Math.cos(yaw))*step,-half,half);
  target.y=clamp(target.y+y*step,.5-Math.sin(pitch)*distance,MAX_BUILD_Y+10);return true;

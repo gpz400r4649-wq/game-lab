@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.min.js';
-import {TOWN_PARTS,houseGarage} from './town3d.js?v=20261125d';
+import {TOWN_PARTS,houseGarage,visitorParking} from './town3d.js?v=20261125f';
 import {makeCarModel,updateCarModel} from './race-model3d.js?v=20261125e';
 
 const mat=color=>new T.MeshStandardMaterial({color,roughness:.85});
@@ -22,8 +22,14 @@ export function makeTownModel(part,preview){
   else for(let x=-w/2+.25;x<=w/2-.15;x+=.65)box(chalk,x,.042,0,Math.min(.38,w/5),.014,d);
   return group;
  }
- const house=kind==='house'?houseGarage(part):null;
- if(part.townDriveway)box(asphalt,house?.garageX||0,.155,-(d+part.townDriveway)/2,house?house.garageWidth-.18:Math.min(4,w),.065,part.townDriveway+.04);
+ const house=kind==='house'?houseGarage(part):null,visitors=visitorParking(part);
+ if(part.townDriveway)box(asphalt,house?.garageX??visitors?.x??0,.155,-(d+part.townDriveway)/2,house?house.garageWidth-.18:visitors?.width??Math.min(4,w),.065,part.townDriveway+.04);
+ if(visitors){
+  const {x,width,slots}=visitors;
+  box(asphalt,x,.055,0,width,.11,d);
+  for(let i=0;i<=slots;i++)box(chalk,x+(i/slots-.5)*(width-.18),.113,.1,.055,.014,Math.min(3.5,d));
+  box(chalk,x,.113,Math.min(1.85,d*.48),width-.12,.014,.075);
+ }
  if(kind==='parking'||kind==='garage'){
   box(asphalt,0,.055,0,w,.11,d);
   for(let i=0;i<=6;i++)box(chalk,(i-3)*(w-.35)/6,.113,.85,.055,.014,3.6);
@@ -44,7 +50,7 @@ export function makeTownModel(part,preview){
   return group;
  }
  const height=kind==='house'?h*.72:h-.22;
- const facadeWidth=house?.houseWidth||w,facadeX=house?.houseX||0;
+ const facadeWidth=house?.houseWidth??visitors?.buildingWidth??w,facadeX=house?.houseX??-(visitors?.width??0)/2;
  box(wall,facadeX,height/2,0,facadeWidth,height,d);
  if(house){
   const {garageWidth,garageX,garageHeight}=house;
@@ -55,20 +61,25 @@ export function makeTownModel(part,preview){
   const mesh=new T.Mesh(gable,preview||roof);
   mesh.rotation.set(Math.PI/2,0,0);mesh.scale.set(facadeWidth*.61,d+.23,1.05);
   mesh.position.set(facadeX,height+.35,0);group.add(mesh);
- }else box(shade,0,h-.13,0,w+.24,.26,d+.22);
+ }else box(shade,facadeX,h-.13,0,facadeWidth+.24,.26,d+.22);
  box(door,facadeX,1.1,-d/2-.027,house?Math.min(1.06,facadeWidth*.24):1.65,2.2,.07);
- const windows=kind==='school'?[-4,-2,2,4]:[facadeX-facadeWidth*.29,facadeX+facadeWidth*.29];
+ const windows=(kind==='school'?[-.37,-.19,.19,.37]:[-.29,.29]).map(offset=>facadeX+offset*facadeWidth);
  for(const x of windows){
   box(glass,x,1.62,-d/2-.03,kind==='house'?1:1.35,1.08,.09);
   if(kind==='school')box(glass,x,3.85,-d/2-.03,1.35,1.14,.09);
  }
- if(kind==='shop')box(roof,0,2.75,-d/2-.37,w-.4,.22,.74);
+ if(kind==='shop')box(roof,facadeX,2.75,-d/2-.37,Math.max(.1,facadeWidth-.4),.22,.74);
  return group;
 }
 
 export function createTownView(scene){
  const cars=new T.Group(),route=new T.Group();
  const line=new T.Mesh(new T.BufferGeometry(),routePaint);line.renderOrder=20;route.add(line);scene.add(cars,route);route.visible=false;
+ const markerShape=new T.CylinderGeometry(.67,.67,.15,24);
+ const markers=[0x58deca,0xffb65c].map(color=>{
+  const marker=new T.Mesh(markerShape,new T.MeshBasicMaterial({color,depthTest:false}));
+  marker.renderOrder=21;route.add(marker);return marker;
+ });
  const models=[];
  function modelAt(index){
   if(!models[index]){
@@ -91,6 +102,7 @@ export function createTownView(scene){
   showRoute(points){
    route.visible=!!points?.length;
    if(!route.visible)return;
+   for(const [index,point] of [points[0],points.at(-1)].entries())markers[index].position.set(point.x,point.y+.26,point.z);
    const vertices=[];
    for(let i=1;i<(points?.length||0);i++){
     const a=points[i-1],b=points[i],length=Math.hypot(b.x-a.x,b.z-a.z);

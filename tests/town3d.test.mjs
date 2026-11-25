@@ -6,7 +6,7 @@ import {createRoadNetwork} from '../road-network3d.js';
 import {createRoadView} from '../road-model3d.js';
 import {roadConnection,roadPiecePlacement,sampleRoad,splitRoadAt,traceRoadPoints,validRoads} from '../road3d.js';
 import {fitRaceGate} from '../race3d.js';
-import {DEFAULT_FLEET,configureTownPart,fitTownPart,houseGarage,refitTownParts,townLocal,townSolids} from '../town3d.js';
+import {DEFAULT_FLEET,configureTownPart,fitTownPart,houseGarage,refitTownParts,townLocal,townSolids,visitorParking} from '../town3d.js';
 import {townRaceRank,townRoute} from '../town-traffic3d.js';
 
 const road=(id,x,z,a,b,y=0)=>({id,width:8,closed:false,points:[{x,z,y},{x:a,z:b,y}]});
@@ -148,6 +148,25 @@ test('家に付いたガレージから車が出て、駐車場で待って家�
  assert.ok(Math.abs(car.x-inside.x)<.01);
  advance(game,p,3);assert.equal(car.phase,'out');assert.ok(car.z<inside.z-1);
  advance(game,p,36);assert.equal(car.phase,'parked');assert.ok(Math.hypot(car.x-inside.x,car.z-inside.z)<.8);
+});
+
+test('家の車はお店と学校を行き先にでき、建物に入らず駐車して帰る',()=>{
+ for(const kind of ['shop','school']){
+  const p=fresh3D('car');p.roads=[{...main,sidewalk:'both'}];
+  const house=places(p.roads,'house',-24,9,'east'),destination=places(p.roads,kind,24,-9,'east');
+  destination.townDriveway=0;
+  house.townFleet={...DEFAULT_FLEET,count:1,targetId:destination.id};
+  p.objects=[house,destination];
+  const loaded=validate3D(p),target=loaded.objects[1],parking=visitorParking(target);
+  assert.equal(target.townDriveway,2.65);
+  const game=create3D(loaded,{testSpawn:{x:-85,y:0,z:-80,heading:0}}),[car]=game.town.cars;
+  const end=car.out.points.at(-1);
+  assert.ok(Math.hypot(end.x-target.x,end.z-target.z)<target.w/2);
+  assert.ok(townSolids(target).every(box=>Math.abs(box.x-end.x)>=box.w/2+.8||Math.abs(box.z-end.z)>=box.d/2+.8));
+  assert.equal(parking.slots,kind==='school'?2:1);
+  advance(game,loaded,48);assert.equal(car.phase,'parked');
+  assert.ok(Math.hypot(car.x-house.x,car.z-house.z)<house.w/2);
+ }
 });
 
 test('保存済みの家にも車の出入口が付き、道路を直しても家のはばが変わらない',()=>{

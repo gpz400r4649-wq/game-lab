@@ -1,8 +1,21 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {MAX_BUILD_Y} from '../limits3d.js';
-import {editorViewFromPlay,moveEditorCamera,createEditorNavigation} from '../editor-camera3d.js';
+import {cityRouteView,CITY_TOP_PITCH,editorViewFromPlay,moveEditorCamera,createEditorNavigation} from '../editor-camera3d.js';
+import {PerspectiveCamera,Vector3} from '../vendor/three.module.min.js';
 test('編集カメラは見ている方向を基準に前後左右へ動く',()=>{for(const yaw of [0,Math.PI/2,Math.PI,-Math.PI/2]){const p={x:0,y:0,z:0};moveEditorCamera(p,{z:-1},yaw,20,.02,60);assert.ok(Math.abs(p.x+Math.sin(yaw)*.22)<.00001);assert.ok(Math.abs(p.z+Math.cos(yaw)*.22)<.00001);moveEditorCamera(p,{x:1},yaw,20,.02,60);assert.ok(Math.abs(p.x-(-Math.sin(yaw)+Math.cos(yaw))*.22)<.00001);}});
+test('経路の両端が近くても、遠回りと坂を含む全体を上から見られる',()=>{
+ const path=[{x:-120,y:0,z:15},{x:35,y:10,z:196},{x:210,y:30,z:-145},{x:-105,y:2,z:28}];
+ for(const aspect of [.64,1.55]){
+  const focus=cityRouteView(path,aspect,65,480),camera=new PerspectiveCamera(65,aspect,.05,1600);
+  camera.position.set(focus.x,focus.y+Math.sin(CITY_TOP_PITCH)*focus.distance,focus.z+Math.cos(CITY_TOP_PITCH)*focus.distance);
+  camera.lookAt(focus.x,focus.y,focus.z);camera.updateMatrixWorld(true);
+  for(const point of path){
+   const onScreen=new Vector3(point.x,point.y,point.z).project(camera);
+   assert.ok(Math.abs(onScreen.x)<.95&&Math.abs(onScreen.y)<.95);
+  }
+ }
+});
 test('斜め移動で速くなりすぎず、高さを上下でき、地面の下へカメラが潜らない',()=>{const p={x:0,y:0,z:0},distance=20,pitch=.7;moveEditorCamera(p,{x:1,z:1},0,distance,.02,60,pitch);assert.ok(Math.abs(Math.hypot(p.x,p.z)-.22)<.00001);moveEditorCamera(p,{y:-1},0,distance,.02,60,pitch);assert.ok(p.y<0);for(let i=0;i<300;i++)moveEditorCamera(p,{y:-1},0,distance,.05,60,pitch);assert.ok(Math.abs(p.y+Math.sin(pitch)*distance-.5)<.00001);for(let i=0;i<300;i++)moveEditorCamera(p,{y:1},0,distance,.05,60,pitch);assert.equal(p.y,MAX_BUILD_Y+10);});
 test('マップの境界で止まり、高速移動と停止が働き、部品データを変えない',()=>{const project={worldSize:960,objects:[{x:5,y:3,z:4}]},before=JSON.stringify(project),normal={x:0,y:0,z:0},fast={...normal};moveEditorCamera(normal,{x:1},0,30,.02,project);moveEditorCamera(fast,{x:1,fast:true},0,30,.02,project);assert.equal(fast.x,normal.x*2.5);const previous={...fast};assert.equal(moveEditorCamera(fast,{},0,30,.02,project),false);assert.deepEqual(fast,previous);fast.x=479.99;moveEditorCamera(fast,{x:1,fast:true},0,30,100,project);assert.equal(fast.x,480);assert.equal(JSON.stringify(project),before);});
 class Node extends EventTarget{style={};setPointerCapture(){}getBoundingClientRect(){return {left:0,top:0,width:112,height:112};}querySelector(){return this.thumb;}}
