@@ -1,6 +1,6 @@
-import {createRoadNetwork} from './road-network3d.js?v=20261125d';
+import {createRoadNetwork} from './road-network3d.js?v=20261125e';
 import {courseStart,savedRoadPath} from './road3d.js?v=20261125d';
-import {orderedRaceGates,trafficSignalPhase} from './race3d.js?v=20261125d';
+import {orderedRaceGates,trafficSignalPhase} from './race3d.js?v=20261125e';
 import {DEFAULT_FLEET,MAX_TOWN_CARS,TOWN_PARTS,houseGarage,townLocal} from './town3d.js?v=20261125d';
 
 const gap=(a,b)=>Math.hypot(b.x-a.x,b.z-a.z);
@@ -89,14 +89,17 @@ function sample(path,distance){
 function signalStops(path,signals){
  const stops=[];
  for(const signal of signals){
+  const stop=signal.stop;
   const rotation=(signal.rotation||0)*Math.PI/180;let best=null;
   for(let i=1;i<path.points.length;i++){
    const a=path.points[i-1],b=path.points[i],span=gap(a,b);
    if(span<.1||Math.cos(direction(a,b)-rotation)>-.64)continue;
-   const t=Math.max(0,Math.min(1,((signal.x-a.x)*(b.x-a.x)+(signal.z-a.z)*(b.z-a.z))/(span*span)));
-   const point=mix(a,b,t),score=gap(point,signal);
-   if(score>9||Math.abs(point.y-signal.y)>1.2||score>=(best?.score??Infinity))continue;
-   best={at:Math.max(0,path.cumulative[i-1]+span*t-2.6),rotation:signal.rotation||0,score};
+   const along=((stop.x-a.x)*(b.x-a.x)+(stop.z-a.z)*(b.z-a.z))/span;
+   if(along<-.35||along>span+.35)continue;
+   const t=Math.max(0,Math.min(1,along/span));
+   const point=mix(a,b,t),laneGap=gap(point,stop);
+   if(laneGap>2.1||Math.abs(point.y-stop.y)>.65||laneGap>=(best?.score??Infinity))continue;
+   best={at:Math.max(0,path.cumulative[i-1]+span*t-1.4),rotation:signal.rotation,phaseOffset:signal.phaseOffset,score:laneGap};
   }
   if(best)stops.push(best);
  }
@@ -111,7 +114,7 @@ export function createTownTraffic(project){
  const cars=[],rivals=[],roads=project.roads||[],parts=project.objects.filter(part=>part.type==='town'&&TOWN_PARTS[part.townKind]?.capacity);
  if(!project.rivals?.length&&!parts.some(part=>part.townFleet?.count))return {cars,rivals};
  const network=createRoadNetwork(roads),stations=new Map(parts.map(part=>[part.id,part]));
- const signals=project.objects.filter(part=>part.type==='trafficSignal');
+ const signals=network.signals;
  const targetSlots=new Map();
  for(const source of parts){
   const fleet={...DEFAULT_FLEET,...source.townFleet},target=stations.get(fleet.targetId);
@@ -163,7 +166,7 @@ function townStops(car,cars,player,time){
   if(ahead>0&&ahead<12&&cross<1.5)stop=Math.min(stop,car.distance+Math.max(0,ahead-3.3));
  }
  for(const signal of car.phase==='back'?car.backStops:car.outStops){
-  if(signal.at>=car.distance-.1&&trafficSignalPhase(signal.rotation,time)!==2)stop=Math.min(stop,signal.at);
+  if(signal.at>=car.distance-.1&&trafficSignalPhase(signal.rotation,time,signal.phaseOffset)!==2)stop=Math.min(stop,signal.at);
  }
  return stop;
 }

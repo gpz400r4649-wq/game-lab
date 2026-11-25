@@ -1,7 +1,7 @@
 import {courseStart,createRoadBarrierQuery,createRoadSurfaceQuery,ROAD_DECK_DEPTH,validRoads} from './road3d.js?v=20261125d';
-import {carMotion,createCarRun,RACE_LAP_OPTIONS,updateRaceGates,upgradeCarTuning,validCarTuning,validGateFit} from './race3d.js?v=20261125d';
+import {carMotion,createCarRun,RACE_LAP_OPTIONS,updateRaceGates,upgradeCarTuning,validCarTuning,validGateFit} from './race3d.js?v=20261125e';
 import {configureTownPart,upgradeTownHouse,validTownPart,townSolids,validRivals} from './town3d.js?v=20261125d';
-import {createTownTraffic,stepTownTraffic} from './town-traffic3d.js?v=20261125d';
+import {createTownTraffic,stepTownTraffic} from './town-traffic3d.js?v=20261125e';
 import {validAssemblies} from './assembly3d.js?v=20261119d';
 import {validSupplyFlight,createSupplyFlight,updateSupplyFlight} from './supply3d.js?v=20261119d';
 import {isFurniture,validFurniture,furnitureSolids} from './furniture3d.js?v=20261119d';
@@ -54,7 +54,10 @@ export function validate3D(data,skipShared=false){
   if((p.roads!==undefined&&p.template!=='car')||!validRoads(p.roads,p))throw Error('どうろのせっていをたしかめてね');
   if(!validSupplyFlight(p.supplyFlight,p))throw Error('そらからアイテムをとどけるせっていをたしかめてね');
   if(!validAssemblies(p.assemblies))throw Error('自分のパーツを確認してください');
-  for(const asset of p.assemblies||[])validate3D({...p,worldSize:960,objects:asset.parts,assemblies:undefined,supplyFlight:undefined,roads:undefined,characterDefaults:undefined},true);
+  for(const asset of p.assemblies||[]){
+   validate3D({...p,worldSize:960,objects:asset.parts,assemblies:undefined,supplyFlight:undefined,roads:undefined,characterDefaults:undefined},true);
+   if(p.template==='car')asset.parts=asset.parts.filter(object=>object.type!=='trafficSignal');
+  }
   if(!validLibrary(p.library))throw Error('作品の素材を確認してください');
   const ids=new Set();for(const o of p.objects){
     if(!validWaypoints(o.waypoints,limit)||(o.routeEnd!==undefined&&!['loop','reverse','stop'].includes(o.routeEnd))||!validPatrolRoute(o.patrolRoute,limit)||!validEnemyMovement(o)||!validMoveRange(o.moveRange)||!validAttackRange(o.searchRange))throw Error('敵の移動・探すはんいを確認してください');
@@ -81,6 +84,10 @@ export function validate3D(data,skipShared=false){
     if(o.type==='enemy'){if(o.facing!==undefined&&![0,90,180,270].includes(o.facing))throw Error('敵の向きを確認してください');if(o.attackEnabled!==undefined&&typeof o.attackEnabled!=='boolean'||o.attackSpeed!==undefined&&!number(o.attackSpeed,.5,8)||o.enemyWeaponId!==undefined&&typeof o.enemyWeaponId!=='string')throw Error('敵の攻撃設定を確認してください');upgradeEnemy(o);}
     if(o.settings===undefined)o.settings=settingsFor(o.type);
     const s=o.settings;if(!s||!['x','y','z'].includes(s.axis)||!number(s.distance,.5,8)||!number(s.speed,.5,5)||!Number.isInteger(s.value)||!number(s.value,1,20)||!Object.hasOwn(CONDITION_NAMES,s.condition)||!Number.isInteger(s.required)||!number(s.required,1,20))throw Error('しかけの設定を確認してください');
+  }
+  if(p.template==='car'){
+   p.objects=p.objects.filter(object=>object.type!=='trafficSignal');
+   if(p.assemblies)p.assemblies=p.assemblies.filter(asset=>asset.parts.length);
   }
   if(p.playerHitsAlly!==undefined&&typeof p.playerHitsAlly!=='boolean')throw Error('作品のルールを確認してください');
   const allies=p.objects.filter(o=>o.type==='ally');

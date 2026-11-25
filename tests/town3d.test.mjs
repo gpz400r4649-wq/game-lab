@@ -86,17 +86,38 @@ test('丁字路を自動で曲がれ、高さの違う交差や離れた道路�
  assert.equal(net.route({x:-20,y:0,z:0},{x:48,y:0,z:30},{fromRoad:'east',toRoad:'away'}),null);
 });
 
+test('同じ高さの丁字路と十字路でだけ信号を表示し、道路を取り除くと消える',()=>{
+ const crossing=road('crossing',0,-35,0,35);
+ const over=road('over',0,-35,0,35,6),extension=road('extension',40,0,60,0);
+ assert.equal(createRoadNetwork([main,over,extension]).signals.length,0);
+ assert.equal(createRoadNetwork([main,branch,over]).signals.length,3);
+ const selfCrossing={id:'figure-eight',width:8,closed:false,points:[
+  {x:-20,z:-20},{x:20,z:20},{x:20,z:-20},{x:-20,z:20}
+ ]};
+ assert.equal(createRoadNetwork([selfCrossing]).signals.length,4);
+ const scene=new Scene(),view=createRoadView(scene);
+ view.sync([main,crossing],120);
+ const models=scene.getObjectByName('automatic-traffic-signals');
+ assert.equal(models.children.length,4);
+ assert.deepEqual(models.children.map(model=>model.userData.activeLamp).sort(),[0,0,2,2]);
+ view.updateSignals(10.5);
+ assert.ok(models.children.every(model=>model.userData.activeLamp===0));
+ view.sync([main],120);
+ assert.equal(models.children.length,0);
+});
+
 test('まちの車は赤信号で待ち、青で進み、行き先で待って元の駐車場へ帰る',()=>{
  const p=fresh3D('car');p.roads=[main,branch];
  const from=places(p.roads,'garage',-25,9,'east'),to=places(p.roads,'parking',9,24,'south');
- from.townFleet={...DEFAULT_FLEET,count:3,targetId:to.id};
- p.objects=[from,to,{...part('trafficSignal',-10,2),rotation:90}];
+ from.townFleet={...DEFAULT_FLEET,count:3,targetId:to.id,delay:9};
+ p.objects=[from,to];
  const route=townRoute(createRoadNetwork(p.roads),from,to);
  assert.ok(route.length>6);
  const game=create3D(validate3D(p),{testSpawn:{x:-85,y:0,z:-80,heading:0}}),[first,second]=game.town.cars;
  const start={x:first.x,z:first.z};
- advance(game,p,2);assert.equal(first.phase,'out');assert.equal(second.phase,'queued');
- advance(game,p,6);const stopped=first.distance;
+ assert.equal(first.outStops.length,1);
+ advance(game,p,10);assert.equal(first.phase,'out');assert.equal(second.phase,'queued');
+ advance(game,p,8);const stopped=first.distance;
  advance(game,p,2);assert.equal(first.distance,stopped);assert.equal(first.speed,0);
  advance(game,p,4);assert.ok(first.distance>stopped+5);
  advance(game,p,60);assert.ok(game.town.cars.every(car=>car.phase==='parked'));

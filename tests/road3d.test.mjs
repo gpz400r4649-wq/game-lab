@@ -269,10 +269,10 @@ test('十字路と丁字路では白線と柵が切れ、分かれ道に入れ�
  for(let i=0;i<vertices.count;i++)if(vertices.getZ(i)>0)assert.ok(Math.abs(vertices.getX(i))>3.999);
 });
 
-test('交差点の信号機は向きを保存し、直角の道では交互に青になる',()=>{
+test('旧作品の手置き信号を取り除き、信号は交互に青になる',()=>{
  const p=fresh3D('car'),signal=part('trafficSignal'),side={...part('trafficSignal'),rotation:90};
  p.objects=[signal,side];
- assert.equal(validate3D(p).objects[1].rotation,90);
+ assert.deepEqual(validate3D(p).objects,[]);
  const front=makeTrafficSignal(signal),cross=makeTrafficSignal(side);
  assert.equal(cross.rotation.y,Math.PI/2);
  for(const [second,expected] of [[0,[2,0]],[8,[1,0]],[10,[0,0]],[11,[0,2]],[19,[0,1]],[21,[0,0]],[22,[2,0]]]){

@@ -1,4 +1,4 @@
-import {fitRaceGate} from './race3d.js?v=20261125d';
+import {fitRaceGate} from './race3d.js?v=20261125e';
 import {courseStart} from './road3d.js?v=20261125d';
 import {alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261119p';
 import {coordinateLimit,worldHalf} from './world3d.js?v=20261119d';

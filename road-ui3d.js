@@ -1,4 +1,4 @@
-import {updateRoadGateWidths} from './race3d.js?v=20261125d';
+import {updateRoadGateWidths} from './race3d.js?v=20261125e';
 import {MAX_ROADS,MAX_ROAD_POINTS,MAX_ROAD_HEIGHT,ROAD_HEIGHT_STEP,ROAD_WIDTHS,roadPoint,roadGridSites,roadConnection,nearestRoad,nearestRoadHandle,removeRoadPoint,roadPiecePlacement,roadPointsFit,roadSegmentAt,splitRoadAt,toggleRoadGuardrail,traceRoadPoints,validRoads} from './road3d.js?v=20261125d';
 import {closeLiveRangeEditor,mountLiveRangeEditor} from './range-panel3d.js?v=20261124a';
 import {setStageRangePainter} from './stage-range3d.js?v=20261124a';

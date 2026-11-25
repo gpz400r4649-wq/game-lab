@@ -20,8 +20,8 @@ const CORNERING_ACCELERATION=12.5;
 const OLD_CAR_TOP_SPEEDS=new Map([[8,30/3.6],[12,45/3.6],[18,65/3.6],[361.6/3.6,F1_TOP_SPEED_KMH/3.6]]);
 const OLD_CAR_STEERING_DEFAULTS=[2.4,3.2,4];
 
-export function trafficSignalPhase(rotation,time){
- const phase=(time+(rotation%180===90?11:0))%22;
+export function trafficSignalPhase(rotation,time,offset=rotation%180===90?11:0){
+ const phase=(time+offset)%22;
  return phase<8?2:phase<10?1:0;
 }
 

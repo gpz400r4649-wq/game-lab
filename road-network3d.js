@@ -28,13 +28,55 @@ function heapPop(heap){
  heap[i]=last;return first;
 }
 
+function intersectionSignals(links){
+ const groups=new Map();
+ for(const [a,b] of links){
+  const first=groups.get(a),second=groups.get(b);
+  const group=first||second||new Set();
+  if(first&&second&&first!==second)for(const node of second){group.add(node);groups.set(node,group);}
+  group.add(a);group.add(b);groups.set(a,group);groups.set(b,group);
+ }
+ const signals=[];
+ const dot=(a,b)=>a.x*b.x+a.z*b.z;
+ for(const group of new Set(groups.values())){
+  const arms=[];
+  const center=[...group].reduce((best,node)=>node.edges.length>best.edges.length?node:best);
+  for(const node of group)for(const {to,width} of node.edges){
+   if(group.has(to))continue;
+   const length=Math.hypot(to.x-node.x,to.z-node.z);
+   if(length<.0001)continue;
+   const arm={x:(to.x-node.x)/length,z:(to.z-node.z)/length,slope:(to.y-node.y)/length,width,node};
+   const same=arms.find(other=>dot(other,arm)>.88);
+   if(!same)arms.push(arm);
+   else if(width>same.width)Object.assign(same,arm);
+  }
+  if(arms.length!==3&&arms.length!==4)continue;
+  // A bend or a fork without a through road has no traffic lights.
+  const through=arms.find(arm=>arms.some(other=>dot(arm,other)<-.88));
+  if(!through)continue;
+  for(const arm of arms){
+   const {x,z,slope,width,node}=arm;
+   const crossWidth=Math.max(...arms.filter(other=>Math.abs(dot(other,arm))<.88).map(other=>other.width),width);
+   const back=crossWidth/2+.65,lateral=width/2+.48;
+   const setback=Math.max(0,back-((node.x-center.x)*x+(node.z-center.z)*z));
+   const stop={x:node.x+x*setback,y:Math.max(0,node.y+slope*setback),z:node.z+z*setback};
+   signals.push({
+    x:stop.x-z*lateral,y:stop.y,z:stop.z+x*lateral,stop,
+    rotation:Math.atan2(-x,-z)*180/Math.PI,
+    phaseOffset:Math.abs(dot(arm,through))>.88?0:11
+   });
+  }
+ }
+ return signals;
+}
+
 export function createRoadNetwork(roads=[]){
  const nodes=[],segments=[],links=[],ends=[],buckets=new Map(),long=[];
  function node(point){const next={...coordinate(point),edges:[]};nodes.push(next);return next;}
- function edge(a,b){
+ function edge(a,b,width){
   if(a===b)return;
   const distance=Math.max(.00001,dist(a,b));
-  a.edges.push({to:b,distance});b.edges.push({to:a,distance});
+  a.edges.push({to:b,distance,width});b.edges.push({to:a,distance,width});
  }
  function cut(segment,t){
   const old=segment.cuts.find(item=>Math.abs(item.t-t)<.00001);
@@ -47,7 +89,7 @@ export function createRoadNetwork(roads=[]){
   links.push([cut(a,t),cut(b,u)]);
  }
  function cross(a,b){
-  if(a.road===b.road)return;
+  if(a.a===b.a||a.a===b.b||a.b===b.a||a.b===b.b)return;
   const det=a.dx*b.dz-a.dz*b.dx;
   if(Math.abs(det)<1e-8)return;
   const x=b.a.x-a.a.x,z=b.a.z-a.a.z,t=(x*b.dz-z*b.dx)/det,u=(x*a.dz-z*a.dx)/det;
@@ -91,8 +133,9 @@ export function createRoadNetwork(roads=[]){
  }
  for(const s of segments){
   s.cuts.sort((a,b)=>a.t-b.t);
-  for(let i=1;i<s.cuts.length;i++)edge(s.cuts[i-1].node,s.cuts[i].node);
+  for(let i=1;i<s.cuts.length;i++)edge(s.cuts[i-1].node,s.cuts[i].node,s.road.width);
  }
+ const signals=intersectionSignals(links);
  for(const [a,b] of links)edge(a,b);
 
  function anchor(point,roadId,range){
@@ -110,6 +153,7 @@ export function createRoadNetwork(roads=[]){
   return s.cuts.slice(Math.max(0,i-1),i+1).map(({node})=>({node,cost:dist(point,node)}));
  }
  return {
+  signals,
   route(from,to,{fromRoad,toRoad,range=10}={}){
    const start=anchor(from,fromRoad,range),end=anchor(to,toRoad,range);
    if(!start||!end)return null;

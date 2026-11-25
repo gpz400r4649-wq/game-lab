@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.min.js';
-import {CAR_WHEELBASE,raceGateWidth,raceGateHeading,trafficSignalPhase} from './race3d.js?v=20261125d';
+import {CAR_WHEELBASE,raceGateWidth,raceGateHeading,trafficSignalPhase} from './race3d.js?v=20261125e';
 
 const material=(color)=>new T.MeshStandardMaterial({color,roughness:.8});
 const body=material(0x7563db),trim=material(0x443b7d),glass=material(0x86d7de),tire=material(0x27364a),hub=material(0xaabbd2),lamp=material(0xffeeaa),tail=material(0x6c2638);
@@ -28,9 +28,9 @@ export function makeTrafficSignal(part,previewMaterial){
  return model;
 }
 
-export function updateTrafficSignal(model,rotation,time){
+export function updateTrafficSignal(model,rotation,time,phaseOffset){
  // Perpendicular signals have opposite phases, with one second of all red in between.
- const active=trafficSignalPhase(rotation,time);
+ const active=trafficSignalPhase(rotation,time,phaseOffset);
  if(model.userData.activeLamp===active)return;
  model.userData.activeLamp=active;
  model.userData.signalLamps.forEach((lens,index)=>{lens.material=signalLamps[index][index===active?'on':'off'];});

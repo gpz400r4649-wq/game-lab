@@ -1,14 +1,14 @@
-import {moveRaceGate,orderedRaceGates} from './race3d.js?v=20261125d';
+import {moveRaceGate,orderedRaceGates} from './race3d.js?v=20261125e';
 import {FURNITURE_PRESETS,isFurniture,furnitureIcon} from './furniture3d.js?v=20261119d';
 import {prepareEnemyDropWeapon} from './enemy-loot3d.js?v=20261119d';
 import {fencePresetKey,floorPresetKey,FLOOR_PRESETS,RAMP_PRESETS,FENCE_PRESETS,ROOF_PRESETS,architectureIcon} from './architecture3d.js?v=20261119o';
 import {renderAllyRangePreview} from './ally-range-preview3d.js?v=20261119d';
 import {createChoiceControl} from './choices3d.js?v=20261119d';
 import {sharedDefaultsType,applyBlockDefaults,sharedKeys,synchronizeCharacterDefaults,useCharacterDefaults,inheritNewCharacter,writeCharacterDefaults} from './character-defaults3d.js?v=20261119d';
-import {copyEnemySettings,ENEMY_COPY_GROUPS} from './enemy-batch3d.js?v=20261125d';
+import {copyEnemySettings,ENEMY_COPY_GROUPS} from './enemy-batch3d.js?v=20261125e';
 import {ACTOR_HATS} from './actor3d.js?v=20261119d';
 import {makeTool} from './building3d.js?v=20261119p';
-import {findDuplicatePosition} from './editor-drag3d.js?v=20261125d';
+import {findDuplicatePosition} from './editor-drag3d.js?v=20261125e';
 import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261119d';
 import {openWaypointEditor} from './waypoint-ui3d.js?v=20261124a';
 import {openPatrolEditor} from './patrol-ui3d.js?v=20261124a';
@@ -25,7 +25,7 @@ import {actionsFor} from './events3d.js?v=20261119d';
 import {renderEventEditor} from './event-editor3d.js?v=20261119d';
 import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261119d';
 import {alignPiece,gridStep,editorPlacementReason} from './building3d.js?v=20261119p';
-import {part,ENEMY_SCALES,PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261125d';
+import {part,ENEMY_SCALES,PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261125e';
 import {TOWN_PARTS} from './town3d.js?v=20261125d';
 
 const ICONS={trafficSignal:'🚦',raceGate:'🏁',actor:'💬',plate:'▣',ally:'🛡',weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
@@ -440,7 +440,7 @@ export function createWorkshop(api){
     const car=getProject().template==='car',variants=$('#city-variants3');
     if(car)renderTownParts();
     const rows=car?
-      [['#palette3',[]],['#palette-extra3',[]],['#city-parts3',['floor','ramp','wall','box','platform','moving','bounce','raceGate','trafficSignal']]]:
+      [['#palette3',[]],['#palette-extra3',[]],['#city-parts3',['floor','ramp','wall','box','platform','moving','bounce','raceGate']]]:
       [['#palette3',['wall','floor','roof','ramp','box','platform','moving','bounce','hazard','door']],['#palette-extra3',['enemy','ally','actor','weapon','star','key','heal','checkpoint','plate','goal']]];
     const shortNames={wall:'かべ・まど',floor:'ゆか',roof:'やね',ramp:'スロープ',box:'ブロック・かぐ',moving:'うごく',platform:'あしば',bounce:'ジャンプ',hazard:'ダメージ',enemy:'てき',ally:'みかた',actor:'やくしゃ',weapon:'じゅう',star:'ほし',key:'カギ',heal:'かいふく',checkpoint:'セーブ',plate:'スイッチ',goal:'ゴール'};
     for(const [selector,types]of rows){

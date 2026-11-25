@@ -1,9 +1,9 @@
 import {createCarAudio} from './car-audio3d.js?v=20261119g';
 import {courseStart,nearestRoad} from './road3d.js?v=20261125d';
-import {createRoadView} from './road-model3d.js?v=20261125d';
-import {createRoadEditor} from './road-ui3d.js?v=20261125d';
-import {createLapGateView,makeCarModel,updateCarModel,makeRaceGateModel,updateRaceGateModel,updateRaceGateNumber,makeTrafficSignal,updateTrafficSignal} from './race-model3d.js?v=20261125d';
-import {CAR_TUNING,DEFAULT_CAR_TUNING,RACE_LAP_OPTIONS,fitRaceGate,orderedRaceGates,turnRaceGate} from './race3d.js?v=20261125d';
+import {createRoadView} from './road-model3d.js?v=20261125e';
+import {createRoadEditor} from './road-ui3d.js?v=20261125e';
+import {createLapGateView,makeCarModel,updateCarModel,makeRaceGateModel,updateRaceGateModel,updateRaceGateNumber,makeTrafficSignal,updateTrafficSignal} from './race-model3d.js?v=20261125e';
+import {CAR_TUNING,DEFAULT_CAR_TUNING,RACE_LAP_OPTIONS,fitRaceGate,orderedRaceGates,turnRaceGate} from './race3d.js?v=20261125e';
 import {assemblyCandidate,assemblyCopies,saveAssembly,temporarySpawn} from './assembly3d.js?v=20261119p';
 import {createSupplyUI,createSupplyView} from './supply-ui3d.js?v=20261124a';
 import {FURNITURE_PRESETS,configureFurniture,isFurniture} from './furniture3d.js?v=20261119d';
@@ -15,7 +15,7 @@ import {createPlayerRulesUI} from './player-rules-ui3d.js?v=20261119d';
 import {fencePresetKey,floorPresetKey,FLOOR_PRESETS,configureBuildingPart,FENCE_PRESETS,RAMP_PRESETS,ROOF_PRESETS} from './architecture3d.js?v=20261119o';
 import {makeHalfFloorGeometries,makeDiagonalWallGeometry,makeCornerRampGeometry,makeFenceModel,fenceGeometry,makeRoofSlopeGeometry,makeGableGeometry} from './architecture-model3d.js?v=20261119d';
 import {createChoiceControl,enhanceChoiceControl} from './choices3d.js?v=20261119d';
-import {groupSteps,groupCandidate,commitGroup,copyGroupNearby} from './group-edit3d.js?v=20261125d';
+import {groupSteps,groupCandidate,commitGroup,copyGroupNearby} from './group-edit3d.js?v=20261125e';
 import {initializeCharacterDefaults,synchronizeCharacterDefaults,inheritNewCharacter} from './character-defaults3d.js?v=20261119d';
 import {nearbyActor,trade,companionsAt} from './actor3d.js?v=20261119d';
 import {giveAllyGun,giftableGun,recruitTarget,allyAttackDistance} from './ally3d.js?v=20261119d';
@@ -27,7 +27,7 @@ import {stageRangePointer} from './stage-range3d.js?v=20261124a';
 import {createEnemyMessages} from './enemy-messages3d.js?v=20261119d';
 import {createPlayRanges} from './play-ranges3d.js?v=20261124a';
 import {closeLiveRangeEditor,isLiveRangeEditing} from './enemy-range-ui3d.js?v=20261124a';
-import {dragCandidate} from './editor-drag3d.js?v=20261125d';
+import {dragCandidate} from './editor-drag3d.js?v=20261125e';
 import {rangeWorldCells,enemyYaw,defaultEnemyRanges,MOVE_MAX_CELLS} from './enemy-range3d.js?v=20261119d';
 import {ROBOT_BARREL,TPS_GUN_MOUNT} from './muzzle3d.js?v=20261119d';
 import {DOOR_PRESETS,configureDoor,doorInteraction,isSlidingDoor,nearbyDoor} from './doors3d.js?v=20261119d';
@@ -44,14 +44,14 @@ import {installGameTouchGuard,bindHeldButton,bindGameAction,createCarControls,cr
 import {actionsFor} from './events3d.js?v=20261119d';
 import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261119d';
 import {rotatePiece,BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,topAt,editorPlacementReason,editorPlacementBlocker,blockPlacement} from './building3d.js?v=20261119p';
-import {createToolsUI} from './tools3d.js?v=20261125d';
+import {createToolsUI} from './tools3d.js?v=20261125e';
 import * as T from './vendor/three.module.min.js';
-import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,nearbyChair} from './engine3d.js?v=20261125d';
+import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,nearbyChair} from './engine3d.js?v=20261125e';
 import {TOWN_PARTS,configureTownPart,fitTownPart,townPlacementReason} from './town3d.js?v=20261125d';
-import {createTownView,makeTownModel} from './town-model3d.js?v=20261125d';
-import {townRaceRank} from './town-traffic3d.js?v=20261125d';
-import {installTownUI,renderRivalSettings} from './town-ui3d.js?v=20261125d';
-import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261125d';
+import {createTownView,makeTownModel} from './town-model3d.js?v=20261125e';
+import {townRaceRank} from './town-traffic3d.js?v=20261125e';
+import {installTownUI,renderRivalSettings} from './town-ui3d.js?v=20261125e';
+import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261125e';
 document.querySelectorAll('.setting-choices').forEach(enhanceChoiceControl);
 const $=s=>document.querySelector(s),view=$('#viewport');
 const seatButton=$('#use-seat3');
@@ -254,7 +254,7 @@ function partModel(o){let mesh=new T.Group();
    box(mesh,materials.dark,0,.06,0,o.w,.12,o.d);box(mesh,materials.bounce,0,.2,0,o.w*.9,.14,o.d*.9);box(mesh,materials.white,0,.29,0,.16,.04,.8);box(mesh,materials.white,0,.29,-.3,.6,.04,.16);
   }
 if(isBatchedStructure(o))structureRenderer.mark(mesh);return mesh;}
-function rebuild(){synchronizeCharacterDefaults(project);updateWorld();roadView?.sync(project.roads,worldHalf(project));roadEditor?.refresh();townUI?.refresh();const start=courseStart(project);spawnMark.position.set(start.x,start.y+(project.roads?.length ? .065 : .015),start.z);
+function rebuild(){synchronizeCharacterDefaults(project);updateWorld();roadView?.sync(project.roads,worldHalf(project));if(mode==='edit')roadView?.updateSignals(0);roadEditor?.refresh();townUI?.refresh();const start=courseStart(project);spawnMark.position.set(start.x,start.y+(project.roads?.length ? .065 : .015),start.z);
  cyclingPickups.clear();objectsGroup.clear();meshes.clear();const objects=mode==='play'?[...game.objects,...game.drops]:commonPreview?[commonPreview]:project.objects;
  for(const o of objects){const mesh=partModel(o);mesh.position.set(o.x,o.y,o.z);mesh.visible=mode!=='play'||(!o.hidden&&!o.collected);mesh.userData.id=o.id;objectsGroup.add(mesh);meshes.set(o.id,mesh);}
  if(carTemplate)orderedRaceGates(objects).forEach((gate,index)=>updateRaceGateNumber(meshes.get(gate.id),index+1));
@@ -653,6 +653,7 @@ function driveFrame(dt){
   z:throttle,brake,coast:true,yaw:game.car.heading
  },dt);
  firePressed=false;syncGameMeshes();
+ roadView.updateSignals(game.time);
  const car=game.car;
  townView.sync([...game.town.cars,...game.town.rivals]);
  const speedFraction=car.actualSpeed/car.tuning.maxSpeed;

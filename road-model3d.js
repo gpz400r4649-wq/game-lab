@@ -1,5 +1,7 @@
 import * as T from './vendor/three.module.min.js';
 import {ROAD_BARRIERS,ROAD_DECK_DEPTH,createRoadOpenings,roadBarrierOffset,roadRunBarrier,roadSections,roadVertex,sampleRoad} from './road3d.js?v=20261125d';
+import {createRoadNetwork} from './road-network3d.js?v=20261125e';
+import {makeTrafficSignal,updateTrafficSignal} from './race-model3d.js?v=20261125e';
 
 const asphalt=new T.MeshStandardMaterial({color:0x333c4e,roughness:.98,side:T.DoubleSide});
 const edges=new T.MeshBasicMaterial({color:0xe2e6ef,side:T.DoubleSide});
@@ -93,7 +95,9 @@ function roadMesh(road,half,preview,openings){
 }
 
 export function createRoadView(scene){
- const saved=new T.Group(),draft=new T.Group(),snapGuide=new T.Group();scene.add(saved,draft,snapGuide);
+ const saved=new T.Group(),draft=new T.Group(),snapGuide=new T.Group(),signals=new T.Group();
+ signals.name='automatic-traffic-signals';
+ scene.add(saved,draft,snapGuide,signals);
  const snapDot=new T.SphereGeometry(.29,10,6);
  const snapMaterial=new T.MeshBasicMaterial({color:0x4595a0,depthTest:false,depthWrite:false});
  const activeMaterial=new T.MeshBasicMaterial({color:0x39e5d0,depthTest:false,depthWrite:false});
@@ -129,6 +133,20 @@ export function createRoadView(scene){
   sync(next,extent){
    const key=JSON.stringify([next||[],extent]);if(key===stamp)return;
    stamp=key;roads=next||[];half=extent;draftStamp='';showSaved();
+   signals.clear();
+   for(const signal of createRoadNetwork(roads).signals){
+    const model=makeTrafficSignal(signal);
+    model.position.set(signal.x,signal.y,signal.z);
+    model.userData.roadSignal=signal;
+    updateTrafficSignal(model,signal.rotation,0,signal.phaseOffset);
+    signals.add(model);
+   }
+  },
+  updateSignals(time){
+   for(const model of signals.children){
+    const {rotation,phaseOffset}=model.userData.roadSignal;
+    updateTrafficSignal(model,rotation,time,phaseOffset);
+   }
   },
   showSnap(sites,point){
    snapGuide.visible=sites.length>0;
