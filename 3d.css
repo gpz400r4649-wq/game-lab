@@ -665,7 +665,31 @@ main.range-editing #city-build3 { display:none; }
 #city-parts3 .part-caption { display:inline; font-size:inherit; }
 .city-part-options .architecture-icon { width:32px; height:25px; display:inline-block; vertical-align:middle; }
 .city-part-options .architecture-icon svg { width:100%; height:100%; }
-.road-menu-caption { flex:none; padding-inline:3px; font-size:12px; font-weight:700; }
+#road-presets3 { gap:8px; padding:9px; scroll-snap-type:x proximity; }
+#road-presets3 .road-preset-card {
+ width:90px; height:60px; padding:0; display:grid; align-items:center; overflow:hidden;
+ background:#e5ede7; border:2px solid #b5c9bf; border-radius:10px; scroll-snap-align:start;
+}
+#road-presets3 .road-preset-card:is(:hover,:focus-visible) { border-color:#805ed4; background:#eee8fb; }
+#road-presets3 .road-preset-card:active { border-color:#6146b6; }
+.road-preset-preview {
+ display:block; position:relative; height:var(--road-preview-width); background:#333c4e;
+ box-shadow:inset 0 3px #333c4e,inset 0 -3px #333c4e,inset 0 4px #e2e6ef,inset 0 -4px #e2e6ef;
+}
+.road-preset-preview::after {
+ content:''; position:absolute; inset:calc(50% - 1px) 0 auto; height:2px;
+ background:repeating-linear-gradient(90deg,#e2e6ef 0 10px,transparent 10px 19px);
+}
+.road-preset-preview[data-lines=edge]::after { display:none; }
+.road-preset-preview[data-lines=race]::after {
+ background:repeating-linear-gradient(90deg,#f3d88b 0 10px,transparent 10px 19px);
+}
+.road-preset-preview[data-sidewalk]::before {
+ content:''; position:absolute; inset:-6px 0; border-block:6px solid #b6b3ad;
+}
+.road-preset-preview[data-sidewalk=left]::before { border-block-end-color:transparent; }
+.road-preset-preview[data-sidewalk=right]::before { border-block-start-color:transparent; }
+#road-limit3 { margin:0; padding:0 9px 8px; }
 #road-draft3 { padding:4px 8px; max-height:min(40dvh,212px); }
 #road-draft3 .range-live-heading { position:static; padding:2px 0; background:transparent; border:0; }
 #road-draft3 .range-live-heading h2 { font-size:13px; }

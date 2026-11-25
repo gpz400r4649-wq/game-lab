@@ -30,7 +30,7 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
  }
  const editRoad=button('道をなおす',()=>pickSavedRoad('edit'));
  const guardrail=button('ガードレールをつける',()=>pickSavedRoad('guardrail'));
- const roadLimit=document.createElement('span');roadLimit.className='road-editor-hint';roadLimit.hidden=true;
+ const roadLimit=$('#road-limit3');
  roadLimit.textContent=MAX_ROADS+'本まで道を作ったよ。「こうじ」で、ある道をのばせるよ。';
  work.append(editRoad,guardrail);
  demolish.onclick=()=>{
@@ -47,11 +47,19 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
   roadLimit.hidden=roads.length<MAX_ROADS;
   editRoad.disabled=guardrail.disabled=!roads.length;
  }
- for(const [label,style] of roadTools)presets.append(button(label,()=>{
-  if((getProject().roads||[]).length>=MAX_ROADS)return;
-  openEditor({id:crypto.randomUUID(),closed:false,points:[],...style});
- }));
- presets.append(roadLimit);
+ for(const [label,style] of roadTools){
+  const control=button('',()=>{
+   if((getProject().roads||[]).length>=MAX_ROADS)return;
+   openEditor({id:crypto.randomUUID(),closed:false,points:[],...style});
+  },'road-preset-card');
+  const name=label+' '+style.width+'m';
+  control.title=name;control.setAttribute('aria-label',name);
+  const preview=document.createElement('span');preview.className='road-preset-preview';preview.setAttribute('aria-hidden','true');
+  preview.style.setProperty('--road-preview-width',style.width*2.65+'px');
+  preview.dataset.lines=style.markings==='street'?(style.width>=8?'street':'edge'):'race';
+  if(style.sidewalk)preview.dataset.sidewalk=style.sidewalk;
+  control.append(preview);presets.append(control);
+ }
  function showCategory(id){
   for(const category of categories){
    const active=category.dataset.cityPanel===id;
