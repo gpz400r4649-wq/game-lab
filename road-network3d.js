@@ -1,4 +1,4 @@
-import {savedRoadPath} from './road3d.js?v=20261120o';
+import {savedRoadPath} from './road3d.js?v=20261125a';
 
 const LEVEL_TOLERANCE=.28,CELL=16;
 const clamp=value=>Math.max(0,Math.min(1,value));

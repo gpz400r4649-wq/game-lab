@@ -4,7 +4,7 @@ import {Scene} from '../vendor/three.module.min.js';
 import {create3D,fresh3D,part,step3D,validate3D} from '../engine3d.js';
 import {createRoadNetwork} from '../road-network3d.js';
 import {createRoadView} from '../road-model3d.js';
-import {roadConnection,sampleRoad,traceRoadPoints} from '../road3d.js';
+import {roadConnection,roadPiecePlacement,sampleRoad,traceRoadPoints,validRoads} from '../road3d.js';
 import {fitRaceGate} from '../race3d.js';
 import {DEFAULT_FLEET,configureTownPart,fitTownPart,houseGarage,refitTownParts,townLocal,townSolids} from '../town3d.js';
 import {townRaceRank,townRoute} from '../town-traffic3d.js';
@@ -15,6 +15,27 @@ const advance=(g,p,seconds,input={coast:true})=>{
  for(let i=0;i<Math.round(seconds/.025);i++)step3D(g,p,input,.025);
 };
 const places=(roads,kind,x,z,roadId)=>fitTownPart(configureTownPart(part('town'),kind),roads.filter(r=>r.id===roadId),{x,y:0,z});
+
+test('道路を１区間ずつ置き、選んだ向きに上り・下りをつなげる',()=>{
+ const road={id:'pieces',width:8,closed:false,points:[]};
+ const first=roadPiecePlacement(road,{x:0,z:0},240,{grade:1});
+ assert.deepEqual(first.points,[{x:0,y:0,z:0},{x:0,y:1.5,z:-8}]);
+ const second=roadPiecePlacement({...road,points:first.points},{x:9,z:-7.9},240,{grade:1});
+ assert.deepEqual(second.end,{x:8,y:3,z:-8});
+ const third=roadPiecePlacement({...road,points:second.points},{x:18,z:-16},240,{grade:-1});
+ assert.deepEqual(third.end,{x:16,y:1.5,z:-16});
+ assert.equal(validRoads([{...road,points:third.points}],240),true);
+ assert.equal(roadPiecePlacement({...road,points:first.points},{x:0,z:0},240,{grade:-1}),null);
+});
+
+test('区間配置は開始の高さと既存道路への接続を使い、マップ外には置かない',()=>{
+ const road={id:'pieces',width:8,closed:false,points:[]};
+ const raised=roadPiecePlacement(road,{x:0,z:0},240,{height:6});
+ assert.equal(raised.points[0].y,6);assert.equal(raised.end.y,6);
+ const existing=roadPiecePlacement(road,{x:0,z:0},240,{connections:[{...main,points:[{x:-40,z:-7},{x:40,z:-7}]}]});
+ assert.deepEqual(existing.end,{x:0,y:0,z:-7});
+ assert.equal(roadPiecePlacement(road,{x:0,z:-28},60),null);
+});
 
 test('道路の端と途中に吸い付き、高さの違う道路は接続先にしない',()=>{
  assert.deepEqual(roadConnection([main],{x:-39,z:1},0,240),{x:-40,y:0,z:0});

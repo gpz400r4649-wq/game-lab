@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.min.js';
-import {ROAD_BARRIERS,ROAD_DECK_DEPTH,createRoadOpenings,roadBarrierOffset,roadSections,roadVertex,sampleRoad} from './road3d.js?v=20261120o';
+import {ROAD_BARRIERS,ROAD_DECK_DEPTH,createRoadOpenings,roadBarrierOffset,roadSections,roadVertex,sampleRoad} from './road3d.js?v=20261125a';
 
 const asphalt=new T.MeshStandardMaterial({color:0x333c4e,roughness:.98,side:T.DoubleSide});
 const edges=new T.MeshBasicMaterial({color:0xe2e6ef,side:T.DoubleSide});

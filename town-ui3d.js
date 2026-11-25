@@ -1,8 +1,8 @@
 import {setReadingText} from './readings3d.js?v=20261119d';
 import {createChoiceControl} from './choices3d.js?v=20261119d';
-import {createRoadNetwork} from './road-network3d.js?v=20261120o';
-import {townRoute,raceRoute} from './town-traffic3d.js?v=20261120p';
-import {ARRIVAL_TYPES,DEFAULT_FLEET,DEFAULT_RIVAL,MAX_RIVALS,MAX_TOWN_CARS,RIVAL_SPEEDS,RIVAL_CORNERS,TOWN_PARTS} from './town3d.js?v=20261120p';
+import {createRoadNetwork} from './road-network3d.js?v=20261125a';
+import {townRoute,raceRoute} from './town-traffic3d.js?v=20261125a';
+import {ARRIVAL_TYPES,DEFAULT_FLEET,DEFAULT_RIVAL,MAX_RIVALS,MAX_TOWN_CARS,RIVAL_SPEEDS,RIVAL_CORNERS,TOWN_PARTS} from './town3d.js?v=20261125a';
 
 function elem(tag,text,className){
  const el=document.createElement(tag);

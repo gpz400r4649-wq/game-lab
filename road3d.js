@@ -55,6 +55,26 @@ export function roadPointsFit(points,closed){
  return points.every((point,index)=>!index||fits(points[index-1],point))&&(!closed||fits(points[0],points.at(-1)));
 }
 
+export function roadPiecePlacement(road,aim,world,{start=null,height=0,grade=0,connections=[]}={}){
+ if(!roadPoint(aim,world)||road.closed)return null;
+ const tail=road.points.at(-1),origin=tail||start||roadPoint(aim,world);
+ const base=origin.y??height,x=aim.x-origin.x,z=aim.z-origin.z;
+ if(tail&&Math.hypot(x,z)<.55)return null;
+ const sector=Math.hypot(x,z)<1?-2:Math.round(Math.atan2(z,x)/(Math.PI/4));
+ const length=Math.max(GRID.cell,road.width);
+ const y=Math.max(0,Math.min(MAX_ROAD_HEIGHT,base+grade*ROAD_HEIGHT_STEP));
+ const direction=sector*Math.PI/4;
+ const end={x:origin.x+length*Math.round(Math.cos(direction)),y,z:origin.z+length*Math.round(Math.sin(direction))};
+ const limit=coordinateLimit(world);
+ if(Math.abs(end.x)>limit||Math.abs(end.z)>limit)return null;
+ const join=roadConnection(connections,end,y,world);
+ if(join&&distance(end,join)<=1.25)Object.assign(end,{x:join.x,y:join.y,z:join.z});
+ const previous=road.points.at(-2);
+ if(previous&&distance(previous,end)<MIN_SPACING&&Math.abs((previous.y||0)-end.y)<.3)return null;
+ const points=tail?[...road.points,end]:[{x:origin.x,y:base,z:origin.z},end];
+ return points.length<=MAX_ROAD_POINTS&&roadPointsFit(points,false)?{points,end}:null;
+}
+
 export function traceRoadPoints(road,samples,world,{straight=false,first=null,last=null}={}){
  if(!samples.length||road.points.length>=MAX_ROAD_POINTS)return road.points;
  // Keep the ends and the bends of a stroke, leaving out small finger movements.
