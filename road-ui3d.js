@@ -7,6 +7,16 @@ import {refitTownParts} from './town3d.js?v=20261125a';
 export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickHandle,pointerAtHeight,isOnStage,focusHeight,setRoadView,toast}){
  const bar=$('#city-build3'),list=$('#road-list3'),presets=$('#road-presets3'),host=$('#road-draft3');
  const categories=[...bar.querySelectorAll('[data-city-panel]')];
+ const stage=$('#viewport'),panels=[...bar.querySelectorAll('.city-build-panel')];
+ function keepStageControlsVisible(){
+  const height=Math.max(...panels.map(panel=>panel.offsetHeight));
+  const panelTop=bar.getBoundingClientRect().top-height;
+  const overlap=bar.offsetHeight?Math.max(0,stage.getBoundingClientRect().bottom-panelTop):0;
+  stage.style.setProperty('--city-panel-overlap',overlap+'px');
+ }
+ const layout=new ResizeObserver(keepStageControlsVisible);
+ [stage,bar,...panels].forEach(panel=>layout.observe(panel));
+ window.addEventListener('scroll',keepStageControlsVisible,{passive:true});
  let listedRoads;
  const roadTools=[
   ['ふつうの道',{width:8,markings:'street'}],

@@ -631,6 +631,21 @@ main.range-editing #city-build3 { display:none; }
  position:sticky; bottom:0; z-index:8; flex:none; min-width:0; margin-top:6px;
  background:#f7f8fc; border:1px solid #dce3ef; border-radius:12px 12px 0 0;
 }
+.city-build-panel {
+ position:absolute; inset-inline:-1px; bottom:100%; max-height:min(38dvh,148px); overflow:auto;
+ border:1px solid #dce3ef; border-radius:12px 12px 0 0; background:#f7f8fcef;
+ box-shadow:0 -4px 16px #30405518;
+}
+.car-workshop #viewport #editor-nav3,.car-workshop #viewport #orbit-pad {
+ bottom:calc(16px + var(--city-panel-overlap,0px));
+}
+.car-workshop #viewport #rotate-selected3 { bottom:calc(74px + var(--city-panel-overlap,0px)); }
+.car-workshop #viewport>#editor-place-tools3 { bottom:calc(16px + var(--city-panel-overlap,0px)); }
+@media(max-width:700px){
+ .car-workshop #viewport #editor-nav3 { bottom:calc(12px + var(--city-panel-overlap,0px)); }
+ .car-workshop #viewport #rotate-selected3 { bottom:calc(70px + var(--city-panel-overlap,0px)); }
+ .car-workshop #viewport>#editor-place-tools3 { bottom:calc(72px + var(--city-panel-overlap,0px)); }
+}
 .city-build-categories,.city-build-options,.city-part-options {
  display:flex; align-items:center; gap:6px; min-width:0; padding:6px 8px;
  overflow-x:auto; overscroll-behavior-inline:contain;
@@ -646,7 +661,7 @@ main.range-editing #city-build3 { display:none; }
 .city-part-options .architecture-icon { width:32px; height:25px; display:inline-block; vertical-align:middle; }
 .city-part-options .architecture-icon svg { width:100%; height:100%; }
 #road-list3 { border-top:1px solid #e6eaf3; }
-#road-draft3 { padding:4px 8px; max-height:38dvh; overflow:auto; }
+#road-draft3 { padding:4px 8px; }
 #road-draft3 .range-live-heading { position:static; padding:2px 0; background:transparent; border:0; }
 #road-draft3 .range-live-heading h2 { font-size:13px; }
 #road-draft3 .stage-range-tools { margin:4px 0; }
