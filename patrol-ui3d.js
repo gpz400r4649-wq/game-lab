@@ -1,6 +1,6 @@
 import * as T from './vendor/three.module.min.js';
-import {mountLiveRangeEditor} from './range-panel3d.js?v=20261119d';
-import {setStageRangePainter} from './stage-range3d.js?v=20261119d';
+import {mountLiveRangeEditor} from './range-panel3d.js?v=20261124a';
+import {setStageRangePainter} from './stage-range3d.js?v=20261124a';
 import {worldSize,coordinateLimit} from './world3d.js?v=20261119d';
 import {validPatrolRoute,placeAtRouteStart} from './patrol-route3d.js?v=20261119d';
 import {setReadingText} from './readings3d.js?v=20261119d';

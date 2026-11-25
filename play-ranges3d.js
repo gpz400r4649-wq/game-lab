@@ -1,4 +1,4 @@
-import {createPatrolOverlay} from './patrol-ui3d.js?v=20261119d';
+import {createPatrolOverlay} from './patrol-ui3d.js?v=20261124a';
 import {usesPatrolRoute,usesWaypoints,activeRoute} from './patrol-route3d.js?v=20261119d';
 import * as T from './vendor/three.module.min.js';
 import {rangeWorldCells,MOVE_MAX_CELLS} from './enemy-range3d.js?v=20261119d';

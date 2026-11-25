@@ -1,10 +1,10 @@
 import {createChoiceControl} from './choices3d.js?v=20261119d';
 import {renderFanControls} from './fan-controls3d.js?v=20261119d';
-import {openStageMoveRange} from './stage-range3d.js?v=20261119d';
-import {closeLiveRangeEditor,mountLiveRangeEditor} from './range-panel3d.js?v=20261119d';
-export {closeLiveRangeEditor,isLiveRangeEditing} from './range-panel3d.js?v=20261119d';
+import {openStageMoveRange} from './stage-range3d.js?v=20261124a';
+import {closeLiveRangeEditor,mountLiveRangeEditor} from './range-panel3d.js?v=20261124a';
+export {closeLiveRangeEditor,isLiveRangeEditing} from './range-panel3d.js?v=20261124a';
 import {directionFrame,markRobotCell} from './range-direction3d.js?v=20261119d';
-import {openMoveMap} from './move-map-ui3d.js?v=20261119d';
+import {openMoveMap} from './move-map-ui3d.js?v=20261124a';
 import {RANGE_MAX,rangeCells,convertRangeSpace} from './enemy-range3d.js?v=20261119d';
 import {setReadingText,kanaText} from './readings3d.js?v=20261119d';
 const RANGE_UI={

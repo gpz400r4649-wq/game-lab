@@ -1,11 +1,11 @@
 import {createCarAudio} from './car-audio3d.js?v=20261119g';
 import {courseStart,nearestRoad} from './road3d.js?v=20261120o';
 import {createRoadView} from './road-model3d.js?v=20261120o';
-import {createRoadEditor} from './road-ui3d.js?v=20261120p';
+import {createRoadEditor} from './road-ui3d.js?v=20261124a';
 import {createLapGateView,makeCarModel,updateCarModel,makeRaceGateModel,updateRaceGateModel,updateRaceGateNumber,makeTrafficSignal,updateTrafficSignal} from './race-model3d.js?v=20261120o';
 import {CAR_TUNING,DEFAULT_CAR_TUNING,RACE_LAP_OPTIONS,fitRaceGate,orderedRaceGates,turnRaceGate} from './race3d.js?v=20261120o';
 import {assemblyCandidate,assemblyCopies,saveAssembly,temporarySpawn} from './assembly3d.js?v=20261119p';
-import {createSupplyUI,createSupplyView} from './supply-ui3d.js?v=20261119d';
+import {createSupplyUI,createSupplyView} from './supply-ui3d.js?v=20261124a';
 import {FURNITURE_PRESETS,configureFurniture,isFurniture} from './furniture3d.js?v=20261119d';
 import {furnitureGeometry,makeFurnitureModel} from './furniture-model3d.js?v=20261119d';
 import {stringifyStoredProject,parseStoredProject} from './project-storage3d.js?v=20261119d';
@@ -22,11 +22,11 @@ import {giveAllyGun,giftableGun,recruitTarget,allyAttackDistance} from './ally3d
 import {createEditHistory} from './history3d.js?v=20261119d';
 import {makeDoorModel,updateDoorModel} from './door-model3d.js?v=20261119d';
 import {enemyEditHeight,createFloorRangeView} from './floor-edit3d.js?v=20261119d';
-import {createPatrolOverlay} from './patrol-ui3d.js?v=20261119d';
-import {stageRangePointer} from './stage-range3d.js?v=20261119d';
+import {createPatrolOverlay} from './patrol-ui3d.js?v=20261124a';
+import {stageRangePointer} from './stage-range3d.js?v=20261124a';
 import {createEnemyMessages} from './enemy-messages3d.js?v=20261119d';
-import {createPlayRanges} from './play-ranges3d.js?v=20261119d';
-import {closeLiveRangeEditor,isLiveRangeEditing} from './enemy-range-ui3d.js?v=20261119d';
+import {createPlayRanges} from './play-ranges3d.js?v=20261124a';
+import {closeLiveRangeEditor,isLiveRangeEditing} from './enemy-range-ui3d.js?v=20261124a';
 import {dragCandidate} from './editor-drag3d.js?v=20261120p';
 import {rangeWorldCells,enemyYaw,defaultEnemyRanges,MOVE_MAX_CELLS} from './enemy-range3d.js?v=20261119d';
 import {ROBOT_BARREL,TPS_GUN_MOUNT} from './muzzle3d.js?v=20261119d';
@@ -51,7 +51,7 @@ import {TOWN_PARTS,configureTownPart,fitTownPart,townPlacementReason} from './to
 import {createTownView,makeTownModel} from './town-model3d.js?v=20261120p';
 import {townRaceRank} from './town-traffic3d.js?v=20261120p';
 import {installTownUI,renderRivalSettings} from './town-ui3d.js?v=20261120p';
-import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261120p';
+import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261124a';
 document.querySelectorAll('.setting-choices').forEach(enhanceChoiceControl);
 const $=s=>document.querySelector(s),view=$('#viewport');
 const seatButton=$('#use-seat3');
@@ -103,7 +103,7 @@ const scene=new T.Scene();scene.background=new T.Color('#c9dce9');scene.fog=new 
 const syncLapGates=createLapGateView(scene);
 const roadView=carTemplate?createRoadView(scene):null;
 const townView=carTemplate?createTownView(scene):null;
-let townUI=null,townPreset='house';
+let roadEditor=null,townUI=null,townPreset='house';
 const ground=new T.Mesh(new T.PlaneGeometry(60,60),new T.MeshStandardMaterial({color:'#e2e8ed',roughness:.95}));ground.rotation.x=-Math.PI/2;scene.add(ground);const grid=new T.LineSegments(new T.BufferGeometry(),new T.LineBasicMaterial({color:0xc7d2dc}));grid.position.y=.008;scene.add(grid);const floorRangeView=createFloorRangeView(renderer,grid);
 let groundSize=0;function updateWorld(){const size=worldSize(project);if(size===groundSize)return;groundSize=size;ground.scale.set(size/60,size/60,1);groundOutline.scale.set(size/60,1,size/60);const half=size/2,lines=[];for(let v=Math.ceil((-half-2)/4)*4+2;v<=half;v+=4)lines.push(v,0,-half,v,0,half,-half,0,v,half,0,v);grid.geometry.dispose();grid.geometry=new T.BufferGeometry();grid.geometry.setAttribute('position',new T.Float32BufferAttribute(lines,3));}
 
@@ -254,7 +254,7 @@ function partModel(o){let mesh=new T.Group();
    box(mesh,materials.dark,0,.06,0,o.w,.12,o.d);box(mesh,materials.bounce,0,.2,0,o.w*.9,.14,o.d*.9);box(mesh,materials.white,0,.29,0,.16,.04,.8);box(mesh,materials.white,0,.29,-.3,.6,.04,.16);
   }
 if(isBatchedStructure(o))structureRenderer.mark(mesh);return mesh;}
-function rebuild(){synchronizeCharacterDefaults(project);updateWorld();roadView?.sync(project.roads,worldHalf(project));townUI?.refresh();const start=courseStart(project);spawnMark.position.set(start.x,start.y+(project.roads?.length ? .065 : .015),start.z);
+function rebuild(){synchronizeCharacterDefaults(project);updateWorld();roadView?.sync(project.roads,worldHalf(project));roadEditor?.refresh();townUI?.refresh();const start=courseStart(project);spawnMark.position.set(start.x,start.y+(project.roads?.length ? .065 : .015),start.z);
  cyclingPickups.clear();objectsGroup.clear();meshes.clear();const objects=mode==='play'?[...game.objects,...game.drops]:commonPreview?[commonPreview]:project.objects;
  for(const o of objects){const mesh=partModel(o);mesh.position.set(o.x,o.y,o.z);mesh.visible=mode!=='play'||(!o.hidden&&!o.collected);mesh.userData.id=o.id;objectsGroup.add(mesh);meshes.set(o.id,mesh);}
  if(carTemplate)orderedRaceGates(objects).forEach((gate,index)=>updateRaceGateNumber(meshes.get(gate.id),index+1));
@@ -694,12 +694,12 @@ const workshop=createWorkshop({
  if(object){editTarget.set(object.x,object.y,object.z);editYaw=0;editPitch=1.4;editDistance=38;}
  else if(commonCamera){editTarget.copy(commonCamera.target);editYaw=commonCamera.yaw;editPitch=commonCamera.pitch;editDistance=commonCamera.distance;commonCamera=null;}
  rebuild();
-},previewPatrol:route=>{const o=editedObject();patrolOverlay.show(route,o?.y||0,enemyRangeView==='waypoints'&&(o?.routeEnd||'loop')==='loop');},lookFromAbove:({facing=false}={})=>{const o=editedObject();if(o){editTarget.set(o.x,enemyEditHeight(o),o.z);editYaw=facing?(o.facing||0)*Math.PI/180:0;editPitch=1.4;editDistance=38;}},getToolSelection:()=>({type:tool,preset:tool==='door'?doorPreset:piecePresets[tool]}),getRangeView:()=>enemyRangeView,showRange:key=>{enemyRangeView=key;updateSelection();},refreshRange:updateSelection,renderLoadout:()=>toolsUI.renderLauncher(),$,getProject:()=>project,getSelected:()=>selected,select:id=>{resetGroupSelection();selected=id;},save,rebuild,field,advancedInspector,advancedWeaponFields,loadProject,toast,objectList,setTool:(id,preset)=>{closeStageExtra();resetGroupSelection();if(preset&&id==='town')townPreset=preset;if(preset&&id==='door')doorPreset=preset;if(preset&&id==='weapon')weaponPresetId=preset;if(preset&&['box','wall','floor','ramp','roof'].includes(id))piecePresets[id]=preset;if(mode==='play')setMode('edit');tool=id;placementLook=false;editorPointer=null;syncPlacementUI();document.querySelectorAll('[data-part]').forEach(x=>{const active=x.dataset.part===(['gableLeft','gableRight'].includes(preset)?'roof':id==='door'&&DOOR_PRESETS[doorPreset]?.window?'wall':id);x.classList.toggle('active',active);x.setAttribute('aria-pressed',String(active));});}});
+},previewPatrol:route=>{const o=editedObject();patrolOverlay.show(route,o?.y||0,enemyRangeView==='waypoints'&&(o?.routeEnd||'loop')==='loop');},lookFromAbove:({facing=false}={})=>{const o=editedObject();if(o){editTarget.set(o.x,enemyEditHeight(o),o.z);editYaw=facing?(o.facing||0)*Math.PI/180:0;editPitch=1.4;editDistance=38;}},getToolSelection:()=>({type:tool,preset:tool==='door'?doorPreset:piecePresets[tool]}),getRangeView:()=>enemyRangeView,showRange:key=>{enemyRangeView=key;updateSelection();},refreshRange:updateSelection,renderLoadout:()=>toolsUI.renderLauncher(),$,getProject:()=>project,getSelected:()=>selected,select:id=>{resetGroupSelection();selected=id;},save,rebuild,field,advancedInspector,advancedWeaponFields,loadProject,toast,objectList,setTool:(id,preset)=>{closeStageExtra();resetGroupSelection();if(preset&&id==='town')townPreset=preset;if(preset&&id==='door')doorPreset=preset;if(preset&&id==='weapon')weaponPresetId=preset;if(preset&&['box','wall','floor','ramp','roof'].includes(id))piecePresets[id]=preset;if(mode==='play')setMode('edit');tool=id;document.querySelectorAll('[data-town-kind]').forEach(button=>button.setAttribute('aria-pressed',String(id==='town'&&button.dataset.townKind===townPreset)));placementLook=false;editorPointer=null;syncPlacementUI();document.querySelectorAll('[data-part]').forEach(x=>{const active=x.dataset.part===(['gableLeft','gableRight'].includes(preset)?'roof':id==='door'&&DOOR_PRESETS[doorPreset]?.window?'wall':id);x.classList.toggle('active',active);x.setAttribute('aria-pressed',String(active));});}});
 function inspector(){closeLiveRangeEditor();workshop.inspect();positionPlacementPanel();}
 $('#common-preview-back3').onclick=()=>workshop.resumeBasic();$('#common-preview-done3').onclick=()=>workshop.finishBasic();
 function renderPlayerRules(){playerRulesUI.render();}
 function weaponFields(){workshop.weapons();renderPlayerRules();}
-if(carTemplate)createRoadEditor({$,getProject:()=>project,save,rebuild,view:roadView,toast,
+if(carTemplate)roadEditor=createRoadEditor({$,getProject:()=>project,save,rebuild,view:roadView,toast,
  pickHandle:event=>hits(event,roadView.handles())[0]?.object.userData.roadHandle??-1,
  pointerAtHeight:pointOnDragPlane,
  focusHeight:height=>{if(Math.abs(height-editTarget.y)>24)editTarget.y=height;},

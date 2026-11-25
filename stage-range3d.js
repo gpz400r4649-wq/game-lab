@@ -1,4 +1,4 @@
-import {mountLiveRangeEditor} from './range-panel3d.js?v=20261119d';
+import {mountLiveRangeEditor} from './range-panel3d.js?v=20261124a';
 import {worldMoveRange,rangeCell,MOVE_MAX_CELLS,convertRangeSpace,fitRoamingEnemy} from './enemy-range3d.js?v=20261119d';
 import {worldSize} from './world3d.js?v=20261119d';
 import {setReadingText} from './readings3d.js?v=20261119d';

@@ -10,12 +10,12 @@ import {ACTOR_HATS} from './actor3d.js?v=20261119d';
 import {makeTool} from './building3d.js?v=20261119p';
 import {findDuplicatePosition} from './editor-drag3d.js?v=20261120p';
 import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261119d';
-import {openWaypointEditor} from './waypoint-ui3d.js?v=20261119d';
-import {openPatrolEditor} from './patrol-ui3d.js?v=20261119d';
+import {openWaypointEditor} from './waypoint-ui3d.js?v=20261124a';
+import {openPatrolEditor} from './patrol-ui3d.js?v=20261124a';
 import {enemyRoutineChoices,setEnemyRoutineChoice,lostChoiceLabels,routineFlow} from './enemy-behavior-presets3d.js?v=20261119d';
 import {renderBehaviorExamples} from './enemy-behavior-ui3d.js?v=20261119d';
 import {inGridRange,fitRoamingEnemy} from './enemy-range3d.js?v=20261119d';
-import {closeLiveRangeEditor,renderEnemyRange as renderEnemyRangeBase} from './enemy-range-ui3d.js?v=20261119d';
+import {closeLiveRangeEditor,renderEnemyRange as renderEnemyRangeBase} from './enemy-range-ui3d.js?v=20261124a';
 import {gunPreviewSVG} from './appearance3d.js?v=20261119d';
 import {DOOR_PRESETS,doorUsesGlass,doorCanOpen,isSlidingDoor,doorDimensions} from './doors3d.js?v=20261119d';
 import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261119d';
@@ -414,31 +414,33 @@ export function createWorkshop(api){
     el.append(details('速さ・つよさを工夫する',advanced));
   }
   function chooseWeapon(){const d=document.createElement('dialog'),h=document.createElement('h2');setReadingText(h,'どの銃をアイテムにする？');d.append(h);const random=document.createElement('button');setReadingText(random,'ランダムでひとつ');random.onclick=()=>{setTool('weapon','@random');d.close();d.remove();};d.append(random);for(const tool of getProject().loadout){const b=document.createElement('button'),icon=document.createElement('span'),caption=document.createElement('span');b.className='door-choice';icon.className='hot-gun-icon';icon.innerHTML=gunPreviewSVG(tool);setReadingText(caption,tool.name);b.append(icon,caption);b.onclick=()=>{setTool('weapon',tool.id);d.close();d.remove();};d.append(b);}const cancel=document.createElement('button');setReadingText(cancel,'もどる');cancel.onclick=()=>{d.close();d.remove();};d.oncancel=()=>d.remove();d.append(cancel);document.body.append(d);d.showModal();}
-  function chooseBuildingPalette(kind){
+  function chooseBuildingPalette(kind,host=null){
     const dialog=document.createElement('dialog'),heading=document.createElement('h2'),note=document.createElement('p'),grid=document.createElement('div'),cancel=document.createElement('button');dialog.className='architecture-picker';grid.className='architecture-choices';
     const entries=kind==='box'?Object.entries(FURNITURE_PRESETS).map(([key,name])=>['box',key,name]):kind==='floor'?Object.entries(FLOOR_PRESETS).map(([key,name])=>['floor',key,name]):kind==='door'?Object.entries(DOOR_PRESETS).filter(([key,p])=>!p.window&&key!=='slide').map(([key,p])=>['door',key,p.name]):kind==='roof'?Object.entries(ROOF_PRESETS).map(([key,name])=>[key.startsWith('gable')?'wall':'roof',key,name]):kind==='ramp'?Object.entries(RAMP_PRESETS).map(([key,name])=>['ramp',key,name]):[...Object.entries(FENCE_PRESETS).map(([key,name])=>['wall',key,name]),...Object.entries(DOOR_PRESETS).filter(([,p])=>p.window).map(([key,p])=>['door',key,p.name])];
     setReadingText(heading,kind==='box'?'つくえ・いす・ブロックをえらぶ':kind==='floor'?'どの床を置く？':kind==='door'?'どのドアを置く？':kind==='roof'?'三角屋根のパーツをえらぶ':kind==='ramp'?'どのスロープを置く？':'かべ・まど・さくをえらぶ');
     setReadingText(note,kind==='box'?'つくえは半マスずつそろうよ。天板の端や横を押すと、すきまなくつながるよ。ながづくえには、いすを３つ並べられるよ。':kind==='floor'?'ハーフの床は半マスの広さ。２枚で１マスになるよ。90度回すと向きが変わるよ。置いた床は「いどう」で1.5mずつ上げ下げできるよ。':kind==='door'?'普通のドアは半マスの幅で、残りは壁だよ。ふすまは半マス幅の扉が２枚・４枚。近くの１枚が動くよ。近づいて「あける」で開け閉めできるよ。':kind==='roof'?'ななめ屋根の高い端を押すと、反対向きの屋根がつながるよ。三角のかべは屋根の端を押すと、向きと高さがそろうよ。90°ずつ回して使えるよ。':kind==='ramp'?'角のスロープは90°ずつ回して、２つの方向につながる角に合わせよう。':'かべと同じ１マスのはばだよ。開くまどは、たしかめる画面で近づいて「あける」を押そう。');
-    for(const [type,key,name]of entries){const button=document.createElement('button'),icon=document.createElement('span'),caption=document.createElement('span');button.type='button';button.dataset.preset=key;icon.className='architecture-icon';icon.innerHTML=kind==='box'&&key!=='box'?furnitureIcon(key):architectureIcon(key==='box'?'wall':key);setReadingText(caption,name);button.append(icon,caption);button.onclick=()=>{setTool(type,key);dialog.close();dialog.remove();};grid.append(button);}
+    for(const [type,key,name]of entries){const button=document.createElement('button'),icon=document.createElement('span'),caption=document.createElement('span');button.type='button';button.dataset.preset=key;icon.className='architecture-icon';icon.innerHTML=kind==='box'&&key!=='box'?furnitureIcon(key):architectureIcon(key==='box'?'wall':key);setReadingText(caption,name);button.append(icon,caption);button.onclick=()=>{setTool(type,key);if(host){for(const choice of grid.children)choice.setAttribute('aria-pressed',String(choice===button));}else{dialog.close();dialog.remove();}};grid.append(button);}
+    if(host){grid.className='city-part-options';host.replaceChildren(grid);host.hidden=false;return;}
     setReadingText(cancel,'もどる');cancel.onclick=()=>{dialog.close();dialog.remove();};dialog.oncancel=()=>dialog.remove();dialog.append(heading,note,grid,cancel);document.body.append(dialog);dialog.showModal();
   }
   function chooseDoor(){chooseBuildingPalette('door');}
-  function chooseTownPart(){
-   const dialog=document.createElement('dialog'),heading=document.createElement('h2'),note=document.createElement('p'),grid=document.createElement('div'),close=document.createElement('button');
-   dialog.className='architecture-picker';grid.className='architecture-choices';
-   setReadingText(heading,'まちのパーツ');setReadingText(note,'どうろや、そのすぐよこをおそう。入口がどうろの方を向くよ。');
+  function renderTownParts(){
+   const grid=$('#city-town3');
+   grid.replaceChildren();
+   const selected=api.getToolSelection?.();
    for(const [key,{icon,name}] of Object.entries(TOWN_PARTS)){
     if(key==='garage')continue;
-    const button=document.createElement('button');button.dataset.townKind=key;
-    setReadingText(button,icon+' '+name+(key==='house'?'（ガレージつき）':''));button.onclick=()=>{setTool('town',key);dialog.close();};grid.append(button);
+    const button=document.createElement('button');button.type='button';button.dataset.townKind=key;
+    button.setAttribute('aria-pressed',String(selected?.type==='town'&&selected.preset===key));
+    setReadingText(button,icon+' '+name+(key==='house'?'（ガレージつき）':''));button.onclick=()=>setTool('town',key);grid.append(button);
    }
-   close.textContent='とじる';close.onclick=()=>dialog.close();dialog.onclose=()=>dialog.remove();
-   dialog.append(heading,note,grid,close);document.body.append(dialog);dialog.showModal();
   }
   function renderPalette(){
     const selected=api.getToolSelection?.()||{type:'select'},paletteType=['gableLeft','gableRight'].includes(selected.preset)?'roof':selected.type==='door'&&DOOR_PRESETS[selected.preset]?.window?'wall':selected.type;
-    const rows=getProject().template==='car'?
-      [['#palette3',['floor','ramp','wall','box','platform','moving','bounce','raceGate','trafficSignal','town']],['#palette-extra3',[]]]:
+    const car=getProject().template==='car',variants=$('#city-variants3');
+    if(car)renderTownParts();
+    const rows=car?
+      [['#palette3',[]],['#palette-extra3',[]],['#city-parts3',['floor','ramp','wall','box','platform','moving','bounce','raceGate','trafficSignal']]]:
       [['#palette3',['wall','floor','roof','ramp','box','platform','moving','bounce','hazard','door']],['#palette-extra3',['enemy','ally','actor','weapon','star','key','heal','checkpoint','plate','goal']]];
     const shortNames={wall:'かべ・まど',floor:'ゆか',roof:'やね',ramp:'スロープ',box:'ブロック・かぐ',moving:'うごく',platform:'あしば',bounce:'ジャンプ',hazard:'ダメージ',enemy:'てき',ally:'みかた',actor:'やくしゃ',weapon:'じゅう',star:'ほし',key:'カギ',heal:'かいふく',checkpoint:'セーブ',plate:'スイッチ',goal:'ゴール'};
     for(const [selector,types]of rows){
@@ -447,7 +449,12 @@ export function createWorkshop(api){
         const button=document.createElement('button'),icon=document.createElement('span'),name=document.createElement('span');
         button.className='part'+(paletteType===type?' active':'');button.dataset.part=type;button.setAttribute('aria-label',type==='wall'?'かべ・まど・さく':type==='box'?'ブロック・つくえ・いす':PARTS[type]);button.setAttribute('aria-pressed',String(paletteType===type));button.title=PARTS[type];
         icon.className='part-icon';icon.textContent=ICONS[type];icon.setAttribute('aria-hidden','true');name.className='part-caption';setReadingText(name,shortNames[type]||PARTS[type]);button.append(icon,name);
-        button.onclick=()=>type==='town'?chooseTownPart():type==='door'?chooseDoor():type==='weapon'?chooseWeapon():['box','wall','floor','ramp','roof'].includes(type)?chooseBuildingPalette(type):setTool(type,'');palette.append(button);
+        button.onclick=()=>{
+          if(type==='door')chooseDoor();
+          else if(type==='weapon')chooseWeapon();
+          else if(['box','wall','floor','ramp','roof'].includes(type))chooseBuildingPalette(type,car?variants:null);
+          else {if(car)variants.hidden=true;setTool(type,'');}
+        };palette.append(button);
       }
     }
   }

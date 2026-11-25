@@ -3,9 +3,9 @@ import {defaultSupplyFlight,SUPPLY_REWARDS} from './supply3d.js?v=20261119d';
 import {coordinateLimit} from './world3d.js?v=20261119d';
 import {setReadingText} from './readings3d.js?v=20261119d';
 import {configureNumericInput} from './numeric3d.js?v=20261119d';
-import {createPatrolOverlay} from './patrol-ui3d.js?v=20261119d';
-import {mountLiveRangeEditor} from './range-panel3d.js?v=20261119d';
-import {setStageRangePainter} from './stage-range3d.js?v=20261119d';
+import {createPatrolOverlay} from './patrol-ui3d.js?v=20261124a';
+import {mountLiveRangeEditor} from './range-panel3d.js?v=20261124a';
+import {setStageRangePainter} from './stage-range3d.js?v=20261124a';
 
 export function createSupplyUI({$,getProject,save,scene,focusRoute,toast}){
  const dialog=$('#supply-dialog3'),routeOverlay=createPatrolOverlay(scene,{throughParts:true});

@@ -2,9 +2,19 @@ let activeFinish=null;
 export const isLiveRangeEditing=()=>activeFinish!==null;
 export function closeLiveRangeEditor(){activeFinish?.();}
 // All three range editors share the same stage-visible sidebar and lifecycle.
-export function mountLiveRangeEditor(panel,onClose,{showDetails=true}={}){
+export function mountLiveRangeEditor(panel,onClose,{showDetails=true,host=null}={}){
  closeLiveRangeEditor();
  globalThis.window?.dispatchEvent(new Event('enemy-range-open'));
+ if(host){
+  const finish=()=>{
+   if(activeFinish!==finish)return;
+   activeFinish=null;panel.remove();host.hidden=true;onClose?.();
+   queueMicrotask(()=>{if(!activeFinish)globalThis.window?.dispatchEvent(new Event('enemy-range-close'));});
+  };
+  panel.onkeydown=e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();finish();}};
+  activeFinish=finish;host.append(panel);host.hidden=false;
+  return finish;
+ }
  const aside=document.querySelector('aside'),main=aside.closest('main'),scrollTop=aside.scrollTop;
  const actions=document.querySelector('#range-actions3'),more=document.querySelector('#range-more3'),dock=document.querySelector('#range-dock3');
  const finish=()=>{if(activeFinish!==finish)return;activeFinish=null;if(actions){actions.replaceChildren();actions.hidden=true;}if(more){more.hidden=true;more.open=false;}onClose?.();panel.remove();aside.classList.remove('is-range-editing');main.classList.remove('range-editing');aside.scrollTop=scrollTop;queueMicrotask(()=>{if(!activeFinish)globalThis.window?.dispatchEvent(new Event('enemy-range-close'));});};
