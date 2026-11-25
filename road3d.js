@@ -68,12 +68,42 @@ export function roadSegmentAt(road,point){
  return {index:nearest,a:points[nearest],b:points[(nearest+1)%points.length]};
 }
 
+export function roadRunBarrier(road,end){
+ return road.segmentBarriers?.[end.incomingSegment]??road.barrier;
+}
+
+export function toggleRoadGuardrail(road,index){
+ const segmentBarriers={...road.segmentBarriers};
+ const current=segmentBarriers[index]??road.barrier;
+ const next=current==='guardrail'?(road.barrier==='guardrail'?'none':road.barrier??'none'):'guardrail';
+ if(next===(road.barrier??'none'))delete segmentBarriers[index];
+ else segmentBarriers[index]=next;
+ return {...road,segmentBarriers};
+}
+
+function remapSegmentBarriers(road,segments){
+ return road.segmentBarriers&&Object.fromEntries(segments.flatMap((old,index)=>{
+  const label=Array.isArray(old)?road.segmentBarriers[old[0]]??road.segmentBarriers[old[1]]:road.segmentBarriers[old];
+  return label===undefined?[]:[[index,label]];
+ }));
+}
+
+export function removeRoadPoint(road,index){
+ const points=road.points.filter((_,i)=>i!==index),closed=road.closed&&roadPointsFit(points,true);
+ const starts=road.points.map((_,i)=>i).filter(i=>i!==index);
+ const segments=starts.slice(0,points.length-(closed?0:1)).map(i=>
+  (i+1)%road.points.length===index?[i,index]:i);
+ return {...road,points,closed,segmentBarriers:remapSegmentBarriers(road,segments)};
+}
+
 export function splitRoadAt(road,point){
  const {points,closed}=road,{index:nearest}=roadSegmentAt(road,point);
- const pieces=closed?[points.slice(nearest+1).concat(points.slice(0,nearest+1))]:
-  [points.slice(0,nearest+1),points.slice(nearest+1)];
+ const indices=points.map((_,index)=>index);
+ const pieces=closed?[indices.slice(nearest+1).concat(indices.slice(0,nearest+1))]:
+  [indices.slice(0,nearest+1),indices.slice(nearest+1)];
  return pieces.filter(piece=>piece.length>=2).map((piece,index)=>({
-  ...road,id:index?crypto.randomUUID():road.id,points:piece,closed:false
+  ...road,id:index?crypto.randomUUID():road.id,points:piece.map(i=>points[i]),closed:false,
+  ...(road.segmentBarriers&&{segmentBarriers:remapSegmentBarriers(road,piece.slice(0,-1))})
  }));
 }
 
@@ -143,6 +173,9 @@ export function validRoads(roads,world){
  for(const road of roads){
   if(!road||typeof road.id!=='string'||!road.id||road.id.length>80||ids.has(road.id)||!ROAD_WIDTHS.includes(road.width)||typeof road.closed!=='boolean'||!Array.isArray(road.points)||road.points.length<2||road.points.length>MAX_ROAD_POINTS)return false;
   if(road.barrier!==undefined&&(typeof road.barrier!=='string'||!Object.hasOwn(ROAD_BARRIERS,road.barrier)))return false;
+  if(road.segmentBarriers!==undefined&&(!road.segmentBarriers||typeof road.segmentBarriers!=='object'||Array.isArray(road.segmentBarriers)||
+   !Object.entries(road.segmentBarriers).every(([index,barrier])=>/^\d{1,2}$/.test(index)&&String(Number(index))===index&&
+    Number(index)<road.points.length-(road.closed?0:1)&&(barrier==='none'||barrier==='guardrail'))))return false;
   if(road.markings!==undefined&&road.markings!=='street')return false;
   if(!road.points.every(p=>p&&Number.isFinite(p.x)&&Number.isFinite(p.z)&&Math.abs(p.x)<=limit&&Math.abs(p.z)<=limit&&
    (p.corner===undefined||p.corner==='straight')&&(p.y===undefined||Number.isFinite(p.y)&&p.y>=0&&p.y<=MAX_ROAD_HEIGHT))||!roadPointsFit(road.points,road.closed))return false;
@@ -154,19 +187,21 @@ export function validRoads(roads,world){
 
 // Cut a little off the two sides of each corner. The curve is tangent to both
 // straight sections, and all its points stay inside the corner’s triangle.
-export function sampleRoad(road){
+export function sampleRoad(road,withSegments=false){
  const {points,width,closed}=road;
- if(points.length<3)return points.map(point=>({...point}));
+ const previousIndex=index=>(index+points.length-1)%points.length;
+ const tagged=(point,index)=>withSegments?{...point,incomingSegment:index}:{...point};
+ if(points.length<3)return points.map((point,index)=>tagged(point,previousIndex(index)));
  const path=[];
  for(const [index,point] of points.entries()){
-  if(point.corner==='straight'||!closed&&(index===0||index===points.length-1)){path.push({...point});continue;}
+  if(point.corner==='straight'||!closed&&(index===0||index===points.length-1)){path.push(tagged(point,previousIndex(index)));continue;}
   const previous=points[(index+points.length-1)%points.length],next=points[(index+1)%points.length];
   const from=distance(previous,point),to=distance(next,point);
-  if(from<.001||to<.001){path.push({...point});continue;}
+  if(from<.001||to<.001){path.push(tagged(point,previousIndex(index)));continue;}
   const cut=Math.min(from*.4,to*.4,width*1.4);
   const entry=lerp(point,previous,cut/from),exit=lerp(point,next,cut/to);
   for(let step=0;step<=12;step++){
-   const t=step/12;path.push(lerp(lerp(entry,point,t),lerp(point,exit,t),t));
+   const t=step/12;path.push(tagged(lerp(lerp(entry,point,t),lerp(point,exit,t),t),step<=6?previousIndex(index):index));
   }
  }
  if(closed)path.push({...path[0]});
@@ -265,17 +300,18 @@ export function createRoadOpenings(roads,half){
 }
 
 export function createRoadBarrierQuery(roads=[],world){
- const fenced=roads.filter(road=>Object.hasOwn(ROAD_BARRIERS,road.barrier));
+ const fenced=roads.filter(road=>Object.hasOwn(ROAD_BARRIERS,road.barrier)||Object.values(road.segmentBarriers||{}).includes('guardrail'));
  if(!fenced.length)return ()=>null;
  const barriers=[],half=worldHalf(world);
  const openings=createRoadOpenings(roads,half);
  for(const road of fenced){
-  const profile=ROAD_BARRIERS[road.barrier];
-  const sections=roadSections(savedRoadPath(road),road.closed);
+  const sections=roadSections(sampleRoad(road,true),road.closed);
   for(const side of [-1,1]){
    const offset=roadBarrierOffset(road,side);
    const points=sections.map(section=>roadVertex(section,offset,half));
    for(let i=1;i<points.length;i++){
+    const profile=ROAD_BARRIERS[roadRunBarrier(road,sections[i])];
+    if(!profile)continue;
     const from=points[i-1],to=points[i];
     for(const [start,end] of openings(road.id,from,to)){
      const a=lerp(from,to,start),b=lerp(from,to,end),length=distance(a,b);

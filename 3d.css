@@ -625,6 +625,7 @@ aside>#group-tools3{padding:0;margin:0;border:0;background:transparent;border-ra
 .car-settings-actions button { min-height:44px; }
 @media(max-width:540px) { #car-tuning3 { grid-template-columns:1fr; } }
 .car-workshop #palette3,.car-workshop #palette-extra3 { display:none; }
+.car-workshop [data-editor-tool][data-part=erase] { display:none; }
 #city-build3[hidden],#city-build3 [hidden],.stage-toolbar.is-playing ~ #city-build3,
 main.range-editing #city-build3 { display:none; }
 #city-build3 {
@@ -654,23 +655,22 @@ main.range-editing #city-build3 { display:none; }
 .city-build-categories button,.city-build-options > button,.city-part-options > button {
  flex:none; min-height:42px; padding:6px 11px; font-size:12px; white-space:nowrap;
 }
-.city-build-categories button[aria-expanded=true],.city-build-options button[aria-pressed=true],
+.city-build-categories button[aria-expanded=true],.city-build-categories button[aria-pressed=true],.city-build-options button[aria-pressed=true],
 .city-part-options button[aria-pressed=true] { background:#7258c4; border-color:#7258c4; color:white; }
 #city-parts3 .part-icon { display:inline; margin:0 4px 0 0; font-size:14px; }
 #city-parts3 .part-caption { display:inline; font-size:inherit; }
 .city-part-options .architecture-icon { width:32px; height:25px; display:inline-block; vertical-align:middle; }
 .city-part-options .architecture-icon svg { width:100%; height:100%; }
-#road-actions3 { border-top:1px solid #e6eaf3; }
 .road-menu-caption { flex:none; padding-inline:3px; font-size:12px; font-weight:700; }
-#road-draft3 { padding:4px 8px; }
+#road-draft3 { padding:4px 8px; max-height:min(40dvh,212px); }
 #road-draft3 .range-live-heading { position:static; padding:2px 0; background:transparent; border:0; }
 #road-draft3 .range-live-heading h2 { font-size:13px; }
 #road-draft3 .stage-range-tools { margin:4px 0; }
-#road-draft3 details { margin:2px 0; padding:0; }
-#road-draft3 summary { width:max-content; cursor:pointer; padding:5px 0; }
-.road-width-choices { display:flex; gap:3px; padding-right:5px; border-right:1px solid #dce3ed; }
+#road-draft3 .stage-range-tools button { min-height:36px; padding:5px 7px; }
+.road-editor-settings { padding-top:4px; border-top:1px solid #e6eaf3; }
 .road-height-tools { display:flex; flex-wrap:wrap; align-items:center; gap:4px; padding-inline:4px; font-size:11px; }
 .road-style-choices { display:flex; flex-wrap:wrap; align-items:center; gap:4px; padding-inline:4px; font-size:11px; }
+.road-style-choices > span { font-weight:700; }
 .road-editor-hint { align-self:center; padding-inline:4px; font-size:11px; color:#53637b; }
 #town-traffic3 { width:min(620px,calc(100vw - 22px)); }
 #town-traffic-body3 { display:grid; gap:9px; padding:12px 16px 16px; }

@@ -4,8 +4,8 @@ import {MAX_PARTS,MAX_BUILD_Y} from './limits3d.js?v=20261119d';
 import {coordinateLimit} from './world3d.js?v=20261119d';
 import {rangeCell,validMoveRange,validAttackRange} from './enemy-range3d.js?v=20261119d';
 import {validPatrolRoute,validWaypoints} from './patrol-route3d.js?v=20261119d';
-import {validate3D} from './engine3d.js?v=20261125c';
-import {fitTownPart,townPlacementReason} from './town3d.js?v=20261125c';
+import {validate3D} from './engine3d.js?v=20261125d';
+import {fitTownPart,townPlacementReason} from './town3d.js?v=20261125d';
 export function groupSteps(objects){
  const steps={x:1,y:0.25,z:1};
  for(const part of objects){

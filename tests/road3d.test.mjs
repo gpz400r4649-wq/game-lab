@@ -3,12 +3,42 @@ import assert from 'node:assert/strict';
 import {Scene} from '../vendor/three.module.min.js';
 import {createRoadView} from '../road-model3d.js';
 import {makeTrafficSignal,updateTrafficSignal} from '../race-model3d.js';
-import {ROAD_BARRIERS,MAX_ROAD_POINTS,createRoadBarrierQuery,createRoadOpenings,createRoadSurfaceQuery,roadBarrierOffset,roadPoint,roadGridSites,roadSections,roadVertex,sampleRoad,traceRoadPoints,validRoads} from '../road3d.js';
+import {ROAD_BARRIERS,MAX_ROAD_POINTS,createRoadBarrierQuery,createRoadOpenings,createRoadSurfaceQuery,removeRoadPoint,roadBarrierOffset,roadPoint,roadGridSites,roadSections,roadVertex,sampleRoad,splitRoadAt,toggleRoadGuardrail,traceRoadPoints,validRoads} from '../road3d.js';
 import {create3D,fresh3D,part,step3D,validate3D} from '../engine3d.js';
 import {fitRaceGate,updateRaceGates,updateRoadGateWidths} from '../race3d.js';
 import {resizeReason} from '../world3d.js';
 
 const turn=()=>({id:'first',width:8,closed:false,points:[{x:-20,z:0},{x:0,z:0},{x:0,z:-20}]});
+
+test('区間のガードレールは保存され、その区間だけ表示と衝突に使われる',()=>{
+ const project=fresh3D('car');
+ const base={id:'street',width:8,closed:false,points:[{x:-30,z:0},{x:-10,z:0},{x:10,z:0},{x:30,z:0}]};
+ project.roads=[toggleRoadGuardrail(base,1)];
+ const loaded=validate3D(JSON.parse(JSON.stringify(project)));
+ const collide=createRoadBarrierQuery(loaded.roads,loaded);
+ const cross=(x)=>collide({x,y:0,z:0},{x,y:0,z:8},0);
+ assert.ok(cross(0));assert.equal(cross(-20),null);assert.equal(cross(20),null);
+ const scene=new Scene(),view=createRoadView(scene);
+ view.sync(loaded.roads,60);
+ const rail=scene.children[0].children[0].children.find(mesh=>mesh.userData.roadBarrier);
+ rail.geometry.computeBoundingBox();
+ assert.equal(rail.geometry.boundingBox.min.x,-10);assert.equal(rail.geometry.boundingBox.max.x,10);
+ assert.deepEqual(toggleRoadGuardrail(loaded.roads[0],1).segmentBarriers,{});
+ assert.deepEqual(toggleRoadGuardrail({...base,barrier:'guardrail'},1).segmentBarriers,{1:'none'});
+});
+
+test('道路を分割してもガードレールは残った区間についていく',()=>{
+ const road={id:'street',width:8,closed:false,points:[{x:-30,z:0},{x:-10,z:0},{x:10,z:0},{x:30,z:0}],
+  segmentBarriers:{0:'guardrail',2:'guardrail'}};
+ const pieces=splitRoadAt(road,{x:0,z:0});
+ assert.deepEqual(pieces.map(piece=>piece.segmentBarriers),[{0:'guardrail'},{0:'guardrail'}]);
+ assert.deepEqual(removeRoadPoint(road,0).segmentBarriers,{1:'guardrail'});
+ const loop={...road,closed:true,points:[{x:-10,z:-10},{x:-10,z:10},{x:10,z:10},{x:10,z:-10}]};
+ const [opened]=splitRoadAt(loop,{x:-10,z:0});
+ assert.deepEqual(opened.segmentBarriers,{1:'guardrail'});
+ assert.equal(validRoads(pieces,240),true);
+ assert.equal(validRoads([opened],240),true);
+});
 
 test('なぞった道路は小さなぶれを省き、曲がり角と終点をグリッドにそろえる',()=>{
  const road={id:'trace',width:8,closed:false,points:[]};

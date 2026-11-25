@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.min.js';
-import {ROAD_BARRIERS,ROAD_DECK_DEPTH,createRoadOpenings,roadBarrierOffset,roadSections,roadVertex,sampleRoad} from './road3d.js?v=20261125c';
+import {ROAD_BARRIERS,ROAD_DECK_DEPTH,createRoadOpenings,roadBarrierOffset,roadRunBarrier,roadSections,roadVertex,sampleRoad} from './road3d.js?v=20261125d';
 
 const asphalt=new T.MeshStandardMaterial({color:0x333c4e,roughness:.98,side:T.DoubleSide});
 const edges=new T.MeshBasicMaterial({color:0xe2e6ef,side:T.DoubleSide});
@@ -12,9 +12,9 @@ const pegShape=new T.SphereGeometry(.65,12,8),pegMaterial=new T.MeshBasicMateria
 
 function roadMesh(road,half,preview,openings){
  const shape=road.closed&&road.points.length<3?{...road,closed:false}:road;
- const path=roadSections(sampleRoad(shape),shape.closed),group=new T.Group();
- const pavement=[],borders=[],line=[],barriers=[],walk=[];
- const profile=ROAD_BARRIERS[road.barrier],street=road.markings==='street';
+ const path=roadSections(sampleRoad(shape,true),shape.closed),group=new T.Group();
+ const pavement=[],borders=[],line=[],barriers={mini:[],highway:[],guardrail:[]},walk=[];
+ const street=road.markings==='street';
  const at=(point,offset,height)=>{
   const {x,y,z}=roadVertex(point,offset,half);
   return [x,y+height,z];
@@ -24,12 +24,12 @@ function roadMesh(road,half,preview,openings){
   const p=at(a,min,level),q=at(a,max,level),r=at(b,max,level),s=at(b,min,level);
   buffer.push(...p,...q,...r,...p,...r,...s);
  }
- function rail(a,b,offset,base,top,thickness){
+ function rail(buffer,a,b,offset,base,top,thickness){
   const left=offset-thickness/2,right=offset+thickness/2;
-  strip(barriers,a,b,left,right,height+top);
+  strip(buffer,a,b,left,right,height+top);
   for(const side of [left,right]){
    const p=at(a,side,height+base),q=at(b,side,height+base),r=at(b,side,height+top),s=at(a,side,height+top);
-   barriers.push(...p,...q,...r,...p,...r,...s);
+   buffer.push(...p,...q,...r,...p,...r,...s);
   }
  }
  const blend=(a,b,t)=>Object.fromEntries(['x','y','z','nx','nz'].map(key=>[key,(a[key]||0)+((b[key]||0)-(a[key]||0))*t]));
@@ -38,6 +38,7 @@ function roadMesh(road,half,preview,openings){
  for(let i=1;i<path.length;i++){
   const a=path[i-1],b=path[i],length=Math.hypot(a.x-b.x,a.z-b.z),radius=road.width/2;
   if(length<.0001)continue;
+  const kind=roadRunBarrier(road,b),profile=ROAD_BARRIERS[kind];
   strip(pavement,a,b,-radius,radius,height);
   if(a.y>0||b.y>0){
    for(const offset of [-radius,radius]){
@@ -69,23 +70,23 @@ function roadMesh(road,half,preview,openings){
   if(profile)for(const side of [-1,1]){
    const offset=roadBarrierOffset(road,side);
    for(const [from,to] of visibleRuns(a,b,offset)){
-    rail(blend(a,b,from),blend(a,b,to),offset,profile.bottom,profile.height,profile.thickness);
-    if(road.barrier==='guardrail'){
+    rail(barriers[kind],blend(a,b,from),blend(a,b,to),offset,profile.bottom,profile.height,profile.thickness);
+    if(kind==='guardrail'){
      for(let post=Math.floor((travelled+from*length)/4)*4;post<travelled+to*length;post+=4){
       const start=Math.max(from,(post-travelled)/length),end=Math.min(to,(post+.18-travelled)/length);
-      if(end>start)rail(blend(a,b,start),blend(a,b,end),offset,0,profile.bottom,.16);
+      if(end>start)rail(barriers[kind],blend(a,b,start),blend(a,b,end),offset,0,profile.bottom,.16);
      }
     }
    }
   }
   travelled+=length;
  }
- for(const [index,[vertices,material]] of [[pavement,preview?draftSurface:asphalt],[borders,edges],[line,street?edges:centre],[barriers,barrierMaterials[road.barrier]],[walk,paving]].entries()){
+ const rails=Object.entries(barriers).map(([kind,vertices])=>[vertices,barrierMaterials[kind],'roadBarrier']);
+ for(const [vertices,material,role] of [[pavement,preview?draftSurface:asphalt,'roadSurface'],[borders,edges],[line,street?edges:centre],...rails,[walk,paving]]){
   if(!vertices.length)continue;
   const geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.Float32BufferAttribute(vertices,3));geometry.computeVertexNormals();
   const mesh=new T.Mesh(geometry,material);
-  if(index===0)mesh.userData.roadSurface=true;
-  if(index===3)mesh.userData.roadBarrier=true;
+  if(role)mesh.userData[role]=true;
   group.add(mesh);
  }
  return group;
@@ -113,9 +114,10 @@ export function createRoadView(scene){
  eraseLine.visible=false;scene.add(eraseLine);
  const eraseDirection=new T.Vector3(),forward=new T.Vector3(0,0,1);
  return {
-  showErase(segment){
+  showSegment(segment,color=0xe2646b){
    eraseLine.visible=!!segment;
    if(!segment)return;
+   eraseLine.material.color.setHex(color);
    const {a,b}=segment,ay=a.y||0,by=b.y||0;
    eraseDirection.set(b.x-a.x,by-ay,b.z-a.z);
    eraseLine.position.set((a.x+b.x)/2,(ay+by)/2+.075,(a.z+b.z)/2);

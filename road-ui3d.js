@@ -1,11 +1,11 @@
-import {updateRoadGateWidths} from './race3d.js?v=20261125c';
-import {MAX_ROADS,MAX_ROAD_POINTS,MAX_ROAD_HEIGHT,ROAD_HEIGHT_STEP,ROAD_WIDTHS,roadPoint,roadGridSites,roadConnection,nearestRoad,nearestRoadHandle,roadPiecePlacement,roadPointsFit,roadSegmentAt,splitRoadAt,traceRoadPoints,validRoads} from './road3d.js?v=20261125c';
+import {updateRoadGateWidths} from './race3d.js?v=20261125d';
+import {MAX_ROADS,MAX_ROAD_POINTS,MAX_ROAD_HEIGHT,ROAD_HEIGHT_STEP,ROAD_WIDTHS,roadPoint,roadGridSites,roadConnection,nearestRoad,nearestRoadHandle,removeRoadPoint,roadPiecePlacement,roadPointsFit,roadSegmentAt,splitRoadAt,toggleRoadGuardrail,traceRoadPoints,validRoads} from './road3d.js?v=20261125d';
 import {closeLiveRangeEditor,mountLiveRangeEditor} from './range-panel3d.js?v=20261124a';
 import {setStageRangePainter} from './stage-range3d.js?v=20261124a';
-import {refitTownParts} from './town3d.js?v=20261125c';
+import {refitTownParts} from './town3d.js?v=20261125d';
 
-export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickRoad,pickHandle,pointerAtHeight,isOnStage,focusHeight,setRoadView,toast}){
- const bar=$('#city-build3'),actions=$('#road-actions3'),presets=$('#road-presets3'),host=$('#road-draft3');
+export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickRoad,pickPart,erasePart,pickHandle,pointerAtHeight,isOnStage,focusHeight,setRoadView,toast}){
+ const bar=$('#city-build3'),work=$('#city-work3'),demolish=$('#city-demolish3'),presets=$('#road-presets3'),host=$('#road-draft3');
  const categories=[...bar.querySelectorAll('[data-city-panel]')];
  const stage=$('#viewport'),panels=[...bar.querySelectorAll('.city-build-panel')];
  function keepStageControlsVisible(){
@@ -28,12 +28,21 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
   const element=document.createElement('button');element.type='button';element.textContent=text;element.onclick=onclick;element.className=className;
   return element;
  }
- const editRoad=button('道をなおす',()=>pickSavedRoad(false)),eraseRoad=button('道をけす',()=>pickSavedRoad(true));
- actions.append(editRoad,eraseRoad);
+ const editRoad=button('道をなおす',()=>pickSavedRoad('edit'));
+ const guardrail=button('ガードレールをつける',()=>pickSavedRoad('guardrail'));
+ work.append(editRoad,guardrail);
+ demolish.onclick=()=>{
+  const active=demolish.getAttribute('aria-pressed')==='true';
+  if(!host.hidden)closeLiveRangeEditor();
+  if(!active){
+   $('[data-editor-tool][data-part=select]').click();
+   pickSavedRoad('demolish');
+  }
+ };
  function refreshMenu(){
   const roads=getProject().roads||[];
   for(const control of presets.querySelectorAll('button'))control.disabled=roads.length>=MAX_ROADS;
-  editRoad.disabled=eraseRoad.disabled=!roads.length;
+  editRoad.disabled=guardrail.disabled=!roads.length;
  }
  for(const [label,style] of roadTools)presets.append(button(label,()=>{
   if((getProject().roads||[]).length>=MAX_ROADS)return;
@@ -45,7 +54,7 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
    category.setAttribute('aria-expanded',String(active));
    $('#'+category.dataset.cityPanel).hidden=!active;
   }
-  if(id==='city-roads3')refreshMenu();
+  if(id==='city-roads3'||id==='city-work3')refreshMenu();
  }
  for(const category of categories)category.onclick=()=>{
   const id=category.getAttribute('aria-expanded')==='true'?null:category.dataset.cityPanel;
@@ -60,25 +69,35 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
   project.objects=refitTownParts(updateRoadGateWidths(objects,project.roads||[],next),next,project);
   project.roads=next;save();rebuild();
  }
- function pickSavedRoad(erasing){
+ function pickSavedRoad(action){
   showCategory(null);
+  const erasing=action==='demolish',addingRail=action==='guardrail';
   const panel=document.createElement('section'),heading=document.createElement('div'),title=document.createElement('h2'),hint=document.createElement('p');
-  heading.className='range-live-heading';
-  title.textContent=erasing?'道をけす':'道をなおす';
-  hint.textContent=erasing?'けしたい区間をステージでおそう。上の「もどす」で取り消せるよ。':'なおしたい道をステージでおそう。';
-  const finish=mountLiveRangeEditor(panel,()=>{setStageRangePainter(null);view.showErase(null);view.showSnap([],null);},{host});
-  heading.append(title,button('道路メニュー',()=>{finish();showCategory('city-roads3');}));
+  heading.className='range-live-heading';hint.className='road-editor-hint';
+  title.textContent=erasing?'🚜 こわす':addingRail?'ガードレールをつける':'道をなおす';
+  hint.textContent=erasing?'けしたい道やたてものをおそう。「もどす」で取り消せるよ。':
+   addingRail?'道をおすと、えらんだところの両がわにつくよ。もう一度おすとはずせるよ。':'なおしたい道をおそう。';
+  const finish=mountLiveRangeEditor(panel,()=>{setStageRangePainter(null);view.showSegment(null);demolish.setAttribute('aria-pressed','false');},{host});
+  demolish.setAttribute('aria-pressed',String(erasing));
+  heading.append(title,button(erasing?'おわる':'こうじにもどる',()=>{finish();if(!erasing)showCategory('city-work3');}));
   panel.append(heading,hint);
   let press=null;
   setStageRangePainter((kind,id,ground,canceled)=>{
-   const event=ground?.pointerEvent,hit=event&&isOnStage(event)?pickRoad(event):null;
-   const project=getProject(),road=hit&&project.roads.find(item=>item.id===hit.id);
-   if(erasing)view.showErase(kind!=='end'&&road?roadSegmentAt(road,hit.point):null);
-   if(kind==='start'){if(!press)press={id,event,roadId:hit?.id};return true;}
+   if(press&&press.id!==id)return true;
+   const event=ground?.pointerEvent,onStage=event&&isOnStage(event);
+   const hit=onStage?pickRoad(event):null,part=erasing&&onStage?pickPart(event):null;
+   const target=part&&(!hit||part.distance<hit.distance)?part:hit;
+   const project=getProject(),road=target===hit&&hit&&(project.roads||[]).find(item=>item.id===hit.id);
+   const segment=road?roadSegmentAt(road,hit.point):null;
+   if(erasing||addingRail)view.showSegment(kind==='end'?null:segment,addingRail?0x36bba8:undefined);
+   if(kind==='start'){press={id,event,targetId:target?.id,segment:segment?.index};return true;}
    if(kind!=='end'||press?.id!==id)return true;
    const from=press;press=null;
-   if(canceled||!hit||hit.id!==from.roadId||!from.event||Math.hypot(event.clientX-from.event.clientX,event.clientY-from.event.clientY)>10)return true;
+   if(canceled||!target||target.id!==from.targetId||segment?.index!==from.segment||!from.event||
+    Math.hypot(event.clientX-from.event.clientX,event.clientY-from.event.clientY)>10)return true;
+   if(part&&target===part){erasePart(part.id);return true;}
    if(!road)return true;
+   if(addingRail){applyRoads(project.roads.map(item=>item===road?toggleRoadGuardrail(road,segment.index):item));return true;}
    if(!erasing){finish();openEditor(road,hit.point);return true;}
    const surviving=splitRoadAt(road,hit.point);
    const next=project.roads.flatMap(item=>item===road?surviving:[item]);
@@ -92,7 +111,6 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
     return updated;
    });
    applyRoads(next,objects);toast('道を１区間けしたよ');
-   if(!next.length){finish();showCategory('city-roads3');}
    return true;
   });
  }
@@ -110,7 +128,9 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
    const next=roads.some(road=>road.id===draft.id)?roads.map(road=>road.id===draft.id?saved:road):[...roads,saved];
    if(validRoads(next,project))applyRoads(next);
   }
-  const widthChoices=document.createElement('div');widthChoices.className='road-width-choices';widthChoices.setAttribute('role','group');widthChoices.setAttribute('aria-label','みちのはば');
+  const widthChoices=document.createElement('div'),widthLabel=document.createElement('span');
+  widthChoices.className='road-style-choices';widthChoices.setAttribute('role','group');widthChoices.setAttribute('aria-label','道のはば');
+  widthLabel.textContent='道のはば';widthChoices.append(widthLabel);
   const widths=ROAD_WIDTHS.map((width,index)=>{
    const label=['せまい','ふつう','ひろい','もっとひろい'][index];
    const control=button(`${label} ${width}m`,()=>{
@@ -131,7 +151,7 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
    });
    return {box,sync(){for(const [value,control] of buttons)control.setAttribute('aria-pressed',String(draft[key]===value));}};
   }
-  const barrier=styleChoices('barrier','さく',[[undefined,'なし'],['mini','ミニよんく'],['highway','こうそくどうろ'],['guardrail','ガードレール']]);
+  const barrier=styleChoices('barrier','道のさく',[[undefined,'なし'],['mini','ミニよんく'],['highway','こうそくどうろ'],['guardrail','ガードレール']]);
   const markings=styleChoices('markings','どうろの線',[[undefined,'レース'],['street','ふつうのどうろ']]);
   const sidewalk=styleChoices('sidewalk','ほどう',[[undefined,'なし'],['left','ひだり'],['right','みぎ'],['both','りょうがわ']]);
   const drawing=document.createElement('div');drawing.className='road-style-choices';drawing.setAttribute('role','group');drawing.setAttribute('aria-label','道のひきかた');
@@ -140,21 +160,23 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
   });
   const loop=button('つないで１しゅう',()=>{
    if(!draft.closed&&!roadPointsFit(draft.points,true)){toast('はじめとおわりをすこしはなして、３かしょいじょうえらぼう');return;}
-   draft.closed=!draft.closed;commit();refresh();
+   draft.closed=!draft.closed;
+   if(!draft.closed&&draft.segmentBarriers)delete draft.segmentBarriers[draft.points.length-1];
+   commit();refresh();
   });
   const remove=button('てんをけす',()=>{
    if(selected<0||draft.points.length<3)return;
-   const points=draft.points.filter((_,index)=>index!==selected);
-   if(!roadPointsFit(points,false)){toast('この点をけすと坂がきゅうになるよ');return;}
-   draft.points=points;selected=-1;
-   if(!roadPointsFit(points,draft.closed))draft.closed=false;
+   const updated=removeRoadPoint(draft,selected);
+   if(!roadPointsFit(updated.points,false)){toast('この点をけすと坂がきゅうになるよ');return;}
+   draft=updated;selected=-1;
    commit();refresh();
   });
   const modes=[['piece','つないでおく'],['add','なぞる'],['move','てんをうごかす'],['camera','カメラをうごかす']].map(([key,label])=>[key,button(label,()=>{
    if(pointer)return;
    mode=key;view.showSnap([],null);refresh();
   })]);
-  heading.append(button('道路メニュー',()=>{finish();showCategory('city-roads3');}));
+  const menu=original.points.length?'city-work3':'city-roads3';
+  heading.append(button('とじる',()=>{finish();showCategory(menu);}));
   const heightTools=document.createElement('div'),heightLabel=document.createElement('span');
   heightTools.className='road-height-tools';heightTools.setAttribute('role','group');heightTools.setAttribute('aria-label','てんのたかさ');
   heightLabel.setAttribute('aria-live','polite');
@@ -180,12 +202,12 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
    angled=!angled;setRoadView?.(angled);refresh();
   });
   const help=document.createElement('span');help.className='road-editor-hint';help.setAttribute('role','status');
-  const details=document.createElement('details'),summary=document.createElement('summary'),settings=document.createElement('div');
-  summary.textContent='こまかいせってい';settings.className='stage-range-tools';
-  settings.append(modes.find(([key])=>key==='add')[1],drawing,widthChoices,heightTools,barrier.box,markings.box,sidewalk.box,loop);
-  details.append(summary,settings);
-  controls.append(...modes.filter(([key])=>key!=='add').map(([,control])=>control),grades,startControls,angle,remove);
-  panel.append(details,help);
+  const settings=document.createElement('div'),edges=document.createElement('div');
+  settings.className=edges.className='stage-range-tools road-editor-settings';
+  settings.append(widthChoices,markings.box,loop);
+  edges.append(barrier.box,sidewalk.box);
+  controls.append(...modes.map(([,control])=>control),drawing,grades,startControls,heightTools,angle,remove);
+  panel.append(settings,edges,help);
   const finish=mountLiveRangeEditor(panel,()=>{
    setStageRangePainter(null);stopTracePreview();view.showDraft(null);view.showSnap([],null);cameraRestore?.();
   },{host});
@@ -211,6 +233,7 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
    const base=draft.points.at(-1)?.y??startHeight;
    const next=Math.max(0,Math.min(MAX_ROAD_HEIGHT,base+grade*ROAD_HEIGHT_STEP));
    drawing.hidden=mode!=='add';grades.hidden=mode!=='piece';startControls.hidden=mode!=='piece'||!!draft.points.length;
+   heightTools.hidden=mode!=='move';
    startDown.disabled=startHeight<=0;startUp.disabled=startHeight>=MAX_ROAD_HEIGHT;
    for(const [value,control] of gradeButtons){
     control.disabled=value<0&&base<=0||value>0&&base>=MAX_ROAD_HEIGHT;
