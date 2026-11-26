@@ -18,6 +18,22 @@ export function makeTownModel(part,preview){
   const mesh=new T.Mesh(unit,preview||material);mesh.position.set(x,y,z);mesh.scale.set(width,height,depth);group.add(mesh);
   return mesh;
  };
+ function garageShell(x,width,top,attached){
+  const side=attached ? .16 : .24,back=attached ? .16 : .23;
+  const roofThickness=attached ? .24 : .3,floor=attached ? .07 : .11;
+  const wallTop=top-roofThickness+.025,wallHeight=wallTop-floor,wallY=floor+wallHeight/2;
+  const sides=attached?[1]:[-1,1];
+  for(const edge of sides)box(wall,x+edge*(width-side)/2,wallY,0,side,wallHeight,d);
+  box(wall,x-(attached?side/2:0),wallY,d/2-back/2,width-side*sides.length,wallHeight,back);
+  box(shade,x,top-roofThickness/2,0,width+(attached ? .12 : .18),roofThickness,d+(attached ? .1 : .16));
+ }
+ function parkingLines(x,width,slots,front,back){
+  const ink=.075,depth=back-ink/2-front;
+  if(depth>0)for(let i=0;i<=slots;i++){
+   box(chalk,x+(i/slots-.5)*width,.113,front+depth/2,.055,.014,depth);
+  }
+  box(chalk,x,.113,back,width,.014,ink);
+ }
  group.rotation.order='YXZ';group.rotation.y=part.townHeading;
  if(spec.marking){
   group.rotation.x=Math.atan(part.townGrade||0);
@@ -30,26 +46,21 @@ export function makeTownModel(part,preview){
  if(visitors){
   const {x,width,slots}=visitors;
   box(asphalt,x,.055,0,width,.11,d);
-  for(let i=0;i<=slots;i++)box(chalk,x+(i/slots-.5)*(width-.18),.113,.1,.055,.014,Math.min(3.5,d));
-  box(chalk,x,.113,Math.min(1.85,d*.48),width-.12,.014,.075);
+  parkingLines(x,width-.18,slots,.1-Math.min(3.5,d)/2,Math.min(1.85,d*.48));
  }
  if(kind==='parking'||kind==='garage'){
   box(asphalt,0,.055,0,w,.11,d);
-  for(let i=0;i<=6;i++)box(chalk,(i-3)*(w-.35)/6,.113,.85,.055,.014,3.6);
-  box(chalk,0,.113,2.65,w-.35,.014,.075);
-  if(kind==='garage'){
-   box(wall,0,h/2,d/2-.115,w,h,.23);
-   box(shade,0,h-.15,0,w+.18,.3,d+.16);
-   for(const x of [-w/2+.12,w/2-.12])box(wall,x,h/2,0,.24,h,d);
-  }
+  parkingLines(0,w-.35,6,-.95,2.65);
+  if(kind==='garage')garageShell(0,w,h,false);
   return group;
  }
  if(kind==='busStop'){
   box(asphalt,0,.055,0,w,.11,d);
   box(shade,0,h-.1,.3,w,.2,1.8);
-  box(glass,0,1.22,1.13,w,.12+2.15,.13);
-  for(const x of [-w/2+.18,w/2-.18])box(steel,x,1.15,.94,.12,2.3,.12);
-  box(shade,1.8,1.75,-.85,.36,.36,.12);box(steel,1.8,1,-.85,.08,2,.08);
+  box(glass,0,1.22,1.13,w-.16,.12+2.15,.13);
+  const post=(x,z,width,top)=>box(steel,x,(top+.11)/2,z,width,top-.11,width);
+  for(const x of [-w/2+.18,w/2-.18])post(x,.94,.12,2.3);
+  box(shade,1.8,1.75,-.85,.36,.36,.12);post(1.8,-.85,.08,2);
   return group;
  }
  const height=kind==='house'?h*.72:h-.22;
@@ -58,19 +69,18 @@ export function makeTownModel(part,preview){
  if(house){
   const {garageWidth,garageX,garageHeight}=house;
   box(asphalt,garageX,.035,0,garageWidth,.07,d);
-  box(wall,w/2-.08,garageHeight/2,0,.16,garageHeight,d);
-  box(wall,garageX,garageHeight/2,d/2-.08,garageWidth,garageHeight,.16);
-  box(shade,garageX,garageHeight-.12,0,garageWidth+.12,.24,d+.1);
+  garageShell(garageX,garageWidth,garageHeight,true);
   const mesh=new T.Mesh(gable,preview||roof);
   const overhang=Math.min(.16,facadeWidth*.04,d*.04);
   mesh.scale.set(facadeWidth+2*overhang,h-height+.02,d+2*overhang);
   mesh.position.set(facadeX,height-.02,0);group.add(mesh);
  }else box(shade,facadeX,h-.13,0,facadeWidth+.24,.26,d+.22);
- box(door,facadeX,1.1,-d/2-.027,house?Math.min(1.06,facadeWidth*.24):1.65,2.2,.07);
+ box(door,facadeX,1.115,-d/2-.027,house?Math.min(1.06,facadeWidth*.24):1.65,2.17,.07);
  const windows=(kind==='school'?[-.37,-.19,.19,.37]:[-.29,.29]).map(offset=>facadeX+offset*facadeWidth);
+ const windowWidth=kind==='house'?Math.min(1,facadeWidth*.22):Math.min(1.35,facadeWidth*(kind==='school' ? .17 : .31));
  for(const x of windows){
-  box(glass,x,1.62,-d/2-.03,kind==='house'?1:1.35,1.08,.09);
-  if(kind==='school')box(glass,x,3.85,-d/2-.03,1.35,1.14,.09);
+  box(glass,x,1.62,-d/2-.03,windowWidth,1.08,.09);
+  if(kind==='school')box(glass,x,3.85,-d/2-.03,windowWidth,1.14,.09);
  }
  if(kind==='shop')box(roof,facadeX,2.75,-d/2-.37,Math.max(.1,facadeWidth-.4),.22,.74);
  return group;

@@ -32,6 +32,23 @@ test('家の切妻屋根は壁の上に載り、家の幅と道路沿いの向�
  }
 });
 
+test('まちの建物の屋根・壁・舗装の箱は、同じ向きの面が重ならない',()=>{
+ const axes=['x','y','z'],epsilon=.000001;
+ for(const kind of ['house','garage','shop','school','busStop','parking']){
+  const model=makeTownModel(configureTownPart(part('town'),kind));
+  const boxes=model.children.filter(mesh=>mesh.geometry.type==='BoxGeometry').map(mesh=>
+   axes.map(axis=>[mesh.position[axis]-mesh.scale[axis]/2,mesh.position[axis]+mesh.scale[axis]/2]));
+  for(const [i,a] of boxes.entries())for(let j=i+1;j<boxes.length;j++){
+   const b=boxes[j];
+   for(let axis=0;axis<axes.length;axis++){
+    const overlap=axes.every((_,k)=>k===axis||Math.min(a[k][1],b[k][1])-Math.max(a[k][0],b[k][0])>epsilon);
+    const coplanar=[0,1].some(side=>Math.abs(a[axis][side]-b[axis][side])<epsilon);
+    assert.ok(!(overlap&&coplanar),`${kind}: ${axes[axis]} face, parts ${i} and ${j}`);
+   }
+  }
+ }
+});
+
 test('押した道路の１区間を取り除き、残りの道を保つ',()=>{
  const points=[-12,-4,4,12].map(x=>({x,y:0,z:0}));
  const road={id:'street',width:8,closed:false,sidewalk:'both',points};
