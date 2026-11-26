@@ -665,7 +665,12 @@ main.range-editing #city-build3 { display:none; }
 #city-parts3 .part-caption { display:inline; font-size:inherit; }
 .city-part-options .architecture-icon { width:32px; height:25px; display:inline-block; vertical-align:middle; }
 .city-part-options .architecture-icon svg { width:100%; height:100%; }
-#road-presets3 { gap:8px; padding:9px; scroll-snap-type:x proximity; }
+#road-width-tabs3 {
+ padding:4px 8px; gap:6px; background:#ece9f6; border-bottom:1px solid #dce3ef;
+}
+#road-width-tabs3 button { min-height:40px; padding-inline:9px; }
+#road-width-tabs3 [aria-selected=true] { background:#7258c4; color:white; border-color:#7258c4; }
+.road-preset-strip { gap:8px; padding:8px; scroll-snap-type:x proximity; scroll-padding-inline:8px; }
 #road-presets3 .road-preset-card {
  width:90px; height:60px; padding:0; display:grid; align-items:center; overflow:hidden;
  background:#e5ede7; border:2px solid #b5c9bf; border-radius:10px; scroll-snap-align:start;
@@ -689,6 +694,11 @@ main.range-editing #city-build3 { display:none; }
 }
 .road-preset-preview[data-sidewalk=left]::before { border-block-end-color:transparent; }
 .road-preset-preview[data-sidewalk=right]::before { border-block-start-color:transparent; }
+.road-preset-preview[data-barrier]::before {
+ content:''; position:absolute; inset:-3px 0; border-block:3px dashed #7c92a5;
+}
+.road-preset-preview[data-barrier=mini]::before { border-block:3px solid #d26755; }
+.road-preset-preview[data-barrier=highway]::before { border-block:5px solid #a3acb7; inset:-5px 0; }
 #road-limit3 { margin:0; padding:0 9px 8px; }
 #road-draft3 { padding:4px 8px; max-height:min(40dvh,212px); }
 #road-draft3 .range-live-heading { position:static; padding:2px 0; background:transparent; border:0; }

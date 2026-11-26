@@ -17,13 +17,7 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
  const layout=new ResizeObserver(keepStageControlsVisible);
  [stage,bar,...panels].forEach(panel=>layout.observe(panel));
  window.addEventListener('scroll',keepStageControlsVisible,{passive:true});
- const roadTools=[
-  ['ふつうの道',{width:8,markings:'street'}],
-  ['歩道つき',{width:8,markings:'street',sidewalk:'both'}],
-  ['広い道',{width:12,markings:'street'}],
-  ['せまい道',{width:4,markings:'street'}],
-  ['レース用',{width:8}]
- ];
+ const widthTabs=$('#road-width-tabs3');
  function button(text,onclick,className=''){
   const element=document.createElement('button');element.type='button';element.textContent=text;element.onclick=onclick;element.className=className;
   return element;
@@ -47,7 +41,8 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
   roadLimit.hidden=roads.length<MAX_ROADS;
   editRoad.disabled=guardrail.disabled=!roads.length;
  }
- for(const [label,style] of roadTools){
+ function roadCard(label,width,variant){
+  const style={width,...variant};
   const control=button('',()=>{
    if((getProject().roads||[]).length>=MAX_ROADS)return;
    openEditor({id:crypto.randomUUID(),closed:false,points:[],...style});
@@ -58,8 +53,44 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
   preview.style.setProperty('--road-preview-width',style.width*2.65+'px');
   preview.dataset.lines=style.markings==='street'?(style.width>=8?'street':'edge'):'race';
   if(style.sidewalk)preview.dataset.sidewalk=style.sidewalk;
-  control.append(preview);presets.append(control);
+  if(style.barrier)preview.dataset.barrier=style.barrier;
+  control.append(preview);return control;
  }
+ const widthLabels=['せまい','ふつう','ひろい','もっとひろい'];
+ const widthGroups=ROAD_WIDTHS.map((width,index)=>{
+  const tab=button(`${widthLabels[index]} ${width}m`,()=>selectWidth(index));
+  const panel=document.createElement('div');
+  tab.id=`road-width-tab3-${width}`;panel.id=`road-preset-panel3-${width}`;
+  tab.setAttribute('role','tab');tab.setAttribute('aria-controls',panel.id);
+  panel.className='city-build-options road-preset-strip';
+  panel.setAttribute('role','tabpanel');panel.setAttribute('aria-labelledby',tab.id);
+  const choices=[
+   ['ふつうの道',{markings:'street'}],
+   ['歩道つき',{markings:'street',sidewalk:'both'}],
+   ['ガードレールつき',{markings:'street',barrier:'guardrail'}]
+  ];
+  if(width<=8)choices.push(['コースのさくつき',{barrier:'mini'}]);
+  if(width===8)choices.push(['レース用',{}]);
+  if(width>=12)choices.push(['高いさくつき',{markings:'street',barrier:'highway'}]);
+  panel.append(...choices.map(([label,style])=>roadCard(label,width,style)));
+  widthTabs.append(tab);presets.append(panel);return {tab,panel};
+ });
+ function selectWidth(index,focus=false){
+  for(const [i,{tab,panel}] of widthGroups.entries()){
+   const active=i===index;
+   tab.tabIndex=active?0:-1;
+   tab.setAttribute('aria-selected',String(active));
+   panel.hidden=!active;
+  }
+  if(focus)widthGroups[index].tab.focus();
+ }
+ widthTabs.onkeydown=event=>{
+  const index=widthGroups.findIndex(({tab})=>tab===event.target),end=widthGroups.length-1;
+  const target={ArrowLeft:(index+end)%(end+1),ArrowRight:(index+1)%(end+1),Home:0,End:end}[event.key];
+  if(index<0||target===undefined)return;
+  event.preventDefault();selectWidth(target,true);
+ };
+ selectWidth(ROAD_WIDTHS.indexOf(8));
  function showCategory(id){
   for(const category of categories){
    const active=category.dataset.cityPanel===id;
