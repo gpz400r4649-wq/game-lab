@@ -119,33 +119,32 @@ export function createRoadView(scene){
   for(const model of saved.children)model.visible=model.userData.roadId!==draftId;
   return previewIndex.openings;
  }
- const eraseLine=new T.Group(),highlightShape=new T.BoxGeometry(1,1,1);
- const highlightMaterial=new T.MeshBasicMaterial({color:0xe2646b,transparent:true,opacity:.7,depthWrite:false});
+ const highlightMaterial=new T.MeshBasicMaterial({color:0xe2646b,transparent:true,opacity:.7,depthWrite:false,side:T.DoubleSide});
+ const eraseLine=new T.Mesh(new T.BufferGeometry(),highlightMaterial);
  eraseLine.visible=false;scene.add(eraseLine);
- const eraseDirection=new T.Vector3(),forward=new T.Vector3(0,0,1);
- let highlightedPath=null,highlightedIndex=-1;
+ let highlightedPath=null,highlightedIndex=-1,highlightedEnd=-1;
  return {
   showSegment(segment,color=0xe2646b){
    eraseLine.visible=!!segment;
    if(!segment)return;
    highlightMaterial.color.setHex(color);
-   const {path,index}=segment;
-   if(highlightedPath===path&&highlightedIndex===index)return;
-   highlightedPath=path;highlightedIndex=index;
-   let used=0;
+   const {path,index,endIndex=index}=segment;
+   if(highlightedPath===path&&highlightedIndex===index&&highlightedEnd===endIndex)return;
+   highlightedPath=path;highlightedIndex=index;highlightedEnd=endIndex;
+   const vertices=[];
    for(let i=1;i<path.length;i++){
     const a=path[i-1],b=path[i];
-    if(b.incomingSegment!==index)continue;
-    const mesh=eraseLine.children[used++]||new T.Mesh(highlightShape,highlightMaterial);
-    if(!mesh.parent)eraseLine.add(mesh);
-    const ay=a.y||0,by=b.y||0;
-    eraseDirection.set(b.x-a.x,by-ay,b.z-a.z);
-    mesh.position.set((a.x+b.x)/2,(ay+by)/2+.075,(a.z+b.z)/2);
-    mesh.scale.set(.55,.045,eraseDirection.length());
-    mesh.quaternion.setFromUnitVectors(forward,eraseDirection.normalize());
-    mesh.visible=true;
+    if(b.incomingSegment<index||b.incomingSegment>endIndex)continue;
+    const span=Math.hypot(b.x-a.x,b.z-a.z);
+    if(span<.0001)continue;
+    const halfWidth=endIndex===index ? .275 : .5;
+    const dx=(b.z-a.z)*halfWidth/span,dz=(a.x-b.x)*halfWidth/span;
+    const l=[a.x+dx,(a.y||0)+.09,a.z+dz],r=[a.x-dx,(a.y||0)+.09,a.z-dz];
+    const m=[b.x+dx,(b.y||0)+.09,b.z+dz],n=[b.x-dx,(b.y||0)+.09,b.z-dz];
+    vertices.push(...l,...r,...m,...r,...n,...m);
    }
-   for(let i=used;i<eraseLine.children.length;i++)eraseLine.children[i].visible=false;
+   eraseLine.geometry.dispose();eraseLine.geometry=new T.BufferGeometry();
+   eraseLine.geometry.setAttribute('position',new T.Float32BufferAttribute(vertices,3));
   },
   surfaces(){return saved.children.filter(model=>model.visible).flatMap(model=>model.children.filter(mesh=>mesh.userData.roadSurface));},
   handles(){return draft.children.filter(mesh=>Number.isInteger(mesh.userData.roadHandle));},

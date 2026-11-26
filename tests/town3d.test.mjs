@@ -4,7 +4,7 @@ import {Scene} from '../vendor/three.module.min.js';
 import {create3D,fresh3D,part,step3D,validate3D} from '../engine3d.js';
 import {createRoadNetwork} from '../road-network3d.js';
 import {createRoadView} from '../road-model3d.js';
-import {reverseOpenRoad,roadArcPlacement,roadConnection,roadPiecePlacement,roadStrokeAim,roadStrokePlacement,sampleRoad,splitRoadAt,traceRoadPoints,validRoads} from '../road3d.js';
+import {reverseOpenRoad,roadArcPlacement,roadConnection,roadDemolitionSection,roadPiecePlacement,roadStrokeAim,roadStrokePlacement,sampleRoad,splitRoadAt,splitRoadSection,traceRoadPoints,validRoads} from '../road3d.js';
 import {fitRaceGate} from '../race3d.js';
 import {DEFAULT_FLEET,configureTownPart,fitTownPart,houseGarage,refitTownParts,townLocal,townSolids,visitorParking} from '../town3d.js';
 import {townRaceRank,townRoute} from '../town-traffic3d.js';
@@ -99,6 +99,33 @@ test('半円の向きと大きさは両端で決まり、逆向きに重ねず�
  const mirrored=roadArcPlacement(draft,{x:24,z:0},240,{start,side:-1});
  assert.ok(mirrored.points.slice(1,-1).every(p=>p.z<0));
  assert.equal(roadArcPlacement(draft,{x:24,z:26},60,{start:{x:0,y:0,z:26}}),null);
+});
+
+test('保存済みの半円をまとめて壊し、両側の直線とガードレールを保つ',()=>{
+ const straight=road('arc',-8,0,0,0);
+ const arc=roadArcPlacement(straight,{x:24,z:0},240);
+ const saved={...straight,points:[...arc.points,{x:32,z:0}],
+  segmentBarriers:{0:'guardrail',[arc.points.length-1]:'guardrail'}};
+ const loaded=JSON.parse(JSON.stringify(saved));
+ const section=roadDemolitionSection(loaded,5);
+ assert.deepEqual(section,{index:1,endIndex:arc.points.length-2});
+ const rest=splitRoadSection(loaded,section.index,section.endIndex);
+ assert.deepEqual(rest.map(r=>r.points.map(p=>p.x)),[[-8,0],[24,32]]);
+ assert.deepEqual(rest.map(r=>r.segmentBarriers),[{0:'guardrail'},{0:'guardrail'}]);
+ assert.deepEqual(roadDemolitionSection(loaded,0),{index:0,endIndex:0});
+});
+
+test('円の半分だけ壊すともう一方の半円が残る',()=>{
+ const draft={id:'circle',width:8,closed:false,points:[]};
+ const half=roadArcPlacement(draft,{x:24,z:0},240,{start:{x:0,z:0}});
+ const loop={...draft,...roadArcPlacement({...draft,...half},{x:0,z:0},240)};
+ for(const [picked,sign] of [[1,-1],[loop.points.length-2,1]]){
+  const section=roadDemolitionSection(loop,picked);
+  const [remaining]=splitRoadSection(loop,section.index,section.endIndex);
+  assert.equal(remaining.closed,false);
+  assert.equal(remaining.points.length,half.points.length);
+  assert.ok(remaining.points.slice(1,-1).every(p=>sign*p.z>0));
+ }
 });
 
 test('道をはじめから延ばしても、元の歩道側とガードレールの区間を保つ',()=>{

@@ -106,10 +106,40 @@ export function removeRoadPoint(road,index){
 }
 
 export function splitRoadAt(road,point){
- const {points,closed}=road,{index:nearest}=roadSegmentAt(road,point);
+ const {index}=roadSegmentAt(road,point);
+ return splitRoadSection(road,index);
+}
+
+export function roadDemolitionSection(road,index){
+ const points=road.points,edgeCount=points.length-(road.closed?0:1);
+ const edges=Array.from({length:edgeCount},(_,i)=>{
+  const a=points[i],b=points[(i+1)%points.length],x=b.x-a.x,z=b.z-a.z;
+  return {heading:Math.atan2(z,x),length:Math.hypot(x,z)};
+ });
+ const turn=(a,b)=>Math.atan2(Math.sin(b.heading-a.heading),Math.cos(b.heading-a.heading));
+ for(let start=0;start<edgeCount-2;){
+  const first=edges[start],angle=turn(first,edges[start+1]);
+  if(Math.abs(angle)<.08||Math.abs(angle)>.7){start++;continue;}
+  const half=Math.round(Math.PI/Math.abs(angle));
+  if(Math.abs(half*Math.abs(angle)-Math.PI)>.001){start++;continue;}
+  let end=start+1;
+  while(end<edgeCount&&end-start<half&&Math.abs(edges[end].length-first.length)<.001&&
+   Math.abs(turn(edges[end-1],edges[end])-angle)<.001)end++;
+  // Semicircles saved before grouping also have evenly spaced points.
+  if(end-start===half){
+   if(index>=start&&index<end)return {index:start,endIndex:end-1};
+   start=end;
+  }else start++;
+ }
+ return {index,endIndex:index};
+}
+
+export function splitRoadSection(road,first,last=first){
+ const {points,closed}=road;
  const indices=points.map((_,index)=>index);
- const pieces=closed?[indices.slice(nearest+1).concat(indices.slice(0,nearest+1))]:
-  [indices.slice(0,nearest+1),indices.slice(nearest+1)];
+ if(closed&&last-first+1>=points.length)return [];
+ const pieces=closed?[Array.from({length:points.length-(last-first)},(_,index)=>(last+1+index)%points.length)]:
+  [indices.slice(0,first+1),indices.slice(last+1)];
  return pieces.filter(piece=>piece.length>=2).map((piece,index)=>({
   ...road,id:index?crypto.randomUUID():road.id,points:piece.map(i=>points[i]),closed:false,
   ...(road.segmentBarriers&&{segmentBarriers:remapSegmentBarriers(road,piece.slice(0,-1))})
