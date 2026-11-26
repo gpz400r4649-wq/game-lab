@@ -5,7 +5,10 @@ import {makeCarModel,updateCarModel} from './race-model3d.js?v=20261125g';
 const mat=color=>new T.MeshStandardMaterial({color,roughness:.85});
 const chalk=new T.MeshBasicMaterial({color:0xf9f5ed}),asphalt=mat(0x4c5360),wall=mat(0xe2c5a7),
  roof=mat(0xb26054),glass=mat(0x87bdcc),door=mat(0x526374),shade=mat(0x527d9a),steel=mat(0x828893);
-const unit=new T.BoxGeometry(),gable=new T.CylinderGeometry(1,1,1,3,1,false,Math.PI/2);
+const unit=new T.BoxGeometry();
+const gableProfile=new T.Shape();
+gableProfile.moveTo(-.5,0);gableProfile.lineTo(.5,0);gableProfile.lineTo(0,1);gableProfile.closePath();
+const gable=new T.ExtrudeGeometry(gableProfile,{depth:1,bevelEnabled:false}).translate(0,0,-.5);
 const paints=[0x54a48e,0xe2a144,0xda7970,0x5b99d1].map(mat);
 const routePaint=new T.MeshBasicMaterial({color:0x58deca,depthTest:false,side:T.DoubleSide});
 
@@ -59,8 +62,9 @@ export function makeTownModel(part,preview){
   box(wall,garageX,garageHeight/2,d/2-.08,garageWidth,garageHeight,.16);
   box(shade,garageX,garageHeight-.12,0,garageWidth+.12,.24,d+.1);
   const mesh=new T.Mesh(gable,preview||roof);
-  mesh.rotation.set(Math.PI/2,0,0);mesh.scale.set(facadeWidth*.61,d+.23,1.05);
-  mesh.position.set(facadeX,height+.35,0);group.add(mesh);
+  const overhang=Math.min(.16,facadeWidth*.04,d*.04);
+  mesh.scale.set(facadeWidth+2*overhang,h-height+.02,d+2*overhang);
+  mesh.position.set(facadeX,height-.02,0);group.add(mesh);
  }else box(shade,facadeX,h-.13,0,facadeWidth+.24,.26,d+.22);
  box(door,facadeX,1.1,-d/2-.027,house?Math.min(1.06,facadeWidth*.24):1.65,2.2,.07);
  const windows=(kind==='school'?[-.37,-.19,.19,.37]:[-.29,.29]).map(offset=>facadeX+offset*facadeWidth);

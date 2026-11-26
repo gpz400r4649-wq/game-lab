@@ -48,7 +48,7 @@ import {createToolsUI} from './tools3d.js?v=20261125g';
 import * as T from './vendor/three.module.min.js';
 import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,nearbyChair} from './engine3d.js?v=20261126l';
 import {TOWN_PARTS,configureTownPart,fitTownPart,refitTownParts,townPlacementReason} from './town3d.js?v=20261125g';
-import {createTownView,makeTownModel} from './town-model3d.js?v=20261125g';
+import {createTownView,makeTownModel} from './town-model3d.js?v=20261126p';
 import {townRaceRank} from './town-traffic3d.js?v=20261125g';
 import {installTownUI,renderRivalSettings} from './town-ui3d.js?v=20261125g';
 import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261125g';

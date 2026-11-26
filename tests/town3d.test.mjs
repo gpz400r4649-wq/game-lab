@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {Scene} from '../vendor/three.module.min.js';
+import {Scene,Vector3} from '../vendor/three.module.min.js';
 import {create3D,fresh3D,part,step3D,validate3D} from '../engine3d.js';
 import {createRoadNetwork} from '../road-network3d.js';
 import {createRoadView} from '../road-model3d.js';
+import {makeTownModel} from '../town-model3d.js';
 import {alignRoadEndpoints,reverseOpenRoad,roadArcPlacement,roadConnection,roadStartConnection,roadDemolitionSection,roadPiecePlacement,roadStrokeAim,roadStrokePlacement,sampleRoad,roadSections,roadVertex,splitRoadAt,splitRoadSection,traceRoadPoints,validRoads} from '../road3d.js';
 import {fitRaceGate} from '../race3d.js';
 import {DEFAULT_FLEET,configureTownPart,fitTownPart,houseGarage,refitTownParts,townLocal,townSolids,visitorParking} from '../town3d.js';
@@ -15,6 +16,21 @@ const advance=(g,p,seconds,input={coast:true})=>{
  for(let i=0;i<Math.round(seconds/.025);i++)step3D(g,p,input,.025);
 };
 const places=(roads,kind,x,z,roadId)=>fitTownPart(configureTownPart(part('town'),kind),roads.filter(r=>r.id===roadId),{x,y:0,z});
+
+test('家の切妻屋根は壁の上に載り、家の幅と道路沿いの向きに合う',()=>{
+ for(const [width,heading] of [[9,0],[6,Math.PI/4]]){
+  const house={...configureTownPart(part('town'),'house'),w:width,townHeading:heading};
+  const {houseX,houseWidth}=houseGarage(house),model=makeTownModel(house);
+  model.updateMatrixWorld(true);
+  const roof=model.children.find(mesh=>mesh.geometry.type==='ExtrudeGeometry');
+  const vertices=roof.geometry.getAttribute('position'),points=[];
+  for(let i=0;i<vertices.count;i++)points.push(model.worldToLocal(roof.localToWorld(new Vector3().fromBufferAttribute(vertices,i))));
+  const eaves=points.filter(p=>Math.abs(p.y-(house.h*.72-.02))<.00001),ridge=points.filter(p=>Math.abs(p.y-house.h)<.00001);
+  assert.ok(eaves.some(p=>p.x<houseX-houseWidth/2)&&eaves.some(p=>p.x>houseX+houseWidth/2));
+  assert.ok(eaves.some(p=>p.z<-house.d/2)&&eaves.some(p=>p.z>house.d/2));
+  assert.ok(ridge.length>0&&ridge.every(p=>Math.abs(p.x-houseX)<.00001));
+ }
+});
 
 test('押した道路の１区間を取り除き、残りの道を保つ',()=>{
  const points=[-12,-4,4,12].map(x=>({x,y:0,z:0}));
