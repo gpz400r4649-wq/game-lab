@@ -1,5 +1,5 @@
 import {updateRoadGateWidths} from './race3d.js?v=20261125g';
-import {MAX_ROADS,MAX_ROAD_POINTS,MAX_ROAD_HEIGHT,ROAD_HEIGHT_STEP,ROAD_WIDTHS,roadPoint,roadGridSites,roadConnection,nearestRoad,nearestRoadHandle,removeRoadPoint,reverseOpenRoad,roadArcPlacement,roadDemolitionSection,roadPiecePlacement,roadStrokeAim,roadStrokePlacement,roadPointsFit,roadSegmentAt,splitRoadSection,toggleRoadGuardrail,validRoads} from './road3d.js?v=20261126d';
+import {MAX_ROADS,MAX_ROAD_POINTS,MAX_ROAD_HEIGHT,ROAD_HEIGHT_STEP,ROAD_WIDTHS,roadPoint,roadGridSites,roadConnection,nearestRoad,nearestRoadHandle,removeRoadPoint,reverseOpenRoad,roadArcPlacement,roadDemolitionSection,roadPiecePlacement,roadStrokeAim,roadStrokePlacement,roadPointsFit,roadSegmentAt,splitRoadSection,toggleRoadGuardrail,validRoads} from './road3d.js?v=20261126e';
 import {closeLiveRangeEditor,mountLiveRangeEditor} from './range-panel3d.js?v=20261124a';
 import {setStageRangePainter} from './stage-range3d.js?v=20261124a';
 import {refitTownParts} from './town3d.js?v=20261125g';
@@ -87,7 +87,7 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
   const panel=document.createElement('section'),heading=document.createElement('div'),title=document.createElement('h2'),hint=document.createElement('p');
   heading.className='range-live-heading';hint.className='road-editor-hint';
   title.textContent=erasing?'🚜 こわす':addingRail?'ガードレールをつける':'道をなおす';
-  hint.textContent=erasing?'けしたい道やたてものをおそう。半円はまとめてけせるよ。':
+  hint.textContent=erasing?'けしたい道やたてものをおそう。赤くなったところが消えるよ。':
    addingRail?'道をおすと、えらんだところの両がわにつくよ。もう一度おすとはずせるよ。':'なおしたい道をおそう。';
   const finish=mountLiveRangeEditor(panel,()=>{setStageRangePainter(null);view.showSegment(null);demolish.setAttribute('aria-pressed','false');},{host});
   demolish.setAttribute('aria-pressed',String(erasing));
@@ -101,15 +101,15 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
    const target=part&&(!hit||part.distance<hit.distance)?part:hit;
    const project=getProject(),road=target===hit&&hit&&(project.roads||[]).find(item=>item.id===hit.id);
    const picked=road?roadSegmentAt(road,hit.point):null;
-   const segment=picked&&erasing?{...picked,...roadDemolitionSection(road,picked.index)}:picked;
+   const segment=picked&&erasing?(press?.targetId===target.id?press.segment:{...picked,...roadDemolitionSection(road,picked.index)}):picked;
    if(erasing||addingRail)view.showSegment(kind==='end'?null:segment,addingRail?0x36bba8:undefined);
    if(kind==='start'){
     if(!target)return false;
-    press={id,event,targetId:target.id,segment:segment?.index};return true;
+    press={id,event,targetId:target.id,segment};return true;
    }
    if(kind!=='end'||press?.id!==id)return !!press;
    const from=press;press=null;
-   if(canceled||!target||target.id!==from.targetId||segment?.index!==from.segment||!from.event||
+   if(canceled||!target||target.id!==from.targetId||segment?.index!==from.segment?.index||!from.event||
     Math.hypot(event.clientX-from.event.clientX,event.clientY-from.event.clientY)>10)return true;
    if(part&&target===part){erasePart(part.id);return true;}
    if(!road)return true;
@@ -126,7 +126,7 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
     if(fit&&fit.gap<.64)updated[key]=fit.roadId;else delete updated[key];
     return updated;
    });
-   applyRoads(next,objects);toast(segment.index===segment.endIndex?'道を１区間けしたよ':'半円の道をまとめてけしたよ');
+   applyRoads(next,objects);toast('道を１区間けしたよ');
    return true;
   });
  }

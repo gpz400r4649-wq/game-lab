@@ -112,26 +112,27 @@ export function splitRoadAt(road,point){
 
 export function roadDemolitionSection(road,index){
  const points=road.points,edgeCount=points.length-(road.closed?0:1);
- const edges=Array.from({length:edgeCount},(_,i)=>{
+ const edge=i=>{
   const a=points[i],b=points[(i+1)%points.length],x=b.x-a.x,z=b.z-a.z;
   return {heading:Math.atan2(z,x),length:Math.hypot(x,z)};
- });
+ };
+ const picked=edge(index),unit=Math.max(GRID.cell,road.width);
+ if(picked.length>=unit)return {index,endIndex:index};
  const turn=(a,b)=>Math.atan2(Math.sin(b.heading-a.heading),Math.cos(b.heading-a.heading));
- for(let start=0;start<edgeCount-2;){
-  const first=edges[start],angle=turn(first,edges[start+1]);
-  if(Math.abs(angle)<.08||Math.abs(angle)>.7){start++;continue;}
-  const half=Math.round(Math.PI/Math.abs(angle));
-  if(Math.abs(half*Math.abs(angle)-Math.PI)>.001){start++;continue;}
-  let end=start+1;
-  while(end<edgeCount&&end-start<half&&Math.abs(edges[end].length-first.length)<.001&&
-   Math.abs(turn(edges[end-1],edges[end])-angle)<.001)end++;
-  // Semicircles saved before grouping also have evenly spaced points.
-  if(end-start===half){
-   if(index>=start&&index<end)return {index:start,endIndex:end-1};
-   start=end;
-  }else start++;
+ let first=index,last=index,angle=null;
+ function follows(a,b){
+  const left=edge(a),right=edge(b),bend=turn(left,right);
+  if(Math.abs(left.length-right.length)>.001||Math.abs(bend)<.08||Math.abs(bend)>.7)return false;
+  if(angle!==null)return Math.abs(bend-angle)<.001;
+  angle=bend;return true;
  }
- return {index,endIndex:index};
+ // Keep the existing curve points, including after a previous cut.
+ const count=Math.max(1,Math.round(unit/picked.length));
+ const preferred=index-Math.floor((count-1)/2);
+ while(first>Math.max(0,preferred)&&follows(first-1,first))first--;
+ while(last<edgeCount-1&&last-first+1<count&&follows(last,last+1))last++;
+ while(first>0&&last-first+1<count&&follows(first-1,first))first--;
+ return {index:first,endIndex:last};
 }
 
 export function splitRoadSection(road,first,last=first){
