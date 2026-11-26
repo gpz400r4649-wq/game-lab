@@ -73,6 +73,19 @@ test('直線の延長は正面から少しずれたカーブの端に最後の�
  assert.deepEqual(tap.end,start);
 });
 
+test('半円の終点も少しずれた直線の端に吸い付き、つないだ位置で半円を保つ',()=>{
+ const draft={id:'arc',width:8,closed:false,points:[]},start={x:0,y:0,z:0};
+ const straight=road('straight',24,3.2,40,3.2);
+ const arc=roadArcPlacement(draft,{x:24,z:0},240,{start,connections:[straight]});
+ const end=straight.points[0],radius=Math.hypot(end.x,end.z)/2;
+ assert.deepEqual(arc.end,end);
+ assert.ok(arc.points.every(p=>Math.abs(Math.hypot(p.x-end.x/2,p.z-end.z/2)-radius)<.00001));
+ const network=createRoadNetwork([{...draft,points:arc.points},straight]);
+ assert.ok(network.route(start,straight.points[1],{fromRoad:draft.id,toRoad:straight.id}));
+ const upper=road('upper',24,3.2,40,3.2,4);
+ assert.deepEqual(roadArcPlacement(draft,{x:24,z:0},240,{start,connections:[upper]}).end,{x:24,y:0,z:0});
+});
+
 test('直線をなぞると、最初の向きに同じ区間を並べ、マップの端で止まる',()=>{
  const draft={id:'drag',width:8,closed:false,points:[]},start={x:0,y:0,z:0};
  const stroke=roadStrokePlacement(draft,{x:70,z:12},0,60,{start,grade:1});

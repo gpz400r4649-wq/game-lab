@@ -164,10 +164,12 @@ export function roadStrokeAim(width,displacement,lockedSector=null){
  return {sector,lockedSector:strokeUnits(displacement,roadUnitStep(width,sector))>=1.5?sector:null};
 }
 
+const roadEndSnapMargin=width=>Math.min(3.8,Math.max(2.5,width*.45));
+
 function straightEndConnection(roads,aim,from,end,unit,world){
  if(!roads.length)return null;
  const dx=end.x-from.x,dz=end.z-from.z,span=Math.hypot(dx,dz);
- const margin=Math.min(3.8,Math.max(2.5,unit*.45));
+ const margin=roadEndSnapMargin(unit);
  const accept=point=>{
   const x=point.x-from.x,z=point.z-from.z;
   const forward=(x*dx+z*dz)/span,side=Math.abs(x*dz-z*dx)/span;
@@ -227,22 +229,28 @@ export function roadArcPlacement(road,aim,world,{start,side=1,connections=[]}={}
  if(road.closed)return null;
  const origin=road.points.at(-1)||start,point=roadPoint(aim,world);
  if(!origin||!point)return null;
- const base=origin.y||0,head=road.points[0],limit=coordinateLimit(world);
+ const base=origin.y||0,head=road.points[0],limit=coordinateLimit(world),minDiameter=Math.max(8,road.width+2);
  const closes=road.points.length>=2&&Math.abs((head.y||0)-base)<=.3&&distance(aim,head)<=2.5;
- const end=closes?head:roadConnection(connections,aim,base,world)||{...point,y:base};
- const dx=end.x-origin.x,dz=end.z-origin.z,diameter=Math.hypot(dx,dz);
- if(diameter<Math.max(8,road.width+2))return null;
- // Use one chord as the diameter. Both opposite strokes use the same radius.
- const divisions=Math.min(16,Math.floor(Math.PI/(2*Math.asin((MIN_SPACING+.00001)/diameter))));
- const points=road.points.length?road.points.slice():[{x:origin.x,y:base,z:origin.z}];
- if(points.length+divisions-(closes?1:0)>MAX_ROAD_POINTS)return null;
- for(let i=1;i<divisions;i++){
-  const angle=Math.PI*i/divisions,along=(1-Math.cos(angle))/2,across=side*Math.sin(angle)/2;
-  points.push({x:origin.x+dx*along-dz*across,y:base+((end.y||0)-base)*i/divisions,z:origin.z+dz*along+dx*across});
+ const margin=roadEndSnapMargin(road.width);
+ const join=closes?head:roadConnection(connections,aim,base,world,{
+  endpointRange:margin,centerRange:margin,accept:end=>distance(origin,end)>=minDiameter
+ });
+ function buildArc(end,closed){
+  const dx=end.x-origin.x,dz=end.z-origin.z,diameter=Math.hypot(dx,dz);
+  if(diameter<minDiameter)return null;
+  // The snapped endpoints define the diameter, so the result stays semicircular.
+  const divisions=Math.min(16,Math.floor(Math.PI/(2*Math.asin((MIN_SPACING+.00001)/diameter))));
+  const points=road.points.length?road.points.slice():[{x:origin.x,y:base,z:origin.z}];
+  if(points.length+divisions-(closed?1:0)>MAX_ROAD_POINTS)return null;
+  for(let i=1;i<divisions;i++){
+   const angle=Math.PI*i/divisions,along=(1-Math.cos(angle))/2,across=side*Math.sin(angle)/2;
+   points.push({x:origin.x+dx*along-dz*across,y:base+((end.y||0)-base)*i/divisions,z:origin.z+dz*along+dx*across});
+  }
+  if(!closed)points.push({x:end.x,y:end.y||0,z:end.z});
+  if(points.some(p=>Math.abs(p.x)>limit||Math.abs(p.z)>limit)||!roadPointsFit(points,closed))return null;
+  return {points,end,closed};
  }
- if(!closes)points.push({x:end.x,y:end.y||0,z:end.z});
- if(points.some(p=>Math.abs(p.x)>limit||Math.abs(p.z)>limit)||!roadPointsFit(points,closes))return null;
- return {points,end,closed:closes};
+ return (join&&buildArc(join,closes))||buildArc({...point,y:base},false);
 }
 
 export function traceRoadPoints(road,samples,world,{straight=false,first=null,last=null}={}){
