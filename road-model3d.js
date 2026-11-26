@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.min.js';
-import {ROAD_BARRIERS,ROAD_DECK_DEPTH,createRoadOpenings,roadBarrierOffset,roadRunBarrier,roadSections,roadVertex,sampleRoad} from './road3d.js?v=20261125g';
+import {ROAD_BARRIERS,ROAD_DECK_DEPTH,createRoadOpenings,createRoadSectionQuery,roadBarrierOffset,roadRunBarrier,roadVertex} from './road3d.js?v=20261126l';
 import {createRoadNetwork} from './road-network3d.js?v=20261125g';
 import {makeTrafficSignal,updateTrafficSignal} from './race-model3d.js?v=20261125g';
 
@@ -12,9 +12,8 @@ for(const [kind,color] of Object.entries(barrierMaterials))barrierMaterials[kind
 const draftSurface=new T.MeshStandardMaterial({color:0x404c6f,roughness:.95,side:T.DoubleSide});
 const pegShape=new T.SphereGeometry(.65,12,8),pegMaterial=new T.MeshBasicMaterial({color:0xa88bff,depthTest:false}),pickedMaterial=new T.MeshBasicMaterial({color:0xffde88,depthTest:false});
 
-function roadMesh(road,half,preview,openings){
- const shape=road.closed&&road.points.length<3?{...road,closed:false}:road;
- const path=roadSections(sampleRoad(shape,true),shape.closed),group=new T.Group();
+function roadMesh(road,half,preview,openings,path){
+ const group=new T.Group();
  const pavement=[],borders=[],line=[],barriers={mini:[],highway:[],guardrail:[]},walk=[];
  const street=road.markings==='street';
  const at=(point,offset,height)=>{
@@ -34,7 +33,10 @@ function roadMesh(road,half,preview,openings){
    buffer.push(...p,...q,...r,...p,...r,...s);
   }
  }
- const blend=(a,b,t)=>Object.fromEntries(['x','y','z','nx','nz'].map(key=>[key,(a[key]||0)+((b[key]||0)-(a[key]||0))*t]));
+ const blend=(a,b,t)=>Object.fromEntries(['x','y','z','nx','nz','widthScale','leftWalk','rightWalk'].map((key,index)=>{
+  const fallback=index<5?0:1,start=a[key]??fallback,end=b[key]??fallback;
+  return [key,start+(end-start)*t];
+ }));
  function visibleRuns(a,b,offset){return openings(road.id,roadVertex(a,offset,half),roadVertex(b,offset,half));}
  let travelled=0;
  for(let i=1;i<path.length;i++){
@@ -51,11 +53,14 @@ function roadMesh(road,half,preview,openings){
   }
   const edgeInset=profile?.thickness ? profile.thickness/2+.19 : .16;
   for(const [side,sideName] of [[-1,'left'],[1,'right']])if(road.sidewalk==='both'||road.sidewalk===sideName){
-   for(const [start,end] of visibleRuns(a,b,side*(radius+1))){
-    const l=blend(a,b,start),r=blend(a,b,end),inner=side*radius,outer=side*(radius+2);
-    strip(walk,l,r,Math.min(inner,outer),Math.max(inner,outer),height+.13);
-    for(const offset of [inner,outer]){
-     const p=at(l,offset,height),q=at(r,offset,height),s=at(l,offset,height+.13),t=at(r,offset,height+.13);
+   const factor=point=>point[sideName+'Walk']??1;
+   const center=point=>roadVertex(point,side*(radius+factor(point)),half);
+   for(const [start,end] of openings(road.id,center(a),center(b))){
+    const l=blend(a,b,start),r=blend(a,b,end),inner=side*radius,outer=point=>side*(radius+2*factor(point));
+    const p=at(l,inner,height+.13),q=at(r,inner,height+.13),s=at(l,outer(l),height+.13),t=at(r,outer(r),height+.13);
+    walk.push(...p,...q,...t,...p,...t,...s);
+    for(const offset of [()=>inner,outer]){
+     const p=at(l,offset(l),height),q=at(r,offset(r),height),s=at(l,offset(l),height+.13),t=at(r,offset(r),height+.13);
      walk.push(...p,...q,...t,...p,...t,...s);
     }
    }
@@ -110,9 +115,10 @@ export function createRoadView(scene){
  function showSaved(currentDraft){
   clear(saved);
   const visible=roads.filter(road=>road.id!==draftId);
-  const openings=createRoadOpenings(currentDraft?[...visible,currentDraft]:visible,half);
-  for(const road of roads){const model=roadMesh(road,half,false,openings);model.visible=road.id!==draftId;model.userData.roadId=road.id;saved.add(model);}
-  return openings;
+  const active=currentDraft?[...visible,currentDraft]:visible;
+  const sections=createRoadSectionQuery(active),openings=createRoadOpenings(active,half,sections);
+  for(const road of roads){const model=roadMesh(road,half,false,openings,sections(road));model.visible=road.id!==draftId;model.userData.roadId=road.id;saved.add(model);}
+  return {openings,sections};
  }
  function previewOpenings(){
   if(previewIndex?.id!==draftId)previewIndex={id:draftId,openings:createRoadOpenings(roads.filter(road=>road.id!==draftId),half)};
@@ -178,9 +184,10 @@ export function createRoadView(scene){
    const key=JSON.stringify([road,transient]);
    if(key!==draftStamp){
     clear(draft);draftId=road?.id||null;draftStamp=key;
-    const openings=transient?previewOpenings():showSaved(road);
+    const context=transient?null:showSaved(road);
     if(road){
-     draft.add(roadMesh(road,half,true,openings));
+     const sections=context?.sections??createRoadSectionQuery([...roads.filter(saved=>saved.id!==draftId),road],road);
+     draft.add(roadMesh(road,half,true,context?.openings??previewOpenings(),sections(road)));
      road.points.forEach((point,index)=>{const peg=new T.Mesh(pegShape,pegMaterial);peg.position.set(point.x,(point.y||0)+.34,point.z);peg.userData.roadHandle=index;peg.renderOrder=6;draft.add(peg);});
     }
    }

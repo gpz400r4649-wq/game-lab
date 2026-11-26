@@ -3,12 +3,36 @@ import assert from 'node:assert/strict';
 import {Scene} from '../vendor/three.module.min.js';
 import {createRoadView} from '../road-model3d.js';
 import {makeTrafficSignal,updateTrafficSignal} from '../race-model3d.js';
-import {ROAD_BARRIERS,MAX_ROAD_POINTS,createRoadBarrierQuery,createRoadOpenings,createRoadSurfaceQuery,removeRoadPoint,roadBarrierOffset,roadPoint,roadGridSites,roadSections,roadVertex,sampleRoad,splitRoadAt,toggleRoadGuardrail,traceRoadPoints,validRoads} from '../road3d.js';
+import {ROAD_BARRIERS,MAX_ROADS,MAX_ROAD_POINTS,createRoadBarrierQuery,createRoadOpenings,createRoadSectionQuery,createRoadSurfaceQuery,removeRoadPoint,roadBarrierOffset,roadPoint,roadGridSites,roadSections,roadVertex,sampleRoad,splitRoadAt,toggleRoadGuardrail,traceRoadPoints,validRoads} from '../road3d.js';
 import {create3D,fresh3D,part,step3D,validate3D} from '../engine3d.js';
 import {fitRaceGate,updateRaceGates,updateRoadGateWidths} from '../race3d.js';
 import {resizeReason} from '../world3d.js';
 
 const turn=()=>({id:'first',width:8,closed:false,points:[{x:-20,z:0},{x:0,z:0},{x:0,z:-20}]});
+
+test('歩道つき道路と細い斜めの道路は同じ断面でつながり、手前で幅と歩道を絞る',()=>{
+ const wide={id:'wide',width:8,closed:false,sidewalk:'both',points:[{x:-24,y:4,z:0},{x:0,y:4,z:0}]};
+ const narrow={id:'narrow',width:4,closed:false,points:[{x:0,y:4,z:0},{x:12,y:4,z:12}]};
+ const sections=createRoadSectionQuery([wide,narrow]),wideEnd=sections(wide).at(-1),narrowStart=sections(narrow)[0];
+ assert.equal(sections(wide).length,3);
+ assert.equal(sections(wide)[0].widthScale,1);
+ assert.equal(wideEnd.widthScale,.5);
+ assert.equal(wideEnd.leftWalk,0);
+ assert.equal(wideEnd.rightWalk,0);
+ for(const sign of [-1,1])assert.deepEqual(roadVertex(wideEnd,sign*4,120),roadVertex(narrowStart,sign*2,120));
+ const ground=createRoadSurfaceQuery([wide,narrow],240);
+ assert.ok(ground(0,0).some(surface=>surface.y===4));
+ assert.equal(ground(-1,3.95).length,0);
+});
+
+test('16本を超える道路も保存して再読込できる',()=>{
+ const project=fresh3D('car');
+ project.roads=Array.from({length:MAX_ROADS},(_,i)=>({
+  id:'road-'+i,width:4,closed:false,points:[{x:-5,z:i-32},{x:5,z:i-32}]
+ }));
+ assert.equal(validate3D(JSON.parse(JSON.stringify(project))).roads.length,64);
+ assert.equal(validRoads([...project.roads,{...project.roads[0],id:'too-many'}],project),false);
+});
 
 test('区間のガードレールは保存され、その区間だけ表示と衝突に使われる',()=>{
  const project=fresh3D('car');

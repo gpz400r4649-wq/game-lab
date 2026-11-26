@@ -1,4 +1,4 @@
-import {courseStart,createRoadBarrierQuery,createRoadSurfaceQuery,ROAD_DECK_DEPTH,validRoads} from './road3d.js?v=20261125g';
+import {courseStart,createRoadBarrierQuery,createRoadSurfaceQuery,ROAD_DECK_DEPTH,validRoads} from './road3d.js?v=20261126l';
 import {carMotion,createCarRun,RACE_LAP_OPTIONS,updateRaceGates,upgradeCarTuning,validCarTuning,validGateFit} from './race3d.js?v=20261125g';
 import {configureTownPart,upgradeTownDriveway,validTownPart,townSolids,validRivals} from './town3d.js?v=20261125g';
 import {createTownTraffic,stepTownTraffic} from './town-traffic3d.js?v=20261125g';

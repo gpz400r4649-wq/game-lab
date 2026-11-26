@@ -3,7 +3,7 @@ import {worldHalf,coordinateLimit} from './world3d.js?v=20261119d';
 import {MAX_BUILD_Y} from './limits3d.js?v=20261119d';
 
 export const ROAD_WIDTHS=[4,8,12,16];
-export const MAX_ROADS=16;
+export const MAX_ROADS=64;
 export const MAX_ROAD_POINTS=64;
 export const ROAD_HEIGHT_STEP=1.5;
 export const MAX_ROAD_HEIGHT=MAX_BUILD_Y;
@@ -439,19 +439,76 @@ export function roadSections(path,closed){
   return {...point,nx:x*scale,nz:z*scale};
  });
 }
+export function createRoadSectionQuery(roads,onlyRoad=null){
+ const ends=roads.flatMap(road=>{
+  if(road.closed||road.points.length<2)return [];
+  const points=road.points;
+  return [true,false].map(first=>{
+   const point=first?points[0]:points.at(-1),next=first?points[1]:points.at(-2);
+   return {road,point,first,inward:horizontalDirection(point,next)};
+  });
+ });
+ const joints=new Map(),cache=new Map();
+ for(const end of ends){
+  const {road,point,first,inward}=end;
+  if(onlyRoad&&road!==onlyRoad)continue;
+  const matches=ends.filter(other=>road!==other.road&&distance(point,other.point)<.04&&Math.abs((point.y||0)-(other.point.y||0))<.12);
+  if(matches.length!==1)continue;
+  const other=matches[0],outward=other.inward;
+  if(inward.x*outward.x+inward.z*outward.z>.6)continue;
+  if(roads.some(item=>item!==road&&item!==other.road&&
+   closestOnPath(savedRoadPath(item),{...point,y:point.y||0},.14,undefined,.12)))continue;
+  const direction=first?1:-1,sameOrientation=first!==other.first;
+  const dx=(inward.x-outward.x)*direction,dz=(inward.z-outward.z)*direction;
+  const divisor=Math.max(.7*Math.hypot(dx,dz),direction*(dx*inward.x+dz*inward.z));
+  const hasWalk=side=>other.road.sidewalk==='both'||other.road.sidewalk===(sameOrientation?side:side==='left'?'right':'left');
+  const joint={nx:-dz/divisor,nz:dx/divisor,scale:Math.min(1,other.road.width/road.width),
+   leftWalk:hasWalk('left')?1:0,rightWalk:hasWalk('right')?1:0};
+  if(!joints.has(road))joints.set(road,{});
+  joints.get(road)[first?'start':'end']=joint;
+ }
+ return road=>{
+  if(cache.has(road))return cache.get(road);
+  let path=savedRoadPath(road,true);
+  const joint=joints.get(road);
+  if(joint){
+   const distances=[0];
+   for(let i=1;i<path.length;i++)distances.push(distances[i-1]+distance(path[i-1],path[i]));
+   const length=distances.at(-1),reach=Math.min(road.width*1.25,length/(joint.start&&joint.end?2:1));
+   const cuts=[...new Set([...(joint.start?[reach]:[]),...(joint.end?[length-reach]:[])])].sort((a,b)=>a-b);
+   path=path.flatMap((point,i)=>{
+    if(!i)return [{...point,along:0}];
+    const from=distances[i-1],to=distances[i];
+    const added=cuts.filter(cut=>cut>from+.001&&cut<to-.001).map(cut=>
+     ({...lerp(path[i-1],point,(cut-from)/(to-from)),incomingSegment:point.incomingSegment,along:cut}));
+    return [...added,{...point,along:to}];
+   }).map((point,i,expanded)=>{
+    const after=joint.end&&(!joint.start||length-point.along<point.along),end=after?joint.end:joint.start;
+    if(!end||!reach)return point;
+    const fraction=Math.max(0,1-(after?length-point.along:point.along)/reach);
+    return {...point,widthScale:1+(end.scale-1)*fraction,leftWalk:1+(end.leftWalk-1)*fraction,rightWalk:1+(end.rightWalk-1)*fraction,
+     ...(i===0&&joint.start||i===expanded.length-1&&joint.end?{jointNormal:{nx:end.nx,nz:end.nz}}:{})};
+   });
+  }
+  const sections=roadSections(path,road.closed).map(point=>point.jointNormal?{...point,...point.jointNormal}:point);
+  cache.set(road,sections);return sections;
+ };
+}
+
 export function roadVertex(point,offset,half){
  const clip=value=>Math.max(-half,Math.min(half,value));
+ offset*=point.widthScale??1;
  return {x:clip(point.x+point.nx*offset),y:point.y||0,z:clip(point.z+point.nz*offset)};
 }
 
 export function roadBarrierOffset(road,side){return side*(road.width/2-.12);}
 
 // Keep the portions of a line that are outside other roads at the same level.
-export function createRoadOpenings(roads,half){
+export function createRoadOpenings(roads,half,sectionsFor=createRoadSectionQuery(roads)){
  if(!roads.length)return ()=>[[0,1]];
  const cell=16,buckets=new Map(),long=[],triangles=[];
  for(const road of roads){
-  const sections=roadSections(savedRoadPath(road),road.closed),radius=road.width/2;
+  const sections=sectionsFor(road),radius=road.width/2;
   const sides=sections.map(point=>[roadVertex(point,-radius,half),roadVertex(point,radius,half)]);
   for(let i=1;i<sides.length;i++){
    const [a,b]=sides[i-1],[d,c]=sides[i];
@@ -510,9 +567,9 @@ export function createRoadBarrierQuery(roads=[],world){
  const fenced=roads.filter(road=>Object.hasOwn(ROAD_BARRIERS,road.barrier)||Object.values(road.segmentBarriers||{}).includes('guardrail'));
  if(!fenced.length)return ()=>null;
  const barriers=[],half=worldHalf(world);
- const openings=createRoadOpenings(roads,half);
+ const sectionsFor=createRoadSectionQuery(roads),openings=createRoadOpenings(roads,half,sectionsFor);
  for(const road of fenced){
-  const sections=roadSections(sampleRoad(road,true),road.closed);
+  const sections=sectionsFor(road);
   for(const side of [-1,1]){
    const offset=roadBarrierOffset(road,side);
    const points=sections.map(section=>roadVertex(section,offset,half));
@@ -585,9 +642,10 @@ export function createRoadBarrierQuery(roads=[],world){
 
 export function createRoadSurfaceQuery(roads=[],world){
  const half=worldHalf(world),cell=16,buckets=new Map(),long=[];
+ const sectionsFor=createRoadSectionQuery(roads);
  for(const road of roads){
   if(!road.points.some(point=>point.y>0))continue;
-  const path=roadSections(savedRoadPath(road),road.closed),radius=road.width/2;
+  const path=sectionsFor(road),radius=road.width/2;
   for(let i=1;i<path.length;i++){
    const a=path[i-1],b=path[i];
    const p=roadVertex(a,-radius,half),q=roadVertex(a,radius,half),r=roadVertex(b,radius,half),s=roadVertex(b,-radius,half);
