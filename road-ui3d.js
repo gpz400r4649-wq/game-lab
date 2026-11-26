@@ -1,5 +1,5 @@
 import {updateRoadGateWidths} from './race3d.js?v=20261125g';
-import {MAX_ROADS,MAX_ROAD_POINTS,MAX_ROAD_HEIGHT,ROAD_HEIGHT_STEP,ROAD_WIDTHS,roadPoint,roadGridSites,roadConnection,roadStartConnection,nearestRoad,nearestRoadHandle,removeRoadPoint,reverseOpenRoad,roadArcPlacement,roadDemolitionSection,roadPiecePlacement,roadStrokeAim,roadStrokePlacement,roadPointsFit,roadSegmentAt,splitRoadSection,toggleRoadGuardrail,validRoads} from './road3d.js?v=20261126f';
+import {MAX_ROADS,MAX_ROAD_POINTS,MAX_ROAD_HEIGHT,ROAD_HEIGHT_STEP,ROAD_WIDTHS,roadPoint,roadGridSites,roadConnection,roadStartConnection,nearestRoad,nearestRoadHandle,removeRoadPoint,reverseOpenRoad,roadArcPlacement,roadDemolitionSection,roadPiecePlacement,roadStrokeAim,roadStrokePlacement,roadPointsFit,roadSegmentAt,splitRoadSection,toggleRoadGuardrail,validRoads} from './road3d.js?v=20261126g';
 import {closeLiveRangeEditor,mountLiveRangeEditor} from './range-panel3d.js?v=20261124a';
 import {setStageRangePainter} from './stage-range3d.js?v=20261124a';
 import {refitTownParts} from './town3d.js?v=20261125g';

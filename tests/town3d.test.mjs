@@ -58,6 +58,21 @@ test('短い区間でも、押した既存道路へつなげられる',()=>{
  assert.equal(createRoadNetwork([main,{...from,points:placement.points}]).signals.length,3);
 });
 
+test('直線の延長は正面から少しずれたカーブの端に最後の区間だけを合わせる',()=>{
+ const straight=road('straight',-16,0,-8,0);
+ const curve={id:'curve',width:8,closed:false,points:[]};
+ const start={x:17,y:0,z:3.2};
+ curve.points=roadArcPlacement(curve,{x:42,z:4},240,{start}).points;
+ const extension=roadStrokePlacement(straight,{x:24,z:0},0,240,{connections:[curve]});
+ assert.deepEqual(extension.points,[...straight.points,{x:0,y:0,z:0},{x:8,y:0,z:0},start]);
+ const connection=createRoadNetwork([{...straight,points:extension.points},curve]);
+ assert.ok(connection.route(straight.points[0],curve.points.at(-1),{fromRoad:straight.id,toRoad:curve.id}));
+ const elevated={...curve,points:curve.points.map(p=>({...p,y:4}))};
+ assert.deepEqual(roadStrokePlacement(straight,{x:24,z:0},0,240,{connections:[elevated]}).end,{x:16,y:0,z:0});
+ const tap=roadPiecePlacement({...straight,points:[{x:1,z:0},{x:8,z:0}]},{x:16,z:0},240,{connections:[curve]});
+ assert.deepEqual(tap.end,start);
+});
+
 test('直線をなぞると、最初の向きに同じ区間を並べ、マップの端で止まる',()=>{
  const draft={id:'drag',width:8,closed:false,points:[]},start={x:0,y:0,z:0};
  const stroke=roadStrokePlacement(draft,{x:70,z:12},0,60,{start,grade:1});

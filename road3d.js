@@ -164,6 +164,20 @@ export function roadStrokeAim(width,displacement,lockedSector=null){
  return {sector,lockedSector:strokeUnits(displacement,roadUnitStep(width,sector))>=1.5?sector:null};
 }
 
+function straightEndConnection(roads,aim,from,end,unit,world){
+ if(!roads.length)return null;
+ const dx=end.x-from.x,dz=end.z-from.z,span=Math.hypot(dx,dz);
+ const margin=Math.min(3.8,Math.max(2.5,unit*.45));
+ const accept=point=>{
+  const x=point.x-from.x,z=point.z-from.z;
+  const forward=(x*dx+z*dz)/span,side=Math.abs(x*dz-z*dx)/span;
+  return forward>=MIN_SPACING&&forward<=span+unit*.6&&side<=Math.min(margin,forward*.55)&&
+   roadPointsFit([from,point],false);
+ };
+ const find=(point,range)=>roadConnection(roads,point,end.y,world,{endpointRange:range,centerRange:range,accept});
+ return find(aim,2.5)||find(end,margin);
+}
+
 export function roadPiecePlacement(road,aim,world,{start=null,height=0,grade=0,connections=[]}={}){
  if(!roadPoint(aim,world)||road.closed)return null;
  const tail=road.points.at(-1),origin=tail||start||roadPoint(aim,world);
@@ -173,19 +187,11 @@ export function roadPiecePlacement(road,aim,world,{start=null,height=0,grade=0,c
  const length=Math.max(GRID.cell,road.width);
  const y=Math.max(0,Math.min(MAX_ROAD_HEIGHT,base+grade*ROAD_HEIGHT_STEP));
  const step=roadUnitStep(road.width,sector);
- const end={x:origin.x+step.x,y,z:origin.z+step.z};
- // A short last section can end exactly on the road the builder tapped.
- const aimed=roadConnection(connections,aim,y,world);
- let matchedAim=false;
- if(aimed){
-  const ax=aimed.x-origin.x,az=aimed.z-origin.z,span=Math.hypot(ax,az);
-  matchedAim=span>=MIN_SPACING&&span<=length*1.6&&ax*x+az*z>.9*span*Math.hypot(x,z);
-  if(matchedAim)Object.assign(end,{x:aimed.x,y:aimed.y,z:aimed.z});
- }
+ const nominal={x:origin.x+step.x,y,z:origin.z+step.z};
+ const join=straightEndConnection(connections,aim,origin,nominal,length,world);
+ const end=join?{x:join.x,y:join.y,z:join.z}:nominal;
  const limit=coordinateLimit(world);
  if(Math.abs(end.x)>limit||Math.abs(end.z)>limit)return null;
- const join=!matchedAim&&roadConnection(connections,end,y,world);
- if(join&&distance(end,join)<=2)Object.assign(end,{x:join.x,y:join.y,z:join.z});
  const previous=road.points.at(-2);
  if(previous&&distance(previous,end)<MIN_SPACING&&Math.abs((previous.y||0)-end.y)<.3)return null;
  const points=tail?[...road.points,end]:[{x:origin.x,y:base,z:origin.z},end];
@@ -200,6 +206,7 @@ export function roadStrokePlacement(road,displacement,sector,world,{start,height
  const distanceInUnits=strokeUnits(displacement,step);
  if(distanceInUnits<=0)return null;
  const points=road.points.length?road.points.slice():[{x:origin.x,y:origin.y??height,z:origin.z}];
+ const aim={x:origin.x+displacement.x,z:origin.z+displacement.z},unit=Math.max(GRID.cell,road.width);
  const count=Math.min(MAX_ROAD_POINTS-points.length,Math.max(1,Math.round(distanceInUnits)));
  for(let i=1;i<=count;i++){
   const previous=points.at(-1);
@@ -208,8 +215,8 @@ export function roadStrokePlacement(road,displacement,sector,world,{start,height
   if(Math.abs(end.x)>limit||Math.abs(end.z)>limit||distance(previous,end)<MIN_SPACING)break;
   if(points.length>1&&distance(points.at(-2),end)<MIN_SPACING&&Math.abs((points.at(-2).y||0)-end.y)<.3)break;
   if(i===count){
-   const join=roadConnection(connections,end,end.y,world);
-   if(join&&distance(end,join)<=2&&roadPointsFit([previous,join],false))Object.assign(end,{x:join.x,y:join.y,z:join.z});
+   const join=straightEndConnection(connections,aim,previous,end,unit,world);
+   if(join)Object.assign(end,{x:join.x,y:join.y,z:join.z});
   }
   points.push(end);
  }
@@ -552,14 +559,14 @@ export function nearestRoad(roads,point,maxHeightGap=Infinity,extra=.65){
  return nearest;
 }
 
-export function roadConnection(roads,point,height,world,{endpointRange=2.5,endpointHeightGap=.3,centerRange=2.5}={}){
+export function roadConnection(roads,point,height,world,{endpointRange=2.5,endpointHeightGap=.3,centerRange=2.5,accept=()=>true}={}){
  if(!roadPoint(point,world))return null;
  const limit=coordinateLimit(world);
  let best=endpointRange,connection=null;
  for(const road of roads){
   const path=savedRoadPath(road);
   if(!road.closed)for(const end of [path[0],path.at(-1)]){
-   if(!end||Math.abs((end.y||0)-height)>endpointHeightGap)continue;
+   if(!end||Math.abs((end.y||0)-height)>endpointHeightGap||!accept(end))continue;
    const gap=distance(point,end);
    if(gap<best){connection={x:end.x,y:end.y||0,z:end.z};best=gap;}
   }
@@ -568,7 +575,7 @@ export function roadConnection(roads,point,height,world,{endpointRange=2.5,endpo
  best=centerRange;
  for(const road of roads){
   const fit=closestOnPath(savedRoadPath(road),{...point,y:height},best,undefined,.3);
-  if(fit&&Math.abs(fit.x)<=limit&&Math.abs(fit.z)<=limit){connection=fit;best=Math.sqrt(fit.score);}
+  if(fit&&Math.abs(fit.x)<=limit&&Math.abs(fit.z)<=limit&&accept(fit)){connection=fit;best=Math.sqrt(fit.score);}
  }
  return connection;
 }
