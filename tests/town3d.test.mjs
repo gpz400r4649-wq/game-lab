@@ -4,7 +4,7 @@ import {Scene} from '../vendor/three.module.min.js';
 import {create3D,fresh3D,part,step3D,validate3D} from '../engine3d.js';
 import {createRoadNetwork} from '../road-network3d.js';
 import {createRoadView} from '../road-model3d.js';
-import {reverseOpenRoad,roadArcPlacement,roadConnection,roadStartConnection,roadDemolitionSection,roadPiecePlacement,roadStrokeAim,roadStrokePlacement,sampleRoad,splitRoadAt,splitRoadSection,traceRoadPoints,validRoads} from '../road3d.js';
+import {alignRoadEndpoints,reverseOpenRoad,roadArcPlacement,roadConnection,roadStartConnection,roadDemolitionSection,roadPiecePlacement,roadStrokeAim,roadStrokePlacement,sampleRoad,roadSections,roadVertex,splitRoadAt,splitRoadSection,traceRoadPoints,validRoads} from '../road3d.js';
 import {fitRaceGate} from '../race3d.js';
 import {DEFAULT_FLEET,configureTownPart,fitTownPart,houseGarage,refitTownParts,townLocal,townSolids,visitorParking} from '../town3d.js';
 import {townRaceRank,townRoute} from '../town-traffic3d.js';
@@ -84,6 +84,27 @@ test('半円の終点も少しずれた直線の端に吸い付き、つない�
  assert.ok(network.route(start,straight.points[1],{fromRoad:draft.id,toRoad:straight.id}));
  const upper=road('upper',24,3.2,40,3.2,4);
  assert.deepEqual(roadArcPlacement(draft,{x:24,z:0},240,{start,connections:[upper]}).end,{x:24,y:0,z:0});
+});
+
+test('曲がった道を直線の両端に合わせ、舗装の断面が一致する',()=>{
+ const draft={id:'curve',width:8,closed:false,points:[]};
+ const curve={...draft,...roadArcPlacement(draft,{x:24,z:0},240,{start:{x:0,z:0}})};
+ const left=road('left',-10,-5,0,0),right=road('right',24,0,32,-7);
+ const roads=alignRoadEndpoints([left,curve,right],240);
+ assert.equal(roads[0],left);assert.equal(roads[2],right);assert.notEqual(roads[1],curve);
+ assert.deepEqual(roads[1].points[0],curve.points[0]);
+ assert.deepEqual(roads[1].points.at(-1),curve.points.at(-1));
+ assert.equal(validRoads(roads,240),true);
+ const crossSections=roads.map(piece=>roadSections(sampleRoad(piece),false));
+ for(const side of [-4,4]){
+  for(const [a,b] of [[crossSections[0].at(-1),crossSections[1][0]],[crossSections[1].at(-1),crossSections[2][0]]]){
+   const one=roadVertex(a,side,120),two=roadVertex(b,side,120);
+   assert.ok(Math.hypot(one.x-two.x,one.z-two.z)<.00001);
+  }
+ }
+ assert.equal(alignRoadEndpoints(roads,240),roads);
+ const crossing=road('crossing',0,-6,0,6),intersection=[left,curve,crossing];
+ assert.equal(alignRoadEndpoints(intersection,240),intersection);
 });
 
 test('直線をなぞると、最初の向きに同じ区間を並べ、マップの端で止まる',()=>{

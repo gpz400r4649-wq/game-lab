@@ -1,5 +1,5 @@
 import {updateRoadGateWidths} from './race3d.js?v=20261125g';
-import {MAX_ROADS,MAX_ROAD_POINTS,MAX_ROAD_HEIGHT,ROAD_HEIGHT_STEP,ROAD_WIDTHS,roadPoint,roadGridSites,roadConnection,roadStartConnection,nearestRoad,nearestRoadHandle,removeRoadPoint,reverseOpenRoad,roadArcPlacement,roadDemolitionSection,roadPiecePlacement,roadStrokeAim,roadStrokePlacement,roadPointsFit,roadSegmentAt,splitRoadSection,toggleRoadGuardrail,validRoads} from './road3d.js?v=20261126h';
+import {MAX_ROADS,MAX_ROAD_POINTS,MAX_ROAD_HEIGHT,ROAD_HEIGHT_STEP,ROAD_WIDTHS,alignRoadEndpoints,roadPoint,roadGridSites,roadConnection,roadStartConnection,nearestRoad,nearestRoadHandle,removeRoadPoint,reverseOpenRoad,roadArcPlacement,roadDemolitionSection,roadPiecePlacement,roadStrokeAim,roadStrokePlacement,roadPointsFit,roadSegmentAt,splitRoadSection,toggleRoadGuardrail,validRoads} from './road3d.js?v=20261126i';
 import {closeLiveRangeEditor,mountLiveRangeEditor} from './range-panel3d.js?v=20261124a';
 import {setStageRangePainter} from './stage-range3d.js?v=20261124a';
 import {refitTownParts} from './town3d.js?v=20261125g';
@@ -78,8 +78,10 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
 
  function applyRoads(next,objects=getProject().objects){
   const project=getProject();
+  next=alignRoadEndpoints(next,project);
   project.objects=refitTownParts(updateRoadGateWidths(objects,project.roads||[],next),next,project);
   project.roads=next;save();rebuild();
+  return next;
  }
  function pickSavedRoad(action){
   showCategory(null);
@@ -151,7 +153,7 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
    if(!validRoads([draft],project))return;
    const roads=project.roads||[],saved=structuredClone(draft);
    const next=roads.some(road=>road.id===draft.id)?roads.map(road=>road.id===draft.id?saved:road):[...roads,saved];
-   if(validRoads(next,project))applyRoads(next);
+   if(validRoads(next,project))draft=structuredClone(applyRoads(next).find(road=>road.id===saved.id));
   }
   const widthChoices=document.createElement('div'),widthLabel=document.createElement('span');
   widthChoices.className='road-style-choices';widthChoices.setAttribute('role','group');widthChoices.setAttribute('aria-label','道のはば');
@@ -369,7 +371,9 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
     }else if(!canceled&&anchor&&pointer&&draft.points.length>=MAX_ROAD_POINTS)toast('この道はこれ以上のばせないよ。つぎの道をつくろう。');
     pointer=null;view.showSnap([],null);refresh();return true;
    }
-   view.showDraft(placement?withDrawnPoints(placement.points,placement.closed):draft,placement&&fromStart?0:selected,true);
+   let preview=placement?withDrawnPoints(placement.points,placement.closed):draft;
+   if(arc&&placement&&!placement.closed)preview=alignRoadEndpoints([preview,...connections],project)[0];
+   view.showDraft(preview,placement&&fromStart?0:selected,true);
    const snappedStart=pointer?.attachment||attachment;
    const guide=placement?.end||(arc?(road.points.at(-1)||start):null);
    const guides=guide&&guide!==snappedStart?[snappedStart,guide].filter(Boolean):[snappedStart||guide].filter(Boolean);

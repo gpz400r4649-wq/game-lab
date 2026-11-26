@@ -253,6 +253,86 @@ export function roadArcPlacement(road,aim,world,{start,side=1,connections=[]}={}
  return (join&&buildArc(join,closes))||buildArc({...point,y:base},false);
 }
 
+function horizontalDirection(a,b){
+ const dx=b.x-a.x,dz=b.z-a.z,length=Math.hypot(dx,dz);
+ return {x:dx/length,z:dz/length};
+}
+
+function roadTurn(a,b){
+ return Math.atan2(a.x*b.z-a.z*b.x,a.x*b.x+a.z*b.z);
+}
+
+function isCurvedEnd(points){
+ let before=0;
+ for(let i=1;i<Math.min(points.length-1,7);i++){
+  const a=horizontalDirection(points[i-1],points[i]),b=horizontalDirection(points[i],points[i+1]);
+  const turn=roadTurn(a,b);
+  if(Math.abs(turn)>.08&&Math.abs(turn)<.8&&before*turn>0)return true;
+  before=Math.abs(turn)>.08&&Math.abs(turn)<.8?turn:0;
+ }
+ return false;
+}
+
+function alignCurveEnd(road,atStart,direction,world){
+ const points=atStart?road.points:road.points.slice().reverse();
+ const origin=points[0],inward=horizontalDirection(origin,points[1]),limit=coordinateLimit(world);
+ if(inward.x*direction.x+inward.z*direction.z>.995)return road;
+ // Preserve the opposite end and try transitions of increasing length until the
+ // old control points can be replaced without folding back or moving too close.
+ let best=null,bestScore=Infinity;
+ const max=Math.min(9,points.length-2,Math.max(3,Math.floor((points.length-1)*.6)));
+ for(let count=3;count<=max;count++){
+  const finish=points[count],span=distance(origin,finish);
+  if(span<=MIN_SPACING+.05)continue;
+  const chord=horizontalDirection(origin,finish);
+  if(direction.x*chord.x+direction.z*chord.z<-.4)continue;
+  const reach=Math.max(MIN_SPACING+.05,Math.min(distance(origin,points[1]),span/count));
+  const p1={x:origin.x+direction.x*reach,y:(origin.y||0)+((finish.y||0)-(origin.y||0))*reach/span,z:origin.z+direction.z*reach};
+  const remaining=distance(p1,finish),exit=horizontalDirection(points[count-1],points[count+1]),handle=remaining*.37;
+  const a={x:p1.x+direction.x*handle,z:p1.z+direction.z*handle};
+  const b={x:finish.x-exit.x*handle,z:finish.z-exit.z*handle};
+  const next=[origin,p1];
+  for(let i=1;i<count-1;i++){
+   const t=i/(count-1),s=1-t;
+   next.push({x:p1.x*s*s*s+3*a.x*s*s*t+3*b.x*s*t*t+finish.x*t*t*t,
+    y:(p1.y||0)+((finish.y||0)-(p1.y||0))*t,
+    z:p1.z*s*s*s+3*a.z*s*s*t+3*b.z*s*t*t+finish.z*t*t*t});
+  }
+  next.push(...points.slice(count));
+  if(next.some(p=>Math.abs(p.x)>limit||Math.abs(p.z)>limit)||!roadPointsFit(next,false))continue;
+  let sharpest=0;
+  for(let i=1;i<=count;i++){
+   const turn=roadTurn(horizontalDirection(next[i-1],next[i]),horizontalDirection(next[i],next[i+1]));
+   sharpest=Math.max(sharpest,Math.abs(turn));
+  }
+  const score=sharpest+count*.018;
+  if(score<bestScore){best=next;bestScore=score;}
+ }
+ return best?{...road,points:atStart?best:best.reverse()}:road;
+}
+
+export function alignRoadEndpoints(roads,world){
+ if(!roads||roads.length<2)return roads;
+ const ends=roads.flatMap((road,index)=>{
+  if(road.closed||road.points.length<2)return [];
+  return [true,false].map(atStart=>{
+   const points=atStart?road.points:road.points.slice().reverse();
+   return {index,atStart,point:points[0],direction:horizontalDirection(points[0],points[1]),curve:isCurvedEnd(points)};
+  });
+ });
+ const next=roads.slice();
+ for(const end of ends){
+  if(!end.curve)continue;
+  const matches=ends.filter(other=>other.index!==end.index&&distance(end.point,other.point)<.04&&Math.abs((end.point.y||0)-(other.point.y||0))<.12);
+  if(matches.length!==1||matches[0].curve)continue;
+  if(roads.some((road,index)=>index!==end.index&&index!==matches[0].index&&
+   closestOnPath(savedRoadPath(road),{...end.point,y:end.point.y||0},.14,undefined,.12)))continue;
+  const {x,z}=matches[0].direction;
+  next[end.index]=alignCurveEnd(next[end.index],end.atStart,{x:-x,z:-z},world);
+ }
+ return next.some((road,index)=>road!==roads[index])?next:roads;
+}
+
 export function traceRoadPoints(road,samples,world,{straight=false,first=null,last=null}={}){
  if(!samples.length||road.points.length>=MAX_ROAD_POINTS)return road.points;
  // Keep the ends and the bends of a stroke, leaving out small finger movements.

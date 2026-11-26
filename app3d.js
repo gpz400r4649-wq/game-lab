@@ -1,9 +1,9 @@
 import {createCarAudio} from './car-audio3d.js?v=20261119g';
-import {courseStart,nearestRoad} from './road3d.js?v=20261125g';
+import {alignRoadEndpoints,courseStart,nearestRoad} from './road3d.js?v=20261126i';
 import {createRoadView} from './road-model3d.js?v=20261126f';
-import {createRoadEditor} from './road-ui3d.js?v=20261126h';
+import {createRoadEditor} from './road-ui3d.js?v=20261126i';
 import {createLapGateView,makeCarModel,updateCarModel,makeRaceGateModel,updateRaceGateModel,updateRaceGateNumber,makeTrafficSignal,updateTrafficSignal} from './race-model3d.js?v=20261125g';
-import {CAR_TUNING,DEFAULT_CAR_TUNING,RACE_LAP_OPTIONS,fitRaceGate,orderedRaceGates,turnRaceGate} from './race3d.js?v=20261125g';
+import {CAR_TUNING,DEFAULT_CAR_TUNING,RACE_LAP_OPTIONS,fitRaceGate,orderedRaceGates,turnRaceGate,updateRoadGateWidths} from './race3d.js?v=20261125g';
 import {assemblyCandidate,assemblyCopies,saveAssembly,temporarySpawn} from './assembly3d.js?v=20261119p';
 import {createSupplyUI,createSupplyView} from './supply-ui3d.js?v=20261124a';
 import {FURNITURE_PRESETS,configureFurniture,isFurniture} from './furniture3d.js?v=20261119d';
@@ -47,7 +47,7 @@ import {rotatePiece,BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,topAt,edito
 import {createToolsUI} from './tools3d.js?v=20261125g';
 import * as T from './vendor/three.module.min.js';
 import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,nearbyChair} from './engine3d.js?v=20261125g';
-import {TOWN_PARTS,configureTownPart,fitTownPart,townPlacementReason} from './town3d.js?v=20261125g';
+import {TOWN_PARTS,configureTownPart,fitTownPart,refitTownParts,townPlacementReason} from './town3d.js?v=20261125g';
 import {createTownView,makeTownModel} from './town-model3d.js?v=20261125g';
 import {townRaceRank} from './town-traffic3d.js?v=20261125g';
 import {installTownUI,renderRivalSettings} from './town-ui3d.js?v=20261125g';
@@ -94,7 +94,13 @@ window.addEventListener('pagehide',()=>carAudio.stop());
 let multiSelect=false,groupMoving=false;const groupIds=new Set();
 function editedObject(){return commonPreview||project.objects.find(o=>o.id===selected);}
 function toast(s){setReadingText($('#toast3'),s);$('#toast3').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast3').classList.remove('show'),3200);}
-try{const value=localStorage.getItem(KEY);if(value){const saved=validate3D(parseStoredProject(value));if((saved.template==='car')!==carTemplate)throw Error('さくひんの種類がちがいます');project=saved;}}catch{toast('自動保存した3D作品を読み込めませんでした。ファイルからも読み込めます。');}
+function upgradeRoadConnections(p){
+ const roads=alignRoadEndpoints(p.roads,p);
+ if(roads===p.roads)return p;
+ const objects=refitTownParts(updateRoadGateWidths(p.objects,p.roads,roads),roads,p);
+ return {...p,roads,objects};
+}
+try{const value=localStorage.getItem(KEY);if(value){const saved=validate3D(parseStoredProject(value));if((saved.template==='car')!==carTemplate)throw Error('さくひんの種類がちがいます');project=upgradeRoadConnections(saved);}}catch{toast('自動保存した3D作品を読み込めませんでした。ファイルからも読み込めます。');}
 initializeCharacterDefaults(project,part);
 const editHistory=createEditHistory(project);let restoringHistory=false;
 $('#title3').value=project.title;{const start=courseStart(project);editTarget.set(start.x,start.y,start.z);}
@@ -546,7 +552,7 @@ bindGameAction(seatButton,()=>seatPressed=true);
 const editorNavigation=createEditorNavigation($('#editor-nav3'),()=>surface.focus({preventScroll:true}));resetEditorNavigation=()=>editorNavigation.reset();
 const joystick=$('#stick3');function joystickMove(e){const r=joystick.getBoundingClientRect();let x=(e.clientX-r.left-r.width/2)/36,z=(e.clientY-r.top-r.height/2)/36,l=Math.hypot(x,z);if(l>1){x/=l;z/=l;}stick={x,z};$('#stick3 .edit-stick-thumb').style.transform=`translate(${x*24}px,${z*24}px)`;}joystick.onpointerdown=e=>{e.preventDefault();if(joystickPointer!==null)return;joystickPointer=e.pointerId;joystick.setPointerCapture(e.pointerId);joystickMove(e);};joystick.onpointermove=e=>{if(joystickPointer===e.pointerId)joystickMove(e);};joystick.onpointerup=joystick.onpointercancel=joystick.onlostpointercapture=e=>{if(joystickPointer!==e.pointerId)return;joystickPointer=null;stick={x:0,z:0};$('#stick3 .edit-stick-thumb').style.transform='';};resetFire=bindHeldButton($('#fire3'),()=>{fireHeld=true;firePressed=true;},()=>fireHeld=false);$('#jump3').onpointerdown=e=>{e.preventDefault();jumpPressed=true;};
 function openDialog(id){if(mode==='play')setMode('edit');$(id).showModal();}$('#help3').onclick=()=>openDialog(carTemplate?'#car-help-dialog3':'#help-dialog3');$('#files3').onclick=()=>openDialog('#files-dialog3');document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>b.closest('dialog').close());$('#export3').onclick=()=>{const url=URL.createObjectURL(new Blob([JSON.stringify(project,null,2)],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download=(project.title.replace(/[<>:"/\\|?*]/g,'_')||'3Dゲーム')+'.3d.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);toast('3D作品を保存しました');};
-function loadProject(p){resetGroupSelection();initializeCharacterDefaults(p,part);project=p;workshop.palette();selected=null;$('#title3').value=p.title;const start=courseStart(project);editTarget.set(start.x,start.y,start.z);editDistance=30;spawnMark.position.set(start.x,start.y+(project.roads?.length ? .065 : .015),start.z);save();setMode('edit',{resumeHere:false});objectList();inspector();weaponFields();}
+function loadProject(p){resetGroupSelection();initializeCharacterDefaults(p,part);project=upgradeRoadConnections(p);workshop.palette();selected=null;$('#title3').value=p.title;const start=courseStart(project);editTarget.set(start.x,start.y,start.z);editDistance=30;spawnMark.position.set(start.x,start.y+(project.roads?.length ? .065 : .015),start.z);save();setMode('edit',{resumeHere:false});objectList();inspector();weaponFields();}
 $('#import3').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{if(f.size>MAX_PROJECT_BYTES)throw Error('ファイルが大きすぎます');const p=validate3D(JSON.parse(await f.text()));if((p.template==='car')!==carTemplate)throw Error(p.template==='car'?'くるまのさくひんは、くるま版でよみこもう':'ひとのさくひんは、ひとのゲームでよみこもう');if(await confirmReplace('今の3D作品を、読み込んだ作品に置き換えます。')){loadProject(p);$('#files-dialog3').close();toast('3D作品を読み込みました');}}catch(err){toast(err instanceof SyntaxError?'作品を読み込めませんでした':err.message);}finally{e.target.value='';}};$('#new3').onclick=async()=>{if(await confirmReplace('今の3D作品をまっさらなステージに置き換えますか？ 必要なら先にファイルに保存してください。'))loadProject(fresh3D(carTemplate?'car':undefined));};
 function positionCarCamera(){
  const car=mode==='play'?game.car:null,position=car?game.player:courseStart(project);
