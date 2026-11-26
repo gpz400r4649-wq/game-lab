@@ -185,7 +185,7 @@ export function roadPiecePlacement(road,aim,world,{start=null,height=0,grade=0,c
  const limit=coordinateLimit(world);
  if(Math.abs(end.x)>limit||Math.abs(end.z)>limit)return null;
  const join=!matchedAim&&roadConnection(connections,end,y,world);
- if(join&&distance(end,join)<=1.25)Object.assign(end,{x:join.x,y:join.y,z:join.z});
+ if(join&&distance(end,join)<=2)Object.assign(end,{x:join.x,y:join.y,z:join.z});
  const previous=road.points.at(-2);
  if(previous&&distance(previous,end)<MIN_SPACING&&Math.abs((previous.y||0)-end.y)<.3)return null;
  const points=tail?[...road.points,end]:[{x:origin.x,y:base,z:origin.z},end];
@@ -209,7 +209,7 @@ export function roadStrokePlacement(road,displacement,sector,world,{start,height
   if(points.length>1&&distance(points.at(-2),end)<MIN_SPACING&&Math.abs((points.at(-2).y||0)-end.y)<.3)break;
   if(i===count){
    const join=roadConnection(connections,end,end.y,world);
-   if(join&&distance(end,join)<=1.25&&roadPointsFit([previous,join],false))Object.assign(end,{x:join.x,y:join.y,z:join.z});
+   if(join&&distance(end,join)<=2&&roadPointsFit([previous,join],false))Object.assign(end,{x:join.x,y:join.y,z:join.z});
   }
   points.push(end);
  }
@@ -552,24 +552,37 @@ export function nearestRoad(roads,point,maxHeightGap=Infinity,extra=.65){
  return nearest;
 }
 
-export function roadConnection(roads,point,height,world){
+export function roadConnection(roads,point,height,world,{endpointRange=2.5,endpointHeightGap=.3,centerRange=2.5}={}){
  if(!roadPoint(point,world))return null;
- const limit=coordinateLimit(world),sameLevel=p=>Math.abs((p.y||0)-height)<=.3;
- let best=2.5,connection=null;
+ const limit=coordinateLimit(world);
+ let best=endpointRange,connection=null;
  for(const road of roads){
   const path=savedRoadPath(road);
   if(!road.closed)for(const end of [path[0],path.at(-1)]){
-   if(!end||!sameLevel(end))continue;
+   if(!end||Math.abs((end.y||0)-height)>endpointHeightGap)continue;
    const gap=distance(point,end);
    if(gap<best){connection={x:end.x,y:end.y||0,z:end.z};best=gap;}
   }
  }
  if(connection)return connection;
+ best=centerRange;
  for(const road of roads){
   const fit=closestOnPath(savedRoadPath(road),{...point,y:height},best,undefined,.3);
   if(fit&&Math.abs(fit.x)<=limit&&Math.abs(fit.z)<=limit){connection=fit;best=Math.sqrt(fit.score);}
  }
  return connection;
+}
+
+export function roadStartConnection(roads,point,height,world,surface=null){
+ const touched=surface&&roads.find(road=>road.id===surface.id);
+ if(touched){
+  // An actual pavement hit determines the level, even on a bridge or a slope.
+  const attached=roadConnection([touched],surface.point,surface.point.y,world,{
+   endpointRange:Math.min(5,Math.max(3.8,touched.width/2)),endpointHeightGap:2.5,centerRange:touched.width/2+.25
+  });
+  if(attached)return attached;
+ }
+ return roadConnection(roads,point,height,world,{endpointRange:4});
 }
 
 export function lapRoadMarkers(road,point,heading){

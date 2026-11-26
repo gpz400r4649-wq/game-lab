@@ -4,7 +4,7 @@ import {Scene} from '../vendor/three.module.min.js';
 import {create3D,fresh3D,part,step3D,validate3D} from '../engine3d.js';
 import {createRoadNetwork} from '../road-network3d.js';
 import {createRoadView} from '../road-model3d.js';
-import {reverseOpenRoad,roadArcPlacement,roadConnection,roadDemolitionSection,roadPiecePlacement,roadStrokeAim,roadStrokePlacement,sampleRoad,splitRoadAt,splitRoadSection,traceRoadPoints,validRoads} from '../road3d.js';
+import {reverseOpenRoad,roadArcPlacement,roadConnection,roadStartConnection,roadDemolitionSection,roadPiecePlacement,roadStrokeAim,roadStrokePlacement,sampleRoad,splitRoadAt,splitRoadSection,traceRoadPoints,validRoads} from '../road3d.js';
 import {fitRaceGate} from '../race3d.js';
 import {DEFAULT_FLEET,configureTownPart,fitTownPart,houseGarage,refitTownParts,townLocal,townSolids,visitorParking} from '../town3d.js';
 import {townRaceRank,townRoute} from '../town-traffic3d.js';
@@ -158,6 +158,18 @@ test('道路の端と途中に吸い付き、高さの違う道路は接続先�
  const points=traceRoadPoints(draft,[{x:4.5,z:1},{x:16,z:6},{x:4.9,z:22}],120,{straight:true,first:join});
  assert.deepEqual(points,[{x:4.5,y:0,z:0,corner:'straight'},{x:4,z:22,corner:'straight'}]);
  assert.deepEqual(sampleRoad({...draft,points:[{x:-8,z:0},...points]}),[{x:-8,z:0},...points]);
+});
+
+test('道を引き始める時は付近の端に吸い付き、押した高架の端の高さも引き継ぐ',()=>{
+ const ramp={...road('ramp',-40,0,-20,0),points:[{x:-40,y:6,z:0},{x:-20,y:10,z:0}]};
+ const roads=[main,ramp];
+ assert.deepEqual(roadStartConnection(roads,{x:-42,z:2.5},0,240),{x:-40,y:0,z:0});
+ const ground=roadStartConnection(roads,{x:-20,z:2},0,240);
+ assert.deepEqual([ground.x,ground.y,ground.z],[-20,0,0]);
+ const start=roadStartConnection(roads,{x:-19,z:2},0,240,{id:ramp.id,point:{x:-22,y:9.625,z:2}});
+ assert.deepEqual(start,{x:-20,y:10,z:0});
+ const next=roadPiecePlacement({id:'extension',width:8,closed:false,points:[]},start,240,{start});
+ assert.deepEqual(next.points,[start,{x:-20,y:10,z:-8}]);
 });
 
 test('歩道を道路に沿って表示し、道幅に合わせて横断歩道を広げて家の入口を向ける',()=>{

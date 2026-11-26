@@ -1,5 +1,5 @@
 import {updateRoadGateWidths} from './race3d.js?v=20261125g';
-import {MAX_ROADS,MAX_ROAD_POINTS,MAX_ROAD_HEIGHT,ROAD_HEIGHT_STEP,ROAD_WIDTHS,roadPoint,roadGridSites,roadConnection,nearestRoad,nearestRoadHandle,removeRoadPoint,reverseOpenRoad,roadArcPlacement,roadDemolitionSection,roadPiecePlacement,roadStrokeAim,roadStrokePlacement,roadPointsFit,roadSegmentAt,splitRoadSection,toggleRoadGuardrail,validRoads} from './road3d.js?v=20261126e';
+import {MAX_ROADS,MAX_ROAD_POINTS,MAX_ROAD_HEIGHT,ROAD_HEIGHT_STEP,ROAD_WIDTHS,roadPoint,roadGridSites,roadConnection,roadStartConnection,nearestRoad,nearestRoadHandle,removeRoadPoint,reverseOpenRoad,roadArcPlacement,roadDemolitionSection,roadPiecePlacement,roadStrokeAim,roadStrokePlacement,roadPointsFit,roadSegmentAt,splitRoadSection,toggleRoadGuardrail,validRoads} from './road3d.js?v=20261126f';
 import {closeLiveRangeEditor,mountLiveRangeEditor} from './range-panel3d.js?v=20261124a';
 import {setStageRangePainter} from './stage-range3d.js?v=20261124a';
 import {refitTownParts} from './town3d.js?v=20261125g';
@@ -133,7 +133,7 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
  function openEditor(original,pickedPoint=null){
   showCategory(null);
   let draft=structuredClone(original),selected=pickedPoint?nearestRoadHandle(original.points,pickedPoint,Infinity):-1,pointer=null,mode=original.points.length?'move':'piece';
-  let grade=0,startHeight=0,fromStart=false,arcSide=1,stylePage='width',viewingStyle=false;
+  let grade=0,startHeight=0,heightChosen=false,fromStart=false,arcSide=1,stylePage='width',viewingStyle=false;
   const lastIndex=()=>draft.points.length-1;
   const drawingIndex=()=>fromStart?0:lastIndex();
   const tipHeight=()=>draft.points[drawingIndex()]?.y??startHeight;
@@ -229,6 +229,7 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
   startControls.className='road-height-tools';startControls.setAttribute('role','group');startControls.setAttribute('aria-label','はじめの高さ');
   const shiftStart=delta=>{
    if(pointer)return;
+   heightChosen=true;
    startHeight=Math.max(0,Math.min(MAX_ROAD_HEIGHT,startHeight+delta));focusHeight?.(startHeight);refresh();
   };
   const startDown=button('−',()=>shiftStart(-ROAD_HEIGHT_STEP));
@@ -320,17 +321,22 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
    if(kind==='end'&&!pointer)return false;
    const base=tipHeight();
    const arc=mode==='add';
-   const height=!arc&&draft.points.length?Math.max(0,Math.min(MAX_ROAD_HEIGHT,base+grade*ROAD_HEIGHT_STEP)):base;
+   const height=pointer?.height??(!arc&&draft.points.length?Math.max(0,Math.min(MAX_ROAD_HEIGHT,base+grade*ROAD_HEIGHT_STEP)):base);
    const event=ground?.pointerEvent;
-   const target=event&&!isOnStage(event)?null:event&&height?pointerAtHeight(event,height):ground;
+   const onStage=!event||isOnStage(event);
+   let target=onStage?(event&&height?pointerAtHeight(event,height):ground):null;
    const project=getProject();
+   const connections=(project.roads||[]).filter(road=>road.id!==draft.id);
+   const attachment=!pointer&&!draft.points.length&&onStage?
+    roadStartConnection(connections,target,base,project,event&&!heightChosen?pickRoad(event):null):null;
+   if(attachment&&event&&attachment.y!==height)target=pointerAtHeight(event,attachment.y)||target;
    const anchor=roadPoint(target,project);
    if(kind==='start'){
-    if(!anchor)return true;
-    const start=draft.points.length?null:(findConnection(target,base)||{...anchor,y:base});
-    pointer={id,start,grab:target,event,dragged:false,lockedSector:null};
+    if(!target||!anchor&&!attachment)return true;
+    const start=draft.points.length?null:(attachment||{...anchor,y:base});
+    pointer={id,start,attachment,height:start?.y??height,grab:target,event,dragged:false,lockedSector:null};
    }
-   const start=pointer?.start||(!draft.points.length&&anchor&&(findConnection(target,base)||anchor));
+   const start=pointer?.start||(!draft.points.length&&(attachment||anchor&&{...anchor,y:base}));
    const grab=pointer?.grab;
    const delta=grab&&target?{x:target.x-grab.x,z:target.z-grab.z}:null;
    let sector=null;
@@ -341,7 +347,7 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
      sector=aim.sector;pointer.lockedSector=aim.lockedSector;
     }
    }
-   const options={start,height:base,grade,connections:(project.roads||[]).filter(road=>road.id!==draft.id)};
+   const options={start,height:base,grade,connections};
    const road=drawingRoad();
    let placement=null;
    if(!canceled&&arc&&pointer?.dragged&&delta){
@@ -350,7 +356,7 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
     placement=roadArcPlacement(road,aim,project,{...options,side:arcSide});
    }else if(!canceled&&!arc){
     placement=pointer?.dragged?sector!==null&&roadStrokePlacement(road,delta,sector,project,options):
-     anchor&&roadPiecePlacement(road,start||target,project,options);
+     target&&(anchor||start)&&roadPiecePlacement(road,start||target,project,options);
    }
    if(kind==='end'){
     if(placement){
@@ -364,8 +370,10 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
     pointer=null;view.showSnap([],null);refresh();return true;
    }
    view.showDraft(placement?withDrawnPoints(placement.points,placement.closed):draft,placement&&fromStart?0:selected,true);
+   const snappedStart=pointer?.attachment||attachment;
    const guide=placement?.end||(arc?(road.points.at(-1)||start):null);
-   view.showSnap(guide?[guide]:[],guide);
+   const guides=guide&&guide!==snappedStart?[snappedStart,guide].filter(Boolean):[snappedStart||guide].filter(Boolean);
+   view.showSnap(guides,guide||snappedStart);
    return true;
   }
   setStageRangePainter((kind,id,ground,canceled)=>{

@@ -171,7 +171,7 @@ export function createRoadView(scene){
    for(const [index,dot] of dots.entries()){
     const site=sites[index];dot.visible=!!site;if(!site)continue;
     const active=site.x===point?.x&&site.z===point?.z;
-    dot.position.set(site.x,(point?.y||0)+.25,site.z);dot.material=active?activeMaterial:snapMaterial;dot.scale.setScalar(active?1.7:1);
+    dot.position.set(site.x,(site.y??point?.y??0)+.25,site.z);dot.material=active?activeMaterial:snapMaterial;dot.scale.setScalar(active?1.7:1);
    }
   },
   showDraft(road,selected=-1,transient=false){
