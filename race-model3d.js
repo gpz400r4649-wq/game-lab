@@ -15,16 +15,46 @@ const signalLamps=[0xef4138,0xffc337,0x42ecb2].map(color=>({
  on:new T.MeshBasicMaterial({color}),off:new T.MeshBasicMaterial({color:new T.Color(color).multiplyScalar(.14)})
 }));
 
-export function makeTrafficSignal(part,previewMaterial){
- const model=new T.Group(),frame=previewMaterial||signalPole,housing=previewMaterial||signalCase;
- box(model,frame,0,.07,0,.55,.14,.55);
- box(model,frame,0,1.47,0,.14,2.8,.14);
- box(model,housing,0,2.88,-.085,.39,1,.28);
+function makeSignalHead(previewMaterial){
+ const model=new T.Group(),housing=previewMaterial||signalCase;
+ box(model,housing,0,0,-.085,.39,1,.28);
  model.userData.signalLamps=signalLamps.map(({on},index)=>{
   const lens=new T.Mesh(signalLens,previewMaterial||on);
-  lens.scale.set(.12,.12,.04);lens.position.set(0,3.18-index*.3,-.223);model.add(lens);return lens;
+  lens.scale.set(.12,.12,.04);lens.position.set(0,.3-index*.3,-.223);model.add(lens);return lens;
  });
+ return model;
+}
+
+export function makeTrafficSignal(part,previewMaterial){
+ const model=new T.Group(),frame=previewMaterial||signalPole,head=makeSignalHead(previewMaterial);
+ box(model,frame,0,.07,0,.55,.14,.55);
+ box(model,frame,0,1.47,0,.14,2.8,.14);
+ head.position.y=2.88;model.add(head);model.userData.signalLamps=head.userData.signalLamps;
  model.rotation.y=(part.rotation||0)*Math.PI/180;
+ return model;
+}
+
+export function makeJunctionSignal({center,signals},half){
+ const model=new T.Group(),heads=[];
+ model.position.set(center.x,center.y,center.z);
+ const poleSite=signals.find(point=>Math.abs(point.x)<=half-.35&&Math.abs(point.z)<=half-.35)||signals[0];
+ const x=Math.max(-half+.35,Math.min(half-.35,poleSite.x))-center.x;
+ const z=Math.max(-half+.35,Math.min(half-.35,poleSite.z))-center.z;
+ const base=Math.min(center.y,poleSite.y)-center.y;
+ const level=Math.max(...signals.map(signal=>signal.y))-center.y+4.45,beamHeight=level+.64;
+ const pole=box(model,signalPole,x,(base+beamHeight)/2,z,.22,beamHeight-base,.22);
+ pole.userData.signalSupport=true;
+ box(model,signalPole,x,base+.06,z,.52,.12,.52);
+ const arm=box(model,signalPole,x/2,beamHeight,z/2,.16,.16,Math.hypot(x,z)+.12);
+ arm.rotation.y=Math.atan2(x,z);
+ box(model,signalCase,0,level+.55,0,1.82,.17,1.82);
+ for(const signal of signals){
+  const head=makeSignalHead(),yaw=signal.rotation*Math.PI/180;
+  head.position.set(-Math.sin(yaw)*.76,level,-Math.cos(yaw)*.76);
+  head.rotation.y=yaw;head.userData.roadSignal=signal;
+  model.add(head);heads.push(head);
+ }
+ model.userData.signalHeads=heads;
  return model;
 }
 

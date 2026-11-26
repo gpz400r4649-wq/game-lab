@@ -1,7 +1,7 @@
 import * as T from './vendor/three.module.min.js';
 import {ROAD_BARRIERS,ROAD_DECK_DEPTH,createRoadOpenings,createRoadSectionQuery,roadBarrierOffset,roadRunBarrier,roadVertex} from './road3d.js?v=20261126l';
-import {createRoadNetwork} from './road-network3d.js?v=20261125g';
-import {makeTrafficSignal,updateTrafficSignal} from './race-model3d.js?v=20261125g';
+import {createRoadNetwork} from './road-network3d.js?v=20261126r';
+import {makeJunctionSignal,updateTrafficSignal} from './race-model3d.js?v=20261126r';
 
 const asphalt=new T.MeshStandardMaterial({color:0x333c4e,roughness:.98,side:T.DoubleSide});
 const edges=new T.MeshBasicMaterial({color:0xe2e6ef,side:T.DoubleSide});
@@ -158,18 +158,19 @@ export function createRoadView(scene){
    const key=JSON.stringify([next||[],extent]);if(key===stamp)return;
    stamp=key;roads=next||[];half=extent;draftStamp='';previewIndex=null;showSaved();
    signals.clear();
-   for(const signal of createRoadNetwork(roads).signals){
-    const model=makeTrafficSignal(signal);
-    model.position.set(signal.x,signal.y,signal.z);
-    model.userData.roadSignal=signal;
-    updateTrafficSignal(model,signal.rotation,0,signal.phaseOffset);
+   for(const junction of createRoadNetwork(roads).junctions){
+    const model=makeJunctionSignal(junction,half);
+    for(const head of model.userData.signalHeads){
+     const {rotation,phaseOffset}=head.userData.roadSignal;
+     updateTrafficSignal(head,rotation,0,phaseOffset);
+    }
     signals.add(model);
    }
   },
   updateSignals(time){
-   for(const model of signals.children){
-    const {rotation,phaseOffset}=model.userData.roadSignal;
-    updateTrafficSignal(model,rotation,time,phaseOffset);
+   for(const model of signals.children)for(const head of model.userData.signalHeads){
+    const {rotation,phaseOffset}=head.userData.roadSignal;
+    updateTrafficSignal(head,rotation,time,phaseOffset);
    }
   },
   showSnap(sites,point){

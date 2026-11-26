@@ -278,7 +278,7 @@ test('丁字路を自動で曲がれ、高さの違う交差や離れた道路�
  assert.equal(net.route({x:-20,y:0,z:0},{x:48,y:0,z:30},{fromRoad:'east',toRoad:'away'}),null);
 });
 
-test('同じ高さの丁字路と十字路でだけ信号を表示し、道路を取り除くと消える',()=>{
+test('同じ高さの丁字路と十字路は支柱１本に信号をまとめ、進入方向ごとに切り替わる',()=>{
  const crossing=road('crossing',0,-35,0,35);
  const over=road('over',0,-35,0,35,6),extension=road('extension',40,0,60,0);
  assert.equal(createRoadNetwork([main,over,extension]).signals.length,0);
@@ -288,12 +288,22 @@ test('同じ高さの丁字路と十字路でだけ信号を表示し、道路�
  ]};
  assert.equal(createRoadNetwork([selfCrossing]).signals.length,4);
  const scene=new Scene(),view=createRoadView(scene);
- view.sync([main,crossing],120);
+ view.sync([main,branch,over],120);
  const models=scene.getObjectByName('automatic-traffic-signals');
- assert.equal(models.children.length,4);
- assert.deepEqual(models.children.map(model=>model.userData.activeLamp).sort(),[0,0,2,2]);
+ assert.equal(models.children.length,1);
+ assert.equal(models.children[0].userData.signalHeads.length,3);
+ assert.equal(models.children[0].children.filter(mesh=>mesh.userData.signalSupport).length,1);
+ view.sync([main,crossing],120);
+ assert.equal(models.children.length,1);
+ const intersection=models.children[0],heads=intersection.userData.signalHeads;
+ assert.equal(intersection.children.filter(mesh=>mesh.userData.signalSupport).length,1);
+ assert.equal(heads.length,4);
+ const before=heads.map(head=>head.userData.activeLamp);
+ assert.deepEqual(before.slice().sort(),[0,0,2,2]);
  view.updateSignals(10.5);
- assert.ok(models.children.every(model=>model.userData.activeLamp===0));
+ assert.ok(heads.every(head=>head.userData.activeLamp===0));
+ view.updateSignals(11);
+ assert.deepEqual(heads.map(head=>head.userData.activeLamp),before.map(value=>2-value));
  view.sync([main],120);
  assert.equal(models.children.length,0);
 });

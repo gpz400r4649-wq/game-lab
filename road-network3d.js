@@ -28,7 +28,7 @@ function heapPop(heap){
  heap[i]=last;return first;
 }
 
-function intersectionSignals(links){
+function signalJunctions(links){
  const groups=new Map();
  for(const [a,b] of links){
   const first=groups.get(a),second=groups.get(b);
@@ -36,7 +36,7 @@ function intersectionSignals(links){
   if(first&&second&&first!==second)for(const node of second){group.add(node);groups.set(node,group);}
   group.add(a);group.add(b);groups.set(a,group);groups.set(b,group);
  }
- const signals=[];
+ const junctions=[];
  const dot=(a,b)=>a.x*b.x+a.z*b.z;
  for(const group of new Set(groups.values())){
   const arms=[];
@@ -54,6 +54,7 @@ function intersectionSignals(links){
   // A bend or a fork without a through road has no traffic lights.
   const through=arms.find(arm=>arms.some(other=>dot(arm,other)<-.88));
   if(!through)continue;
+  const signals=[];
   for(const arm of arms){
    const {x,z,slope,width,node}=arm;
    const crossWidth=Math.max(...arms.filter(other=>Math.abs(dot(other,arm))<.88).map(other=>other.width),width);
@@ -66,8 +67,9 @@ function intersectionSignals(links){
     phaseOffset:Math.abs(dot(arm,through))>.88?0:11
    });
   }
+  junctions.push({center:coordinate(center),signals});
  }
- return signals;
+ return junctions;
 }
 
 export function createRoadNetwork(roads=[]){
@@ -135,7 +137,7 @@ export function createRoadNetwork(roads=[]){
   s.cuts.sort((a,b)=>a.t-b.t);
   for(let i=1;i<s.cuts.length;i++)edge(s.cuts[i-1].node,s.cuts[i].node,s.road.width);
  }
- const signals=intersectionSignals(links);
+ const junctions=signalJunctions(links),signals=junctions.flatMap(junction=>junction.signals);
  for(const [a,b] of links)edge(a,b);
 
  function anchor(point,roadId,range){
@@ -153,7 +155,7 @@ export function createRoadNetwork(roads=[]){
   return s.cuts.slice(Math.max(0,i-1),i+1).map(({node})=>({node,cost:dist(point,node)}));
  }
  return {
-  signals,
+  signals,junctions,
   route(from,to,{fromRoad,toRoad,range=10}={}){
    const start=anchor(from,fromRoad,range),end=anchor(to,toRoad,range);
    if(!start||!end)return null;
