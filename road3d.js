@@ -641,14 +641,24 @@ export function createRoadBarrierQuery(roads=[],world){
 }
 
 export function createRoadSurfaceQuery(roads=[],world){
- const half=worldHalf(world),cell=16,buckets=new Map(),long=[];
+ return createPavementQuery(roads,worldHalf(world),false);
+}
+
+export function createRoadFootprintQuery(roads,half){
+ return createPavementQuery(roads,half,true);
+}
+
+function createPavementQuery(roads,half,allRoads){
+ const cell=16,buckets=new Map(),long=[];
  const sectionsFor=createRoadSectionQuery(roads);
  for(const road of roads){
-  if(!road.points.some(point=>point.y>0))continue;
+  if(!allRoads&&!road.points.some(point=>point.y>0))continue;
   const path=sectionsFor(road),radius=road.width/2;
+  const edge=(point,side,name)=>side*(radius+(allRoads&&(road.sidewalk==='both'||road.sidewalk===name)?2*(point[name+'Walk']??1):0));
   for(let i=1;i<path.length;i++){
    const a=path[i-1],b=path[i];
-   const p=roadVertex(a,-radius,half),q=roadVertex(a,radius,half),r=roadVertex(b,radius,half),s=roadVertex(b,-radius,half);
+   const p=roadVertex(a,edge(a,-1,'left'),half),q=roadVertex(a,edge(a,1,'right'),half);
+   const r=roadVertex(b,edge(b,1,'right'),half),s=roadVertex(b,edge(b,-1,'left'),half);
    for(const [first,second,third] of [[p,q,r],[p,r,s]]){
     const ux=second.x-first.x,uz=second.z-first.z,vx=third.x-first.x,vz=third.z-first.z,det=ux*vz-uz*vx;
     if(Math.abs(det)<1e-7)continue;

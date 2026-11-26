@@ -34,19 +34,18 @@ export function makeTrafficSignal(part,previewMaterial){
  return model;
 }
 
-export function makeJunctionSignal({center,signals},half){
+export function makeJunctionSignal({center,signals},site){
  const model=new T.Group(),heads=[];
  model.position.set(center.x,center.y,center.z);
- const poleSite=signals.find(point=>Math.abs(point.x)<=half-.35&&Math.abs(point.z)<=half-.35)||signals[0];
- const x=Math.max(-half+.35,Math.min(half-.35,poleSite.x))-center.x;
- const z=Math.max(-half+.35,Math.min(half-.35,poleSite.z))-center.z;
- const base=Math.min(center.y,poleSite.y)-center.y;
  const level=Math.max(...signals.map(signal=>signal.y))-center.y+4.45,beamHeight=level+.64;
- const pole=box(model,signalPole,x,(base+beamHeight)/2,z,.22,beamHeight-base,.22);
- pole.userData.signalSupport=true;
- box(model,signalPole,x,base+.06,z,.52,.12,.52);
- const arm=box(model,signalPole,x/2,beamHeight,z/2,.16,.16,Math.hypot(x,z)+.12);
- arm.rotation.y=Math.atan2(x,z);
+ if(site){
+  const x=site.x-center.x,z=site.z-center.z,base=-center.y;
+  const pole=box(model,signalPole,x,(base+beamHeight)/2,z,.22,beamHeight-base,.22);
+  pole.userData.signalSupport=true;
+  box(model,signalPole,x,base+.06,z,.52,.12,.52);
+  const arm=box(model,signalPole,x/2,beamHeight,z/2,.16,.16,Math.hypot(x,z)+.12);
+  arm.rotation.y=Math.atan2(x,z);
+ }
  box(model,signalCase,0,level+.55,0,1.82,.17,1.82);
  for(const signal of signals){
   const head=makeSignalHead(),yaw=signal.rotation*Math.PI/180;

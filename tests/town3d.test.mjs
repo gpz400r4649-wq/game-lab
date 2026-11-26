@@ -5,7 +5,7 @@ import {create3D,fresh3D,part,step3D,validate3D} from '../engine3d.js';
 import {createRoadNetwork} from '../road-network3d.js';
 import {createRoadView} from '../road-model3d.js';
 import {makeTownModel} from '../town-model3d.js';
-import {alignRoadEndpoints,reverseOpenRoad,roadArcPlacement,roadConnection,roadStartConnection,roadDemolitionSection,roadPiecePlacement,roadStrokeAim,roadStrokePlacement,sampleRoad,roadSections,roadVertex,splitRoadAt,splitRoadSection,traceRoadPoints,validRoads} from '../road3d.js';
+import {alignRoadEndpoints,createRoadFootprintQuery,reverseOpenRoad,roadArcPlacement,roadConnection,roadStartConnection,roadDemolitionSection,roadPiecePlacement,roadStrokeAim,roadStrokePlacement,sampleRoad,roadSections,roadVertex,splitRoadAt,splitRoadSection,traceRoadPoints,validRoads} from '../road3d.js';
 import {fitRaceGate} from '../race3d.js';
 import {DEFAULT_FLEET,configureTownPart,fitTownPart,houseGarage,refitTownParts,townLocal,townSolids,visitorParking} from '../town3d.js';
 import {townRaceRank,townRoute} from '../town-traffic3d.js';
@@ -306,6 +306,22 @@ test('同じ高さの丁字路と十字路は支柱１本に信号をまとめ�
  assert.deepEqual(heads.map(head=>head.userData.activeLamp),before.map(value=>2-value));
  view.sync([main],120);
  assert.equal(models.children.length,0);
+});
+
+test('信号の支柱は交差点の車道と歩道の外に置く',()=>{
+ const crossing=road('crossing',0,-35,0,35);
+ const roads=[{...main,width:12,sidewalk:'both'},{...crossing,sidewalk:'both'}];
+ const footprint=createRoadFootprintQuery(roads,120);
+ const network=createRoadNetwork(roads);
+ assert.ok(footprint(network.signals[0].x,network.signals[0].z).length);
+ const scene=new Scene(),view=createRoadView(scene);
+ view.sync(roads,120);
+ const junction=scene.getObjectByName('automatic-traffic-signals').children[0];
+ const pole=junction.children.find(mesh=>mesh.userData.signalSupport);
+ assert.ok(pole);
+ for(const x of [-.5,0,.5])for(const z of [-.5,0,.5]){
+  assert.equal(footprint(junction.position.x+pole.position.x+x,junction.position.z+pole.position.z+z).length,0);
+ }
 });
 
 test('まちの車は赤信号で待ち、青で進み、行き先で待って元の駐車場へ帰る',()=>{

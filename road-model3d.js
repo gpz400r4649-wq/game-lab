@@ -1,7 +1,7 @@
 import * as T from './vendor/three.module.min.js';
-import {ROAD_BARRIERS,ROAD_DECK_DEPTH,createRoadOpenings,createRoadSectionQuery,roadBarrierOffset,roadRunBarrier,roadVertex} from './road3d.js?v=20261126l';
+import {ROAD_BARRIERS,ROAD_DECK_DEPTH,createRoadFootprintQuery,createRoadOpenings,createRoadSectionQuery,roadBarrierOffset,roadRunBarrier,roadVertex} from './road3d.js?v=20261126s';
 import {createRoadNetwork} from './road-network3d.js?v=20261126r';
-import {makeJunctionSignal,updateTrafficSignal} from './race-model3d.js?v=20261126r';
+import {makeJunctionSignal,updateTrafficSignal} from './race-model3d.js?v=20261126s';
 
 const asphalt=new T.MeshStandardMaterial({color:0x333c4e,roughness:.98,side:T.DoubleSide});
 const edges=new T.MeshBasicMaterial({color:0xe2e6ef,side:T.DoubleSide});
@@ -11,6 +11,29 @@ const barrierMaterials={mini:0xd26755,highway:0xb3b9bf,guardrail:0x94a6b8};
 for(const [kind,color] of Object.entries(barrierMaterials))barrierMaterials[kind]=new T.MeshStandardMaterial({color,roughness:.8,side:T.DoubleSide});
 const draftSurface=new T.MeshStandardMaterial({color:0x404c6f,roughness:.95,side:T.DoubleSide});
 const pegShape=new T.SphereGeometry(.65,12,8),pegMaterial=new T.MeshBasicMaterial({color:0xa88bff,depthTest:false}),pickedMaterial=new T.MeshBasicMaterial({color:0xffde88,depthTest:false});
+
+function signalSupportSite({center,signals},half,footprint){
+ const top=Math.max(...signals.map(signal=>signal.y))+5.2;
+ const clear=(x,z)=>{
+  if(Math.abs(x)>half-.5||Math.abs(z)>half-.5)return false;
+  for(const dx of [-.5,0,.5])for(const dz of [-.5,0,.5]){
+   if(footprint(x+dx,z+dz).some(surface=>surface.y<=top+.15))return false;
+  }
+  return true;
+ };
+ // Try the road corners first, then look around the intersection for a free verge.
+ for(let extra=0;extra<=6;extra++)for(const point of signals){
+  const dx=point.x-center.x,dz=point.z-center.z,length=Math.hypot(dx,dz);
+  if(!length)continue;
+  const x=point.x+dx*extra/length,z=point.z+dz*extra/length;
+  if(clear(x,z))return {x,z};
+ }
+ for(let radius=4;radius<=40;radius+=2)for(let i=0;i<24;i++){
+  const angle=i*Math.PI/12,x=center.x+Math.cos(angle)*radius,z=center.z+Math.sin(angle)*radius;
+  if(clear(x,z))return {x,z};
+ }
+ return null;
+}
 
 function roadMesh(road,half,preview,openings,path){
  const group=new T.Group();
@@ -158,8 +181,10 @@ export function createRoadView(scene){
    const key=JSON.stringify([next||[],extent]);if(key===stamp)return;
    stamp=key;roads=next||[];half=extent;draftStamp='';previewIndex=null;showSaved();
    signals.clear();
-   for(const junction of createRoadNetwork(roads).junctions){
-    const model=makeJunctionSignal(junction,half);
+   const junctions=createRoadNetwork(roads).junctions;
+   const footprint=junctions.length?createRoadFootprintQuery(roads,half):null;
+   for(const junction of junctions){
+    const model=makeJunctionSignal(junction,signalSupportSite(junction,half,footprint));
     for(const head of model.userData.signalHeads){
      const {rotation,phaseOffset}=head.userData.roadSignal;
      updateTrafficSignal(head,rotation,0,phaseOffset);

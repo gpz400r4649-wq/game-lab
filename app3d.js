@@ -1,6 +1,6 @@
 import {createCarAudio} from './car-audio3d.js?v=20261119g';
 import {alignRoadEndpoints,courseStart,nearestRoad} from './road3d.js?v=20261126l';
-import {createRoadView} from './road-model3d.js?v=20261126r';
+import {createRoadView} from './road-model3d.js?v=20261126s';
 import {createRoadEditor} from './road-ui3d.js?v=20261126o';
 import {createLapGateView,makeCarModel,updateCarModel,makeRaceGateModel,updateRaceGateModel,updateRaceGateNumber,makeTrafficSignal,updateTrafficSignal} from './race-model3d.js?v=20261125g';
 import {CAR_TUNING,DEFAULT_CAR_TUNING,RACE_LAP_OPTIONS,fitRaceGate,orderedRaceGates,turnRaceGate,updateRoadGateWidths} from './race3d.js?v=20261125g';
