@@ -166,7 +166,7 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
  function openEditor(original,pickedPoint=null){
   showCategory(null);
   let draft=structuredClone(original),selected=pickedPoint?nearestRoadHandle(original.points,pickedPoint,Infinity):-1,pointer=null,mode=original.points.length?'move':'piece';
-  let grade=0,startHeight=0,heightChosen=false,fromStart=false,arcSide=1,stylePage='width',viewingStyle=false;
+  let grade=0,startHeight=0,heightChosen=false,fromStart=false,arcSide=1;
   let waiting=false;
   const drawingMode=()=>mode==='piece'||mode==='add';
   const lastIndex=()=>draft.points.length-1;
@@ -188,31 +188,6 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
    const next=roads.some(road=>road.id===draft.id)?roads.map(road=>road.id===draft.id?saved:road):[...roads,saved];
    if(validRoads(next,project))draft=structuredClone(applyRoads(next).find(road=>road.id===saved.id));
   }
-  const widthChoices=document.createElement('div'),widthLabel=document.createElement('span');
-  widthChoices.className='road-style-choices';widthChoices.setAttribute('role','group');widthChoices.setAttribute('aria-label','道のはば');
-  widthLabel.textContent='道のはば';widthChoices.append(widthLabel);
-  const widths=ROAD_WIDTHS.map(width=>{
-   const control=button(`${width}m`,()=>{
-    if(draft.width!==width){draft.width=width;commit();refresh();}
-   });widthChoices.append(control);return control;
-  });
-  function styleChoices(key,caption,choices){
-   const box=document.createElement('div'),label=document.createElement('span');
-   box.className='road-style-choices';box.setAttribute('role','group');box.setAttribute('aria-label',caption);
-   label.textContent=caption;box.append(label);
-   const buttons=choices.map(([value,text])=>{
-    const control=button(text,()=>{
-     if(draft[key]===value)return;
-     if(value===undefined)delete draft[key];else draft[key]=value;
-     commit();refresh();
-    });
-    box.append(control);return [value,control];
-   });
-   return {box,sync(){for(const [value,control] of buttons)control.setAttribute('aria-pressed',String(draft[key]===value));}};
-  }
-  const barrier=styleChoices('barrier','道のさく',[[undefined,'なし'],['mini','ミニよんく'],['highway','こうそくどうろ'],['guardrail','ガードレール']]);
-  const markings=styleChoices('markings','どうろの線',[[undefined,'レース'],['street','ふつうのどうろ']]);
-  const sidewalk=styleChoices('sidewalk','ほどう',[[undefined,'なし'],['left','ひだり'],['right','みぎ'],['both','りょうがわ']]);
   const loop=button('つないで１しゅう',()=>{
    if(!draft.closed&&!roadPointsFit(draft.points,true)){toast('はじめとおわりをすこしはなして、３かしょいじょうえらぼう');return;}
    draft.closed=!draft.closed;
@@ -233,13 +208,8 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
    if(mode==='move'&&selected>=0&&(key==='piece'||key==='add'))fromStart=selected<lastIndex()/2;
    if(!waiting&&(key==='piece'||key==='add'))selected=drawingIndex();
    if(key==='move')waiting=false;
-   mode=key;viewingStyle=false;view.showSnap([],null);refresh();
+   mode=key;view.showSnap([],null);refresh();
   })]);
-  const styleToggle=button('道の見た目',()=>{
-   if(pointer)return;
-   viewingStyle=!viewingStyle;
-   view.showSnap([],null);refresh();
-  });
   const menu=original.points.length?'city-work3':'city-roads3';
   toolbar.append(button('とじる',()=>{finish();showCategory(menu);},'road-drawing-close'));
   const heightTools=document.createElement('div'),heightLabel=document.createElement('span');
@@ -277,16 +247,8 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
   startControls.append(startDown,startUp);
   const help=document.createElement('span');help.className='road-editor-hint';help.setAttribute('role','status');
   const flipArc=button('↶ カーブを反対に',()=>{if(!pointer){arcSide=-arcSide;view.showSnap([],null);refresh();}});
-  const settings=document.createElement('div'),tabs=document.createElement('div');
-  settings.className='stage-range-tools road-tool-strip road-tool-options';tabs.className='road-height-tools road-style-tabs';
-  tabs.setAttribute('aria-label','道の見た目');tabs.setAttribute('role','group');
-  const styleTabs=[['width','はば',widthChoices],['sidewalk','ほどう',sidewalk.box],['barrier','さく',barrier.box],['markings','中央線',markings.box]].map(([key,label,box])=>{
-   const control=button(label,()=>{stylePage=key;refresh();});
-   tabs.append(control);return {key,control,box};
-  });
-  tools.append(...modes.map(([,control])=>control),styleToggle);
+  tools.append(...modes.map(([,control])=>control));
   controls.append(ends,grades,startControls,flipArc,heightTools,remove,loop,help);
-  settings.append(tabs,...styleTabs.map(({box})=>box));panel.append(settings);
   const finish=mountLiveRangeEditor(panel,()=>{
    setStageRangePainter(null);view.showDraft(null);view.showSnap([],null);
   },{host});
@@ -299,21 +261,14 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
    draft.points=points;commit();focusHeight?.(y);view.showSnap([],null);refresh();
   }
   function refresh(){
-   widths.forEach((control,index)=>control.setAttribute('aria-pressed',String(draft.width===ROAD_WIDTHS[index])));
-   barrier.sync();markings.sync();sidewalk.sync();
    loop.setAttribute('aria-pressed',String(draft.closed));
    for(const [key,control] of modes){
-    control.setAttribute('aria-pressed',String(!viewingStyle&&key===mode));
+    control.setAttribute('aria-pressed',String(key===mode));
     control.disabled=draft.closed&&!waiting&&(key==='piece'||key==='add');
     if(key==='move')control.hidden=draft.points.length<2;
    }
    remove.disabled=selected<0||draft.points.length<3;remove.hidden=mode!=='move'||waiting;
    loop.hidden=draft.points.length<3||mode==='camera';
-   controls.hidden=viewingStyle;settings.hidden=!viewingStyle;
-   styleToggle.setAttribute('aria-pressed',String(viewingStyle));
-   for(const {key,control,box} of styleTabs){
-    control.setAttribute('aria-pressed',String(key===stylePage));box.hidden=key!==stylePage;
-   }
    const height=draft.points[selected]?.y||0;
    const base=tipHeight();
    const next=Math.max(0,Math.min(MAX_ROAD_HEIGHT,base+grade*ROAD_HEIGHT_STEP));
@@ -450,7 +405,7 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
    return result;
   }
   setStageRangePainter((kind,id,ground,canceled)=>{
-   if(viewingStyle||mode==='camera')return false;
+   if(mode==='camera')return false;
    if(waiting){
     if(!drawingMode())return false;
     if(pointer)return drawPointer(kind,id,ground,canceled);
