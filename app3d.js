@@ -1,7 +1,7 @@
 import {createCarAudio} from './car-audio3d.js?v=20261119g';
 import {courseStart,nearestRoad} from './road3d.js?v=20261125g';
 import {createRoadView} from './road-model3d.js?v=20261125g';
-import {createRoadEditor} from './road-ui3d.js?v=20261125i';
+import {createRoadEditor} from './road-ui3d.js?v=20261126a';
 import {createLapGateView,makeCarModel,updateCarModel,makeRaceGateModel,updateRaceGateModel,updateRaceGateNumber,makeTrafficSignal,updateTrafficSignal} from './race-model3d.js?v=20261125g';
 import {CAR_TUNING,DEFAULT_CAR_TUNING,RACE_LAP_OPTIONS,fitRaceGate,orderedRaceGates,turnRaceGate} from './race3d.js?v=20261125g';
 import {assemblyCandidate,assemblyCopies,saveAssembly,temporarySpawn} from './assembly3d.js?v=20261119p';
@@ -745,10 +745,8 @@ if(carTemplate)roadEditor=createRoadEditor({$,getProject:()=>project,save,rebuil
  pointerAtHeight:pointOnDragPlane,
  isOnStage:withinSurface,
  focusHeight:height=>{if(Math.abs(height-editTarget.y)>24)editTarget.y=height;},
- focusRoad:keepView=>{
+ focusRoad:()=>{
  closeStageExtra();resetGroupSelection();resetInput();selected=null;updateSelection();
- if(keepView)return;
- editTarget.y=0;editYaw=0;editPitch=CITY_TOP_PITCH;editDistance=clamp(editDistance,34,65);
 }});
 if(carTemplate)townUI=installTownUI({$,getProject:()=>project,getSelected:editedObject,save,view:townView,field,
  pickTownPart:event=>withinSurface(event)?objectId(hits(event,[objectsGroup]).find(visibleHit)?.object):null,

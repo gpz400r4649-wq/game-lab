@@ -116,6 +116,11 @@ export function splitRoadAt(road,point){
  }));
 }
 
+function roadUnitStep(width,sector){
+ const direction=sector*Math.PI/4,length=Math.max(GRID.cell,width);
+ return {x:length*Math.round(Math.cos(direction)),z:length*Math.round(Math.sin(direction))};
+}
+
 export function roadPiecePlacement(road,aim,world,{start=null,height=0,grade=0,connections=[]}={}){
  if(!roadPoint(aim,world)||road.closed)return null;
  const tail=road.points.at(-1),origin=tail||start||roadPoint(aim,world);
@@ -124,8 +129,8 @@ export function roadPiecePlacement(road,aim,world,{start=null,height=0,grade=0,c
  const sector=Math.hypot(x,z)<1?-2:Math.round(Math.atan2(z,x)/(Math.PI/4));
  const length=Math.max(GRID.cell,road.width);
  const y=Math.max(0,Math.min(MAX_ROAD_HEIGHT,base+grade*ROAD_HEIGHT_STEP));
- const direction=sector*Math.PI/4;
- const end={x:origin.x+length*Math.round(Math.cos(direction)),y,z:origin.z+length*Math.round(Math.sin(direction))};
+ const step=roadUnitStep(road.width,sector);
+ const end={x:origin.x+step.x,y,z:origin.z+step.z};
  // A short last section can end exactly on the road the builder tapped.
  const aimed=roadConnection(connections,aim,y,world);
  let matchedAim=false;
@@ -142,6 +147,30 @@ export function roadPiecePlacement(road,aim,world,{start=null,height=0,grade=0,c
  if(previous&&distance(previous,end)<MIN_SPACING&&Math.abs((previous.y||0)-end.y)<.3)return null;
  const points=tail?[...road.points,end]:[{x:origin.x,y:base,z:origin.z},end];
  return points.length<=MAX_ROAD_POINTS&&roadPointsFit(points,false)?{points,end}:null;
+}
+
+export function roadStrokePlacement(road,displacement,sector,world,{start,height=0,grade=0,connections=[]}){
+ if(road.closed)return null;
+ const origin=road.points.at(-1)||start;
+ if(!origin)return null;
+ const step=roadUnitStep(road.width,sector),limit=coordinateLimit(world);
+ const distanceInUnits=(displacement.x*step.x+displacement.z*step.z)/(step.x*step.x+step.z*step.z);
+ if(distanceInUnits<=0)return null;
+ const points=road.points.length?road.points.slice():[{x:origin.x,y:origin.y??height,z:origin.z}];
+ const count=Math.min(MAX_ROAD_POINTS-points.length,Math.max(1,Math.round(distanceInUnits)));
+ for(let i=1;i<=count;i++){
+  const previous=points.at(-1);
+  const end={x:origin.x+step.x*i,y:Math.max(0,Math.min(MAX_ROAD_HEIGHT,(origin.y??height)+i*grade*ROAD_HEIGHT_STEP)),
+   z:origin.z+step.z*i};
+  if(Math.abs(end.x)>limit||Math.abs(end.z)>limit||distance(previous,end)<MIN_SPACING)break;
+  if(points.length>1&&distance(points.at(-2),end)<MIN_SPACING&&Math.abs((points.at(-2).y||0)-end.y)<.3)break;
+  if(i===count){
+   const join=roadConnection(connections,end,end.y,world);
+   if(join&&distance(end,join)<=1.25&&roadPointsFit([previous,join],false))Object.assign(end,{x:join.x,y:join.y,z:join.z});
+  }
+  points.push(end);
+ }
+ return points.length>Math.max(road.points.length,1)?{points,end:points.at(-1)}:null;
 }
 
 export function traceRoadPoints(road,samples,world,{straight=false,first=null,last=null}={}){

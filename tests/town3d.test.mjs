@@ -4,7 +4,7 @@ import {Scene} from '../vendor/three.module.min.js';
 import {create3D,fresh3D,part,step3D,validate3D} from '../engine3d.js';
 import {createRoadNetwork} from '../road-network3d.js';
 import {createRoadView} from '../road-model3d.js';
-import {reverseOpenRoad,roadConnection,roadPiecePlacement,sampleRoad,splitRoadAt,traceRoadPoints,validRoads} from '../road3d.js';
+import {reverseOpenRoad,roadConnection,roadPiecePlacement,roadStrokePlacement,sampleRoad,splitRoadAt,traceRoadPoints,validRoads} from '../road3d.js';
 import {fitRaceGate} from '../race3d.js';
 import {DEFAULT_FLEET,configureTownPart,fitTownPart,houseGarage,refitTownParts,townLocal,townSolids,visitorParking} from '../town3d.js';
 import {townRaceRank,townRoute} from '../town-traffic3d.js';
@@ -56,6 +56,18 @@ test('短い区間でも、押した既存道路へつなげられる',()=>{
  const placement=roadPiecePlacement(from,{x:0,z:.5},240,{connections:[main]});
  assert.deepEqual(placement.end,{x:0,y:0,z:0});
  assert.equal(createRoadNetwork([main,{...from,points:placement.points}]).signals.length,3);
+});
+
+test('直線をなぞると、最初の向きに同じ区間を並べ、マップの端で止まる',()=>{
+ const draft={id:'drag',width:8,closed:false,points:[]},start={x:0,y:0,z:0};
+ const stroke=roadStrokePlacement(draft,{x:70,z:12},0,60,{start,grade:1});
+ assert.deepEqual(stroke.points,[
+  start,{x:8,y:1.5,z:0},{x:16,y:3,z:0},{x:24,y:4.5,z:0}
+ ]);
+ assert.equal(roadStrokePlacement(draft,{x:-16,z:2},0,60,{start}),null);
+ const existing=road('straight',-16,0,-8,0);
+ const extension=roadStrokePlacement(existing,{x:24,z:4},0,240,{});
+ assert.deepEqual(extension.points.map(({x,z})=>[x,z]),[[-16,0],[-8,0],[0,0],[8,0],[16,0]]);
 });
 
 test('道をはじめから延ばしても、元の歩道側とガードレールの区間を保つ',()=>{
