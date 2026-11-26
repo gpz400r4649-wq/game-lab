@@ -4,7 +4,7 @@ import {Scene} from '../vendor/three.module.min.js';
 import {create3D,fresh3D,part,step3D,validate3D} from '../engine3d.js';
 import {createRoadNetwork} from '../road-network3d.js';
 import {createRoadView} from '../road-model3d.js';
-import {reverseOpenRoad,roadConnection,roadPiecePlacement,roadStrokeAim,roadStrokePlacement,sampleRoad,splitRoadAt,traceRoadPoints,validRoads} from '../road3d.js';
+import {reverseOpenRoad,roadArcPlacement,roadConnection,roadPiecePlacement,roadStrokeAim,roadStrokePlacement,sampleRoad,splitRoadAt,traceRoadPoints,validRoads} from '../road3d.js';
 import {fitRaceGate} from '../race3d.js';
 import {DEFAULT_FLEET,configureTownPart,fitTownPart,houseGarage,refitTownParts,townLocal,townSolids,visitorParking} from '../town3d.js';
 import {townRaceRank,townRoute} from '../town-traffic3d.js';
@@ -83,6 +83,22 @@ test('直線の引き始めは向きを何度でも変えられ、引き直し�
  assert.deepEqual(roadStrokeAim(8,{x:19,z:10},0),{sector:0,lockedSector:0});
  assert.deepEqual(roadStrokeAim(8,{x:0,z:-8},0),{sector:-2,lockedSector:null});
  assert.deepEqual(roadStrokeAim(8,{x:.1,z:.1},0),{sector:null,lockedSector:null});
+});
+
+test('半円の向きと大きさは両端で決まり、逆向きに重ねずつなぐと同じ半径の円になる',()=>{
+ const draft={id:'arc',width:8,closed:false,points:[]},start={x:0,y:3,z:0};
+ const first=roadArcPlacement(draft,{x:24,z:0},240,{start});
+ assert.deepEqual(first.end,{x:24,y:3,z:0});
+ assert.equal(first.closed,false);
+ assert.ok(first.points.slice(1,-1).every(p=>p.z>0));
+ const second=roadArcPlacement({...draft,points:first.points},{x:1,z:.5},240);
+ assert.equal(second.closed,true);
+ assert.ok(second.points.slice(first.points.length).every(p=>p.z<0));
+ assert.ok(second.points.every(p=>p.y===3&&Math.abs(Math.hypot(p.x-12,p.z)-12)<.00001));
+ assert.equal(validRoads([{...draft,...second}],240),true);
+ const mirrored=roadArcPlacement(draft,{x:24,z:0},240,{start,side:-1});
+ assert.ok(mirrored.points.slice(1,-1).every(p=>p.z<0));
+ assert.equal(roadArcPlacement(draft,{x:24,z:26},60,{start:{x:0,y:0,z:26}}),null);
 });
 
 test('道をはじめから延ばしても、元の歩道側とガードレールの区間を保つ',()=>{
