@@ -121,6 +121,18 @@ function roadUnitStep(width,sector){
  return {x:length*Math.round(Math.cos(direction)),z:length*Math.round(Math.sin(direction))};
 }
 
+function strokeUnits(displacement,step){
+ return (displacement.x*step.x+displacement.z*step.z)/(step.x*step.x+step.z*step.z);
+}
+
+export function roadStrokeAim(width,displacement,lockedSector=null){
+ if(lockedSector!==null&&strokeUnits(displacement,roadUnitStep(width,lockedSector))>1)return {sector:lockedSector,lockedSector};
+ if(Math.hypot(displacement.x,displacement.z)<.5)return {sector:null,lockedSector:null};
+ const sector=Math.round(Math.atan2(displacement.z,displacement.x)/(Math.PI/4));
+ // Stay free to aim until the preview is long enough to add a second section.
+ return {sector,lockedSector:strokeUnits(displacement,roadUnitStep(width,sector))>=1.5?sector:null};
+}
+
 export function roadPiecePlacement(road,aim,world,{start=null,height=0,grade=0,connections=[]}={}){
  if(!roadPoint(aim,world)||road.closed)return null;
  const tail=road.points.at(-1),origin=tail||start||roadPoint(aim,world);
@@ -154,7 +166,7 @@ export function roadStrokePlacement(road,displacement,sector,world,{start,height
  const origin=road.points.at(-1)||start;
  if(!origin)return null;
  const step=roadUnitStep(road.width,sector),limit=coordinateLimit(world);
- const distanceInUnits=(displacement.x*step.x+displacement.z*step.z)/(step.x*step.x+step.z*step.z);
+ const distanceInUnits=strokeUnits(displacement,step);
  if(distanceInUnits<=0)return null;
  const points=road.points.length?road.points.slice():[{x:origin.x,y:origin.y??height,z:origin.z}];
  const count=Math.min(MAX_ROAD_POINTS-points.length,Math.max(1,Math.round(distanceInUnits)));

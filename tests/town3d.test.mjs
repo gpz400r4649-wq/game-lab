@@ -4,7 +4,7 @@ import {Scene} from '../vendor/three.module.min.js';
 import {create3D,fresh3D,part,step3D,validate3D} from '../engine3d.js';
 import {createRoadNetwork} from '../road-network3d.js';
 import {createRoadView} from '../road-model3d.js';
-import {reverseOpenRoad,roadConnection,roadPiecePlacement,roadStrokePlacement,sampleRoad,splitRoadAt,traceRoadPoints,validRoads} from '../road3d.js';
+import {reverseOpenRoad,roadConnection,roadPiecePlacement,roadStrokeAim,roadStrokePlacement,sampleRoad,splitRoadAt,traceRoadPoints,validRoads} from '../road3d.js';
 import {fitRaceGate} from '../race3d.js';
 import {DEFAULT_FLEET,configureTownPart,fitTownPart,houseGarage,refitTownParts,townLocal,townSolids,visitorParking} from '../town3d.js';
 import {townRaceRank,townRoute} from '../town-traffic3d.js';
@@ -68,6 +68,21 @@ test('直線をなぞると、最初の向きに同じ区間を並べ、マッ�
  const existing=road('straight',-16,0,-8,0);
  const extension=roadStrokePlacement(existing,{x:24,z:4},0,240,{});
  assert.deepEqual(extension.points.map(({x,z})=>[x,z]),[[-16,0],[-8,0],[0,0],[8,0],[16,0]]);
+});
+
+test('直線の引き始めは向きを何度でも変えられ、引き直しで固定を解除できる',()=>{
+ const aims=[{x:7,z:0},{x:0,z:-7},{x:-8,z:0},{x:0,z:8}];
+ let lock=null;
+ for(const [i,displacement] of aims.entries()){
+  const {sector,lockedSector}=roadStrokeAim(8,displacement,lock);
+  assert.equal(Math.round(Math.cos(sector*Math.PI/4)),[1,0,-1,0][i]);
+  assert.equal(Math.round(Math.sin(sector*Math.PI/4)),[0,-1,0,1][i]);
+  assert.equal(lockedSector,null);lock=lockedSector;
+ }
+ assert.deepEqual(roadStrokeAim(8,{x:16,z:0}),{sector:0,lockedSector:0});
+ assert.deepEqual(roadStrokeAim(8,{x:19,z:10},0),{sector:0,lockedSector:0});
+ assert.deepEqual(roadStrokeAim(8,{x:0,z:-8},0),{sector:-2,lockedSector:null});
+ assert.deepEqual(roadStrokeAim(8,{x:.1,z:.1},0),{sector:null,lockedSector:null});
 });
 
 test('道をはじめから延ばしても、元の歩道側とガードレールの区間を保つ',()=>{

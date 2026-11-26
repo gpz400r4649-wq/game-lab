@@ -1,5 +1,5 @@
 import {updateRoadGateWidths} from './race3d.js?v=20261125g';
-import {MAX_ROADS,MAX_ROAD_POINTS,MAX_ROAD_HEIGHT,ROAD_HEIGHT_STEP,ROAD_WIDTHS,roadPoint,roadGridSites,roadConnection,nearestRoad,nearestRoadHandle,removeRoadPoint,reverseOpenRoad,roadPiecePlacement,roadStrokePlacement,roadPointsFit,roadSegmentAt,splitRoadAt,toggleRoadGuardrail,traceRoadPoints,validRoads} from './road3d.js?v=20261126a';
+import {MAX_ROADS,MAX_ROAD_POINTS,MAX_ROAD_HEIGHT,ROAD_HEIGHT_STEP,ROAD_WIDTHS,roadPoint,roadGridSites,roadConnection,nearestRoad,nearestRoadHandle,removeRoadPoint,reverseOpenRoad,roadPiecePlacement,roadStrokeAim,roadStrokePlacement,roadPointsFit,roadSegmentAt,splitRoadAt,toggleRoadGuardrail,traceRoadPoints,validRoads} from './road3d.js?v=20261126b';
 import {closeLiveRangeEditor,mountLiveRangeEditor} from './range-panel3d.js?v=20261124a';
 import {setStageRangePainter} from './stage-range3d.js?v=20261124a';
 import {refitTownParts} from './town3d.js?v=20261125g';
@@ -367,19 +367,23 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
    if(kind==='start'){
     if(!anchor)return true;
     const start=draft.points.length?null:{...(findConnection(target,base)||anchor)};
-    pointer={id,start,grab:target,event,sector:null};
+    pointer={id,start,grab:target,event,dragged:false,lockedSector:null};
    }
    const start=pointer?.start||(!draft.points.length&&anchor&&(findConnection(target,base)||anchor));
    const grab=pointer?.grab;
    const delta=grab&&target?{x:target.x-grab.x,z:target.z-grab.z}:null;
-   if(pointer?.sector===null&&delta&&event&&pointer.event&&
-    Math.hypot(event.clientX-pointer.event.clientX,event.clientY-pointer.event.clientY)>=7&&Math.hypot(delta.x,delta.z)>=1){
-    pointer.sector=Math.round(Math.atan2(delta.z,delta.x)/(Math.PI/4));
+   let sector=null;
+   if(pointer&&delta&&event&&pointer.event){
+    pointer.dragged||=Math.hypot(event.clientX-pointer.event.clientX,event.clientY-pointer.event.clientY)>=6&&Math.hypot(delta.x,delta.z)>=.5;
+    if(pointer.dragged){
+     const aim=roadStrokeAim(draft.width,delta,pointer.lockedSector);
+     sector=aim.sector;pointer.lockedSector=aim.lockedSector;
+    }
    }
    const options={start,height:base,grade,connections:(project.roads||[]).filter(road=>road.id!==draft.id)};
    const road=drawingRoad();
-   const placement=!canceled&&(pointer?.sector!=null?
-    delta&&roadStrokePlacement(road,delta,pointer.sector,project,options):
+   const placement=!canceled&&(pointer?.dragged?
+    sector!==null&&roadStrokePlacement(road,delta,sector,project,options):
     anchor&&roadPiecePlacement(road,start||target,project,options));
    if(kind==='end'){
     if(placement){
