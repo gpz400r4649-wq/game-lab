@@ -3,12 +3,34 @@ import assert from 'node:assert/strict';
 import {Scene} from '../vendor/three.module.min.js';
 import {createRoadView} from '../road-model3d.js';
 import {makeTrafficSignal,updateTrafficSignal} from '../race-model3d.js';
-import {ROAD_BARRIERS,MAX_ROADS,MAX_ROAD_POINTS,courseStart,createRoadBarrierQuery,createRoadOpenings,createRoadSectionQuery,createRoadSurfaceQuery,removeRoadPoint,roadBarrierOffset,roadPoint,roadGridSites,roadSections,roadVertex,sampleRoad,splitRoadAt,toggleRoadGuardrail,traceRoadPoints,validRoads} from '../road3d.js';
+import {ROAD_BARRIERS,MAX_ROADS,MAX_ROAD_POINTS,courseStart,createRoadBarrierQuery,createRoadFootprintQuery,createRoadOpenings,createRoadSectionQuery,createRoadSurfaceQuery,nearestRoad,removeRoadPoint,replaceRoadSegmentStyle,reverseOpenRoad,roadBarrierOffset,roadPoint,roadGridSites,roadSections,roadSegmentStyle,roadVertex,sampleRoad,splitRoadAt,toggleRoadGuardrail,traceRoadPoints,validRoads} from '../road3d.js';
 import {create3D,fresh3D,part,step3D,validate3D} from '../engine3d.js';
 import {fitRaceGate,updateRaceGates,updateRoadGateWidths} from '../race3d.js';
 import {resizeReason} from '../world3d.js';
 
 const turn=()=>({id:'first',width:8,closed:false,points:[{x:-20,z:0},{x:0,z:0},{x:0,z:-20}]});
+
+test('見本で区間だけを塗り替え、つながり・さく・建物を置く面・ゲートの幅に反映する',()=>{
+ const road={id:'main',width:4,markings:'street',closed:false,points:[-30,-10,10,30].map(x=>({x,z:0,corner:'straight'})),segmentBarriers:{1:'guardrail'}};
+ const style={width:12,sidewalk:'left',markings:'street',barrier:'mini'};
+ const painted=replaceRoadSegmentStyle(road,1,style);
+ assert.equal(painted.id,road.id);assert.equal(painted.points,road.points);assert.equal(painted.segmentBarriers[1],undefined);
+ assert.equal(replaceRoadSegmentStyle(painted,1,style),painted);
+ assert.equal(nearestRoad([painted],{x:-20,z:0}).width,4);
+ assert.equal(nearestRoad([painted],{x:0,z:0}).width,12);
+ assert.equal(nearestRoad([painted],{x:0,z:0}).sidewalk,'left');
+ const footprint=createRoadFootprintQuery([painted],120);
+ assert.ok(footprint(0,-7).length);assert.equal(footprint(-20,-7).length,0);assert.equal(footprint(0,7).length,0);
+ const fence=createRoadBarrierQuery([painted],240);
+ assert.ok(fence({x:0,y:0,z:4},{x:0,y:0,z:9},0));
+ assert.equal(fence({x:-20,y:0,z:4},{x:-20,y:0,z:9},0),null);
+ const gate=fitRaceGate(part('raceGate'),[road],{x:0,y:0,z:0});
+ assert.equal(updateRoadGateWidths([gate],[road],[painted])[0].gateWidth,12);
+ assert.equal(roadSegmentStyle(reverseOpenRoad(painted),1).sidewalk,'right');
+ assert.equal(roadSegmentStyle(removeRoadPoint(painted,0),0).width,12);
+ const p=fresh3D('car');p.roads=[painted];
+ assert.deepEqual(validate3D(JSON.parse(JSON.stringify(p))).roads,p.roads);
+});
 
 test('歩道つき道路と細い斜めの道路は同じ断面でつながり、手前で幅と歩道を絞る',()=>{
  const wide={id:'wide',width:8,closed:false,sidewalk:'both',points:[{x:-24,y:4,z:0},{x:0,y:4,z:0}]};

@@ -1,4 +1,4 @@
-import {courseStart,lapRoadMarkers,nearestRoad,ROAD_WIDTHS} from './road3d.js?v=20261127g';
+import {courseStart,lapRoadMarkers,nearestRoad,ROAD_WIDTHS} from './road3d.js?v=20261127p';
 
 export const F1_TOP_SPEED_KMH=360;
 export const CAR_WHEELBASE=1.64;
@@ -58,12 +58,12 @@ export function createCarRun(objects,heading=0,spawn,tuning=DEFAULT_CAR_TUNING,l
  let autoStart=null;
  if(lapCount&&!gates.length&&roads.length){
   const road=roads[0],start=courseStart({template:'car',roads});
-  autoStart=orientWideGate({x:start.x,y:start.y,z:start.z,h:3,gateRoadId:road.id},road.width,start.heading);
+  autoStart=orientWideGate({x:start.x,y:start.y,z:start.z,h:3,gateRoadId:road.id},nearestRoad([road],start)?.width??road.width,start.heading);
   gates.push(autoStart);
  }
  const first=gates[0],road=lapCount&&gates.length===1&&roads.find(item=>item.closed&&item.id===first.gateRoadId);
  const markers=road?lapRoadMarkers(road,first,raceGateHeading(first)).map(point=>
-  ({x:point.x,y:point.y||0,z:point.z,h:first.h,gateWidth:road.width,gateYaw:point.heading})):[];
+  ({x:point.x,y:point.y||0,z:point.z,h:first.h,gateWidth:nearestRoad([road],point)?.width??road.width,gateYaw:point.heading})):[];
  return {tuning:{...DEFAULT_CAR_TUNING,...tuning},speed:0,actualSpeed:0,peakSpeed:0,heading,wheelAngle:0,steering:0,brakePressure:0,gates,nextGate:0,startsInFirst:!!(spawn&&gates[0]&&inGate(spawn,gates[0])),
   laps:lapCount?{count:lapCount,completed:0,startedAt:null,lapStartedAt:null,finishedAt:null,best:null,last:null,autoStart,markers,nextMarker:0,direction:0}:null};
 }
@@ -148,8 +148,9 @@ export function updateRoadGateWidths(objects,previousRoads,nextRoads){
   if(!road){const detached={...gate};delete detached.gateRoadId;return detached;}
   const fit=nearestRoad([road],gate)??nearestRoad([road],{x:gate.x,z:gate.z});
   const y=fit?.y??gate.y;
-  if(road.width===gate.gateWidth&&Math.abs(y-gate.y)<.0001)return gate;
-  return orientWideGate({...gate,y,gateRoadId:road.id},road.width,gate.gateYaw);
+  const width=fit?.width??road.width;
+  if(width===gate.gateWidth&&Math.abs(y-gate.y)<.0001)return gate;
+  return orientWideGate({...gate,y,gateRoadId:road.id},width,gate.gateYaw);
  });
 }
 export function turnRaceGate(gate){

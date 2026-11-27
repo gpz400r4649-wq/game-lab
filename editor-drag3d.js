@@ -1,10 +1,10 @@
-import {fitRaceGate} from './race3d.js?v=20261125g';
-import {courseStart} from './road3d.js?v=20261127g';
+import {fitRaceGate} from './race3d.js?v=20261127p';
+import {courseStart} from './road3d.js?v=20261127p';
 import {alignPiece,gridStep,GRID_PARTS,editorPlacementReason} from './building3d.js?v=20261127o';
 import {coordinateLimit,worldHalf} from './world3d.js?v=20261119d';
 import {nearbyObjects} from './spatial3d.js?v=20261119d';
 import {MAX_PARTS} from './limits3d.js?v=20261119d';
-import {fitTownPart,townPlacementReason} from './town3d.js?v=20261127c';
+import {fitTownPart,townPlacementReason} from './town3d.js?v=20261127p';
 export function dragCandidate(original,grab,point,objects,spawn,world){
  if(!point||![point.x,point.z,grab.x,grab.z].every(Number.isFinite))return null;
  const piece={...original,x:original.x+point.x-grab.x,z:original.z+point.z-grab.z},limit=coordinateLimit(world);

@@ -1,4 +1,4 @@
-import {createRoadFootprintQuery,nearestRoad,savedRoadPath} from './road3d.js?v=20261127b';
+import {createRoadFootprintQuery,nearestRoad,savedRoadPath} from './road3d.js?v=20261127p';
 import {editorPlacementBlocker,editorPlacementReason} from './building3d.js?v=20261119p';
 import {MAX_PARTS} from './limits3d.js?v=20261119d';
 import {worldHalf,coordinateLimit} from './world3d.js?v=20261119d';
@@ -55,8 +55,9 @@ export function configureTownPart(part,kind='house'){
 
 export function upgradeTownDriveway(part,roads=[]){
  if(!townParkingCapacity(part)||part.townDriveway||!part.townRoadId)return;
- const road=roads.find(road=>road.id===part.townRoadId);
- if(road)part.townDriveway=hasSidewalk(road,part.townSide)?2.65:.65;
+ const linked=roads.filter(road=>road.id===part.townRoadId);
+ const fit=nearestRoad(linked,part.townAnchor,1.2);
+ if(fit)part.townDriveway=hasSidewalk(fit,part.townSide)?2.65:.65;
 }
 
 export function houseGarage(part){
@@ -82,8 +83,7 @@ export function fitTownPart(part,roads,point,sideOverride=null){
  if(!fit){delete part.townRoadId;return part;}
  const right={x:Math.cos(fit.heading),z:-Math.sin(fit.heading)};
  const side=sideOverride||((point.x-fit.x)*right.x+(point.z-fit.z)*right.z<0?-1:1);
- const road=roads.find(road=>road.id===fit.roadId);
- const hasWalk=hasSidewalk(road,side),size=part.townKind==='house'?part:spec;
+ const hasWalk=hasSidewalk(fit,side),size=part.townKind==='house'?part:spec;
  const setback=fit.width/2+size.d/2+(hasWalk?2:0)+.65;
  const distance=spec.marking?(part.townKind==='stopLine'?side*fit.width/4:0):side*setback;
  const heading=spec.marking?fit.heading:fit.heading+side*Math.PI/2;

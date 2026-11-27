@@ -1,4 +1,4 @@
-import {savedRoadPath} from './road3d.js?v=20261125g';
+import {roadSegmentStyle,savedRoadPath} from './road3d.js?v=20261127p';
 
 const LEVEL_TOLERANCE=.28,CELL=16;
 const clamp=value=>Math.max(0,Math.min(1,value));
@@ -106,14 +106,14 @@ export function createRoadNetwork(roads=[]){
  }
  function query(keys){return keys?new Set([...long,...keys.flatMap(key=>buckets.get(key)||[])]):segments;}
  for(const road of roads){
-  const path=savedRoadPath(road);
+  const path=savedRoadPath(road,true);
   if(path.length<2)continue;
   let a=node(path[0]),first=a,startSegment=null,endSegment=null;
   for(let i=1;i<path.length;i++){
    const p=coordinate(path[i]),dx=p.x-a.x,dz=p.z-a.z,length2=dx*dx+dz*dz;
    if(length2<1e-8)continue;
    const b=road.closed&&i===path.length-1?first:node(p);
-   const s={a,b,dx,dz,dy:b.y-a.y,length2,road,cuts:[{t:0,node:a},{t:1,node:b}]};
+   const s={a,b,dx,dz,dy:b.y-a.y,length2,road,width:roadSegmentStyle(road,path[i].incomingSegment).width,cuts:[{t:0,node:a},{t:1,node:b}]};
    const keys=cells(Math.min(a.x,b.x),Math.max(a.x,b.x),Math.min(a.z,b.z),Math.max(a.z,b.z));
    for(const before of query(keys))cross(s,before);
    if(keys)for(const key of keys){if(!buckets.has(key))buckets.set(key,[]);buckets.get(key).push(s);}
@@ -128,14 +128,14 @@ export function createRoadNetwork(roads=[]){
    if(neighbor.road===s.road)continue;
    const cosine=Math.abs(s.dx*neighbor.dx+s.dz*neighbor.dz)/Math.sqrt(s.length2*neighbor.length2);
    const u=project(neighbor,p),hit=at(neighbor,u),gap=Math.hypot(hit.x-p.x,hit.z-p.z);
-   if(Math.abs(hit.y-p.y)>LEVEL_TOLERANCE||gap>(cosine>.92?.32:neighbor.road.width/2+.04)||gap>=(nearby.get(neighbor.road)?.gap??Infinity))continue;
+   if(Math.abs(hit.y-p.y)>LEVEL_TOLERANCE||gap>(cosine>.92?.32:neighbor.width/2+.04)||gap>=(nearby.get(neighbor.road)?.gap??Infinity))continue;
    nearby.set(neighbor.road,{neighbor,u,gap});
   }
   for(const {neighbor,u,gap} of nearby.values())connect(s,t,neighbor,u,gap+.00001);
  }
  for(const s of segments){
   s.cuts.sort((a,b)=>a.t-b.t);
-  for(let i=1;i<s.cuts.length;i++)edge(s.cuts[i-1].node,s.cuts[i].node,s.road.width);
+  for(let i=1;i<s.cuts.length;i++)edge(s.cuts[i-1].node,s.cuts[i].node,s.width);
  }
  const junctions=signalJunctions(links),signals=junctions.flatMap(junction=>junction.signals);
  for(const [a,b] of links)edge(a,b);

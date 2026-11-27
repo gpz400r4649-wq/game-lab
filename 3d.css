@@ -679,6 +679,8 @@ main.range-editing #city-build3 { display:none; }
 }
 #road-presets3 .road-preset-card:is(:hover,:focus-visible) { border-color:#805ed4; background:#eee8fb; }
 #road-presets3 .road-preset-card:active { border-color:#6146b6; }
+#road-presets3 .road-preset-card[aria-pressed=true] { border-color:#6146b6; background:#e8ddff; box-shadow:inset 0 0 0 2px #987cde; }
+.road-style-panel .road-editor-hint { margin:3px 0 5px; }
 .road-preset-preview {
  display:block; position:relative; height:var(--road-preview-width); background:#333c4e;
  box-shadow:inset 0 3px #333c4e,inset 0 -3px #333c4e,inset 0 4px #e2e6ef,inset 0 -4px #e2e6ef;

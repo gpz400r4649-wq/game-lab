@@ -73,29 +73,43 @@ export function roadSegmentAt(road,point){
 }
 
 export function roadRunBarrier(road,end){
- return road.segmentBarriers?.[end.incomingSegment]??road.barrier;
+ return road.segmentBarriers?.[end.incomingSegment]??roadSegmentStyle(road,end.incomingSegment).barrier;
+}
+
+export const roadSegmentStyle=(road,index)=>road.segmentStyles?.[index]??road;
+export function replaceRoadSegmentStyle(road,index,style){
+ if(!Number.isInteger(index)||index<0||index>=road.points.length-(road.closed?0:1))return road;
+ const keys=['width','markings','sidewalk','barrier'],before=roadSegmentStyle(road,index);
+ if(keys.every(key=>style[key]===before[key])&&roadRunBarrier(road,{incomingSegment:index})===style.barrier)return road;
+ const segmentStyles={...road.segmentStyles},segmentBarriers={...road.segmentBarriers};
+ if(keys.every(key=>style[key]===road[key]))delete segmentStyles[index];
+ else segmentStyles[index]=Object.fromEntries(keys.filter(key=>style[key]!==undefined).map(key=>[key,style[key]]));
+ delete segmentBarriers[index];
+ return {...road,segmentStyles,segmentBarriers};
 }
 
 export function toggleRoadGuardrail(road,index){
  const segmentBarriers={...road.segmentBarriers};
- const current=segmentBarriers[index]??road.barrier;
- const next=current==='guardrail'?(road.barrier==='guardrail'?'none':road.barrier??'none'):'guardrail';
- if(next===(road.barrier??'none'))delete segmentBarriers[index];
+ const base=roadSegmentStyle(road,index).barrier,current=segmentBarriers[index]??base;
+ const next=current==='guardrail'?(base==='guardrail'?'none':base??'none'):'guardrail';
+ if(next===(base??'none'))delete segmentBarriers[index];
  else segmentBarriers[index]=next;
  return {...road,segmentBarriers};
 }
 
-function remapSegmentBarriers(road,segments){
- return road.segmentBarriers&&Object.fromEntries(segments.flatMap((old,index)=>{
-  const label=Array.isArray(old)?road.segmentBarriers[old[0]]??road.segmentBarriers[old[1]]:road.segmentBarriers[old];
-  return label===undefined?[]:[[index,label]];
+const reverseSidewalk=side=>side==='left'?'right':side==='right'?'left':side;
+function remapSegments(road,segments,reverse=false){
+ const result={};
+ for(const key of ['segmentBarriers','segmentStyles'])if(road[key])result[key]=Object.fromEntries(segments.flatMap((old,index)=>{
+  const label=Array.isArray(old)?road[key][old[0]]??road[key][old[1]]:road[key][old];
+  return label===undefined?[]:[[index,reverse&&key==='segmentStyles'?{...label,sidewalk:reverseSidewalk(label.sidewalk)}:label]];
  }));
+ return result;
 }
 
 export function reverseOpenRoad(road){
  const points=road.points.slice().reverse(),indices=Array.from({length:Math.max(0,points.length-1)},(_,index)=>points.length-2-index);
- const sidewalk=road.sidewalk==='left'?'right':road.sidewalk==='right'?'left':road.sidewalk;
- return {...road,points,sidewalk,segmentBarriers:remapSegmentBarriers(road,indices)};
+ return {...road,points,sidewalk:reverseSidewalk(road.sidewalk),...remapSegments(road,indices,true)};
 }
 
 export function removeRoadPoint(road,index){
@@ -103,7 +117,7 @@ export function removeRoadPoint(road,index){
  const starts=road.points.map((_,i)=>i).filter(i=>i!==index);
  const segments=starts.slice(0,points.length-(closed?0:1)).map(i=>
   (i+1)%road.points.length===index?[i,index]:i);
- return {...road,points,closed,segmentBarriers:remapSegmentBarriers(road,segments)};
+ return {...road,points,closed,...remapSegments(road,segments)};
 }
 
 export function splitRoadAt(road,point){
@@ -144,7 +158,7 @@ export function splitRoadSection(road,first,last=first){
   [indices.slice(0,first+1),indices.slice(last+1)];
  return pieces.filter(piece=>piece.length>=2).map((piece,index)=>({
   ...road,id:index?crypto.randomUUID():road.id,points:piece.map(i=>points[i]),closed:false,
-  ...(road.segmentBarriers&&{segmentBarriers:remapSegmentBarriers(road,piece.slice(0,-1))})
+  ...remapSegments(road,piece.slice(0,-1))
  }));
 }
 
@@ -379,17 +393,22 @@ export function validRoads(roads,world){
  const limit=coordinateLimit(world),ids=new Set();
  for(const road of roads){
   if(!road||typeof road.id!=='string'||!road.id||road.id.length>80||ids.has(road.id)||!ROAD_WIDTHS.includes(road.width)||typeof road.closed!=='boolean'||!Array.isArray(road.points)||road.points.length<2||road.points.length>MAX_ROAD_POINTS)return false;
-  if(road.barrier!==undefined&&(typeof road.barrier!=='string'||!Object.hasOwn(ROAD_BARRIERS,road.barrier)))return false;
-  if(road.segmentBarriers!==undefined&&(!road.segmentBarriers||typeof road.segmentBarriers!=='object'||Array.isArray(road.segmentBarriers)||
-   !Object.entries(road.segmentBarriers).every(([index,barrier])=>/^\d{1,2}$/.test(index)&&String(Number(index))===index&&
-    Number(index)<road.points.length-(road.closed?0:1)&&(barrier==='none'||barrier==='guardrail'))))return false;
-  if(road.markings!==undefined&&road.markings!=='street')return false;
+  if(!validStyle(road))return false;
+  const validSegments=(segments,valid)=>segments===undefined||segments&&typeof segments==='object'&&!Array.isArray(segments)&&
+   Object.entries(segments).every(([index,value])=>/^\d{1,2}$/.test(index)&&String(Number(index))===index&&
+    Number(index)<road.points.length-(road.closed?0:1)&&valid(value));
+  if(!validSegments(road.segmentBarriers,barrier=>barrier==='none'||barrier==='guardrail')||!validSegments(road.segmentStyles,validStyle))return false;
   if(!road.points.every(p=>p&&Number.isFinite(p.x)&&Number.isFinite(p.z)&&Math.abs(p.x)<=limit&&Math.abs(p.z)<=limit&&
    (p.corner===undefined||p.corner==='straight')&&(p.y===undefined||Number.isFinite(p.y)&&p.y>=0&&p.y<=MAX_ROAD_HEIGHT))||!roadPointsFit(road.points,road.closed))return false;
-  if(road.sidewalk!==undefined&&!['left','right','both'].includes(road.sidewalk))return false;
   ids.add(road.id);
  }
  return true;
+}
+function validStyle(style){
+ return !!style&&ROAD_WIDTHS.includes(style.width)&&
+  (style.barrier===undefined||typeof style.barrier==='string'&&Object.hasOwn(ROAD_BARRIERS,style.barrier))&&
+  (style.markings===undefined||style.markings==='street')&&
+  (style.sidewalk===undefined||['left','right','both'].includes(style.sidewalk));
 }
 
 // Cut a little off the two sides of each corner. The curve is tangent to both
@@ -440,6 +459,26 @@ export function roadSections(path,closed){
   return {...point,nx:x*scale,nz:z*scale};
  });
 }
+function withSegmentWidths(path,road){
+ if(path.length<2||!Object.keys(road.segmentStyles||{}).length)return path;
+ const widthAt=i=>roadSegmentStyle(road,path[i].incomingSegment).width/2;
+ const radii=path.map((_,i)=>{
+  const before=i?widthAt(i):road.closed?widthAt(path.length-1):widthAt(1);
+  const after=i<path.length-1?widthAt(i+1):road.closed?widthAt(1):before;
+  return Math.min(before,after);
+ });
+ return path.flatMap((point,i)=>{
+  const end={...point,roadRadius:radii[i]};
+  if(!i||distance(path[i-1],point)<.002)return [end];
+  const radius=widthAt(i),a=path[i-1];
+  const cuts=[...(radii[i-1]<radius?[1/3]:[]),...(radii[i]<radius?[2/3]:[])];
+  const added=cuts.map(t=>({...lerp(a,point,t),roadRadius:radius,incomingSegment:point.incomingSegment,
+   ...Object.fromEntries(['widthScale','leftWalk','rightWalk'].map(key=>[key,(a[key]??1)+((point[key]??1)-(a[key]??1))*t]))}));
+  return [...added,end];
+ });
+}
+export const roadHalfWidth=(road,point)=>point?.roadRadius??road.width/2;
+export const roadHasSidewalk=(style,side)=>style.sidewalk==='both'||style.sidewalk===side;
 
 export function createRoadSectionQuery(roads,onlyRoad=null){
  const ends=roads.flatMap(road=>{
@@ -463,8 +502,9 @@ export function createRoadSectionQuery(roads,onlyRoad=null){
   const direction=first?1:-1,sameOrientation=first!==other.first;
   const dx=(inward.x-outward.x)*direction,dz=(inward.z-outward.z)*direction;
   const divisor=Math.max(.7*Math.hypot(dx,dz),direction*(dx*inward.x+dz*inward.z));
-  const hasWalk=side=>other.road.sidewalk==='both'||other.road.sidewalk===(sameOrientation?side:side==='left'?'right':'left');
-  const joint={nx:-dz/divisor,nz:dx/divisor,scale:Math.min(1,other.road.width/road.width),
+  const endStyle=entry=>roadSegmentStyle(entry.road,entry.first?0:entry.road.points.length-2);
+  const hasWalk=side=>roadHasSidewalk(endStyle(other),sameOrientation?side:side==='left'?'right':'left');
+  const joint={nx:-dz/divisor,nz:dx/divisor,scale:Math.min(1,endStyle(other).width/endStyle(end).width),
    leftWalk:hasWalk('left')?1:0,rightWalk:hasWalk('right')?1:0};
   if(!joints.has(road))joints.set(road,{});
   joints.get(road)[first?'start':'end']=joint;
@@ -492,7 +532,7 @@ export function createRoadSectionQuery(roads,onlyRoad=null){
      ...(i===0&&joint.start||i===expanded.length-1&&joint.end?{jointNormal:{nx:end.nx,nz:end.nz}}:{})};
    });
   }
-  const sections=roadSections(path,road.closed).map(point=>point.jointNormal?{...point,...point.jointNormal}:point);
+  const sections=roadSections(withSegmentWidths(path,road),road.closed).map(point=>point.jointNormal?{...point,...point.jointNormal}:point);
   cache.set(road,sections);return sections;
  };
 }
@@ -503,14 +543,14 @@ export function roadVertex(point,offset,half){
  return {x:clip(point.x+point.nx*offset),y:point.y||0,z:clip(point.z+point.nz*offset)};
 }
 
-export function roadBarrierOffset(road,side){return side*(road.width/2-.12);}
+export function roadBarrierOffset(road,side,point){return side*(roadHalfWidth(road,point)-.12);}
 
 // Keep lines and sidewalk surfaces outside overlapping pavement at the same level.
 export function createRoadOpenings(roads,half,sectionsFor=createRoadSectionQuery(roads)){
  const cell=16,buckets=new Map(),long=[],triangles=[];
  for(const road of roads){
-  const sections=sectionsFor(road),radius=road.width/2;
-  const sides=sections.map(point=>[roadVertex(point,-radius,half),roadVertex(point,radius,half)]);
+  const sections=sectionsFor(road);
+  const sides=sections.map(point=>{const radius=roadHalfWidth(road,point);return [roadVertex(point,-radius,half),roadVertex(point,radius,half)];});
   for(let i=1;i<sides.length;i++){
    const [a,b]=sides[i-1],[d,c]=sides[i];
    for(const [p,q,r] of [[a,b,c],[a,c,d]]){
@@ -612,15 +652,14 @@ function subtractPavementTriangle(polygon,coordinates){
 }
 
 export function createRoadBarrierQuery(roads=[],world){
- const fenced=roads.filter(road=>Object.hasOwn(ROAD_BARRIERS,road.barrier)||Object.values(road.segmentBarriers||{}).includes('guardrail'));
+ const fenced=roads.filter(road=>road.barrier||Object.values(road.segmentBarriers||{}).includes('guardrail')||Object.values(road.segmentStyles||{}).some(style=>style.barrier));
  if(!fenced.length)return ()=>null;
  const barriers=[],half=worldHalf(world);
  const sectionsFor=createRoadSectionQuery(roads),openings=createRoadOpenings(roads,half,sectionsFor);
  for(const road of fenced){
   const sections=sectionsFor(road);
   for(const side of [-1,1]){
-   const offset=roadBarrierOffset(road,side);
-   const points=sections.map(section=>roadVertex(section,offset,half));
+   const points=sections.map(section=>roadVertex(section,roadBarrierOffset(road,side,section),half));
    for(let i=1;i<points.length;i++){
     const profile=ROAD_BARRIERS[roadRunBarrier(road,sections[i])];
     if(!profile)continue;
@@ -701,10 +740,11 @@ function createPavementQuery(roads,half,allRoads){
  const sectionsFor=createRoadSectionQuery(roads);
  for(const road of roads){
   if(!allRoads&&!road.points.some(point=>point.y>0))continue;
-  const path=sectionsFor(road),radius=road.width/2;
-  const edge=(point,side,name)=>side*(radius+(allRoads&&(road.sidewalk==='both'||road.sidewalk===name)?ROAD_SIDEWALK_WIDTH*(point[name+'Walk']??1):0));
+  const path=sectionsFor(road);
   for(let i=1;i<path.length;i++){
    const a=path[i-1],b=path[i];
+   const style=roadSegmentStyle(road,b.incomingSegment);
+   const edge=(point,side,name)=>side*(roadHalfWidth(road,point)+(allRoads&&roadHasSidewalk(style,name)?ROAD_SIDEWALK_WIDTH*(point[name+'Walk']??1):0));
    const p=roadVertex(a,edge(a,-1,'left'),half),q=roadVertex(a,edge(a,1,'right'),half);
    const r=roadVertex(b,edge(b,1,'right'),half),s=roadVertex(b,edge(b,-1,'left'),half);
    for(const [first,second,third] of [[p,q,r],[p,r,s]]){
@@ -738,7 +778,8 @@ function createPavementQuery(roads,half,allRoads){
 }
 
 function closestOnPath(path,point,maxGap,last=path.length-1,maxHeightGap=Infinity){
- let nearest=null,best=maxGap*maxGap;
+ const limit=typeof maxGap==='function'?maxGap:()=>maxGap;
+ let nearest=null,best=Infinity;
  const end=Math.min(last,path.length-1);
  for(let index=1;index<=end;index++){
   const a=path[index-1],b=path[index],dx=b.x-a.x,dz=b.z-a.z,length=dx*dx+dz*dz;
@@ -747,7 +788,7 @@ function closestOnPath(path,point,maxGap,last=path.length-1,maxHeightGap=Infinit
   const x=a.x+dx*fraction,z=a.z+dz*fraction,y=(a.y||0)+((b.y||0)-(a.y||0))*fraction;
   const vertical=Number.isFinite(point.y)?Math.abs(y-point.y):0;
   const gap=(x-point.x)**2+(z-point.z)**2,score=gap+vertical**2;
-  if(vertical<=maxHeightGap&&score<best){best=score;nearest={x,y,z,heading:Math.atan2(-dx,-dz),grade:((b.y||0)-(a.y||0))/Math.sqrt(length),gap,score,index,fraction};}
+  if(vertical<=maxHeightGap&&score<best&&score<limit(b)**2){best=score;nearest={x,y,z,heading:Math.atan2(-dx,-dz),grade:((b.y||0)-(a.y||0))/Math.sqrt(length),gap,score,index,fraction};}
  }
  return nearest;
 }
@@ -755,10 +796,11 @@ function closestOnPath(path,point,maxGap,last=path.length-1,maxHeightGap=Infinit
 export function nearestRoad(roads,point,maxHeightGap=Infinity,extra=.65){
  let nearest=null;
  for(const road of roads||[]){
-  const match=closestOnPath(savedRoadPath(road),point,road.width/2+extra,undefined,maxHeightGap);
+  const path=savedRoadPath(road,true);
+  const match=closestOnPath(path,point,end=>Math.max(0,roadSegmentStyle(road,end.incomingSegment).width/2+extra),undefined,maxHeightGap);
   if(match&&(!nearest||match.score<nearest.score)){
-   const {x,y,z,heading,grade,gap,score}=match;
-   nearest={x,y,z,heading,grade,gap,score,width:road.width,roadId:road.id};
+   const {x,y,z,heading,grade,gap,score}=match,{width,sidewalk}=roadSegmentStyle(road,path[match.index].incomingSegment);
+   nearest={x,y,z,heading,grade,gap,score,width,roadId:road.id,...(sidewalk&&{sidewalk})};
   }
  }
  return nearest;

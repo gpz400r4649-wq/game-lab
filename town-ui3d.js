@@ -2,8 +2,8 @@ import {setReadingText} from './readings3d.js?v=20261119d';
 import {createChoiceControl} from './choices3d.js?v=20261119d';
 import {mountLiveRangeEditor} from './range-panel3d.js?v=20261124a';
 import {setStageRangePainter} from './stage-range3d.js?v=20261124a';
-import {createRoadNetwork} from './road-network3d.js?v=20261127i';
-import {townRoute,raceRoute,reachableTownDestinations,resolveTownTrip} from './town-traffic3d.js?v=20261127i';
+import {createRoadNetwork} from './road-network3d.js?v=20261127p';
+import {townRoute,raceRoute,reachableTownDestinations,resolveTownTrip} from './town-traffic3d.js?v=20261127p';
 import {ARRIVAL_TYPES,AUTO_TOWN_DESTINATION,DEFAULT_RIVAL,MAX_RIVALS,MAX_TOWN_CARS,RIVAL_SPEEDS,RIVAL_CORNERS,TOWN_PARTS,townFleetSettings,townParkingCapacity} from './town3d.js?v=20261127c';
 
 function elem(tag,text,className){
