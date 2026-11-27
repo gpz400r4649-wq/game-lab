@@ -14,8 +14,10 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
   const overlap=bar.offsetHeight?Math.max(0,stage.getBoundingClientRect().bottom-panelTop):0;
   stage.style.setProperty('--city-panel-overlap',overlap+'px');
  }
- const layout=new ResizeObserver(keepStageControlsVisible);
- [stage,bar,...panels].forEach(panel=>layout.observe(panel));
+ if(typeof ResizeObserver==='function'){
+  const layout=new ResizeObserver(keepStageControlsVisible);
+  [stage,bar,...panels].forEach(panel=>layout.observe(panel));
+ }else window.addEventListener('resize',keepStageControlsVisible);
  window.addEventListener('scroll',keepStageControlsVisible,{passive:true});
  const widthTabs=$('#road-width-tabs3');
  function button(text,onclick,className=''){
@@ -94,6 +96,7 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
    $('#'+category.dataset.cityPanel).hidden=!active;
   }
   if(id==='city-roads3')refreshMenu();
+  keepStageControlsVisible();
  }
  for(const category of categories)category.onclick=()=>{
   const id=category.getAttribute('aria-expanded')==='true'?null:category.dataset.cityPanel;

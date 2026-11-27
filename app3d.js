@@ -1,7 +1,7 @@
 import {createCarAudio} from './car-audio3d.js?v=20261119g';
 import {alignRoadEndpoints,courseStart,nearestRoad} from './road3d.js?v=20261126l';
 import {createRoadView} from './road-model3d.js?v=20261127b';
-import {createRoadEditor} from './road-ui3d.js?v=20261127c';
+import {createRoadEditor} from './road-ui3d.js?v=20261127f';
 import {createLapGateView,makeCarModel,updateCarModel,makeRaceGateModel,updateRaceGateModel,updateRaceGateNumber,makeTrafficSignal,updateTrafficSignal} from './race-model3d.js?v=20261125g';
 import {CAR_TUNING,DEFAULT_CAR_TUNING,RACE_LAP_OPTIONS,fitRaceGate,orderedRaceGates,turnRaceGate,updateRoadGateWidths} from './race3d.js?v=20261125g';
 import {assemblyCandidate,assemblyCopies,saveAssembly,temporarySpawn} from './assembly3d.js?v=20261119p';
@@ -56,7 +56,10 @@ document.querySelectorAll('.setting-choices').forEach(enhanceChoiceControl);
 const $=s=>document.querySelector(s),view=$('#viewport');
 const seatButton=$('#use-seat3');
 let seatPressed=false;
-const carTemplate=new URLSearchParams(location.search).get('template')==='car';
+const launchParams=new URLSearchParams(location.search),loadingScreen=$('#loading');
+const carTemplate=launchParams.get('template')==='car';
+const checkCarStartup=carTemplate&&launchParams.get('check3d')==='1';
+loadingScreen.dataset.phase='ページの準備';
 const KEY=carTemplate?'tsukuru-lab-3d-car-v1':'tsukuru-lab-3d-v1';
 if(carTemplate){
  document.documentElement.classList.add('car-workshop');document.title='つくるラボ — 3Dくるまづくり';
@@ -65,6 +68,7 @@ if(carTemplate){
 }
 let enemyRangeView='attackRange';
 let project=fresh3D(carTemplate?'car':undefined),selected=null,tool='select',doorPreset='key',piecePresets={box:'box',floor:'floor',wall:'wall',ramp:'ramp',roof:'roof'},weaponPresetId='@random',mode='edit',perspective='tps',game=null,yaw=0,pitch=-.05,editYaw=.55,editPitch=.7,editDistance=30,editTarget=new T.Vector3(0,0,0),stick={x:0,z:0},keys=new Set(),fireHeld=false,firePressed=false,jumpPressed=false,doorPressed=false,look=null,saveTimer,toastTimer,lastTime=0;
+if(checkCarStartup)project.title='動作確認用のくるまコース';
 const carControls=carTemplate?createCarControls({
  stick:$('#car-stick3'),thumb:$('#car-stick3 .edit-stick-thumb'),accelerator:$('#car-accelerator3'),
  brake:$('#car-brake3'),reverse:$('#car-reverse3')
@@ -100,10 +104,12 @@ function upgradeRoadConnections(p){
  const objects=refitTownParts(updateRoadGateWidths(p.objects,p.roads,roads),roads,p);
  return {...p,roads,objects};
 }
-try{const value=localStorage.getItem(KEY);if(value){const saved=validate3D(parseStoredProject(value));if((saved.template==='car')!==carTemplate)throw Error('さくひんの種類がちがいます');project=upgradeRoadConnections(saved);}}catch{toast('自動保存した3D作品を読み込めませんでした。ファイルからも読み込めます。');}
+loadingScreen.dataset.phase='作品の読み込み';
+try{const value=checkCarStartup?null:localStorage.getItem(KEY);if(value){const saved=validate3D(parseStoredProject(value));if((saved.template==='car')!==carTemplate)throw Error('さくひんの種類がちがいます');project=upgradeRoadConnections(saved);}}catch{toast('自動保存した3D作品を読み込めませんでした。ファイルからも読み込めます。');}
 initializeCharacterDefaults(project,part);
 const editHistory=createEditHistory(project);let restoringHistory=false;
 $('#title3').value=project.title;{const start=courseStart(project);editTarget.set(start.x,start.y,start.z);}
+loadingScreen.dataset.phase='3D表示の準備';
 const renderer=new T.WebGLRenderer({antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.setClearColor('#c9dce9');renderer.outputColorSpace=T.SRGBColorSpace;renderer.domElement.tabIndex=0;renderer.domElement.setAttribute('aria-label','3Dステージ。編集時はマスや部品の面をタップして配置。プレイ時はドラッグで視点操作。');view.prepend(renderer.domElement);
 const scene=new T.Scene();scene.background=new T.Color('#c9dce9');scene.fog=new T.Fog('#c9dce9',45,105);const camera=new T.PerspectiveCamera(65,1,.05,180);scene.add(new T.HemisphereLight(0xeaf7ff,0x748b9d,2.2));const sunlight=new T.DirectionalLight(0xffefda,2.5);sunlight.position.set(-12,22,12);scene.add(sunlight);
 const syncLapGates=createLapGateView(scene);
@@ -276,7 +282,7 @@ function flushSave(){
  try{localStorage.setItem(KEY,stringifyStoredProject(project));setReadingText($('#saved3'),'✓ このブラウザに保存しました');}
  catch{setReadingText($('#saved3'),'保存できません。ファイルに保存してください');}
 }
-function save(){synchronizeCharacterDefaults(project);if(!restoringHistory)editHistory.record(project);syncHistoryButtons();clearTimeout(saveTimer);setReadingText($('#saved3'),'保存中…');saveTimer=setTimeout(flushSave,250);}
+function save(){synchronizeCharacterDefaults(project);if(!restoringHistory)editHistory.record(project);syncHistoryButtons();if(checkCarStartup)return;clearTimeout(saveTimer);setReadingText($('#saved3'),'保存中…');saveTimer=setTimeout(flushSave,250);}
 window.addEventListener('pagehide',flushSave);
 function field(parent,name,value,min,max,step,fn){
  const l=document.createElement('label');l.className='field';const s=document.createElement('span');setReadingText(s,name);const input=document.createElement('input');input.setAttribute('aria-label',name);
@@ -784,6 +790,7 @@ function inspector(){closeLiveRangeEditor();workshop.inspect();positionPlacement
 $('#common-preview-back3').onclick=()=>workshop.resumeBasic();$('#common-preview-done3').onclick=()=>workshop.finishBasic();
 function renderPlayerRules(){playerRulesUI.render();}
 function weaponFields(){workshop.weapons();renderPlayerRules();}
+loadingScreen.dataset.phase='編集の道具の準備';
 if(carTemplate)roadEditor=createRoadEditor({$,getProject:()=>project,save,rebuild,view:roadView,toast,
  pickRoad:event=>{
   const hit=hits(event,roadView.surfaces()).find(visibleHit);
@@ -889,4 +896,8 @@ function handleStageExtra(event){
  return true;
 }
 createWorldUI({getProject:()=>project,beforeOpen:()=>{if(mode==='play')setMode('edit');},center:()=>editTarget,resize:size=>{project.worldSize=size;rebuild();save();inspector();},focus:point=>{editTarget.set(point.x,0,point.z);editDistance=30;},spawn:point=>{project.spawn={...point,y:0};spawnMark.position.set(point.x,.015,point.z);save();toast('スタートを動かしました');}});
-rebuild();objectList();inspector();weaponFields();$('#loading').hidden=true;applyReadings(document.body);requestAnimationFrame(frame);
+loadingScreen.dataset.phase='道路とパーツの表示';
+rebuild();
+loadingScreen.dataset.phase='編集画面の表示';
+objectList();inspector();weaponFields();applyReadings(document.body);loadingScreen.hidden=true;requestAnimationFrame(frame);
+if(checkCarStartup)toast('動作確認用のステージです。編集は自動保存されません。');
