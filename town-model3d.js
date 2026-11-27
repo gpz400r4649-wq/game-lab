@@ -107,6 +107,10 @@ export function createTownView(scene){
   const marker=new T.Mesh(markerShape,new T.MeshBasicMaterial({color,depthTest:false}));
   marker.renderOrder=21;route.add(marker);return marker;
  });
+ const routePlaces=[0x4cdcc4,0xffb65c].map(color=>{
+  const marker=new T.LineLoop(new T.BufferGeometry(),new T.LineBasicMaterial({color,depthTest:false}));
+  marker.visible=false;marker.renderOrder=22;scene.add(marker);return marker;
+ });
  const lots=new T.Mesh(new T.BufferGeometry(),new T.MeshBasicMaterial({color:0x49ad8d,transparent:true,opacity:.23,side:T.DoubleSide,depthWrite:false}));
  const outlines=new T.LineSegments(new T.BufferGeometry(),new T.LineBasicMaterial({color:0x29765f}));
  const previews=new T.Group();lots.visible=outlines.visible=false;scene.add(lots,outlines,previews);
@@ -154,6 +158,17 @@ export function createTownView(scene){
     model.rotation.order='YXZ';model.rotation.y=vehicle.heading;model.rotation.x=vehicle.pitch||0;
     updateCarModel(model,vehicle,vehicle.braking);
    });
+  },
+  showRoutePlaces(source,target){
+   for(const [i,part] of [source,target].entries()){
+    const marker=routePlaces[i];marker.visible=!!part;
+    if(!part)continue;
+    const points=[[-1,-1],[1,-1],[1,1],[-1,1]].map(([x,z])=>{
+     const point=townLocal(part,x*(part.w/2+.28),z*(part.d/2+.28));
+     return new T.Vector3(point.x,point.y+.25,point.z);
+    });
+    marker.geometry.dispose();marker.geometry=new T.BufferGeometry().setFromPoints(points);
+   }
   },
   showRoute(points){
    route.visible=!!points?.length;

@@ -23,93 +23,127 @@ function choices(parent,label,options,value,change){
 export function installTownUI({$,getProject,getSelected,save,view,showRoute,pickTownPart,field}){
  const dialog=$('#town-traffic3'),body=$('#town-traffic-body3'),opener=$('#town-traffic-open3');
  const closePreview=$('#town-route-close3');
- let current=null,activeRoute=null;
- function previewRoute(source,path){
-  activeRoute=source.id;dialog.close();view.showRoute(path);showRoute(path);closePreview.hidden=false;
+ let current=null,activeRoute=null,editorClose=null,renderMap=null,roadSnapshot,network;
+ const places=()=>getProject().objects.filter(part=>part.type==='town'&&townParkingCapacity(part));
+ const canStart=part=>!!TOWN_PARTS[part?.townKind]?.capacity;
+ const source=()=>places().find(part=>part.id===current&&canStart(part));
+ function roads(){
+  const next=getProject().roads;
+  if(!network||next!==roadSnapshot){roadSnapshot=next;network=createRoadNetwork(next);}
+  return network;
  }
- function chooseDestination(source,places,change){
-  dialog.close();clear();
-  const panel=elem('section'),heading=elem('div',null,'range-live-heading'),cancel=elem('button','せっていにもどる');
-  const hint=elem('p','行き先にしたい建物をおそう。','road-editor-hint');
-  heading.append(elem('h2','行き先をえらぶ'),cancel);panel.append(heading,hint);
-  const finish=mountLiveRangeEditor(panel,()=>setStageRangePainter(null),{host:$('#road-draft3')});
-  cancel.onclick=()=>{finish();dialog.showModal();};
-  let tap=null;
+ function labels(all){
+  const counts=new Map();
+  return new Map(all.map(part=>{
+   const count=(counts.get(part.townKind)||0)+1;counts.set(part.townKind,count);
+   return [part.id,TOWN_PARTS[part.townKind].name+' '+count];
+  }));
+ }
+ function update(part,patch){
+  part.townFleet={...townFleetSettings(part),...patch};
+ }
+ function changeDestination(part,targetId){
+  if(townFleetSettings(part).targetId===targetId)return;
+  update(part,{targetId});save();
+ }
+ function resetRoute(){
+  activeRoute=null;view.showRoute(null);view.showRoutePlaces(null,null);closePreview.hidden=true;
+ }
+ function clear(){if(editorClose)editorClose();else resetRoute();}
+ closePreview.onclick=clear;
+ function renderDrivingSettings(part){
+  const capacity=TOWN_PARTS[part.townKind].capacity,fleet=townFleetSettings(part);
+  const all=places(),total=all.reduce((sum,item)=>sum+(item.townFleet?.count||0),0);
+  const max=Math.max(0,Math.min(capacity,MAX_TOWN_CARS-total+(part.townFleet?.count||0)));
+  const set=patch=>{update(part,patch);save();renderDrivingSettings(part);renderMap?.();};
+  body.replaceChildren(elem('p',labels(all).get(part.id)));
+  choices(body,'くるまの数',Array.from({length:Math.max(max,fleet.count)+1},(_,i)=>[i,i?i+'だい':'なし']),fleet.count,count=>set({count:Number(count)}));
+  const numbers=elem('div',null,'town-numbers');
+  field(numbers,'何びょう後に出る？',fleet.delay,0,60,1,value=>{update(part,{delay:value});return value;});
+  if(capacity>1)field(numbers,'何びょうごとに出る？',fleet.interval,1,30,1,value=>{update(part,{interval:value});return value;});
+  body.append(numbers);
+  choices(body,'はしる速さ',[[20,'ゆっくり'],[35,'ふつう'],[50,'はやい']],fleet.speed,speed=>set({speed:Number(speed)}));
+  choices(body,'着いたらどうする？',Object.entries(ARRIVAL_TYPES),fleet.arrival,arrival=>set({arrival}));
+  const trip=resolveTownTrip(roads(),part,all);
+  if(trip&&fleet.arrival==='park'&&fleet.count>townParkingCapacity(trip.target)){
+   body.append(elem('p','行き先の空いている台数まで、くるまが出るよ。','town-note'));
+  }
+  if(total>=MAX_TOWN_CARS)body.append(elem('p',MAX_TOWN_CARS+'だいまで走らせられるよ。','town-note'));
+ }
+ function openMap(){
+  clear();
+  const selected=getSelected(),all=places(),sources=all.filter(canStart);
+  current=(canStart(selected)?selected:sources.find(part=>part.id===current)||sources.find(part=>part.townKind==='house')||sources[0])?.id;
+  const panel=elem('section',null,'town-route-editor'),heading=elem('div',null,'range-live-heading');
+  const title=elem('h2'),done=elem('button','できた','primary');
+  const tools=elem('div',null,'town-route-tools'),hint=elem('p',null,'road-editor-hint');
+  hint.setAttribute('role','status');
+  const chooseSource=elem('button','しゅっぱつする場所をかえる');
+  const automatic=elem('button','おみせを自動でえらぶ');
+  const unset=elem('button','行き先をはずす');
+  const settings=elem('button','車のせってい');
+  heading.append(title,done);tools.append(chooseSource,automatic,unset,settings);panel.append(heading,tools,hint);
+  let pickingSource=false,tap=null;
+  const finish=mountLiveRangeEditor(panel,()=>{
+   setStageRangePainter(null);editorClose=null;renderMap=null;
+   if(dialog.open)dialog.close();
+   resetRoute();
+  },{host:$('#road-draft3')});
+  editorClose=finish;done.onclick=finish;
+  renderMap=(message=null)=>{
+   const all=places(),names=labels(all),part=source();
+   const fleet=part&&townFleetSettings(part),trip=part&&resolveTownTrip(roads(),part,all);
+   const target=trip?.target;
+   view.showRoute(trip?.path);view.showRoutePlaces(part,target);
+   setReadingText(title,part?(names.get(part.id)+' → '+(names.get(target?.id)||names.get(fleet.targetId)||'行き先なし')+(trip?.auto?'（自動）':'')):'まちの車');
+   tools.hidden=!part;
+   chooseSource.disabled=all.filter(canStart).length<2;
+   chooseSource.setAttribute('aria-pressed',String(pickingSource));
+   automatic.hidden=part?.townKind!=='house';
+   automatic.setAttribute('aria-pressed',String(fleet?.targetId===AUTO_TOWN_DESTINATION));
+   unset.disabled=!fleet?.targetId;
+   setReadingText(hint,message||(pickingSource?'車をしゅっぱつさせたい場所をおそう。':
+    part?(fleet.targetId&&!trip?'つながった道ぞいの建物をおそう。':'行き先にしたい建物をおそう。'):'まず、道ぞいにいえをおこう。'));
+   return {part,trip};
+  };
+  chooseSource.onclick=()=>{pickingSource=!pickingSource;renderMap();};
+  automatic.onclick=()=>{const part=source();if(part){changeDestination(part,AUTO_TOWN_DESTINATION);pickingSource=false;renderMap();}};
+  unset.onclick=()=>{const part=source();if(part){changeDestination(part,'');pickingSource=false;renderMap();}};
+  settings.onclick=()=>{const part=source();if(part){renderDrivingSettings(part);dialog.showModal();}};
+  const {part,trip}=renderMap();
+  if(part)showRoute(trip?.path||[part]);
   setStageRangePainter((kind,id,ground,canceled)=>{
    const event=ground?.pointerEvent;
    if(kind==='start'&&!tap&&event)tap={id,x:event.clientX,y:event.clientY};
    if(kind!=='end'||tap?.id!==id)return true;
    const start=tap;tap=null;
    if(canceled||!event||Math.hypot(start.x-event.clientX,start.y-event.clientY)>10)return true;
-   const targetId=pickTownPart(event),target=places.find(part=>part.id===targetId&&part.id!==source.id);
-   if(!target){setReadingText(hint,'ほかのいえ・おみせ・がっこうなどをおそう。');return true;}
-   finish();change({targetId:target.id});
-   const route=townRoute(createRoadNetwork(getProject().roads),source,target);
-   if(route)previewRoute(source,route);else dialog.showModal();
+   const targetId=pickTownPart(event),target=places().find(part=>part.id===targetId);
+   if(pickingSource){
+    if(!canStart(target)){renderMap('いえやちゅうしゃじょうをおそう。');return true;}
+    current=target.id;pickingSource=false;renderMap();return true;
+   }
+   const part=source();
+   if(!part)return true;
+   if(!target||target.id===part.id){renderMap('ほかのいえ・おみせ・がっこうなどをおそう。');return true;}
+   if(!townRoute(roads(),part,target)){renderMap('この場所までは道がつながっていないよ。');return true;}
+   changeDestination(part,target.id);
+   renderMap('行き先をかえたよ。');
    return true;
   });
  }
- function render(){
-  const p=getProject(),places=p.objects.filter(part=>part.type==='town'&&townParkingCapacity(part));
-  const sources=places.filter(part=>TOWN_PARTS[part.townKind].capacity);
-  const names=new Map(),labels=places.map(part=>{
-   const n=(names.get(part.townKind)||0)+1;names.set(part.townKind,n);
-   return [part.id,TOWN_PARTS[part.townKind].name+' '+n];
-  });
-  if(!sources.some(part=>part.id===current))current=(sources.find(part=>part.townKind==='house')||sources[0])?.id;
-  body.replaceChildren();
-  if(!sources.length){body.append(elem('p','道ぞいにいえをおこう。おみせやがっこう、ちゅうしゃじょうを行き先にできるよ。'));return;}
-  const total=places.reduce((sum,part)=>sum+(part.townFleet?.count||0),0);
-  const source=places.find(part=>part.id===current);
-  const capacity=TOWN_PARTS[source.townKind].capacity;
-  const max=Math.max(0,Math.min(capacity,MAX_TOWN_CARS-total+(source.townFleet?.count||0)));
-  const fleet=townFleetSettings(source);
-  const update=patch=>{source.townFleet={...fleet,...source.townFleet,...patch};};
-  const change=patch=>{update(patch);save();render();};
-  const mapPick=elem('button','マップで行き先をえらぶ');
-  mapPick.type='button';mapPick.disabled=places.length<2;
-  mapPick.onclick=()=>chooseDestination(source,places,change);body.append(mapPick);
-  const sourceIds=new Set(sources.map(part=>part.id));
-  choices(body,'しゅっぱつする場所',labels.filter(([id])=>sourceIds.has(id)),current,id=>{current=id;render();});
-  choices(body,'くるまの数',Array.from({length:Math.max(max,fleet.count)+1},(_,i)=>[i,i?i+'だい':'なし']),fleet.count,count=>change({count:Number(count)}));
-  const automatic=source.townKind==='house'?[[AUTO_TOWN_DESTINATION,'近くのおみせに行く']]:[];
-  choices(body,'行き先',[...automatic,['','まだえらばない'],...labels.filter(([id])=>id!==current)],fleet.targetId,id=>change({targetId:id}));
-  const numbers=elem('div',null,'town-numbers');
-  field(numbers,'何びょう後に出る？',fleet.delay,0,60,1,value=>{update({delay:value});return value;});
-  if(capacity>1)field(numbers,'何びょうごとに出る？',fleet.interval,1,30,1,value=>{update({interval:value});return value;});
-  body.append(numbers);
-  choices(body,'はしる速さ',[[20,'ゆっくり'],[35,'ふつう'],[50,'はやい']],fleet.speed,speed=>change({speed:Number(speed)}));
-  choices(body,'着いたらどうする？',Object.entries(ARRIVAL_TYPES),fleet.arrival,arrival=>change({arrival}));
-  const trip=resolveTownTrip(createRoadNetwork(p.roads),source,places),{target,path}=trip||{};
-  if(fleet.targetId===AUTO_TOWN_DESTINATION){
-   const label=labels.find(([id])=>id===target?.id)?.[1];
-   body.append(elem('p',label?'行き先は「'+label+'」だよ。':'つながった道路ぞいにおみせをおこう。','town-note'));
-  }else if(fleet.targetId&&!path)body.append(elem('p','この行き先にはまだ行けないよ。どうろのつながりをたしかめよう。','town-note'));
-  if(target&&fleet.arrival==='park'&&fleet.count>townParkingCapacity(target))body.append(elem('p','行き先の空いている台数まで、くるまが出るよ。','town-note'));
-  if(total>=MAX_TOWN_CARS)body.append(elem('p',MAX_TOWN_CARS+'だいまで走らせられるよ。','town-note'));
-  const buttons=elem('div',null,'town-actions'),preview=elem('button','走るみちを見る','primary');
-  preview.disabled=!path;
-  preview.onclick=()=>previewRoute(source,path);
-  buttons.append(preview);body.append(buttons);
- }
- closePreview.onclick=clear;
- function clear(){activeRoute=null;view.showRoute(null);closePreview.hidden=true;}
- opener.onclick=()=>{
-  clear();
-  const selected=getSelected(),hasHomes=getProject().objects.some(part=>part.type==='town'&&part.townKind==='house');
-  if(selected?.townKind==='house'||!hasHomes)current=selected?.id||current;
-  render();dialog.showModal();
- };
+ opener.onclick=()=>{if(editorClose)editorClose();else openMap();};
  opener.hidden=false;
  function refresh(){
+  if(renderMap){renderMap();return;}
   if(!activeRoute)return;
-  const p=getProject(),source=p.objects.find(part=>part.id===activeRoute);
-  const route=source&&townFleetSettings(source).count?resolveTownTrip(createRoadNetwork(p.roads),source,p.objects)?.path:null;
-  if(route)view.showRoute(route);else clear();
+  const all=places(),part=all.find(part=>part.id===activeRoute);
+  const route=part&&townFleetSettings(part).count?resolveTownTrip(roads(),part,all)?.path:null;
+  if(route)view.showRoute(route);else resetRoute();
  }
- return {clear,refresh,showHouseRoute(source){
-  if(source?.townKind!=='house'){clear();return;}
-  activeRoute=source.id;refresh();closePreview.hidden=!activeRoute;
+ return {clear,refresh,showHouseRoute(part){
+  if(part?.townKind!=='house'){clear();return;}
+  activeRoute=part.id;refresh();closePreview.hidden=!activeRoute;
  }};
 }
 
