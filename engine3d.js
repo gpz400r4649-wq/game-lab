@@ -2,7 +2,7 @@ import {courseStart,createRoadBarrierQuery,createRoadSurfaceQuery,ROAD_DECK_DEPT
 import {carMotion,createCarRun,RACE_LAP_OPTIONS,updateRaceGates,upgradeCarTuning,validCarTuning,validGateFit} from './race3d.js?v=20261127g';
 import {configureTownPart,upgradeTownDriveway,validTownPart,townSolids,validRivals} from './town3d.js?v=20261127c';
 import {createTownTraffic,stepTownTraffic} from './town-traffic3d.js?v=20261127g';
-import {validAssemblies} from './assembly3d.js?v=20261119d';
+import {validAssemblies} from './assembly3d.js?v=20261127o';
 import {validSupplyFlight,createSupplyFlight,updateSupplyFlight} from './supply3d.js?v=20261119d';
 import {isFurniture,validFurniture,furnitureSolids} from './furniture3d.js?v=20261119d';
 import {FALL_DEFAULTS,validFallDamage,updatePlayerFall,resetPlayerFall} from './fall-damage3d.js?v=20261119d';
@@ -24,17 +24,17 @@ import {settleLoot} from './loot3d.js?v=20261119d';
 import {validEvents,actionsFor,fireEvents} from './events3d.js?v=20261119d';
 import {upgradeTool,safeShot,DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261119d';
 import {shootVolley,updateCombat,resolveShotOrigin} from './combat3d.js?v=20261119d';
-import {BUILD_TYPES,constructionPart,topAt,bottomAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261119p';
+import {BUILD_TYPES,constructionPart,topAt,bottomAt,defaultLoadout,validTool,placeStructure,giveBlock,placeBlock} from './building3d.js?v=20261127o';
 export const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export const ENEMY_SCALES=Array.from({length:19},(_,i)=>1+i/2);
-export const PARTS={town:'まちのパーツ',trafficSignal:'しんごうき',raceGate:'ゲート',actor:'役者キャラクター',plate:'床スイッチ',ally:'味方ロボット',weapon:'銃アイテム',ramp:'スロープ',wall:'壁',floor:'床',roof:'屋根',box:'ブロック',platform:'足場',moving:'動く足場',bounce:'ジャンプ台',enemy:'敵ロボット',star:'星',key:'カギ',door:'ドア',heal:'回復',checkpoint:'セーブポイント',hazard:'ダメージ床',goal:'ゴール'};
+export const PARTS={town:'まちのパーツ',trafficSignal:'しんごうき',raceGate:'ゲート',actor:'役者キャラクター',plate:'床スイッチ',ally:'味方ロボット',weapon:'銃アイテム',ramp:'スロープ',wall:'壁',floor:'床',roof:'屋根',box:'ブロック',platform:'足場',ladder:'はしご',moving:'動く足場',bounce:'ジャンプ台',enemy:'敵ロボット',star:'星',key:'カギ',door:'ドア',heal:'回復',checkpoint:'セーブポイント',hazard:'ダメージ床',goal:'ゴール'};
 export const BEHAVIORS={chase:'プレイヤーを追いかける',patrol:'行ったり来たり',search:'歩き回って探す'};
 export const ENEMY_PRESETS={chase:{name:'追いかける敵',program:[{action:'chase',speed:2}]},patrol:{name:'行ったり来たり',program:[{action:'patrol',speed:2}]},search:{name:'歩き回って探す',program:[{action:'search',speed:2}]},still:{name:'動かない',program:[]}};
 export const WEAPON_PRESETS={standard:{name:'ふつうのブラスター',speed:24,interval:.25,damage:1,spread:1,projectile:'ball',impact:'damage',size:.2,spreadAngle:20,blastRadius:3,range:60,recoil:1,aimJitter:1,pattern:'fan'},rapid:{name:'マシンガンのヒント',speed:40,interval:.08,damage:2,spread:1,projectile:'ball',impact:'damage',size:.15,spreadAngle:10,blastRadius:3,range:30,recoil:4,aimJitter:5,pattern:'fan'},spread:{name:'ひろがる弾のヒント',speed:22,interval:.5,damage:2,spread:5,projectile:'ball',impact:'damage',size:.2,spreadAngle:35,blastRadius:3,range:15,recoil:.6,aimJitter:.7,pattern:'cone'},power:{name:'パワーブラスター',speed:18,interval:.8,damage:10,spread:1,projectile:'ball',impact:'damage',size:.5,spreadAngle:20,blastRadius:3,range:40,recoil:.2,aimJitter:.3,pattern:'fan'},rocket:{name:'ロケットランチャーのヒント',speed:18,interval:.8,damage:20,spread:1,projectile:'rocket',impact:'explode',size:.5,spreadAngle:0,blastRadius:4,range:45,recoil:.2,aimJitter:.3,pattern:'fan'}};
 export const CONDITION_NAMES={allies:'仲間を連れてきたら',unset:'クリア条件をえらぶ',touch:'そのまま',stars:'星を集めたら',keys:'カギを集めたら',enemies:'敵を全員たおしたら'};
 const solidTypes=new Set(['box','platform','moving','door','wall','floor','roof','ramp']);
 export function settingsFor(type){return {axis:'x',distance:3,speed:2,value:type==='bounce'?11:type==='star'?5:1,condition:type==='goal'?'unset':type==='door'?'keys':'touch',required:1};}
-export function part(type,x=0,z=-5){if(type==='town')return configureTownPart({id:crypto.randomUUID(),type,x,y:0,z,hp:3,program:[],settings:settingsFor(type)});if(type==='trafficSignal')return {id:crypto.randomUUID(),type,x,y:0,z,w:.55,h:3.4,d:.55,hp:3,rotation:0,program:[],settings:settingsFor(type)};if(type==='raceGate')return {id:crypto.randomUUID(),type,x,y:0,z,w:4,h:3,d:.6,hp:3,rotation:0,gateOrder:1,program:[],settings:settingsFor(type)};if(Object.hasOwn(BUILD_TYPES,type))return constructionPart(type,x,z);return {id:crypto.randomUUID(),type,x,y:['platform','moving'].includes(type)?1:0,z,w:['box','platform','moving'].includes(type)?4:type==='door'?3:2,h:type==='box'?3:['platform','moving'].includes(type)?.5:['bounce','hazard'].includes(type)?.2:type==='door'?3:2,d:type==='door'?.6:['box','platform','moving'].includes(type)?4:2,hp:DESTRUCTIBLE_TYPES.has(type)?20:3,...(DESTRUCTIBLE_TYPES.has(type)?{destructible:true,destroyEvents:[{type:'dropSelf'}]}:{}),program:[],settings:settingsFor(type),...(type==='weapon'?{weaponId:'@random'}:{}),...(type==='enemy'?{attackEnabled:true,attackSpeed:3,program:[{action:'search',speed:2}],routine:{idle:'wait',notice:'near',lost:'return'},dropHeldWeapon:true,enemyDrops:[{type:'star'}],...defaultEnemyRanges({x,z})}:{})};}
+export function part(type,x=0,z=-5){if(type==='town')return configureTownPart({id:crypto.randomUUID(),type,x,y:0,z,hp:3,program:[],settings:settingsFor(type)});if(type==='ladder')return {id:crypto.randomUUID(),type,x,y:0,z,w:1.15,h:3,d:.5,hp:3,rotation:0,program:[],settings:settingsFor(type)};if(type==='trafficSignal')return {id:crypto.randomUUID(),type,x,y:0,z,w:.55,h:3.4,d:.55,hp:3,rotation:0,program:[],settings:settingsFor(type)};if(type==='raceGate')return {id:crypto.randomUUID(),type,x,y:0,z,w:4,h:3,d:.6,hp:3,rotation:0,gateOrder:1,program:[],settings:settingsFor(type)};if(Object.hasOwn(BUILD_TYPES,type))return constructionPart(type,x,z);return {id:crypto.randomUUID(),type,x,y:['platform','moving'].includes(type)?1:0,z,w:['box','platform','moving'].includes(type)?4:type==='door'?3:2,h:type==='box'?3:['platform','moving'].includes(type)?.5:['bounce','hazard'].includes(type)?.2:type==='door'?3:2,d:type==='door'?.6:['box','platform','moving'].includes(type)?4:2,hp:DESTRUCTIBLE_TYPES.has(type)?20:3,...(DESTRUCTIBLE_TYPES.has(type)?{destructible:true,destroyEvents:[{type:'dropSelf'}]}:{}),program:[],settings:settingsFor(type),...(type==='weapon'?{weaponId:'@random'}:{}),...(type==='enemy'?{attackEnabled:true,attackSpeed:3,program:[{action:'search',speed:2}],routine:{idle:'wait',notice:'near',lost:'return'},dropHeldWeapon:true,enemyDrops:[{type:'star'}],...defaultEnemyRanges({x,z})}:{})};}
 export function fresh3D(template){const weapon={speed:24,interval:.25,damage:1,spread:1};return {version:1,kind:'game-lab-3d',worldSize:template==='car'?240:60,playerHitsAlly:true,title:template==='car'?'わたしのくるまコース':'わたしの3Dワールド',...(template==='car'?{template:'car'}:{}),spawn:{x:0,y:0,z:8},weapon,loadout:defaultLoadout(weapon),objects:[]};}
 export function validate3D(data,skipShared=false){
   const p=structuredClone(data),number=(v,a,b)=>Number.isFinite(v)&&v>=a&&v<=b;
@@ -78,7 +78,7 @@ export function validate3D(data,skipShared=false){
     if(!validEvents(o))throw Error('イベントの設定を確認してください');
     const sizeLimit=o.type==='town'?16:o.type==='enemy'?Math.max(10,2*(o.enemyScale||1)):o.type==='raceGate'&&o.gateWidth!==undefined?Math.max(13,o.gateWidth+1):10;
     const sizes=['w','h','d'].every(k=>number(o[k],['wall','floor','roof','ramp','bounce','hazard','door'].includes(o.type)?.2:.5,sizeLimit));
-    if(o.rotation!==undefined&&!(o.type==='ramp'||o.type==='door'||o.type==='trafficSignal'||o.furnitureKind||o.wallHalf||o.roofStyle==='slope'?[0,90,180,270]:[0,90]).includes(o.rotation))throw Error('部品の向きを確認してください');
+    if(o.rotation!==undefined&&!(o.type==='ramp'||o.type==='door'||o.type==='ladder'||o.type==='trafficSignal'||o.furnitureKind||o.wallHalf||o.roofStyle==='slope'?[0,90,180,270]:[0,90]).includes(o.rotation))throw Error('部品の向きを確認してください');
     if(!Object.hasOwn(PARTS,o.type)||typeof o.id!=='string'||ids.has(o.id)||!['x','z'].every(k=>number(o[k],-limit,limit))||!number(o.y,0,MAX_BUILD_Y)||!sizes||!Number.isInteger(o.hp)||!number(o.hp,1,o.type==='enemy'?500:DESTRUCTIBLE_TYPES.has(o.type)?200:20)||!Array.isArray(o.program)||o.program.length>8)throw Error('パーツの設定を確認してください');ids.add(o.id);if(DESTRUCTIBLE_TYPES.has(o.type)){if(o.destructible===undefined)o.destructible=true;if(typeof o.destructible!=='boolean')throw Error('ブロックの体力設定を確認してください');}
     for(const b of o.program)if((!Object.hasOwn(BEHAVIORS,b.action)&&b.action!=='shoot')||!number(b.speed,.5,8))throw Error('うごきの設定を確認してください');
     if(o.type==='enemy'){if(o.facing!==undefined&&![0,90,180,270].includes(o.facing))throw Error('敵の向きを確認してください');if(o.attackEnabled!==undefined&&typeof o.attackEnabled!=='boolean'||o.attackSpeed!==undefined&&!number(o.attackSpeed,.5,8)||o.enemyWeaponId!==undefined&&typeof o.enemyWeaponId!=='string')throw Error('敵の攻撃設定を確認してください');upgradeEnemy(o);}
@@ -110,6 +110,61 @@ export function validate3D(data,skipShared=false){
 export const solids=objects=>objects.flatMap(o=>o.type==='town'?townSolids(o):isFurniture(o)?furnitureSolids(o):o.type==='door'?doorSolids(o):o.wallStyle&&!isDiagonal(o)?fenceSolids(o):solidTypes.has(o.type)&&!o.open?[o]:[]);
 const bodyRadius=p=>p.collisionRadius??(p.type==='enemy'?.55*(p.enemyScale||1):.35);
 function overlaps(p,o){return (!isDiagonal(o)||diagonalContains(o,p.x,p.z,bodyRadius(p)))&&Math.abs(p.x-o.x)<o.w/2+(bodyRadius(p))-.00001&&Math.abs(p.z-o.z)<o.d/2+(bodyRadius(p))-.00001&&p.y<topAt(o,p.x,p.z)-.001&&p.y+1.7*(p.enemyScale||1)>bottomAt(o,p.x,p.z)+.001;}
+const ladderFacing=ladder=>({x:Math.sin((ladder.rotation||0)*Math.PI/180),z:Math.cos((ladder.rotation||0)*Math.PI/180)});
+function ladderContact(player,ladder){
+ const n=ladderFacing(ladder),dx=player.x-ladder.x,dz=player.z-ladder.z;
+ const front=dx*n.x+dz*n.z,across=Math.abs(dx*n.z-dz*n.x),width=(ladder.rotation||0)%180===90?ladder.d:ladder.w;
+ return across<=width/2+.3&&front>=-.95&&front<=1.05?front:null;
+}
+function climbLadder(player,terrain,input,dx,dz,dt){
+ const ladders=terrain.filter(o=>o.type==='ladder'&&!o.hidden&&o.hp>0);
+ let ladder=ladders.find(o=>o.id===player.climbing);
+ if(player.climbing&&!ladder)player.climbing=null;
+ const sideways=Math.abs(input.x)>.3&&Math.abs(input.x)>Math.abs(input.z);
+ if(sideways||input.jump){
+  if(ladder){player.climbing=null;player.ignoredLadder=ladder.id;if(input.jump)player.vy=(player.jumpSpeed??7)*.65;}
+  return false;
+ }
+ if(!ladder){
+  const ignored=ladders.find(o=>o.id===player.ignoredLadder);
+  if(!ignored||ladderContact(player,ignored)===null||player.grounded)player.ignoredLadder=null;
+  if(Math.abs(input.z)<.1)return false;
+  ladder=ladders.find(o=>{
+   if(o.id===player.ignoredLadder)return false;
+   const front=ladderContact(player,o),top=o.y+o.h,n=ladderFacing(o),toward=dx*n.x+dz*n.z;
+   if(front===null||player.y<o.y-.25||player.y>top+.42)return false;
+   if(player.y>=top-.22)return toward>.0001;
+   return input.z<0&&front>=0&&toward<-.0001;
+  });
+  if(!ladder)return false;
+  player.ladderForwardDown=input.z<0&&player.y>=ladder.y+ladder.h-.22;
+ }
+ const n=ladderFacing(ladder),walls=solids(terrain),top=ladder.y+ladder.h;
+ const vertical=player.ladderForwardDown?input.z:-input.z;
+ const pose={...player,x:ladder.x+n.x*.46,z:ladder.z+n.z*.46,y:clamp(player.y+vertical*2.6*dt,ladder.y,top+.4)};
+ if(walls.some(o=>overlaps(pose,o)))return !!player.climbing;
+ Object.assign(player,{x:pose.x,y:pose.y,z:pose.z,vy:0,climbing:ladder.id,grounded:false,supportId:null});
+ if(vertical>0&&player.y>=top||vertical<0&&player.y<=ladder.y){
+  const edge=vertical>0?top:ladder.y;
+  const next=ladders.find(o=>o!==ladder&&(o.rotation||0)===(ladder.rotation||0)&&Math.hypot(o.x-ladder.x,o.z-ladder.z)<.08&&
+   Math.abs((vertical>0?o.y:o.y+o.h)-edge)<.04);
+  if(next){player.y=edge;player.climbing=next.id;return true;}
+ }
+ if(vertical<0&&player.y<=ladder.y){player.climbing=null;player.grounded=player.y===0;return true;}
+ if(vertical>0&&player.y>=top-.25){
+  for(const inset of [.45,.8,1.15]){
+   const x=ladder.x-n.x*inset,z=ladder.z-n.z*inset;
+   for(const o of walls){
+    if(Math.abs(x-o.x)>=o.w/2||Math.abs(z-o.z)>=o.d/2||isDiagonal(o)&&!diagonalContains(o,x,z))continue;
+    const y=topAt(o,x,z);
+    if(y<top-.25||y>top+.4||player.y<y-.015)continue;
+    const clear=[.33,.66,1].every(t=>!walls.some(wall=>overlaps({...pose,x:player.x+(x-player.x)*t,z:player.z+(z-player.z)*t,y},wall)));
+    if(clear){Object.assign(player,{x,y,z,climbing:null,grounded:true,supportId:o.id});return true;}
+   }
+  }
+ }
+ return true;
+}
 const CHAIR_REACH=1.8;
 const usableChair=o=>o.furnitureKind==='chair'&&!o.hidden&&!o.collected&&o.hp>0;
 const chairYaw=chair=>(chair.rotation||0)*Math.PI/180;
@@ -264,6 +319,7 @@ export function step3D(g,p,input,dt){
   for(const o of g.objects){if(o.type==='moving'){
     const s=o.settings,before={x:o.x,y:o.y,z:o.z},axis=s.axis;o[axis]=clamp(o.origin[axis]+Math.sin(g.time*s.speed/s.distance)*s.distance,axis==='y'?0:-limit,axis==='y'?MAX_BUILD_Y:limit);
     if(player.grounded&&player.supportId===o.id){player.x+=o.x-before.x;player.y+=o.y-before.y;player.z+=o.z-before.z;}}}
+  let onLadder=false;
   const yaw=input.yaw||0,beforeDrive={x:player.x,y:player.y,z:player.z},fallBefore={y:player.y,grounded:player.grounded};
   if(g.car){
     const beforeHeading=g.car.heading;
@@ -295,13 +351,16 @@ export function step3D(g,p,input,dt){
     updateChair(g,input.useSeat,yaw,tell);
     if(!player.seated){
       let x=input.x||0,z=input.z||0,len=Math.hypot(x,z);if(len>1){x/=len;z/=len;}
-      const terrain=nearbyObjects(g,player.x-1,player.z-1,player.x+1,player.z+1);
-      movePlayer(player,terrain,(x*Math.cos(yaw)+z*Math.sin(yaw))*player.walkSpeed*dt,(-x*Math.sin(yaw)+z*Math.cos(yaw))*player.walkSpeed*dt,dt,input.jump,g);
+      const terrain=nearbyObjects(g,player.x-1.7,player.z-1.7,player.x+1.7,player.z+1.7);
+      const dx=(x*Math.cos(yaw)+z*Math.sin(yaw))*player.walkSpeed*dt,dz=(-x*Math.sin(yaw)+z*Math.cos(yaw))*player.walkSpeed*dt;
+      onLadder=climbLadder(player,terrain,{x,z,jump:input.jump},dx,dz,dt);
+      if(!onLadder)movePlayer(player,terrain,dx,dz,dt,input.jump,g);
     }
   }
   const fallRule=g.car?{...FALL_DEFAULTS,enabled:false}:p.playerRules?.fallDamage??FALL_DEFAULTS;
   const cushioned=fallRule.enabled&&player.grounded&&(player.fallAirborne||!fallBefore.grounded)&&nearbyObjects(g,player.x-1,player.z-1,player.x+1,player.z+1).some(o=>o.type==='bounce'&&Math.abs(player.x-o.x)<o.w/2+.25&&Math.abs(player.z-o.z)<o.d/2+.25&&player.y<o.y+1.8&&player.y+1.7>o.y&&player.y>=o.y-.1&&player.y<=o.y+o.h+.2);
-  const fallDamage=updatePlayerFall(player,fallBefore,fallRule,cushioned);if(fallDamage)tell('落下ダメージ！ 体力が'+fallDamage+'へった');
+  if(onLadder)resetPlayerFall(player);
+  const fallDamage=onLadder?0:updatePlayerFall(player,fallBefore,fallRule,cushioned);if(fallDamage)tell('落下ダメージ！ 体力が'+fallDamage+'へった');
   if(input.useDoor){const door=nearbyDoor(g,input.yaw||0);if(door){const action=doorInteraction(door,player);prepareDoorPanels(door);if(action.open){if(doorwayOccupied(door,player,action.index))tell('ドアから少しはなれよう');else{setDoorPanelOpen(door,action.index,false);tell('ドアをしめた');}}else if(!conditionMet(door,g))tell('まだあけられません。'+conditionHint(door,g));else if(!door.triggered){fireEvents(g,p,door,tell);if(door.open)setDoorPanelOpen(door,action.index,true);}else if(actionsFor(door).some(a=>a.type==='openDoor'&&a.target===door.id)){setDoorPanelOpen(door,action.index,true);tell('ドアをあけた');}}}
   const tool=p.loadout?p.loadout[g.equipped]:p.weapon;
   if(!g.car&&(tool||g.blockEquipped)&&input.fire&&g.cooldown<=0){
@@ -354,5 +413,5 @@ export function step3D(g,p,input,dt){
   // Items are collected before testing conditions. Each source fires once per test play.
   for(const o of g.objects)if(!o.triggered&&((o.type==='door'&&doorCanOpen(o)&&!o.plateControlled&&!o.doorMode&&conditionMet(o,g))||(o.type==='checkpoint'&&nearby(o))||(o.type==='goal'&&nearby(o)&&conditionMet(o,g)&&player.hp>0)))fireEvents(g,p,o,tell);
   updatePlates(g);animateDoors(g,dt);
-  if(player.hp<=0){if(g.checkpoint){Object.assign(player,{x:g.checkpoint.x,y:g.checkpoint.y,z:g.checkpoint.z,vy:0,hp:player.maxHp,invincible:2,grounded:false,supportId:null,seated:null});resetPlayerFall(player);g.bullets=[];tell('セーブポイントからもう一度！');}else g.state='lost';}
+  if(player.hp<=0){if(g.checkpoint){Object.assign(player,{x:g.checkpoint.x,y:g.checkpoint.y,z:g.checkpoint.z,vy:0,hp:player.maxHp,invincible:2,grounded:false,supportId:null,seated:null,climbing:null,ignoredLadder:null});resetPlayerFall(player);g.bullets=[];tell('セーブポイントからもう一度！');}else g.state='lost';}
 }

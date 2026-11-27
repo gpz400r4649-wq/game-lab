@@ -4,7 +4,7 @@ import {createRoadView} from './road-model3d.js?v=20261127b';
 import {createRoadEditor} from './road-ui3d.js?v=20261127m';
 import {createLapGateView,makeCarModel,updateCarModel,makeRaceGateModel,updateRaceGateModel,updateRaceGateNumber,makeTrafficSignal,updateTrafficSignal} from './race-model3d.js?v=20261125g';
 import {CAR_TUNING,DEFAULT_CAR_TUNING,RACE_LAP_OPTIONS,fitRaceGate,orderedRaceGates,turnRaceGate,updateRoadGateWidths} from './race3d.js?v=20261127g';
-import {assemblyCandidate,assemblyCopies,saveAssembly,temporarySpawn} from './assembly3d.js?v=20261119p';
+import {assemblyCandidate,assemblyCopies,saveAssembly,temporarySpawn} from './assembly3d.js?v=20261127o';
 import {createSupplyUI,createSupplyView} from './supply-ui3d.js?v=20261124a';
 import {FURNITURE_PRESETS,configureFurniture,isFurniture} from './furniture3d.js?v=20261119d';
 import {furnitureGeometry,makeFurnitureModel} from './furniture-model3d.js?v=20261119d';
@@ -15,7 +15,7 @@ import {createPlayerRulesUI} from './player-rules-ui3d.js?v=20261119d';
 import {fencePresetKey,floorPresetKey,FLOOR_PRESETS,configureBuildingPart,FENCE_PRESETS,RAMP_PRESETS,ROOF_PRESETS} from './architecture3d.js?v=20261119o';
 import {makeHalfFloorGeometries,makeDiagonalWallGeometry,makeCornerRampGeometry,makeFenceModel,fenceGeometry,makeRoofSlopeGeometry,makeGableGeometry} from './architecture-model3d.js?v=20261119d';
 import {createChoiceControl,enhanceChoiceControl} from './choices3d.js?v=20261119d';
-import {groupSteps,groupCandidate,commitGroup,copyGroupNearby} from './group-edit3d.js?v=20261127c';
+import {groupSteps,groupCandidate,commitGroup,copyGroupNearby} from './group-edit3d.js?v=20261127o';
 import {initializeCharacterDefaults,synchronizeCharacterDefaults,inheritNewCharacter} from './character-defaults3d.js?v=20261119d';
 import {nearbyActor,trade,companionsAt} from './actor3d.js?v=20261119d';
 import {giveAllyGun,giftableGun,recruitTarget,allyAttackDistance} from './ally3d.js?v=20261119d';
@@ -27,7 +27,7 @@ import {stageRangePointer} from './stage-range3d.js?v=20261124a';
 import {createEnemyMessages} from './enemy-messages3d.js?v=20261119d';
 import {createPlayRanges} from './play-ranges3d.js?v=20261124a';
 import {closeLiveRangeEditor,isLiveRangeEditing} from './enemy-range-ui3d.js?v=20261124a';
-import {dragCandidate} from './editor-drag3d.js?v=20261127g';
+import {dragCandidate} from './editor-drag3d.js?v=20261127o';
 import {rangeWorldCells,enemyYaw,defaultEnemyRanges,MOVE_MAX_CELLS} from './enemy-range3d.js?v=20261119d';
 import {ROBOT_BARREL,TPS_GUN_MOUNT} from './muzzle3d.js?v=20261119d';
 import {DOOR_PRESETS,configureDoor,doorInteraction,isSlidingDoor,nearbyDoor} from './doors3d.js?v=20261119d';
@@ -43,15 +43,15 @@ import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261119d
 import {installGameTouchGuard,bindHeldButton,bindGameAction,createCarControls,createGamePageMode} from './input3d.js?v=20261120m';
 import {actionsFor} from './events3d.js?v=20261119d';
 import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261119d';
-import {rotatePiece,BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,topAt,editorPlacementReason,editorPlacementBlocker,blockPlacement} from './building3d.js?v=20261119p';
+import {rotatePiece,BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,topAt,editorPlacementReason,editorPlacementBlocker,blockPlacement} from './building3d.js?v=20261127o';
 import {createToolsUI} from './tools3d.js?v=20261125g';
 import * as T from './vendor/three.module.min.js';
-import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,nearbyChair} from './engine3d.js?v=20261127g';
+import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,nearbyChair} from './engine3d.js?v=20261127o';
 import {TOWN_PARTS,addTownStroke,configureTownPart,fitTownPart,isTownLotKind,refitTownParts,townLots,townPlacementReason} from './town3d.js?v=20261127e';
 import {createTownView,makeTownModel} from './town-model3d.js?v=20261127i';
 import {townRaceRank} from './town-traffic3d.js?v=20261127i';
 import {installTownUI,renderRivalSettings} from './town-ui3d.js?v=20261127l';
-import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261127g';
+import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261127o';
 document.querySelectorAll('.setting-choices').forEach(enhanceChoiceControl);
 const $=s=>document.querySelector(s),view=$('#viewport');
 const seatButton=$('#use-seat3');
@@ -231,8 +231,20 @@ function addActorHat(mesh,hat='yellow'){
     mesh.add(brim,crown,band);
   }
 }
+const ladderPickMaterial=new T.MeshBasicMaterial({visible:false});
+function ladderModel(o,preview=null){
+ const mesh=new T.Group(),width=(o.rotation||0)%180===90?o.d:o.w;
+ const rail=preview||materials.dark,rung=preview||materials.star;
+ for(const side of [-1,1])box(mesh,rail,side*(width-.11)/2,o.h/2,0,.11,o.h,.15);
+ const count=Math.max(2,Math.round(o.h/.37));
+ for(let i=0;i<count;i++)box(mesh,rung,0,o.h*(i+.48)/count,.035,width-.12,.075,.105);
+ if(!preview)box(mesh,ladderPickMaterial,0,o.h/2,0,width,o.h,.5);
+ mesh.rotation.y=(o.rotation||0)*Math.PI/180;
+ return mesh;
+}
 function partModel(o){let mesh=new T.Group();
   if(o.type==='town')mesh=makeTownModel(o);
+  else if(o.type==='ladder')mesh=ladderModel(o);
   else if(o.type==='raceGate')mesh=makeRaceGateModel(o);
   else if(o.type==='trafficSignal')mesh=makeTrafficSignal(o);
   else if(isFurniture(o)){mesh=makeFurnitureModel(o,materials.furniture);}
@@ -460,7 +472,7 @@ function updateEditorDrag(event,drag){if(drag.group){updateGroupDrag(event,drag)
  dragPreview.position.set(candidate.piece.x,candidate.piece.y,candidate.piece.z);ghostMaterial.color.set(candidate.reason?0xee8592:0x53d9b4);dragPreview.visible=true;dragPreview.updateMatrixWorld(true);selectionBox.setFromObject(dragPreview);if(drag.original.type==='enemy'){if(drag.original[enemyRangeView]?.space!=='world')rangeOverlay.position.set(candidate.piece.x-drag.original.x,0,candidate.piece.z-drag.original.z);}}
 function finishEditorDrag(commit){const drag=look?.drag;if(!drag)return;if(drag.group){finishGroupDrag(drag,commit);return;}const result=drag.candidate,o=project.objects.find(o=>o.id===drag.original.id);if(commit&&drag.started&&result&&!result.reason&&o){if(o.type==='raceGate'||o.type==='town')Object.assign(o,result.piece);else{o.x=result.piece.x;o.z=result.piece.z;}save();}else if(commit&&result?.reason)toast(result.reason);const source=meshes.get(drag.original.id);if(source){source.visible=true;if(o)source.position.set(o.x,o.y,o.z);}dragPreview.clear();dragPreview.visible=false;rangeOverlay.position.set(0,0,0);surface.classList.remove('is-object-dragging');structureRenderer.sync(project.objects,meshes);if(look)look.drag=null;updateSelection();if(commit&&drag.started){rebuild();objectList();inspector();}}
 function canRotateSelectedPart(){
- const piece=editedObject();return mode==='edit'&&!multiSelect&&!commonPreview&&!isLiveRangeEditing()&&!!piece&&(['wall','floor','roof','ramp','door','raceGate','trafficSignal'].includes(piece.type)||isFurniture(piece));
+ const piece=editedObject();return mode==='edit'&&!multiSelect&&!commonPreview&&!isLiveRangeEditing()&&!!piece&&(['wall','floor','roof','ramp','door','raceGate','trafficSignal','ladder'].includes(piece.type)||isFurniture(piece));
 }
 function syncSelectedPartActions(){
  $('#rotate-selected3').hidden=!canRotateSelectedPart();
@@ -694,7 +706,7 @@ const effectPool=[],bulletPool=[];function syncGameMeshes(){
  if(game.messageId!==lastMessageId){lastMessageId=game.messageId;toast(game.message);}
 }
 function editorCandidate(event){if(tool==='select'||tool==='erase')return null;const surfaces=['raceGate','trafficSignal','town'].includes(tool)?roadView?.surfaces()||[]:[];const hit=hits(event,[objectsGroup,ground,...surfaces]).find(visibleHit);if(!hit)return null;const target=project.objects.find(o=>o.id===objectId(hit.object))||null,normal=hit.face?hit.face.normal.clone().transformDirection(hit.object.matrixWorld):null,piece=snapEditorPiece(tool==='town'?configureTownPart(part(tool),townPreset):tool==='box'?configureFurniture(part(tool),piecePresets.box):tool==='door'?configureDoor(part(tool),doorPreset):tool==='weapon'?{...part(tool),weaponId:weaponPresetId}:configureBuildingPart(part(tool),piecePresets[tool]),hit.point,target,normal,project);if(piece.type==='town')fitTownPart(piece,project.roads||[],hit.point);if(piece.type==='enemy')Object.assign(piece,defaultEnemyRanges(piece));if(piece.type==='trafficSignal'&&hit.object.userData.roadSurface)piece.y=Math.max(0,hit.point.y-.025);if(piece.type==='raceGate'){const roadId=hit.object.userData.roadSurface?hit.object.parent.userData.roadId:null;fitRaceGate(piece,roadId?project.roads.filter(road=>road.id===roadId):project.roads,hit.point);piece.gateOrder=Math.min(MAX_PARTS,1+project.objects.reduce((max,part)=>part.type==='raceGate'?Math.max(max,part.gateOrder):max,0));}const reason=editorPlacementReason(piece,project.objects,courseStart(project),project)||(piece.type==='town'?townPlacementReason(piece,project.objects,project):'');return {piece,reason,blocker:reason?editorPlacementBlocker(piece,project.objects):null};}
-function showGhost(o,valid){const shape=[o.type,o.townKind,o.townHeading,o.townDriveway,o.townGrade,o.furnitureKind||'',o.roofStyle||'',o.wallGable||'',o.doorVariant||'',o.wallStyle||'',o.rampStyle||'',o.rotation||0,o.gateYaw??'',o.w,o.h,o.d,o.floorHalf?halfFloorMask(o,mode==='play'?game?.objects||[]:project.objects):3].join(':');if(shape!==ghostShape){ghost.clear();if(o.type==='town')ghost.add(makeTownModel(o,ghostMaterial));else if(isFurniture(o))ghost.add(makeFurnitureModel(o,ghostMaterial));else if(Object.hasOwn(BUILD_TYPES,o.type))ghost.add(structureModel(o,ghostMaterial));else if(o.type==='trafficSignal')ghost.add(makeTrafficSignal(o,ghostMaterial));else if(o.type==='raceGate'){const gate=makeRaceGateModel(o);gate.traverse(child=>{if(child.isMesh)child.material=ghostMaterial;});ghost.add(gate);}else if(o.type==='door')ghost.add(makeDoorModel(o,{door:ghostMaterial,wall:ghostMaterial,dark:ghostMaterial,star:ghostMaterial,glass:ghostMaterial,white:ghostMaterial}));else box(ghost,ghostMaterial,0,o.h/2,0,o.w,o.h,o.d);ghostShape=shape;}ghost.position.set(o.x,o.y,o.z);ghostMaterial.color.set(valid?0x53d9b4:0xee8592);ghost.visible=true;}
+function showGhost(o,valid){const shape=[o.type,o.townKind,o.townHeading,o.townDriveway,o.townGrade,o.furnitureKind||'',o.roofStyle||'',o.wallGable||'',o.doorVariant||'',o.wallStyle||'',o.rampStyle||'',o.rotation||0,o.gateYaw??'',o.w,o.h,o.d,o.floorHalf?halfFloorMask(o,mode==='play'?game?.objects||[]:project.objects):3].join(':');if(shape!==ghostShape){ghost.clear();if(o.type==='town')ghost.add(makeTownModel(o,ghostMaterial));else if(o.type==='ladder')ghost.add(ladderModel(o,ghostMaterial));else if(isFurniture(o))ghost.add(makeFurnitureModel(o,ghostMaterial));else if(Object.hasOwn(BUILD_TYPES,o.type))ghost.add(structureModel(o,ghostMaterial));else if(o.type==='trafficSignal')ghost.add(makeTrafficSignal(o,ghostMaterial));else if(o.type==='raceGate'){const gate=makeRaceGateModel(o);gate.traverse(child=>{if(child.isMesh)child.material=ghostMaterial;});ghost.add(gate);}else if(o.type==='door')ghost.add(makeDoorModel(o,{door:ghostMaterial,wall:ghostMaterial,dark:ghostMaterial,star:ghostMaterial,glass:ghostMaterial,white:ghostMaterial}));else box(ghost,ghostMaterial,0,o.h/2,0,o.w,o.h,o.d);ghostShape=shape;}ghost.position.set(o.x,o.y,o.z);ghostMaterial.color.set(valid?0x53d9b4:0xee8592);ghost.visible=true;}
 const placementContact=new T.LineLoop(new T.BufferGeometry().setFromPoints([
  new T.Vector3(-.5,0,-.5),new T.Vector3(.5,0,-.5),new T.Vector3(.5,0,.5),new T.Vector3(-.5,0,.5)
 ]),new T.LineBasicMaterial({color:0x248e79,depthTest:false}));

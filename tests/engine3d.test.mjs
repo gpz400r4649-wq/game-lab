@@ -1,4 +1,34 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {fresh3D,part,validate3D,create3D,step3D,movePlayer} from '../engine3d.js';
+import {editorPlacementReason,rotatePiece,snapEditorPiece} from '../building3d.js';
+test('はしごを壁に沿わせてつなぎ、床に乗り移ってから同じはしごで下りられる',()=>{
+ const p=fresh3D();p.spawn={x:0,y:0,z:2};
+ const wall={...part('wall',0,0),h:6},floor={...part('floor',0,-2),y:6};
+ const lower=snapEditorPiece(part('ladder'),{x:0,y:1.4,z:.125},wall,{x:0,y:0,z:1},p);
+ const upper=snapEditorPiece(part('ladder'),{x:0,y:3,z:lower.z},lower,{x:0,y:1,z:0},p);
+ assert.deepEqual([lower.x,lower.y,lower.z,lower.rotation],[0,0,.375,0]);
+ assert.deepEqual([upper.x,upper.y,upper.z,upper.rotation],[0,3,.375,0]);
+ assert.equal(editorPlacementReason(upper,[wall,floor,lower],p.spawn,p),'');
+ p.objects=[wall,floor,lower,upper];
+ const saved=validate3D(JSON.parse(JSON.stringify(p))),game=create3D(saved);
+ for(let i=0;i<35;i++)step3D(game,saved,{z:-1,yaw:0},.02);
+ assert.equal(game.player.climbing,lower.id);
+ const height=game.player.y;
+ for(let i=0;i<15;i++)step3D(game,saved,{z:0,yaw:0},.02);
+ assert.equal(game.player.y,height);
+ for(let i=0;i<140&&game.player.supportId!==floor.id;i++)step3D(game,saved,{z:-1,yaw:0},.02);
+ assert.equal(game.player.supportId,floor.id);
+ assert.equal(game.player.y,6.25);
+ for(let i=0;i<125;i++)step3D(game,saved,{z:1,yaw:0},.02);
+ assert.equal(game.player.y,0);assert.equal(game.player.climbing,null);assert.equal(game.player.hp,5);
+});
+test('壁の両側に合わせ、はしごを90度ずつ回して保存できる',()=>{
+ const p=fresh3D(),wall={...part('wall',0,0),rotation:90,w:.25,d:4};
+ const ladder=snapEditorPiece(part('ladder'),{x:-.125,y:1.5,z:0},wall,{x:-1,y:0,z:0},p);
+ assert.deepEqual([ladder.x,ladder.z,ladder.rotation,ladder.w,ladder.d],[-.375,0,270,.5,1.15]);
+ rotatePiece(ladder,p);assert.deepEqual([ladder.rotation,ladder.w,ladder.d],[0,1.15,.5]);
+ rotatePiece(ladder,p);rotatePiece(ladder,p);
+ assert.equal(validate3D({...p,objects:[ladder]}).objects[0].rotation,180);
+});
 test('3Dテンプレートは空で、保存読込が往復する',()=>{const p=fresh3D();assert.equal(p.objects.length,0);assert.deepEqual(validate3D(JSON.parse(JSON.stringify(p))),p);p.objects.push(part('enemy'));p.objects[0].program=[{action:'chase',speed:Infinity}];assert.throws(()=>validate3D(p));});
 test('視点の向きに合わせて前進する',()=>{const p=fresh3D(),g=create3D(p);step3D(g,p,{z:-1,yaw:Math.PI/2},.03);assert.ok(g.player.x<0);assert.ok(Math.abs(g.player.z-8)<.001);});
 test('ジャンプして重力で着地し、空中で二段ジャンプしない',()=>{const p={x:0,y:0,z:0,vy:0,grounded:true};movePlayer(p,[],0,0,.03,true);assert.ok(p.y>0);const vy=p.vy;movePlayer(p,[],0,0,.03,true);assert.ok(p.vy<vy);for(let i=0;i<100;i++)movePlayer(p,[],0,0,.016,false);assert.equal(p.y,0);assert.ok(p.grounded);});

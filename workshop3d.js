@@ -7,8 +7,8 @@ import {createChoiceControl} from './choices3d.js?v=20261119d';
 import {sharedDefaultsType,applyBlockDefaults,sharedKeys,synchronizeCharacterDefaults,useCharacterDefaults,inheritNewCharacter,writeCharacterDefaults} from './character-defaults3d.js?v=20261119d';
 import {copyEnemySettings,ENEMY_COPY_GROUPS} from './enemy-batch3d.js?v=20261125g';
 import {ACTOR_HATS} from './actor3d.js?v=20261119d';
-import {makeTool} from './building3d.js?v=20261119p';
-import {findDuplicatePosition} from './editor-drag3d.js?v=20261127g';
+import {makeTool} from './building3d.js?v=20261127o';
+import {findDuplicatePosition} from './editor-drag3d.js?v=20261127o';
 import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261119d';
 import {openWaypointEditor} from './waypoint-ui3d.js?v=20261124a';
 import {openPatrolEditor} from './patrol-ui3d.js?v=20261124a';
@@ -24,13 +24,13 @@ import {setReadingText,applyReadings,kanaText} from './readings3d.js?v=20261119d
 import {actionsFor} from './events3d.js?v=20261119d';
 import {renderEventEditor} from './event-editor3d.js?v=20261119d';
 import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261119d';
-import {alignPiece,gridStep,editorPlacementReason} from './building3d.js?v=20261119p';
-import {part,ENEMY_SCALES,PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261127g';
+import {alignPiece,gridStep,editorPlacementReason} from './building3d.js?v=20261127o';
+import {part,ENEMY_SCALES,PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261127o';
 import {TOWN_PARTS} from './town3d.js?v=20261127c';
 
-const ICONS={trafficSignal:'🚦',raceGate:'🏁',actor:'💬',plate:'▣',ally:'🛡',weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
+const ICONS={trafficSignal:'🚦',raceGate:'🏁',actor:'💬',plate:'▣',ally:'🛡',weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',ladder:'🪜',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};
 const DESCRIPTIONS={trafficSignal:'90°まわして道に向けよう。たしかめると、あお・きいろ・あかに切りかわるよ。',raceGate:'数字が小さいゲートからじゅんばんにとおるよ。ぜんぶとおるとゴール！',actor:'名前とせりふを書こう。交換する品を置くとお店になるよ。',plate:'踏んでいる間、えらんだドアが開くよ。',ally:'近くで「ついてきて」と呼ぶと、一緒に戦うよ。',weapon:'地面に置いて、ふれると拾える銃。持ちもの・銃づくりで用意した銃をえらぼう。',ramp:'低いほうから歩くと、そのまま登れるスロープ。回して好きな向きにつなげよう。',wall:'家を囲う壁。向きを変えてつなげよう。',floor:'家の床と天井に使える板。壁の内側にぴったり合うよ。',roof:'壁の上にのせる三角屋根。向きを変えて家を仕上げよう。',
-  box:'かべや建物をつくれる、かたいブロック。',platform:'ジャンプで乗れる足場。高さを変えてコースにしよう。',
+  box:'かべや建物をつくれる、かたいブロック。',platform:'ジャンプで乗れる足場。高さを変えてコースにしよう。',ladder:'壁のよこや高いゆかのふちにおけるよ。近づいて、スティックでのぼったりおりたりしよう。',
   moving:'置くだけで行ったり来たり。乗ると一緒に運んでくれるよ。',bounce:'ふれると大ジャンプ！ 飛ぶ強さを変えてみよう。',
   enemy:'動きかたと、攻撃してくるかを別々にえらべるよ。攻撃するマスも工夫してみよう。',star:'ふれると拾える星。得点をもらうほか、銃を拾うなどの役割にも変えられるよ。',
   key:'ふれると拾えるアイテム。取ったときに何が起きるか、イベントで変えられるよ。',door:'カギや星などの条件でイベントが起きるよ。開ける以外の役割も作れるよ。',
@@ -210,6 +210,7 @@ export function createWorkshop(api){
     const description=document.createElement('p');description.className='component-description';setReadingText(description,isFurniture(o)?(o.furnitureKind==='chair'?'机のうしろに置くいす。90度ずつ回して向きを変えられるよ。':o.furnitureKind==='longTable'?'いすを３つ並べられる長い机。机の端を押すと、半マスずつそろってつながるよ。':'１人用の学習机。半マスずつそろい、横にも前後にもぴったりつながるよ。'):o.doorVariant==='frame'?'ドアの枠だけのパーツ。中央をそのまま通れるよ。':o.doorVariant==='windowFrame'?'窓の枠だけのパーツ。窓のあいた部分にはガラスがないよ。':o.doorVariant==='windowGlass'?'ガラスの入った窓。開け閉めしない窓だよ。':o.doorVariant==='windowSwing'?'左右に開く窓。近づいて「あける」を押そう。':doorUsesGlass(o)?'木のわくに大きなガラスを入れた戸。向こうの部屋が見えるよ。近づいて「あける」を押そう。':isSlidingDoor(o)?'近くの扉が、隣の扉に重なって開くよ。半マス分が通り道になるよ。１枚ずつ開け閉めできるよ。':o.type==='door'&&doorDimensions(o).single?'扉は半マスの幅。残りの半分は壁だよ。扉を左右どちらに置くかもえらべるよ。':o.floorHalf?'半マスの床。２枚を並べると１マスになるよ。90度回して向きを変えられるよ。':o.roofStyle==='slope'?'左右のななめ屋根を頂点で合わせよう。斜面の端を押すと、隣につながるよ。下は空いているので部屋に使えるよ。':o.wallGable?'ななめ屋根の端をふさぐ三角のかべ。左がひくい形と右がひくい形を合わせよう。':o.rampStyle?'角に合わせて回すスロープ。低いほうから登れるよ。':o.wallHalf==='halfVertical'&&o.wallStyle?'はばが半分のさく。２枚で１マスになり、90度回してL字にもつなげられるよ。':o.wallHalf==='halfVertical'?'幅が半分の壁。２枚を横に並べると壁１枚分になるよ。':o.wallHalf==='halfHorizontal'?'高さが半分の壁。２枚を上下に積むと壁１枚分になるよ。':o.wallStyle==='diagonal'?'１マスの角から反対の角へつながる、ななめの壁。90度回すと逆向きになるよ。':o.wallStyle?'柵のパーツ。半分の高さと、壁と同じ高さを選べるよ。':DESCRIPTIONS[o.type]);el.append(title,description);
     sharedObject=sharedKeys(o.type).length?o:null;
     const s=o.settings;
+    if(o.type==='ladder')field(el,'はしごのたかさ',o.h,1.5,10,.5,n=>o.h=n);
     if(o.type==='raceGate'){const gates=orderedRaceGates(p.objects);field(el,'ゲートをとおる順ばん',gates.indexOf(o)+1,1,gates.length,1,n=>moveRaceGate(p.objects,o,n));}
     if(o.type==='weapon'){
       const missing=o.weaponId&&o.weaponId!=='@random'&&!p.loadout.some(t=>t.id===o.weaponId);
@@ -441,7 +442,7 @@ export function createWorkshop(api){
     if(car)renderTownParts();
     const rows=car?
       [['#palette3',[]],['#palette-extra3',[]],['#city-parts3',['floor','ramp','wall','box','platform','moving','bounce','raceGate']]]:
-      [['#palette3',['wall','floor','roof','ramp','box','platform','moving','bounce','hazard','door']],['#palette-extra3',['enemy','ally','actor','weapon','star','key','heal','checkpoint','plate','goal']]];
+      [['#palette3',['wall','floor','roof','ramp','box','platform','ladder','moving','bounce','hazard','door']],['#palette-extra3',['enemy','ally','actor','weapon','star','key','heal','checkpoint','plate','goal']]];
     const shortNames={wall:'かべ・まど',floor:'ゆか',roof:'やね',ramp:'スロープ',box:'ブロック・かぐ',moving:'うごく',platform:'あしば',bounce:'ジャンプ',hazard:'ダメージ',enemy:'てき',ally:'みかた',actor:'やくしゃ',weapon:'じゅう',star:'ほし',key:'カギ',heal:'かいふく',checkpoint:'セーブ',plate:'スイッチ',goal:'ゴール'};
     for(const [selector,types]of rows){
       const palette=$(selector);palette.replaceChildren();
