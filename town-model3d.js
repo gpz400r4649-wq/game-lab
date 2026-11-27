@@ -1,6 +1,7 @@
 import * as T from './vendor/three.module.min.js';
 import {TOWN_PARTS,houseGarage,townLocal,visitorParking} from './town3d.js?v=20261127c';
 import {makeCarModel,updateCarModel} from './race-model3d.js?v=20261125g';
+import {MAX_PARTS} from './limits3d.js?v=20261119d';
 
 const mat=color=>new T.MeshStandardMaterial({color,roughness:.85});
 const chalk=new T.MeshBasicMaterial({color:0xf9f5ed}),asphalt=mat(0x4c5360),wall=mat(0xe2c5a7),
@@ -111,6 +112,9 @@ export function createTownView(scene){
   const marker=new T.LineLoop(new T.BufferGeometry(),new T.LineBasicMaterial({color,depthTest:false}));
   marker.visible=false;marker.renderOrder=22;scene.add(marker);return marker;
  });
+ const candidateMarkers=new T.InstancedMesh(new T.OctahedronGeometry(.82),new T.MeshBasicMaterial({color:0x794cc7,depthTest:false,depthWrite:false}),MAX_PARTS);
+ candidateMarkers.name='town-route-candidates';candidateMarkers.renderOrder=23;candidateMarkers.visible=false;scene.add(candidateMarkers);
+ let routeCandidates=[];
  const lots=new T.Mesh(new T.BufferGeometry(),new T.MeshBasicMaterial({color:0x49ad8d,transparent:true,opacity:.23,side:T.DoubleSide,depthWrite:false}));
  const outlines=new T.LineSegments(new T.BufferGeometry(),new T.LineBasicMaterial({color:0x29765f}));
  const previews=new T.Group();lots.visible=outlines.visible=false;scene.add(lots,outlines,previews);
@@ -127,6 +131,8 @@ export function createTownView(scene){
  }
  return {
   lotSurface:lots,
+  routeCandidateSurface:candidateMarkers,
+  routeCandidateId(index){return routeCandidates[index]?.id;},
   showLots(parts,kind){
    const shop=kind==='shop';
    lots.material.color.setHex(shop?0xd29944:0x49ad8d);
@@ -169,6 +175,14 @@ export function createTownView(scene){
     });
     marker.geometry.dispose();marker.geometry=new T.BufferGeometry().setFromPoints(points);
    }
+  },
+  showRouteCandidates(parts){
+   routeCandidates=parts;
+   candidateMarkers.count=parts.length;candidateMarkers.visible=parts.length>0;
+   if(!parts.length)return;
+   const matrix=new T.Matrix4();
+   for(const [i,part] of parts.entries())candidateMarkers.setMatrixAt(i,matrix.makeScale(1,1.3,1).setPosition(part.x,part.y+part.h+1.2,part.z));
+   candidateMarkers.instanceMatrix.needsUpdate=true;candidateMarkers.computeBoundingSphere();
   },
   showRoute(points){
    route.visible=!!points?.length;

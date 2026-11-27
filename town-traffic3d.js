@@ -1,4 +1,4 @@
-import {createRoadNetwork} from './road-network3d.js?v=20261125g';
+import {createRoadNetwork} from './road-network3d.js?v=20261127i';
 import {courseStart,savedRoadPath} from './road3d.js?v=20261127g';
 import {orderedRaceGates,trafficSignalPhase} from './race3d.js?v=20261127g';
 import {AUTO_TOWN_DESTINATION,MAX_TOWN_CARS,TOWN_PARTS,houseGarage,townFleetSettings,townLocal,townParkingCapacity,visitorParking} from './town3d.js?v=20261127c';
@@ -43,14 +43,23 @@ function parkingPath(part,slot){
   townLocal(part,visitors?lane:entrance,-part.d/2-(part.townDriveway||0))];
 }
 
+const MIN_TOWN_TRIP=.05;
+function townRoadAnchor(part){
+ const entrance=townLocal(part,parkingEntrance(part),0);
+ const {x,y,z}=part.townAnchor;
+ return {x:x+entrance.x-part.x,y,z:z+entrance.z-part.z};
+}
+
+export function reachableTownDestinations(network,source,places){
+ if(!source?.townRoadId)return [];
+ const reachable=network.reachableFrom(townRoadAnchor(source),{fromRoad:source.townRoadId,minGap:MIN_TOWN_TRIP});
+ return places.filter(part=>part.id!==source.id&&part.townRoadId&&townParkingCapacity(part)&&reachable(townRoadAnchor(part),part.townRoadId));
+}
+
 export function townRoute(network,source,target,slot=0){
  if(!source?.townRoadId||!target?.townRoadId||source.id===target.id)return null;
- const roadAnchor=part=>{
-  const entrance=townLocal(part,parkingEntrance(part),0);
-  return {...part.townAnchor,x:part.townAnchor.x+entrance.x-part.x,z:part.townAnchor.z+entrance.z-part.z};
- };
- const road=network.route(roadAnchor(source),roadAnchor(target),{fromRoad:source.townRoadId,toRoad:target.townRoadId});
- if(!road?.length||road.length<2||gap(road[0],road.at(-1))<.05&&road.length===2)return null;
+ const road=network.route(townRoadAnchor(source),townRoadAnchor(target),{fromRoad:source.townRoadId,toRoad:target.townRoadId});
+ if(!road||road.length<2||gap(road[0],road.at(-1))<MIN_TOWN_TRIP&&road.length===2)return null;
  return shapePath([...parkingPath(source,slot),...setLane(road,.95),...parkingPath(target,slot).reverse()]);
 }
 

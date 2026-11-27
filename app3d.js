@@ -33,7 +33,7 @@ import {ROBOT_BARREL,TPS_GUN_MOUNT} from './muzzle3d.js?v=20261119d';
 import {DOOR_PRESETS,configureDoor,doorInteraction,isSlidingDoor,nearbyDoor} from './doors3d.js?v=20261119d';
 import {appearanceFor} from './appearance3d.js?v=20261119d';
 import {makeGunModel,applyFPSGunPose,worldGunMuzzle} from './gun-model3d.js?v=20261119d';
-import {CITY_TOP_PITCH,CITY_ANGLE_PITCH,cityRouteView,cityZoomLimit,editorViewFromPlay,moveEditorCamera,createEditorNavigation} from './editor-camera3d.js?v=20261125f';
+import {CITY_TOP_PITCH,CITY_ANGLE_PITCH,cityZoomLimit,editorViewFromPlay,moveEditorCamera,createEditorNavigation} from './editor-camera3d.js?v=20261125f';
 import {createStructureRenderer,isBatchedStructure} from './structure-render3d.js?v=20261119d';
 import {MAX_PARTS,MAX_PROJECT_BYTES,MAX_BUILD_Y} from './limits3d.js?v=20261119d';
 import {worldSize,worldHalf,coordinateLimit} from './world3d.js?v=20261119d';
@@ -48,9 +48,9 @@ import {createToolsUI} from './tools3d.js?v=20261125g';
 import * as T from './vendor/three.module.min.js';
 import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,nearbyChair} from './engine3d.js?v=20261127g';
 import {TOWN_PARTS,addTownStroke,configureTownPart,fitTownPart,isTownLotKind,refitTownParts,townLots,townPlacementReason} from './town3d.js?v=20261127e';
-import {createTownView,makeTownModel} from './town-model3d.js?v=20261127h';
-import {townRaceRank} from './town-traffic3d.js?v=20261127g';
-import {installTownUI,renderRivalSettings} from './town-ui3d.js?v=20261127h';
+import {createTownView,makeTownModel} from './town-model3d.js?v=20261127i';
+import {townRaceRank} from './town-traffic3d.js?v=20261127i';
+import {installTownUI,renderRivalSettings} from './town-ui3d.js?v=20261127i';
 import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261127g';
 document.querySelectorAll('.setting-choices').forEach(enhanceChoiceControl);
 const $=s=>document.querySelector(s),view=$('#viewport');
@@ -814,11 +814,12 @@ if(carTemplate)roadEditor=createRoadEditor({$,getProject:()=>project,save,rebuil
  closeStageExtra();resetGroupSelection();resetInput();selected=null;updateSelection();
 }});
 if(carTemplate)townUI=installTownUI({$,getProject:()=>project,getSelected:editedObject,save,view:townView,field,
- pickTownPart:event=>withinSurface(event)?objectId(hits(event,[objectsGroup]).find(visibleHit)?.object):null,
- showRoute:path=>{
- const focus=cityRouteView(path,camera.aspect,camera.fov,project);
- editTarget.set(focus.x,focus.y,focus.z);editYaw=0;editPitch=CITY_TOP_PITCH;editDistance=focus.distance;
-}});
+ pickTownPart:event=>{
+  if(!withinSurface(event))return null;
+  const markers=townView.routeCandidateSurface;
+  const marker=markers.visible?hits(event,[markers])[0]:null;
+  return marker?townView.routeCandidateId(marker.instanceId):objectId(hits(event,[objectsGroup]).find(visibleHit)?.object);
+ }});
 const supplyView=createSupplyView(scene);
 createSupplyUI({$,getProject:()=>project,save,scene,toast,focusRoute:(route,index)=>{
  closeStageExtra();

@@ -154,31 +154,48 @@ export function createRoadNetwork(roads=[]){
   const i=s.cuts.findIndex(cut=>cut.t>=t);
   return s.cuts.slice(Math.max(0,i-1),i+1).map(({node})=>({node,cost:dist(point,node)}));
  }
+ function routeBetween(start,end){
+  if(!start||!end)return null;
+  if(start.s===end.s)return [start.point,end.point];
+  const queue=[],costs=new Map(),previous=new Map(),targets=new Map(neighbors(end).map(({node,cost})=>[node,cost]));
+  for(const entry of neighbors(start)){heapPush(queue,entry);costs.set(entry.node,entry.cost);}
+  let best=null,bestCost=Infinity;
+  while(queue.length){
+   const {node,cost}=heapPop(queue);
+   if(cost>=bestCost)break;
+   if(cost!==costs.get(node))continue;
+   if(targets.has(node)&&cost+targets.get(node)<bestCost){best=node;bestCost=cost+targets.get(node);}
+   for(const {to,distance} of node.edges){
+    const next=cost+distance;
+    if(next>=(costs.get(to)??Infinity))continue;
+    costs.set(to,next);previous.set(to,node);heapPush(queue,{node:to,cost:next});
+   }
+  }
+  if(!best)return null;
+  const route=[end.point];
+  for(let cursor=best;cursor;cursor=previous.get(cursor))route.push(coordinate(cursor));
+  route.push(start.point);route.reverse();
+  return route.filter((p,i)=>!i||dist(p,route[i-1])>.00001);
+ }
  return {
   signals,junctions,
   route(from,to,{fromRoad,toRoad,range=10}={}){
-   const start=anchor(from,fromRoad,range),end=anchor(to,toRoad,range);
-   if(!start||!end)return null;
-   if(start.s===end.s)return [start.point,end.point];
-   const queue=[],costs=new Map(),previous=new Map(),targets=new Map(neighbors(end).map(({node,cost})=>[node,cost]));
-   for(const entry of neighbors(start)){heapPush(queue,entry);costs.set(entry.node,entry.cost);}
-   let best=null,bestCost=Infinity;
-   while(queue.length){
-    const {node,cost}=heapPop(queue);
-    if(cost>=bestCost)break;
-    if(cost!==costs.get(node))continue;
-    if(targets.has(node)&&cost+targets.get(node)<bestCost){best=node;bestCost=cost+targets.get(node);}
-    for(const {to,distance} of node.edges){
-     const next=cost+distance;
-     if(next>=(costs.get(to)??Infinity))continue;
-     costs.set(to,next);previous.set(to,node);heapPush(queue,{node:to,cost:next});
-    }
+   return routeBetween(anchor(from,fromRoad,range),anchor(to,toRoad,range));
+  },
+  reachableFrom(from,{fromRoad,range=10,minGap=0}={}){
+   const start=anchor(from,fromRoad,range);
+   if(!start)return ()=>false;
+   const pending=[start.s.a],seen=new Set(pending);
+   for(let i=0;i<pending.length;i++)for(const {to} of pending[i].edges){
+    if(!seen.has(to)){seen.add(to);pending.push(to);}
    }
-   if(!best)return null;
-   const route=[end.point];
-   for(let cursor=best;cursor;cursor=previous.get(cursor))route.push(coordinate(cursor));
-   route.push(start.point);route.reverse();
-   return route.filter((p,i)=>!i||dist(p,route[i-1])>.00001);
+   return (to,toRoad)=>{
+    const end=anchor(to,toRoad,range);
+    if(!end||!seen.has(end.s.a))return false;
+    if(Math.hypot(start.point.x-end.point.x,start.point.z-end.point.z)>=minGap)return true;
+    // Nearby entrances can snap to the same point. A direct route needs space to drive.
+    return (routeBetween(start,end)?.length||0)>2;
+   };
   }
  };
 }

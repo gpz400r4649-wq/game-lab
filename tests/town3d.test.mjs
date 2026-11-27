@@ -8,7 +8,7 @@ import {makeTownModel} from '../town-model3d.js';
 import {alignRoadEndpoints,createRoadFootprintQuery,reverseOpenRoad,roadArcPlacement,roadConnection,roadStartConnection,roadDemolitionSection,roadPiecePlacement,roadStrokeAim,roadStrokePlacement,sampleRoad,roadSections,roadVertex,splitRoadAt,splitRoadSection,traceRoadPoints,validRoads} from '../road3d.js';
 import {fitRaceGate} from '../race3d.js';
 import {DEFAULT_FLEET,configureTownPart,fitTownPart,houseGarage,refitTownParts,townLocal,townPlacementReason,townSolids,visitorParking} from '../town3d.js';
-import {createTownTraffic,resolveTownTrip,townRaceRank,townRoute} from '../town-traffic3d.js';
+import {createTownTraffic,reachableTownDestinations,resolveTownTrip,townRaceRank,townRoute} from '../town-traffic3d.js';
 import {addTownStroke,townLots} from '../town-lots3d.js';
 
 const road=(id,x,z,a,b,y=0)=>({id,width:8,closed:false,points:[{x,z,y},{x:a,z:b,y}]});
@@ -53,6 +53,22 @@ test('家の車は通れる近くのお店へ行き、別の行き先や車な�
  assert.equal(resolveTownTrip(network,home,p.objects)?.target.id,school.id);
  home.townFleet={...DEFAULT_FLEET,count:0};
  assert.equal(createTownTraffic(p).cars.length,0);
+});
+
+test('行き先のしるしは、駐車できて同じ高さの道で到達できる建物に付く',()=>{
+ const bridge=road('bridge',-15,-22,-15,22,6),detached=road('detached',-38,24,-24,24);
+ const roads=[main,branch,bridge,detached],network=createRoadNetwork(roads);
+ const home=places(roads,'house',-22,8,main.id);
+ const nearby=places(roads,'shop',14,-8,main.id),school=places(roads,'school',8,33,branch.id);
+ const far=places(roads,'shop',-31,29,detached.id),park=places(roads,'park',22,9,main.id);
+ const bridgeShop=fitTownPart(configureTownPart(part('town'),'shop'),[bridge],{x:-20,y:6,z:8});
+ const sameEntrance={...home,id:'same-entrance'};
+ const all=[home,nearby,school,far,park,bridgeShop,sameEntrance];
+ assert.deepEqual(reachableTownDestinations(network,home,all),[nearby,school]);
+ assert.deepEqual(reachableTownDestinations(network,far,all),[]);
+ for(const place of all.filter(part=>part!==park)){
+  assert.equal(!!townRoute(network,home,place),[nearby,school].includes(place));
+ }
 });
 
 test('家の切妻屋根は壁の上に載り、家の幅と道路沿いの向きに合う',()=>{
