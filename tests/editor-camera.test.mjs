@@ -1,8 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {MAX_BUILD_Y} from '../limits3d.js';
-import {cityRouteView,CITY_TOP_PITCH,editorViewFromPlay,moveEditorCamera,createEditorNavigation} from '../editor-camera3d.js';
+import {cityRouteView,CITY_TOP_PITCH,DEFAULT_PLAY_PITCH,recenterCarCamera,editorViewFromPlay,moveEditorCamera,createEditorNavigation} from '../editor-camera3d.js';
 import {PerspectiveCamera,Vector3} from '../vendor/three.module.min.js';
+test('車の視点は近い向きからゆっくり戻り、開始時と同じ角度で止まる',()=>{
+ const yaw=2*Math.PI-.9,pitch=.72;
+ let view=recenterCarCamera(yaw,pitch,1/60);
+ assert.ok(view.yaw<-.8&&view.yaw>-.9);
+ assert.ok(view.pitch<pitch&&view.pitch>.65);
+ assert.equal(view.returning,true);
+ for(let i=0;i<150&&view.returning;i++)view=recenterCarCamera(view.yaw,view.pitch,1/60);
+ assert.deepEqual(view,{yaw:0,pitch:DEFAULT_PLAY_PITCH,returning:false});
+ const opposite=recenterCarCamera(Math.PI,DEFAULT_PLAY_PITCH,.02);
+ assert.ok(opposite.yaw>3&&opposite.yaw<Math.PI);
+ assert.equal(opposite.pitch,DEFAULT_PLAY_PITCH);
+});
 test('編集カメラは見ている方向を基準に前後左右へ動く',()=>{for(const yaw of [0,Math.PI/2,Math.PI,-Math.PI/2]){const p={x:0,y:0,z:0};moveEditorCamera(p,{z:-1},yaw,20,.02,60);assert.ok(Math.abs(p.x+Math.sin(yaw)*.22)<.00001);assert.ok(Math.abs(p.z+Math.cos(yaw)*.22)<.00001);moveEditorCamera(p,{x:1},yaw,20,.02,60);assert.ok(Math.abs(p.x-(-Math.sin(yaw)+Math.cos(yaw))*.22)<.00001);}});
 test('経路の両端が近くても、遠回りと坂を含む全体を上から見られる',()=>{
  const path=[{x:-120,y:0,z:15},{x:35,y:10,z:196},{x:210,y:30,z:-145},{x:-105,y:2,z:28}];

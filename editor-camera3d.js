@@ -4,7 +4,19 @@ import {bindHeldButton} from './input3d.js?v=20261119d';
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export const CITY_TOP_PITCH=Math.PI/2-.02;
 export const CITY_ANGLE_PITCH=.82;
+export const DEFAULT_PLAY_PITCH=-.05;
 export const cityZoomLimit=world=>Math.max(65,worldHalf(world)*3);
+
+export function recenterCarCamera(yaw,pitch,dt){
+ const fraction=-Math.expm1(-3.8*dt);
+ const ease=(offset,speed)=>{
+  const next=offset-Math.sign(offset)*Math.min(Math.abs(offset)*fraction,speed*dt);
+  return Math.abs(next)<.006?0:next;
+ };
+ const nextYaw=ease(Math.atan2(Math.sin(yaw),Math.cos(yaw)),2.1);
+ const nextPitch=ease(pitch-DEFAULT_PLAY_PITCH,1.2);
+ return {yaw:nextYaw,pitch:DEFAULT_PLAY_PITCH+nextPitch,returning:nextYaw!==0||nextPitch!==0};
+}
 
 export function cityRouteView(path,aspect,fov,world){
  const bounds={x:[Infinity,-Infinity],y:[Infinity,-Infinity],z:[Infinity,-Infinity]};
