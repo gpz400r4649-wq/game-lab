@@ -94,25 +94,39 @@ test('曲がり角は滑らかにつながり、一周の道路は最初につ�
  const loop=sampleRoad({...road,closed:true});assert.deepEqual(loop[0],loop.at(-1));
 });
 
-test('きついカーブでも車道と歩道の縁が折り返さず、直線では元の幅に戻る',()=>{
- const points=[{x:-60,z:-10},{x:0,z:-10},{x:0,z:0},{x:-60,z:0}];
- for(const width of [4,8,12,16])for(const sidewalk of [undefined,'left','right','both']){
-  const road={id:'tight-turn',width,sidewalk,closed:false,points};
-  const sections=createRoadSectionQuery([road])(road);
-  const halfWidths=[-1,1].map((side,i)=>width/2+(sidewalk==='both'||sidewalk===['left','right'][i]?2:0));
-  const offsets=[-halfWidths[0],-width/2,width/2,halfWidths[1]];
-  for(let i=1;i<sections.length;i++)for(const offset of offsets){
-   const a=sections[i-1],b=sections[i],p=roadVertex(a,offset,120),q=roadVertex(b,offset,120);
-   assert.ok((q.x-p.x)*(b.x-a.x)+(q.z-p.z)*(b.z-a.z)>0,`width=${width} sidewalk=${sidewalk} offset=${offset}`);
+test('急カーブの車道の面積を保ち、同じ道路の歩道を舗装に重ねない',()=>{
+ const points=[[-30,-16],[-24,-16],[24,-16],[30,-16],[30,-10],[30,10],[30,16],[24,16],[-24,16],[-30,16],[-30,10],[-30,-10]]
+  .map(([x,z])=>({x,z}));
+ const scene=new Scene(),view=createRoadView(scene);
+ for(const width of [4,8,12,16]){
+  const road={id:'loop',width,sidewalk:'both',closed:true,points};
+  view.sync([road],120);
+  const model=scene.children[0].children[0],surface=model.children.find(mesh=>mesh.userData.roadSurface);
+  const sections=roadSections(sampleRoad(road),true);
+  const expected=[];
+  for(let i=1;i<sections.length;i++){
+   const a=sections[i-1],b=sections[i],half=width/2;
+   for(const [section,offset] of [[a,-half],[a,half],[b,half],[a,-half],[b,half],[b,-half]]){
+    const {x,y,z}=roadVertex(section,offset,120);expected.push(x,y+.025,z);
+   }
   }
-  for(const offset of offsets){
-   const start=sections[0],vertex=roadVertex(start,offset,120);
-   assert.equal(Math.abs(vertex.z-start.z),Math.abs(offset));
+  assert.deepEqual(surface.geometry.attributes.position.array,new Float32Array(expected));
+  if(width!==8)continue;
+  const covers=(mesh,x,z)=>{
+   const p=mesh.geometry.attributes.position.array;
+   for(let i=0;i<p.length;i+=9){
+    const cross=(a,b)=>(p[b]-p[a])*(z-p[a+2])-(p[b+2]-p[a+2])*(x-p[a]);
+    const signs=[cross(i,i+3),cross(i+3,i+6),cross(i+6,i)];
+    if(Math.abs(signs.reduce((sum,v)=>sum+v,0))>1e-6&&(signs.every(v=>v>=-1e-6)||signs.every(v=>v<=1e-6)))return true;
+   }
+   return false;
+  };
+  for(const [x,z] of [[-25,-13.5],[-27,-11],[-26.5,-13.3]]){
+   assert.ok(covers(surface,x,z));
+   assert.equal(covers(model.children.at(-1),x,z),false);
   }
+  assert.ok(covers(model.children.at(-1),-25,-11));
  }
- const loop={id:'loop',width:16,sidewalk:'both',closed:true,points};
- const sections=createRoadSectionQuery([loop])(loop);
- for(const offset of [-10,10])assert.deepEqual(roadVertex(sections[0],offset,120),roadVertex(sections.at(-1),offset,120));
 });
 
 test('車の作品は道路を保存でき、道幅・近すぎる点・マップ外の点を検証する',()=>{

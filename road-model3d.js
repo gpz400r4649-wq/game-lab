@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.min.js';
-import {ROAD_BARRIERS,ROAD_DECK_DEPTH,ROAD_SIDEWALK_WIDTH,createRoadFootprintQuery,createRoadOpenings,createRoadSectionQuery,roadBarrierOffset,roadRunBarrier,roadVertex} from './road3d.js?v=20261127a';
+import {ROAD_BARRIERS,ROAD_DECK_DEPTH,ROAD_SIDEWALK_WIDTH,createRoadFootprintQuery,createRoadOpenings,createRoadSectionQuery,roadBarrierOffset,roadRunBarrier,roadVertex} from './road3d.js?v=20261127b';
 import {createRoadNetwork} from './road-network3d.js?v=20261126r';
 import {makeJunctionSignal,updateTrafficSignal} from './race-model3d.js?v=20261126s';
 
@@ -35,7 +35,7 @@ function signalSupportSite({center,signals},half,footprint){
  return null;
 }
 
-function roadMesh(road,half,preview,openings,path){
+function roadMesh(road,half,preview,openings,path,ownOpenings=openings){
  const group=new T.Group();
  const pavement=[],borders=[],line=[],barriers={mini:[],highway:[],guardrail:[]},walk=[];
  const street=road.markings==='street';
@@ -63,7 +63,21 @@ function roadMesh(road,half,preview,openings,path){
   }
  }
  const blend=(from,to,t)=>t===0?from:t===1?to:{from,to,t};
- function visibleRuns(a,b,offset){return openings(road.id,roadVertex(a,offset,half),roadVertex(b,offset,half));}
+ function visibleRuns(a,b,offset,span){
+  const vertex=point=>roadVertex(point,typeof offset==='function'?offset(point):offset,half);
+  const from=vertex(a),to=vertex(b);
+  const runs=openings(road.id,from,to,span);
+  if(span===undefined||ownOpenings===openings)return runs;
+  const ownRuns=ownOpenings(road.id,from,to,span);
+  return runs.flatMap(([start,end])=>ownRuns.map(([left,right])=>[Math.max(start,left),Math.min(end,right)]).filter(([l,r])=>r>l));
+ }
+ function sidewalkTop(a,b,inner,outer){
+  const point=(section,offset)=>{const [x,y,z]=at(section,offset,0);return {x,y,z};};
+  const p=point(a,inner),q=point(b,inner),r=point(b,outer),s=point(a,outer);
+  for(const triangle of [[p,q,r],[p,r,s]])for(const piece of ownOpenings.outsideOwnPavement(road.id,triangle)){
+   for(let i=2;i<piece.length;i++)for(const {x,y=0,z} of [piece[0],piece[i-1],piece[i]])walk.push(x,y+height+.13,z);
+  }
+ }
  let travelled=0;
  for(let i=1;i<path.length;i++){
   const a=path[i-1],b=path[i],length=Math.hypot(a.x-b.x,a.z-b.z),radius=road.width/2;
@@ -72,27 +86,30 @@ function roadMesh(road,half,preview,openings,path){
   strip(pavement,a,b,-radius,radius,height);
   if(a.y>0||b.y>0){
    for(const offset of [-radius,radius]){
-    const p=at(a,offset,height),q=at(b,offset,height),r=at(b,offset,height-ROAD_DECK_DEPTH),s=at(a,offset,height-ROAD_DECK_DEPTH);
-    pavement.push(...p,...q,...r,...p,...r,...s);
+    for(const [start,end] of visibleRuns(a,b,offset,i)){
+     const l=blend(a,b,start),r=blend(a,b,end);
+     const p=at(l,offset,height),q=at(r,offset,height),s=at(l,offset,height-ROAD_DECK_DEPTH),t=at(r,offset,height-ROAD_DECK_DEPTH);
+     pavement.push(...p,...q,...t,...p,...t,...s);
+    }
    }
    strip(pavement,b,a,-radius,radius,height-ROAD_DECK_DEPTH);
   }
   const edgeInset=profile?.thickness ? profile.thickness/2+.19 : .16;
   for(const [side,sideName] of [[-1,'left'],[1,'right']])if(road.sidewalk==='both'||road.sidewalk===sideName){
    const factor=point=>point[sideName+'Walk']??1;
-   const center=point=>roadVertex(point,side*(radius+ROAD_SIDEWALK_WIDTH/2*factor(point)),half);
-   for(const [start,end] of openings(road.id,center(a),center(b))){
-    const l=blend(a,b,start),r=blend(a,b,end),inner=side*radius,outer=point=>side*(radius+ROAD_SIDEWALK_WIDTH*factor(point));
-    const p=at(l,inner,height+.13),q=at(r,inner,height+.13),s=at(l,outer,height+.13),t=at(r,outer,height+.13);
-    walk.push(...p,...q,...t,...p,...t,...s);
-    for(const offset of [inner,outer]){
+   const inner=side*radius,outer=point=>side*(radius+ROAD_SIDEWALK_WIDTH*factor(point));
+   const center=point=>(inner+outer(point))/2;
+   for(const [start,end] of visibleRuns(a,b,center))sidewalkTop(blend(a,b,start),blend(a,b,end),inner,outer);
+   for(const offset of [inner,outer]){
+    for(const [start,end] of visibleRuns(a,b,offset,i)){
+     const l=blend(a,b,start),r=blend(a,b,end);
      const p=at(l,offset,height),q=at(r,offset,height),s=at(l,offset,height+.13),t=at(r,offset,height+.13);
      walk.push(...p,...q,...t,...p,...t,...s);
     }
    }
   }
   for(const edge of [-radius+edgeInset+.055,radius-edgeInset-.055]){
-   for(const [start,end] of visibleRuns(a,b,edge))strip(borders,blend(a,b,start),blend(a,b,end),edge-.055,edge+.055,height+.008);
+   for(const [start,end] of visibleRuns(a,b,edge,i))strip(borders,blend(a,b,start),blend(a,b,end),edge-.055,edge+.055,height+.008);
   }
   if(!street||road.width>=8)for(const [from,to] of visibleRuns(a,b,0)){
    for(let mark=Math.floor((travelled+from*length)/5)*5;mark<travelled+to*length;mark+=5){
@@ -102,7 +119,7 @@ function roadMesh(road,half,preview,openings,path){
   }
   if(profile)for(const side of [-1,1]){
    const offset=roadBarrierOffset(road,side);
-   for(const [from,to] of visibleRuns(a,b,offset)){
+   for(const [from,to] of visibleRuns(a,b,offset,i)){
     rail(barriers[kind],blend(a,b,from),blend(a,b,to),offset,profile.bottom,profile.height,profile.thickness);
     if(kind==='guardrail'){
      for(let post=Math.floor((travelled+from*length)/4)*4;post<travelled+to*length;post+=4){
@@ -216,7 +233,9 @@ export function createRoadView(scene){
     const context=transient?null:showSaved(road);
     if(road){
      const sections=context?.sections??createRoadSectionQuery([...roads.filter(saved=>saved.id!==draftId),road],road);
-     draft.add(roadMesh(road,half,true,context?.openings??previewOpenings(),sections(road)));
+     const openings=context?.openings??previewOpenings();
+     const ownOpenings=transient?createRoadOpenings([road],half,sections):openings;
+     draft.add(roadMesh(road,half,true,openings,sections(road),ownOpenings));
      road.points.forEach((point,index)=>{const peg=new T.Mesh(pegShape,pegMaterial);peg.position.set(point.x,(point.y||0)+.34,point.z);peg.userData.roadHandle=index;peg.renderOrder=6;draft.add(peg);});
     }
    }

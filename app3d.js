@@ -1,6 +1,6 @@
 import {createCarAudio} from './car-audio3d.js?v=20261119g';
 import {alignRoadEndpoints,courseStart,nearestRoad} from './road3d.js?v=20261126l';
-import {createRoadView} from './road-model3d.js?v=20261127a';
+import {createRoadView} from './road-model3d.js?v=20261127b';
 import {createRoadEditor} from './road-ui3d.js?v=20261126o';
 import {createLapGateView,makeCarModel,updateCarModel,makeRaceGateModel,updateRaceGateModel,updateRaceGateNumber,makeTrafficSignal,updateTrafficSignal} from './race-model3d.js?v=20261125g';
 import {CAR_TUNING,DEFAULT_CAR_TUNING,RACE_LAP_OPTIONS,fitRaceGate,orderedRaceGates,turnRaceGate,updateRoadGateWidths} from './race3d.js?v=20261125g';
@@ -46,7 +46,7 @@ import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261119d';
 import {rotatePiece,BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,topAt,editorPlacementReason,editorPlacementBlocker,blockPlacement} from './building3d.js?v=20261119p';
 import {createToolsUI} from './tools3d.js?v=20261125g';
 import * as T from './vendor/three.module.min.js';
-import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,nearbyChair} from './engine3d.js?v=20261127a';
+import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,nearbyChair} from './engine3d.js?v=20261127b';
 import {TOWN_PARTS,configureTownPart,fitTownPart,refitTownParts,townPlacementReason} from './town3d.js?v=20261125g';
 import {createTownView,makeTownModel} from './town-model3d.js?v=20261126q';
 import {townRaceRank} from './town-traffic3d.js?v=20261125g';
