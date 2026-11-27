@@ -50,7 +50,7 @@ import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3
 import {TOWN_PARTS,addTownStroke,configureTownPart,fitTownPart,isTownLotKind,refitTownParts,townLots,townPlacementReason} from './town3d.js?v=20261127e';
 import {createTownView,makeTownModel} from './town-model3d.js?v=20261127i';
 import {townRaceRank} from './town-traffic3d.js?v=20261127i';
-import {installTownUI,renderRivalSettings} from './town-ui3d.js?v=20261127j';
+import {installTownUI,renderRivalSettings} from './town-ui3d.js?v=20261127k';
 import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261127g';
 document.querySelectorAll('.setting-choices').forEach(enhanceChoiceControl);
 const $=s=>document.querySelector(s),view=$('#viewport');
@@ -814,7 +814,7 @@ if(carTemplate)roadEditor=createRoadEditor({$,getProject:()=>project,save,rebuil
  focusRoad:()=>{
  closeStageExtra();resetGroupSelection();resetInput();selected=null;updateSelection();
 }});
-if(carTemplate)townUI=installTownUI({$,getProject:()=>project,getSelected:editedObject,save,view:townView,field,onClose:syncSelectedPartActions,
+if(carTemplate)townUI=installTownUI({$,getProject:()=>project,getSelected:editedObject,save,view:townView,field,onClose:syncSelectedPartActions,toast,
  pickTownPart:event=>{
   if(!withinSurface(event))return null;
   const markers=townView.routeCandidateSurface;

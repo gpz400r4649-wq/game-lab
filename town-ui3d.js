@@ -20,7 +20,7 @@ function choices(parent,label,options,value,change){
  row.append(caption,control);parent.append(row);return control;
 }
 
-export function installTownUI({$,getProject,getSelected,save,view,pickTownPart,field,onClose}){
+export function installTownUI({$,getProject,getSelected,save,view,pickTownPart,field,onClose,toast}){
  const dialog=$('#town-traffic3'),body=$('#town-traffic-body3'),opener=$('#town-traffic-open3');
  const closePreview=$('#town-route-close3');
  let activeRoute=null,editorClose=null,renderMap=null,roadSnapshot,network;
@@ -91,6 +91,11 @@ export function installTownUI({$,getProject,getSelected,save,view,pickTownPart,f
    if(dialog.open)dialog.close();
    opener.setAttribute('aria-expanded','false');resetRoute();onClose();
   },{host:$('#road-draft3')});
+  function applyDestination(part,targetId){
+   changeDestination(part,targetId);
+   finish();showSourceRoute(part);
+   toast(targetId?'行き先をかえたよ。':'行き先をはずしたよ。');
+  }
   editorClose=finish;done.onclick=finish;opener.setAttribute('aria-expanded','true');
   renderMap=(message=null)=>{
    const all=places(),names=labels(all),part=source();
@@ -107,8 +112,8 @@ export function installTownUI({$,getProject,getSelected,save,view,pickTownPart,f
    setReadingText(hint,message||(!part?'車を出すパーツをえらぼう。':candidates.length?'むらさきのしるしをおすと、行き先になるよ。':
     trip?'ほかの建物まで道をつなぐと、行き先をふやせるよ。':'行き先にできる建物まで道をつなごう。'));
   };
-  automatic.onclick=()=>{const part=source();if(part){changeDestination(part,AUTO_TOWN_DESTINATION);renderMap();}};
-  unset.onclick=()=>{const part=source();if(part){changeDestination(part,'');renderMap();}};
+  automatic.onclick=()=>{const part=source();if(part)applyDestination(part,AUTO_TOWN_DESTINATION);};
+  unset.onclick=()=>{const part=source();if(part)applyDestination(part,'');};
   settings.onclick=()=>{const part=source();if(part){renderDrivingSettings(part);dialog.showModal();}};
   renderMap();
   setStageRangePainter((kind,id,ground,canceled)=>{
@@ -122,23 +127,23 @@ export function installTownUI({$,getProject,getSelected,save,view,pickTownPart,f
    if(!part)return true;
    if(!target||target.id===part.id){renderMap('ほかのいえ・おみせ・がっこうなどをおそう。');return true;}
    if(!townRoute(roads(),part,target)){renderMap('この場所までは道がつながっていないよ。');return true;}
-   changeDestination(part,target.id);
-   renderMap('行き先をかえたよ。');
+   applyDestination(part,target.id);
    return true;
   });
  }
- opener.onclick=()=>{if(editorClose)editorClose();else openMap();};
+ opener.onclick=()=>{if(!editorClose)openMap();};
  function refresh(){
   if(renderMap){renderMap();return;}
   if(!activeRoute)return;
   const all=places(),part=all.find(part=>part.id===activeRoute);
-  const route=part&&townFleetSettings(part).count?resolveTownTrip(roads(),part,all)?.path:null;
-  if(route)view.showRoute(route);else resetRoute();
+  const trip=part&&resolveTownTrip(roads(),part,all);
+  if(trip){view.showRoute(trip.path);view.showRoutePlaces(part,trip.target);}else resetRoute();
  }
- return {clear,refresh,syncSelected,showSourceRoute(part){
+ function showSourceRoute(part){
   if(!canStart(part)){clear();return;}
   activeRoute=part.id;refresh();closePreview.hidden=!activeRoute;
- }};
+ }
+ return {clear,refresh,syncSelected,showSourceRoute};
 }
 
 export function renderRivalSettings(parent,project,save,refresh){
