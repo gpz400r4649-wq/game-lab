@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.min.js';
-import {ROAD_BARRIERS,ROAD_DECK_DEPTH,createRoadFootprintQuery,createRoadOpenings,createRoadSectionQuery,roadBarrierOffset,roadRunBarrier,roadVertex} from './road3d.js?v=20261126s';
+import {ROAD_BARRIERS,ROAD_DECK_DEPTH,ROAD_SIDEWALK_WIDTH,createRoadFootprintQuery,createRoadOpenings,createRoadSectionQuery,roadBarrierOffset,roadRunBarrier,roadVertex} from './road3d.js?v=20261127a';
 import {createRoadNetwork} from './road-network3d.js?v=20261126r';
 import {makeJunctionSignal,updateTrafficSignal} from './race-model3d.js?v=20261126s';
 
@@ -40,7 +40,13 @@ function roadMesh(road,half,preview,openings,path){
  const pavement=[],borders=[],line=[],barriers={mini:[],highway:[],guardrail:[]},walk=[];
  const street=road.markings==='street';
  const at=(point,offset,height)=>{
-  const {x,y,z}=roadVertex(point,offset,half);
+  if(point.from){
+   const {from,to,t}=point;
+   const a=at(from,typeof offset==='function'?offset(from):offset,height);
+   const b=at(to,typeof offset==='function'?offset(to):offset,height);
+   return a.map((value,i)=>value+(b[i]-value)*t);
+  }
+  const {x,y,z}=roadVertex(point,typeof offset==='function'?offset(point):offset,half);
   return [x,y+height,z];
  };
  const height=preview ? .051 : .025;
@@ -56,10 +62,7 @@ function roadMesh(road,half,preview,openings,path){
    buffer.push(...p,...q,...r,...p,...r,...s);
   }
  }
- const blend=(a,b,t)=>Object.fromEntries(['x','y','z','nx','nz','widthScale','leftWalk','rightWalk'].map((key,index)=>{
-  const fallback=index<5?0:1,start=a[key]??fallback,end=b[key]??fallback;
-  return [key,start+(end-start)*t];
- }));
+ const blend=(from,to,t)=>t===0?from:t===1?to:{from,to,t};
  function visibleRuns(a,b,offset){return openings(road.id,roadVertex(a,offset,half),roadVertex(b,offset,half));}
  let travelled=0;
  for(let i=1;i<path.length;i++){
@@ -77,13 +80,13 @@ function roadMesh(road,half,preview,openings,path){
   const edgeInset=profile?.thickness ? profile.thickness/2+.19 : .16;
   for(const [side,sideName] of [[-1,'left'],[1,'right']])if(road.sidewalk==='both'||road.sidewalk===sideName){
    const factor=point=>point[sideName+'Walk']??1;
-   const center=point=>roadVertex(point,side*(radius+factor(point)),half);
+   const center=point=>roadVertex(point,side*(radius+ROAD_SIDEWALK_WIDTH/2*factor(point)),half);
    for(const [start,end] of openings(road.id,center(a),center(b))){
-    const l=blend(a,b,start),r=blend(a,b,end),inner=side*radius,outer=point=>side*(radius+2*factor(point));
-    const p=at(l,inner,height+.13),q=at(r,inner,height+.13),s=at(l,outer(l),height+.13),t=at(r,outer(r),height+.13);
+    const l=blend(a,b,start),r=blend(a,b,end),inner=side*radius,outer=point=>side*(radius+ROAD_SIDEWALK_WIDTH*factor(point));
+    const p=at(l,inner,height+.13),q=at(r,inner,height+.13),s=at(l,outer,height+.13),t=at(r,outer,height+.13);
     walk.push(...p,...q,...t,...p,...t,...s);
-    for(const offset of [()=>inner,outer]){
-     const p=at(l,offset(l),height),q=at(r,offset(r),height),s=at(l,offset(l),height+.13),t=at(r,offset(r),height+.13);
+    for(const offset of [inner,outer]){
+     const p=at(l,offset,height),q=at(r,offset,height),s=at(l,offset,height+.13),t=at(r,offset,height+.13);
      walk.push(...p,...q,...t,...p,...t,...s);
     }
    }

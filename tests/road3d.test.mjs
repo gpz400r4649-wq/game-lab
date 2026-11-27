@@ -94,6 +94,27 @@ test('曲がり角は滑らかにつながり、一周の道路は最初につ�
  const loop=sampleRoad({...road,closed:true});assert.deepEqual(loop[0],loop.at(-1));
 });
 
+test('きついカーブでも車道と歩道の縁が折り返さず、直線では元の幅に戻る',()=>{
+ const points=[{x:-60,z:-10},{x:0,z:-10},{x:0,z:0},{x:-60,z:0}];
+ for(const width of [4,8,12,16])for(const sidewalk of [undefined,'left','right','both']){
+  const road={id:'tight-turn',width,sidewalk,closed:false,points};
+  const sections=createRoadSectionQuery([road])(road);
+  const halfWidths=[-1,1].map((side,i)=>width/2+(sidewalk==='both'||sidewalk===['left','right'][i]?2:0));
+  const offsets=[-halfWidths[0],-width/2,width/2,halfWidths[1]];
+  for(let i=1;i<sections.length;i++)for(const offset of offsets){
+   const a=sections[i-1],b=sections[i],p=roadVertex(a,offset,120),q=roadVertex(b,offset,120);
+   assert.ok((q.x-p.x)*(b.x-a.x)+(q.z-p.z)*(b.z-a.z)>0,`width=${width} sidewalk=${sidewalk} offset=${offset}`);
+  }
+  for(const offset of offsets){
+   const start=sections[0],vertex=roadVertex(start,offset,120);
+   assert.equal(Math.abs(vertex.z-start.z),Math.abs(offset));
+  }
+ }
+ const loop={id:'loop',width:16,sidewalk:'both',closed:true,points};
+ const sections=createRoadSectionQuery([loop])(loop);
+ for(const offset of [-10,10])assert.deepEqual(roadVertex(sections[0],offset,120),roadVertex(sections.at(-1),offset,120));
+});
+
 test('車の作品は道路を保存でき、道幅・近すぎる点・マップ外の点を検証する',()=>{
  const project=fresh3D('car');project.roads=[turn()];
  assert.deepEqual(validate3D(JSON.parse(JSON.stringify(project))).roads,project.roads);

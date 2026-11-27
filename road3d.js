@@ -14,6 +14,7 @@ export const ROAD_BARRIERS=Object.freeze({
  guardrail:{height:.83,thickness:.14,bottom:.54}
 });
 const ROAD_GRID_STEP=GRID.cell/2;
+export const ROAD_SIDEWALK_WIDTH=2;
 const MIN_SPACING=ROAD_GRID_STEP;
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 const lerp=(a,b,t)=>({x:a.x+(b.x-a.x)*t,z:a.z+(b.z-a.z)*t,
@@ -439,6 +440,56 @@ export function roadSections(path,closed){
   return {...point,nx:x*scale,nz:z*scale};
  });
 }
+
+function fitInsideEdges(sections,road){
+ const last=sections.length-1,spans=sections.slice(1).map((point,i)=>distance(sections[i],point));
+ const fit=side=>{
+  const walk=side<0?'left':'right';
+  const width=road.width/2+(road.sidewalk==='both'||road.sidewalk===walk?ROAD_SIDEWALK_WIDTH:0);
+  const limits=sections.map(()=>width);
+  for(const [i,length] of spans.entries()){
+   if(length<.0001)continue;
+   const a=sections[i],b=sections[i+1],dx=(b.x-a.x)/length,dz=(b.z-a.z)/length;
+   // Limit how far either inner vertex can advance into this span, so the two edges never cross.
+   const advance=side*(a.nx*dx+a.nz*dz),retreat=-side*(b.nx*dx+b.nz*dz);
+   if(advance>0)limits[i]=Math.min(limits[i],.46*length/advance);
+   if(retreat>0)limits[i+1]=Math.min(limits[i+1],.46*length/retreat);
+  }
+  const slope=.65;
+  const meet=()=>{if(road.closed)limits[0]=limits[last]=Math.min(limits[0],limits[last]);};
+  meet();
+  for(let pass=0;pass<(road.closed?2:1);pass++){
+   for(let i=1;i<=last;i++)limits[i]=Math.min(limits[i],limits[i-1]+spans[i-1]*slope);
+   meet();
+   for(let i=last-1;i>=0;i--)limits[i]=Math.min(limits[i],limits[i+1]+spans[i]*slope);
+   meet();
+  }
+  return {limits,width,slope};
+ };
+ const sides=[fit(-1),fit(1)];
+ if(sides.every(({limits,width})=>limits.every(limit=>limit===width)))return sections;
+ const scales=values=>({leftEdgeScale:values[0]/sides[0].width,rightEdgeScale:values[1]/sides[1].width});
+ return sections.flatMap((point,i)=>{
+  const end={...point,...scales(sides.map(({limits})=>limits[i]))};
+  if(!i||spans[i-1]<road.width)return [end];
+  const a=sections[i-1],length=spans[i-1];
+  const widthAt=({limits,width,slope},along)=>Math.min(width,limits[i-1]+along*slope,limits[i]+(length-along)*slope);
+  const cuts=sides.flatMap(({limits,width,slope})=>{
+   const grow=(width-limits[i-1])/slope,shrink=(width-limits[i])/slope;
+   return grow+shrink<=length?[grow,length-shrink]:[];
+  }).sort((a,b)=>a-b);
+  const normal=bearing(a,point);
+  const reach=(section,index,direction)=>Math.max(0,...sides.map(({limits},side)=>
+   direction*(side===0?-1:1)*limits[index]*(section.widthScale??1)*(section.nx*normal.z-section.nz*normal.x)));
+  const enter=reach(a,i-1,1),exit=length-reach(point,i,-1);
+  const added=cuts.filter((cut,j)=>cut>enter+.001&&cut<exit-.001&&(!j||cut-cuts[j-1]>.001)).map(cut=>{
+   const t=cut/length,mix=key=>(a[key]??1)+((point[key]??1)-(a[key]??1))*t;
+   return {...lerp(a,point,t),nx:normal.x,nz:normal.z,incomingSegment:point.incomingSegment,
+    widthScale:mix('widthScale'),leftWalk:mix('leftWalk'),rightWalk:mix('rightWalk'),...scales(sides.map(side=>widthAt(side,cut)))};
+  });
+  return [...added,end];
+ });
+}
 export function createRoadSectionQuery(roads,onlyRoad=null){
  const ends=roads.flatMap(road=>{
   if(road.closed||road.points.length<2)return [];
@@ -490,14 +541,14 @@ export function createRoadSectionQuery(roads,onlyRoad=null){
      ...(i===0&&joint.start||i===expanded.length-1&&joint.end?{jointNormal:{nx:end.nx,nz:end.nz}}:{})};
    });
   }
-  const sections=roadSections(path,road.closed).map(point=>point.jointNormal?{...point,...point.jointNormal}:point);
+  const sections=fitInsideEdges(roadSections(path,road.closed).map(point=>point.jointNormal?{...point,...point.jointNormal}:point),road);
   cache.set(road,sections);return sections;
  };
 }
 
 export function roadVertex(point,offset,half){
  const clip=value=>Math.max(-half,Math.min(half,value));
- offset*=point.widthScale??1;
+ offset*=(point.widthScale??1)*((offset<0?point.leftEdgeScale:point.rightEdgeScale)??1);
  return {x:clip(point.x+point.nx*offset),y:point.y||0,z:clip(point.z+point.nz*offset)};
 }
 
@@ -654,7 +705,7 @@ function createPavementQuery(roads,half,allRoads){
  for(const road of roads){
   if(!allRoads&&!road.points.some(point=>point.y>0))continue;
   const path=sectionsFor(road),radius=road.width/2;
-  const edge=(point,side,name)=>side*(radius+(allRoads&&(road.sidewalk==='both'||road.sidewalk===name)?2*(point[name+'Walk']??1):0));
+  const edge=(point,side,name)=>side*(radius+(allRoads&&(road.sidewalk==='both'||road.sidewalk===name)?ROAD_SIDEWALK_WIDTH*(point[name+'Walk']??1):0));
   for(let i=1;i<path.length;i++){
    const a=path[i-1],b=path[i];
    const p=roadVertex(a,edge(a,-1,'left'),half),q=roadVertex(a,edge(a,1,'right'),half);
