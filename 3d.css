@@ -578,6 +578,7 @@ aside>#group-tools3{padding:0;margin:0;border:0;background:transparent;border-ra
 .workshop-settings-grid > #ally-open3 { min-height:44px; }
 #part-launch-row3 { min-height:48px; }
 #selected-part-hint3 { margin:0; padding:8px 9px; color:#52617b; font-size:12px; }
+#town-traffic-open3:not([hidden]) { width:100%; min-height:44px; margin-top:4px; }
 #part-open3[hidden], #selected-part-hint3[hidden], .stage-toolbar.is-playing #try-here3 { display:none; }
 .toolbar-row>#stage-mode3 #try-here3 { white-space:nowrap; }
 @media(max-width:700px) { .toolbar-row>#stage-mode3 #try-here3 { min-width:0; padding-inline:5px; } }
