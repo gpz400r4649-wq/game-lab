@@ -739,7 +739,8 @@ function createPavementQuery(roads,half,allRoads){
 
 function closestOnPath(path,point,maxGap,last=path.length-1,maxHeightGap=Infinity){
  let nearest=null,best=maxGap*maxGap;
- for(let index=1;index<=last;index++){
+ const end=Math.min(last,path.length-1);
+ for(let index=1;index<=end;index++){
   const a=path[index-1],b=path[index],dx=b.x-a.x,dz=b.z-a.z,length=dx*dx+dz*dz;
   if(length<.000001)continue;
   const fraction=Math.max(0,Math.min(1,((point.x-a.x)*dx+(point.z-a.z)*dz)/length));
@@ -817,7 +818,7 @@ export function courseStart(project){
  const road=project.template==='car'&&project.roads?.[0];
  if(!road)return project.spawn;
  const path=savedRoadPath(road);
- const {x,z}=road.points[0];
- const start=closestOnPath(path,{x,z},Infinity,road.closed?12:1);
+ const {x,z,corner}=road.points[0];
+ const start=closestOnPath(path,{x,z},Infinity,road.closed&&corner!=='straight'?12:1);
  return start?{x:start.x,y:start.y,z:start.z,heading:start.heading}:project.spawn;
 }

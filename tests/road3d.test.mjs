@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {Scene} from '../vendor/three.module.min.js';
 import {createRoadView} from '../road-model3d.js';
 import {makeTrafficSignal,updateTrafficSignal} from '../race-model3d.js';
-import {ROAD_BARRIERS,MAX_ROADS,MAX_ROAD_POINTS,createRoadBarrierQuery,createRoadOpenings,createRoadSectionQuery,createRoadSurfaceQuery,removeRoadPoint,roadBarrierOffset,roadPoint,roadGridSites,roadSections,roadVertex,sampleRoad,splitRoadAt,toggleRoadGuardrail,traceRoadPoints,validRoads} from '../road3d.js';
+import {ROAD_BARRIERS,MAX_ROADS,MAX_ROAD_POINTS,courseStart,createRoadBarrierQuery,createRoadOpenings,createRoadSectionQuery,createRoadSurfaceQuery,removeRoadPoint,roadBarrierOffset,roadPoint,roadGridSites,roadSections,roadVertex,sampleRoad,splitRoadAt,toggleRoadGuardrail,traceRoadPoints,validRoads} from '../road3d.js';
 import {create3D,fresh3D,part,step3D,validate3D} from '../engine3d.js';
 import {fitRaceGate,updateRaceGates,updateRoadGateWidths} from '../race3d.js';
 import {resizeReason} from '../world3d.js';
@@ -92,6 +92,21 @@ test('曲がり角は滑らかにつながり、一周の道路は最初につ�
  assert.ok(path.some(point=>point.x<0&&point.z<0));
  assert.ok(path.every(point=>point.x>=-20&&point.x<=0&&point.z>=-20&&point.z<=0));
  const loop=sampleRoad({...road,closed:true});assert.deepEqual(loop[0],loop.at(-1));
+});
+
+test('直線をつないだ少ない点の周回コースを開けて、最初の直線から試走できる',()=>{
+ const project=fresh3D('car');
+ project.roads=[{id:'loop',width:8,closed:true,points:[[-20,-12],[20,-12],[20,12],[-20,12]]
+  .map(([x,z])=>({x,z,corner:'straight'}))}];
+ project.raceLaps=1;
+ project.rivals=[{speed:.9,corner:1}];
+ const saved=validate3D(JSON.parse(JSON.stringify(project)));
+ const start={x:-20,y:0,z:-12,heading:-Math.PI/2};
+ assert.deepEqual(courseStart(saved),start);
+ const game=create3D(saved);
+ assert.equal(game.player.x,start.x);assert.equal(game.player.z,start.z);
+ assert.equal(game.car.heading,start.heading);
+ assert.ok(game.car.laps);assert.equal(game.town.rivals.length,1);
 });
 
 test('急カーブの車道の面積を保ち、同じ道路の歩道を舗装に重ねない',()=>{

@@ -8,7 +8,7 @@ import {sharedDefaultsType,applyBlockDefaults,sharedKeys,synchronizeCharacterDef
 import {copyEnemySettings,ENEMY_COPY_GROUPS} from './enemy-batch3d.js?v=20261125g';
 import {ACTOR_HATS} from './actor3d.js?v=20261119d';
 import {makeTool} from './building3d.js?v=20261119p';
-import {findDuplicatePosition} from './editor-drag3d.js?v=20261125g';
+import {findDuplicatePosition} from './editor-drag3d.js?v=20261127g';
 import {chaseGraceSeconds} from './enemy-ai3d.js?v=20261119d';
 import {openWaypointEditor} from './waypoint-ui3d.js?v=20261124a';
 import {openPatrolEditor} from './patrol-ui3d.js?v=20261124a';
@@ -25,7 +25,7 @@ import {actionsFor} from './events3d.js?v=20261119d';
 import {renderEventEditor} from './event-editor3d.js?v=20261119d';
 import {DESTRUCTIBLE_TYPES,LIMITS} from './weapons3d.js?v=20261119d';
 import {alignPiece,gridStep,editorPlacementReason} from './building3d.js?v=20261119p';
-import {part,ENEMY_SCALES,PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261127c';
+import {part,ENEMY_SCALES,PARTS,WEAPON_PRESETS,CONDITION_NAMES,clamp} from './engine3d.js?v=20261127g';
 import {TOWN_PARTS} from './town3d.js?v=20261127c';
 
 const ICONS={trafficSignal:'🚦',raceGate:'🏁',actor:'💬',plate:'▣',ally:'🛡',weapon:'🔫',select:'↖',ramp:'◩',wall:'▥',floor:'▱',roof:'⌂',box:'▧',platform:'▰',moving:'↔',bounce:'⇧',enemy:'🤖',star:'✦',key:'⚿',door:'▣',heal:'♥',checkpoint:'⚑',hazard:'⚠',goal:'🏁',erase:'⌫'};

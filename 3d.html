@@ -78,7 +78,7 @@
 <script type="module">
   const params=new URLSearchParams(location.search);
   const reload=params.get('reload3d');
-  const entry='./app3d.js?v=20261127f'+(reload?'&reload3d='+encodeURIComponent(reload):'');
+  const entry='./app3d.js?v=20261127g'+(reload?'&reload3d='+encodeURIComponent(reload):'');
   import(entry).catch(error=>{
     console.error('3D startup failed',error);
     const loading=document.querySelector('#loading');
