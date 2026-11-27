@@ -25,7 +25,7 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
   return element;
  }
  const roadLimit=$('#road-limit3');
- roadLimit.textContent=MAX_ROADS+'本まで道を作ったよ。「えらぶ」で道をおすと、のばせるよ。';
+ roadLimit.textContent=MAX_ROADS+'本まで道を作ったよ。道の端からなぞると、ある道をのばせるよ。';
  demolish.onclick=()=>{
   const active=demolish.getAttribute('aria-pressed')==='true';
   if(!host.hidden)closeLiveRangeEditor();
@@ -36,13 +36,11 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
  };
  function refreshMenu(){
   const roads=getProject().roads||[];
-  for(const control of presets.querySelectorAll('button'))control.disabled=roads.length>=MAX_ROADS;
   roadLimit.hidden=roads.length<MAX_ROADS;
  }
  function roadCard(label,width,variant){
   const style={width,...variant};
   const control=button('',()=>{
-   if((getProject().roads||[]).length>=MAX_ROADS)return;
    openEditor({id:crypto.randomUUID(),closed:false,points:[],...style});
   },'road-preset-card');
   const name=label+' '+style.width+'m';
@@ -113,7 +111,7 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
   project.roads=next;save();rebuild();
   return next;
  }
- function pickSavedRoad(action,returnRoadId){
+ function pickSavedRoad(action,returnRoadId,selectionOnly=false){
   showCategory(null);
   const erasing=action==='demolish';
   const panel=document.createElement('section'),heading=document.createElement('div'),title=document.createElement('h2'),hint=document.createElement('p');
@@ -126,7 +124,7 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
   heading.append(title,button(erasing?'おわる':'道の編集にもどる',()=>{
    finish();
    const road=(getProject().roads||[]).find(item=>item.id===returnRoadId);
-   if(road)openEditor(road);
+   if(road)openEditor(road,null,selectionOnly);
   }));
   panel.append(heading,hint);
   let press=null;
@@ -165,7 +163,8 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
    return true;
   });
  }
- function openEditor(original,pickedPoint=null){
+ let closeSelectedRoad=null;
+ function openEditor(original,pickedPoint=null,selectionOnly=!!pickedPoint){
   showCategory(null);
   let draft=structuredClone(original),selected=pickedPoint?nearestRoadHandle(original.points,pickedPoint,Infinity):-1,pointer=null,mode=original.points.length?'move':'piece';
   let grade=0,startHeight=0,heightChosen=false,fromStart=false,arcSide=1;
@@ -249,12 +248,14 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
   startControls.append(startDown,startUp);
   const help=document.createElement('span');help.className='road-editor-hint';help.setAttribute('role','status');
   const flipArc=button('↶ カーブを反対に',()=>{if(!pointer){arcSide=-arcSide;view.showSnap([],null);refresh();}});
-  const railSection=button('区間のさく',()=>{if(!pointer)pickSavedRoad('guardrail',draft.id);});
-  tools.append(...modes.map(([,control])=>control));
+  const railSection=button('区間のさく',()=>{if(!pointer)pickSavedRoad('guardrail',draft.id,selectionOnly);});
+  tools.append(...modes.filter(([key])=>!selectionOnly||key==='move').map(([,control])=>control));
   controls.append(ends,grades,startControls,flipArc,heightTools,remove,loop,railSection,help);
   const finish=mountLiveRangeEditor(panel,()=>{
    setStageRangePainter(null);view.showDraft(null);view.showSnap([],null);
+   if(selectionOnly)closeSelectedRoad=null;
   },{host});
+  if(selectionOnly)closeSelectedRoad=finish;
   function changeHeight(delta){
    if(selected<0)return;
    const y=(draft.points[selected].y||0)+delta;
@@ -382,6 +383,20 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
   function restoreUnplacedStroke(stroke){
    if(stroke?.before)({draft,fromStart,startHeight,heightChosen}=stroke.before);
   }
+  function extendAtRoadLimit(id,ground,canceled){
+   const event=ground?.pointerEvent,hit=event&&isOnStage(event)&&pickRoad(event);
+   const road=hit&&getProject().roads.find(item=>item.id===hit.id&&!item.closed);
+   const distance=point=>Math.hypot(point.x-hit.point.x,(point.y||0)-(hit.point.y||0),point.z-hit.point.z);
+   const first=road?distance(road.points[0]):Infinity,last=road?distance(road.points.at(-1)):Infinity;
+   if(!road||Math.min(first,last)>Math.max(3,road.width*.42)){
+    toast('これ以上あたらしい道をおけないよ。ある道の端からのばそう');return true;
+   }
+   const before={draft,fromStart,startHeight,heightChosen};
+   draft=structuredClone(road);fromStart=first<last;
+   const result=drawPointer('start',id,ground,canceled,{before,requireSlide:true});
+   if(!pointer)restoreUnplacedStroke({before});
+   return result;
+  }
   function beginNextStroke(id,ground,canceled){
    const event=ground?.pointerEvent;
    if(!event||!isOnStage(event))return false;
@@ -414,10 +429,14 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
     if(pointer)return drawPointer(kind,id,ground,canceled);
     return kind==='start'&&beginNextStroke(id,ground,canceled);
    }
-   if(drawingMode())return drawPointer(kind,id,ground,canceled);
+   if(drawingMode()){
+    if(kind==='start'&&!pointer&&!draft.points.length&&(getProject().roads?.length||0)>=MAX_ROADS)return extendAtRoadLimit(id,ground,canceled);
+    return drawPointer(kind,id,ground,canceled);
+   }
    if(kind==='start'){
     if(pointer)return true;
     const picked=ground?.pointerEvent?pickHandle(ground.pointerEvent):-1;
+    if(selectionOnly&&picked<0)return false;
     selected=picked>=0?picked:ground?nearestRoadHandle(draft.points,ground):-1;
     if(selected<0){view.showSnap([],null);refresh();return false;}
     const origin=draft.points[selected];
@@ -434,6 +453,7 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
   focusRoad();refresh();panel.focus({preventScroll:true});
  }
  return {
+  finishSelection(){if(!closeSelectedRoad)return false;closeSelectedRoad();return true;},
   editAt(event,objectDistance=Infinity){
    const hit=pickRoad(event);
    const road=hit&&hit.distance<objectDistance&&(getProject().roads||[]).find(item=>item.id===hit.id);
