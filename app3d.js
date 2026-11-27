@@ -47,9 +47,8 @@ import {rotatePiece,BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,topAt,edito
 import {createToolsUI} from './tools3d.js?v=20261125g';
 import * as T from './vendor/three.module.min.js';
 import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,nearbyChair} from './engine3d.js?v=20261127c';
-import {TOWN_PARTS,configureTownPart,fitTownPart,refitTownParts,townPlacementReason} from './town3d.js?v=20261127c';
+import {TOWN_PARTS,addTownStroke,configureTownPart,fitTownPart,isTownLotKind,refitTownParts,townLots,townPlacementReason} from './town3d.js?v=20261127e';
 import {createTownView,makeTownModel} from './town-model3d.js?v=20261127c';
-import {addTownStroke,isTownLotKind,townLots} from './town-lots3d.js?v=20261127d';
 import {townRaceRank} from './town-traffic3d.js?v=20261127c';
 import {installTownUI,renderRivalSettings} from './town-ui3d.js?v=20261127c';
 import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261127c';

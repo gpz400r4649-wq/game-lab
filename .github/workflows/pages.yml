@@ -37,6 +37,19 @@ jobs:
           cp weapons3d.js combat3d.js events3d.js event-editor3d.js input3d.js readings3d.js numeric3d.js loot3d.js public/
           cp -r vendor public/
           touch public/.nojekyll
+          node --input-type=module <<'NODE'
+          import {existsSync,readFileSync,readdirSync} from 'node:fs';
+          import {dirname,join} from 'node:path';
+          const imports=/(?:\bfrom\s*|\bimport\s*(?:\(\s*)?)['"](\.\.?\/[^'"?\s]+\.js)(?:\?[^'"]*)?['"]/g;
+          const missing=[];
+          for(const file of readdirSync('public',{recursive:true}).filter(file=>/\.(html|js)$/.test(file))){
+            const path=join('public',file);
+            for(const [,module] of readFileSync(path,'utf8').matchAll(imports)){
+              if(!existsSync(join(dirname(path),module)))missing.push(`${file} imports ${module}`);
+            }
+          }
+          if(missing.length)throw Error('Missing browser files:\n'+missing.join('\n'));
+          NODE
       - uses: actions/configure-pages@v5
         with:
           enablement: true
