@@ -2,7 +2,7 @@ import {updateRoadGateWidths} from './race3d.js?v=20261125g';
 import {MAX_ROADS,MAX_ROAD_POINTS,MAX_ROAD_HEIGHT,ROAD_HEIGHT_STEP,ROAD_WIDTHS,alignRoadEndpoints,roadPoint,roadGridSites,roadConnection,roadStartConnection,nearestRoad,nearestRoadHandle,removeRoadPoint,reverseOpenRoad,roadArcPlacement,roadDemolitionSection,roadPiecePlacement,roadStrokeAim,roadStrokePlacement,roadPointsFit,roadSegmentAt,splitRoadSection,toggleRoadGuardrail,validRoads} from './road3d.js?v=20261126l';
 import {closeLiveRangeEditor,mountLiveRangeEditor} from './range-panel3d.js?v=20261124a';
 import {setStageRangePainter} from './stage-range3d.js?v=20261124a';
-import {refitTownParts} from './town3d.js?v=20261125g';
+import {refitTownParts} from './town3d.js?v=20261127c';
 
 export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickRoad,pickPart,erasePart,pickHandle,pointerAtHeight,isOnStage,focusHeight,toast}){
  const bar=$('#city-build3'),demolish=$('#city-demolish3'),presets=$('#road-presets3'),host=$('#road-draft3');
@@ -98,7 +98,7 @@ export function createRoadEditor({$,getProject,save,rebuild,view,focusRoad,pickR
  for(const category of categories)category.onclick=()=>{
   const id=category.getAttribute('aria-expanded')==='true'?null:category.dataset.cityPanel;
   if(!host.hidden)closeLiveRangeEditor();
-  if(id)$('[data-editor-tool][data-part=select]').click();
+  if(id||category.dataset.cityPanel==='city-town3')$('[data-editor-tool][data-part=select]').click();
   showCategory(id);
  };
  bar.hidden=false;

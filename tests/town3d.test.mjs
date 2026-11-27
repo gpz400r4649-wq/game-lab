@@ -7,8 +7,9 @@ import {createRoadView} from '../road-model3d.js';
 import {makeTownModel} from '../town-model3d.js';
 import {alignRoadEndpoints,createRoadFootprintQuery,reverseOpenRoad,roadArcPlacement,roadConnection,roadStartConnection,roadDemolitionSection,roadPiecePlacement,roadStrokeAim,roadStrokePlacement,sampleRoad,roadSections,roadVertex,splitRoadAt,splitRoadSection,traceRoadPoints,validRoads} from '../road3d.js';
 import {fitRaceGate} from '../race3d.js';
-import {DEFAULT_FLEET,configureTownPart,fitTownPart,houseGarage,refitTownParts,townLocal,townSolids,visitorParking} from '../town3d.js';
-import {townRaceRank,townRoute} from '../town-traffic3d.js';
+import {DEFAULT_FLEET,configureTownPart,fitTownPart,houseGarage,refitTownParts,townLocal,townPlacementReason,townSolids,visitorParking} from '../town3d.js';
+import {createTownTraffic,resolveTownTrip,townRaceRank,townRoute} from '../town-traffic3d.js';
+import {addTownStroke,townLots} from '../town-lots3d.js';
 
 const road=(id,x,z,a,b,y=0)=>({id,width:8,closed:false,points:[{x,z,y},{x:a,z:b,y}]});
 const main=road('east',-40,0,40,0),branch=road('south',0,0,0,40);
@@ -16,6 +17,43 @@ const advance=(g,p,seconds,input={coast:true})=>{
  for(let i=0;i<Math.round(seconds/.025);i++)step3D(g,p,input,.025);
 };
 const places=(roads,kind,x,z,roadId)=>fitTownPart(configureTownPart(part('town'),kind),roads.filter(r=>r.id===roadId),{x,y:0,z});
+
+test('なぞった側だけに道路向きの家が並び、建物がある区画は次の操作で空きにならない',()=>{
+ const p=fresh3D('car');p.roads=[{...main,sidewalk:'both'},branch];
+ const lots=townLots(p,'house');
+ const row=lots.filter(lot=>lot.townRoadId===main.id&&lot.z<0).sort((a,b)=>a.x-b.x);
+ assert.ok(row.length>=5);
+ const selected=new Map();addTownStroke(lots,selected,row[0],row.at(-1),p);
+ assert.equal(selected.size,row.length);
+ for(const lot of selected.values()){
+  assert.equal(lot.z,row[0].z);
+  assert.ok(Math.abs(townLocal(lot,0,-lot.d/2).z)<Math.abs(lot.z));
+  const {id,...fields}=lot;p.objects.push({...part('town'),...fields});
+ }
+ const remaining=townLots(p,'shop');
+ assert.ok(remaining.some(lot=>lot.z>0));
+ assert.ok(remaining.every(lot=>!townPlacementReason(lot,p.objects,p)));
+ const park=places(p.roads,'park',22,6,main.id);
+ assert.equal(validate3D({...p,objects:[...p.objects,park]}).objects.at(-1).townKind,'park');
+});
+
+test('家の車は通れる近くのお店へ行き、別の行き先や車なしも選べる',()=>{
+ const distant=road('disconnected',-35,16,-10,16);
+ const p=fresh3D('car');p.roads=[main,branch,distant];
+ const home=places(p.roads,'house',-22,6,main.id);
+ const disconnected=places(p.roads,'shop',-22,22,distant.id);
+ const shop=places(p.roads,'shop',18,7,main.id),far=places(p.roads,'shop',35,7,main.id);
+ const school=places(p.roads,'school',8,32,branch.id);
+ p.objects=[home,disconnected,far,shop,school];
+ const network=createRoadNetwork(p.roads);
+ assert.equal(resolveTownTrip(network,home,p.objects)?.target.id,shop.id);
+ const [car]=createTownTraffic(p).cars;
+ assert.equal(car.sourceId,home.id);assert.equal(car.arrival,'return');assert.ok(car.back.length>0);
+ home.townFleet={...DEFAULT_FLEET,count:1,targetId:school.id};
+ assert.equal(resolveTownTrip(network,home,p.objects)?.target.id,school.id);
+ home.townFleet={...DEFAULT_FLEET,count:0};
+ assert.equal(createTownTraffic(p).cars.length,0);
+});
 
 test('家の切妻屋根は壁の上に載り、家の幅と道路沿いの向きに合う',()=>{
  for(const [width,heading] of [[9,0],[6,Math.PI/4]]){

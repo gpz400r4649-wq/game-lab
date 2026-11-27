@@ -7,6 +7,7 @@ export const TOWN_PARTS=Object.freeze({
  house:{name:'いえ',icon:'⌂',w:9,h:4,d:5,solid:true,capacity:1},
  shop:{name:'おみせ',icon:'▤',w:8,h:4,d:6,solid:true,visitorSlots:1},
  school:{name:'がっこう',icon:'▦',w:12,h:6,d:8,solid:true,visitorSlots:2},
+ park:{name:'こうえん',icon:'♧',w:10,h:2.8,d:7},
  parking:{name:'ちゅうしゃじょう',icon:'Ⓟ',w:12,h:.5,d:7,capacity:6},
  garage:{name:'ガレージ',icon:'▣',w:12,h:3.6,d:7,capacity:6},
  busStop:{name:'バスてい',icon:'▧',w:5,h:2.5,d:3,capacity:1}
@@ -18,6 +19,11 @@ export const RIVAL_SPEEDS=[.75,.9,1.05];
 export const RIVAL_CORNERS=[.75,1,1.25];
 export const DEFAULT_RIVAL={speed:.9,corner:1};
 export const DEFAULT_FLEET={count:0,targetId:'',interval:4,delay:1,arrival:'return',speed:35};
+export const AUTO_TOWN_DESTINATION='@auto';
+export function townFleetSettings(part){
+ const home=part.townKind==='house';
+ return {...DEFAULT_FLEET,...(home?{count:1,targetId:AUTO_TOWN_DESTINATION}:{}),...part.townFleet};
+}
 
 const textId=value=>typeof value==='string'&&value.length<=80;
 const within=(value,min,max)=>Number.isFinite(value)&&value>=min&&value<=max;

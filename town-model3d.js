@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.min.js';
-import {TOWN_PARTS,houseGarage,visitorParking} from './town3d.js?v=20261125g';
+import {TOWN_PARTS,houseGarage,townLocal,visitorParking} from './town3d.js?v=20261127c';
 import {makeCarModel,updateCarModel} from './race-model3d.js?v=20261125g';
 
 const mat=color=>new T.MeshStandardMaterial({color,roughness:.85});
@@ -11,6 +11,7 @@ gableProfile.moveTo(-.5,0);gableProfile.lineTo(.5,0);gableProfile.lineTo(0,1);ga
 const gable=new T.ExtrudeGeometry(gableProfile,{depth:1,bevelEnabled:false}).translate(0,0,-.5);
 const paints=[0x54a48e,0xe2a144,0xda7970,0x5b99d1].map(mat);
 const routePaint=new T.MeshBasicMaterial({color:0x58deca,depthTest:false,side:T.DoubleSide});
+const grass=mat(0x76a86a),leaves=mat(0x547e4b),wood=mat(0x88694b),pathStone=mat(0xc7b699);
 
 export function makeTownModel(part,preview){
  const group=new T.Group(),{w,h,d,townKind:kind}=part,spec=TOWN_PARTS[kind];
@@ -63,6 +64,18 @@ export function makeTownModel(part,preview){
   box(shade,1.8,1.75,-.85,.36,.36,.12);post(1.8,-.85,.08,2);
   return group;
  }
+ if(kind==='park'){
+  box(grass,0,.08,0,w,.16,d);
+  box(pathStone,0,.17,0,1.1,.04,d);
+  for(const x of [-w*.34,w*.34]){
+   box(wood,x,.76,d*.24,.3,1.2,.3);
+   box(leaves,x,1.9,d*.24,1.7,1.7,1.7);
+   box(wood,x,.61,-d*.2,2,.15,.6);
+   box(wood,x,.83,-d*.2+.26,2,.43,.14);
+   for(const side of [-1,1])box(steel,x+side*.73,.35,-d*.2,.12,.45,.4);
+  }
+  return group;
+ }
  const height=kind==='house'?h*.72:h-.22;
  const facadeWidth=house?.houseWidth??visitors?.buildingWidth??w,facadeX=house?.houseX??-(visitors?.width??0)/2;
  box(wall,facadeX,height/2,0,facadeWidth,height,d);
@@ -94,6 +107,11 @@ export function createTownView(scene){
   const marker=new T.Mesh(markerShape,new T.MeshBasicMaterial({color,depthTest:false}));
   marker.renderOrder=21;route.add(marker);return marker;
  });
+ const lots=new T.Mesh(new T.BufferGeometry(),new T.MeshBasicMaterial({color:0x49ad8d,transparent:true,opacity:.23,side:T.DoubleSide,depthWrite:false}));
+ const outlines=new T.LineSegments(new T.BufferGeometry(),new T.LineBasicMaterial({color:0x29765f}));
+ const previews=new T.Group();lots.visible=outlines.visible=false;scene.add(lots,outlines,previews);
+ const lotPaint=new T.MeshBasicMaterial({color:0x3abb9a,transparent:true,opacity:.65,depthWrite:false});
+ const ghostIds=new Set();
  const models=[];
  function modelAt(index){
   if(!models[index]){
@@ -104,6 +122,30 @@ export function createTownView(scene){
   return models[index];
  }
  return {
+  lotSurface:lots,
+  showLots(parts,kind){
+   const shop=kind==='shop';
+   lots.material.color.setHex(shop?0xd29944:0x49ad8d);
+   outlines.material.color.setHex(shop?0x875621:0x29765f);
+   lotPaint.color.setHex(shop?0xe0ae57:0x3abb9a);
+   const fill=[],edge=[];
+   for(const part of parts){
+    const points=[[-1,-1],[1,-1],[1,1],[-1,1]].map(([x,z])=>townLocal(part,x*part.w/2,z*part.d/2));
+    const write=(buffer,order)=>{for(const i of order){const {x,y,z}=points[i];buffer.push(x,y+.05,z);}};
+    write(fill,[0,1,2,0,2,3]);write(edge,[0,1,1,2,2,3,3,0]);
+   }
+   for(const [mesh,vertices] of [[lots,fill],[outlines,edge]]){
+    mesh.geometry.dispose();mesh.geometry=new T.BufferGeometry();
+    mesh.geometry.setAttribute('position',new T.Float32BufferAttribute(vertices,3));mesh.visible=parts.length>0;
+   }
+  },
+  showLotPreviews(parts){
+   if(!parts.size){previews.clear();ghostIds.clear();}
+   for(const [id,part] of parts){
+    if(ghostIds.has(id))continue;
+    const model=makeTownModel(part,lotPaint);model.position.set(part.x,part.y,part.z);previews.add(model);ghostIds.add(id);
+   }
+  },
   sync(vehicles){
    models.forEach((model,index)=>{model.visible=index<vehicles.length;});
    vehicles.forEach((vehicle,index)=>{

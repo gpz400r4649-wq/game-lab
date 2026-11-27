@@ -1,7 +1,7 @@
 import {createRoadNetwork} from './road-network3d.js?v=20261125g';
 import {courseStart,savedRoadPath} from './road3d.js?v=20261125g';
 import {orderedRaceGates,trafficSignalPhase} from './race3d.js?v=20261125g';
-import {DEFAULT_FLEET,MAX_TOWN_CARS,TOWN_PARTS,houseGarage,townLocal,townParkingCapacity,visitorParking} from './town3d.js?v=20261125g';
+import {AUTO_TOWN_DESTINATION,MAX_TOWN_CARS,TOWN_PARTS,houseGarage,townFleetSettings,townLocal,townParkingCapacity,visitorParking} from './town3d.js?v=20261127c';
 
 const gap=(a,b)=>Math.hypot(b.x-a.x,b.z-a.z);
 const near=(a,b)=>gap(a,b)<.01&&Math.abs(a.y-b.y)<.04;
@@ -52,6 +52,18 @@ export function townRoute(network,source,target,slot=0){
  const road=network.route(roadAnchor(source),roadAnchor(target),{fromRoad:source.townRoadId,toRoad:target.townRoadId});
  if(!road?.length||road.length<2||gap(road[0],road.at(-1))<.05&&road.length===2)return null;
  return shapePath([...parkingPath(source,slot),...setLane(road,.95),...parkingPath(target,slot).reverse()]);
+}
+
+export function resolveTownTrip(network,source,places){
+ const {targetId}=townFleetSettings(source);
+ const auto=targetId===AUTO_TOWN_DESTINATION;
+ const targets=auto?places.filter(part=>part.townKind==='shop'&&part.townRoadId).sort((a,b)=>gap(source,a)-gap(source,b)):
+  places.filter(part=>part.id===targetId);
+ for(const target of targets){
+  const path=townRoute(network,source,target);
+  if(path)return {target,path,auto};
+ }
+ return null;
 }
 
 export function raceRoute(project,network=createRoadNetwork(project.roads)){
@@ -116,22 +128,27 @@ function vehicle(path,fields){
 
 export function createTownTraffic(project){
  const cars=[],rivals=[],roads=project.roads||[],places=project.objects.filter(part=>part.type==='town'&&townParkingCapacity(part));
- const sources=places.filter(part=>TOWN_PARTS[part.townKind].capacity&&part.townFleet?.count);
+ const sources=places.filter(part=>TOWN_PARTS[part.townKind].capacity&&townFleetSettings(part).count&&part.townRoadId);
  if(!project.rivals?.length&&!sources.length)return {cars,rivals};
- const network=createRoadNetwork(roads),stations=new Map(places.map(part=>[part.id,part]));
+ const network=createRoadNetwork(roads);
  const signals=network.signals;
- const targetSlots=new Map();
- for(const source of sources){
-  const fleet={...DEFAULT_FLEET,...source.townFleet},target=stations.get(fleet.targetId);
-  if(!target||!fleet.count)continue;
+ const targetSlots=new Map(),autoDepartures=new Map();
+ const autoSource=source=>townFleetSettings(source).targetId===AUTO_TOWN_DESTINATION;
+ for(const source of [...sources.filter(source=>!autoSource(source)),...sources.filter(autoSource)]){
+  if(cars.length>=MAX_TOWN_CARS)break;
+  const fleet=townFleetSettings(source),trip=resolveTownTrip(network,source,places);
+  if(!trip)continue;
+  const {target,auto}=trip;
   const taken=targetSlots.get(target.id)||0;
   for(let i=0;i<fleet.count&&cars.length<MAX_TOWN_CARS;i++){
-   const points=townRoute(network,source,target,taken+i),out=pathInfo(points);
+   const points=taken+i?townRoute(network,source,target,taken+i):trip.path,out=pathInfo(points);
    if(!out)continue;
    const back=pathInfo(townRoute(network,target,source,taken+i));
    const wait=taken+i>=townParkingCapacity(target)&&fleet.arrival==='park';
+   const startAt=fleet.delay+i*fleet.interval+(auto?(autoDepartures.get(target.id)||0)*6:0);
    cars.push(vehicle(out,{sourceId:source.id,out,back,outStops:signalStops(out,signals),backStops:back?signalStops(back,signals):[],
-    phase:wait?'parked':'queued',startAt:fleet.delay+i*fleet.interval,limit:fleet.speed/3.6,arrival:fleet.arrival,parkedAtSource:true}));
+    phase:wait?'parked':'queued',startAt,limit:fleet.speed/3.6,arrival:fleet.arrival,parkedAtSource:true}));
+   if(auto)autoDepartures.set(target.id,(autoDepartures.get(target.id)||0)+1);
   }
   if(fleet.arrival==='park')targetSlots.set(target.id,taken+fleet.count);
  }

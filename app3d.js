@@ -1,7 +1,7 @@
 import {createCarAudio} from './car-audio3d.js?v=20261119g';
 import {alignRoadEndpoints,courseStart,nearestRoad} from './road3d.js?v=20261126l';
 import {createRoadView} from './road-model3d.js?v=20261127b';
-import {createRoadEditor} from './road-ui3d.js?v=20261126o';
+import {createRoadEditor} from './road-ui3d.js?v=20261127c';
 import {createLapGateView,makeCarModel,updateCarModel,makeRaceGateModel,updateRaceGateModel,updateRaceGateNumber,makeTrafficSignal,updateTrafficSignal} from './race-model3d.js?v=20261125g';
 import {CAR_TUNING,DEFAULT_CAR_TUNING,RACE_LAP_OPTIONS,fitRaceGate,orderedRaceGates,turnRaceGate,updateRoadGateWidths} from './race3d.js?v=20261125g';
 import {assemblyCandidate,assemblyCopies,saveAssembly,temporarySpawn} from './assembly3d.js?v=20261119p';
@@ -15,7 +15,7 @@ import {createPlayerRulesUI} from './player-rules-ui3d.js?v=20261119d';
 import {fencePresetKey,floorPresetKey,FLOOR_PRESETS,configureBuildingPart,FENCE_PRESETS,RAMP_PRESETS,ROOF_PRESETS} from './architecture3d.js?v=20261119o';
 import {makeHalfFloorGeometries,makeDiagonalWallGeometry,makeCornerRampGeometry,makeFenceModel,fenceGeometry,makeRoofSlopeGeometry,makeGableGeometry} from './architecture-model3d.js?v=20261119d';
 import {createChoiceControl,enhanceChoiceControl} from './choices3d.js?v=20261119d';
-import {groupSteps,groupCandidate,commitGroup,copyGroupNearby} from './group-edit3d.js?v=20261126l';
+import {groupSteps,groupCandidate,commitGroup,copyGroupNearby} from './group-edit3d.js?v=20261127c';
 import {initializeCharacterDefaults,synchronizeCharacterDefaults,inheritNewCharacter} from './character-defaults3d.js?v=20261119d';
 import {nearbyActor,trade,companionsAt} from './actor3d.js?v=20261119d';
 import {giveAllyGun,giftableGun,recruitTarget,allyAttackDistance} from './ally3d.js?v=20261119d';
@@ -27,7 +27,7 @@ import {stageRangePointer} from './stage-range3d.js?v=20261124a';
 import {createEnemyMessages} from './enemy-messages3d.js?v=20261119d';
 import {createPlayRanges} from './play-ranges3d.js?v=20261124a';
 import {closeLiveRangeEditor,isLiveRangeEditing} from './enemy-range-ui3d.js?v=20261124a';
-import {dragCandidate} from './editor-drag3d.js?v=20261125g';
+import {dragCandidate} from './editor-drag3d.js?v=20261127c';
 import {rangeWorldCells,enemyYaw,defaultEnemyRanges,MOVE_MAX_CELLS} from './enemy-range3d.js?v=20261119d';
 import {ROBOT_BARREL,TPS_GUN_MOUNT} from './muzzle3d.js?v=20261119d';
 import {DOOR_PRESETS,configureDoor,doorInteraction,isSlidingDoor,nearbyDoor} from './doors3d.js?v=20261119d';
@@ -46,12 +46,13 @@ import {LIMITS,DESTRUCTIBLE_TYPES} from './weapons3d.js?v=20261119d';
 import {rotatePiece,BUILD_TYPES,placement,GRID_PARTS,snapEditorPiece,topAt,editorPlacementReason,editorPlacementBlocker,blockPlacement} from './building3d.js?v=20261119p';
 import {createToolsUI} from './tools3d.js?v=20261125g';
 import * as T from './vendor/three.module.min.js';
-import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,nearbyChair} from './engine3d.js?v=20261127b';
-import {TOWN_PARTS,configureTownPart,fitTownPart,refitTownParts,townPlacementReason} from './town3d.js?v=20261125g';
-import {createTownView,makeTownModel} from './town-model3d.js?v=20261126q';
-import {townRaceRank} from './town-traffic3d.js?v=20261125g';
-import {installTownUI,renderRivalSettings} from './town-ui3d.js?v=20261125g';
-import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261125g';
+import {enemyWeapon,PARTS,BEHAVIORS,clamp,part,fresh3D,validate3D,create3D,step3D,solids,conditionMet,nearbyChair} from './engine3d.js?v=20261127c';
+import {TOWN_PARTS,configureTownPart,fitTownPart,refitTownParts,townPlacementReason} from './town3d.js?v=20261127c';
+import {createTownView,makeTownModel} from './town-model3d.js?v=20261127c';
+import {addTownStroke,isTownLotKind,townLots} from './town-lots3d.js?v=20261127c';
+import {townRaceRank} from './town-traffic3d.js?v=20261127c';
+import {installTownUI,renderRivalSettings} from './town-ui3d.js?v=20261127c';
+import {createWorkshop,confirmReplace} from './workshop3d.js?v=20261127c';
 document.querySelectorAll('.setting-choices').forEach(enhanceChoiceControl);
 const $=s=>document.querySelector(s),view=$('#viewport');
 const seatButton=$('#use-seat3');
@@ -110,6 +111,7 @@ const syncLapGates=createLapGateView(scene);
 const roadView=carTemplate?createRoadView(scene):null;
 const townView=carTemplate?createTownView(scene):null;
 let roadEditor=null,townUI=null,townPreset='house';
+let lotKind=null,lotSlots=[],lotsDirty=true;
 const ground=new T.Mesh(new T.PlaneGeometry(60,60),new T.MeshStandardMaterial({color:'#e2e8ed',roughness:.95}));ground.rotation.x=-Math.PI/2;scene.add(ground);const grid=new T.LineSegments(new T.BufferGeometry(),new T.LineBasicMaterial({color:0xc7d2dc}));grid.position.y=.008;scene.add(grid);const floorRangeView=createFloorRangeView(renderer,grid);
 let groundSize=0;function updateWorld(){const size=worldSize(project);if(size===groundSize)return;groundSize=size;ground.scale.set(size/60,size/60,1);groundOutline.scale.set(size/60,1,size/60);const half=size/2,lines=[];for(let v=Math.ceil((-half-2)/4)*4+2;v<=half;v+=4)lines.push(v,0,-half,v,0,half,-half,0,v,half,0,v);grid.geometry.dispose();grid.geometry=new T.BufferGeometry();grid.geometry.setAttribute('position',new T.Float32BufferAttribute(lines,3));}
 
@@ -260,7 +262,7 @@ function partModel(o){let mesh=new T.Group();
    box(mesh,materials.dark,0,.06,0,o.w,.12,o.d);box(mesh,materials.bounce,0,.2,0,o.w*.9,.14,o.d*.9);box(mesh,materials.white,0,.29,0,.16,.04,.8);box(mesh,materials.white,0,.29,-.3,.6,.04,.16);
   }
 if(isBatchedStructure(o))structureRenderer.mark(mesh);return mesh;}
-function rebuild(){synchronizeCharacterDefaults(project);updateWorld();roadView?.sync(project.roads,worldHalf(project));if(mode==='edit')roadView?.updateSignals(0);roadEditor?.refresh();townUI?.refresh();const start=courseStart(project);spawnMark.position.set(start.x,start.y+(project.roads?.length ? .065 : .015),start.z);
+function rebuild(){lotsDirty=true;synchronizeCharacterDefaults(project);updateWorld();roadView?.sync(project.roads,worldHalf(project));if(mode==='edit')roadView?.updateSignals(0);roadEditor?.refresh();townUI?.refresh();const start=courseStart(project);spawnMark.position.set(start.x,start.y+(project.roads?.length ? .065 : .015),start.z);
  cyclingPickups.clear();objectsGroup.clear();meshes.clear();const objects=mode==='play'?[...game.objects,...game.drops]:commonPreview?[commonPreview]:project.objects;
  for(const o of objects){const mesh=partModel(o);mesh.position.set(o.x,o.y,o.z);mesh.visible=mode!=='play'||(!o.hidden&&!o.collected);mesh.userData.id=o.id;objectsGroup.add(mesh);meshes.set(o.id,mesh);}
  if(carTemplate)orderedRaceGates(objects).forEach((gate,index)=>updateRaceGateNumber(meshes.get(gate.id),index+1));
@@ -373,7 +375,7 @@ function advancedWeaponFields(){const el=$('#weapon3');el.replaceChildren();fiel
 // The workshop builds the component library and its beginner controls.
 $('#title3').oninput=()=>{project.title=$('#title3').value;save();};
 const setGamePageMode=createGamePageMode(document);let joystickPointer=null;const resetTouchGuard=installGameTouchGuard(view,()=>mode==='play');let resetFire=()=>{},resetEditorNavigation=()=>{};
-function resetInput(){if(look?.drag)finishEditorDrag(false);resetEditorNavigation();resetTouchGuard();resetFire();carControls?.reset();joystickPointer=null;keys.clear();stick={x:0,z:0};fireHeld=false;firePressed=false;jumpPressed=false;doorPressed=false;seatPressed=false;seatButton.hidden=true;look=null;$('#stick3 .edit-stick-thumb').style.transform='';}
+function resetInput(){finishTownStroke(false);if(look?.drag)finishEditorDrag(false);resetEditorNavigation();resetTouchGuard();resetFire();carControls?.reset();joystickPointer=null;keys.clear();stick={x:0,z:0};fireHeld=false;firePressed=false;jumpPressed=false;doorPressed=false;seatPressed=false;seatButton.hidden=true;look=null;$('#stick3 .edit-stick-thumb').style.transform='';}
 function setMode(next,{resumeHere=true,spawn=null}={}){carAudio.stop();townUI?.clear();townView?.sync([]);closeStageExtra();placementContact.visible=placementBlocker.visible=false;testSpawn=next==='play'?spawn:null;const resume=resumeHere&&mode==='play'&&next==='edit'?editorViewFromPlay(game?.player,game?.car?.heading??yaw,pitch,project):null;closeLiveRangeEditor();if(resume){editTarget.set(resume.target.x,resume.target.y,resume.target.z);editYaw=resume.yaw;editPitch=resume.pitch;editDistance=resume.distance;}if(next==='play')resetGroupSelection();mode=next;$('.stage-toolbar').classList.toggle('is-playing',mode==='play');$('#editor-tools3').hidden=mode==='play';$('#retry3').hidden=mode!=='play';$('#talk3').hidden=$('#escort-count3').hidden=true;$('#ally-range-toggle3').hidden=true;allyCommand=null;giftButton.hidden=allyButton.hidden=formationButton.hidden=true;syncHistoryButtons();setGamePageMode(mode==='play');resetInput();$('#edit3').classList.toggle('active',mode==='edit');$('#play3').classList.toggle('active',mode==='play');for(const id of ['#play-hud','#controls3','#crosshair','#hotbar3'])$(id).hidden=mode!=='play';$('#controls3').hidden=mode!=='play'||project.template==='car';$('#car-controls3').hidden=mode!=='play'||project.template!=='car';$('#use-door3').hidden=true;$('#stats3').hidden=mode==='play';$('#car-lap-hud3').hidden=true;$('#speedometer3').hidden=carSoundButton.hidden=mode!=='play'||project.template!=='car';carSoundButton.disabled=false;$('#score3').hidden=false;$('#editor-nav3').hidden=mode==='play';$('#orbit-pad').hidden=mode==='play';$('#lost3').hidden=true;setReadingText($('#mode3'),mode==='play'?(perspective==='fps'?'自分の目で見る世界':'うしろから見る世界'):'つくるモード');$('aside').inert=mode==='play';$('#title3').disabled=mode==='play';editorPointer=null;if(mode==='play'){game=create3D(project,{testSpawn});startAllyRanges();playRanges.start(game.objects,selected);enemyMessages.reset();toolsUI.reset();buildCount=-1;lastMessageId=0;yaw=0;pitch=-.05;setReadingText($('#hint3'),project.template==='car'?'左のスティックで曲がる · 右でアクセルとブレーキ / PC: 矢印・スペース':'左で移動 · 景色をドラッグで見わたす · 右でジャンプと発射 / PC: WASD・Space・F');}else setReadingText($('#hint3'),'左下のスティックでカメラを移動 · ドラッグで見わたす / PC: WASD・矢印、Eで上、Qで下');toolsUI.renderHotbar();syncPlacementUI();rebuild();renderer.domElement.focus({preventScroll:true});}
 function syncHistoryButtons(){$('#edit-history3').hidden=mode!=='edit';$('#undo3').disabled=!editHistory.canUndo;$('#redo3').disabled=!editHistory.canRedo;}
 function restoreHistory(direction){if(mode!=='edit')return;closeLiveRangeEditor();resetInput();editHistory.record(project);const next=direction==='undo'?editHistory.undo():editHistory.redo();if(!next)return;project=next;if(!project.objects.some(o=>o.id===selected))selected=null;editorPointer=null;$('#title3').value=project.title;spawnMark.position.set(project.spawn.x,.015,project.spawn.z);restoringHistory=true;try{save();}finally{restoringHistory=false;}workshop.palette();rebuild();objectList();inspector();weaponFields();toast(direction==='undo'?'ひとつ前にもどしたよ':'もどした編集をやりなおしたよ');}
@@ -389,6 +391,55 @@ function withinSurface(e){const r=surface.getBoundingClientRect();return e.clien
 for(const id of ['#editor-nav3','#orbit-pad'])$(id).addEventListener('pointerdown',()=>{if(isLiveRangeEditing())surface.focus({preventScroll:true});});
 function roadEditorPointer(event){const point=pointOnDragPlane(event,enemyEditHeight(editedObject()));return point?Object.assign(point,{pointerEvent:event}):project.template==='car'?{pointerEvent:event}:null;}
 function pointOnDragPlane(event,height){hits(event,[]);return ray.ray.intersectPlane(new T.Plane(new T.Vector3(0,1,0),-height),new T.Vector3());}
+
+function townLotTool(){
+ return mode==='edit'&&tool==='town'&&isTownLotKind(townPreset)&&!stageExtra&&!commonPreview&&!isLiveRangeEditing()?townPreset:null;
+}
+function townLotHint(){
+ if(!project.roads?.length)return 'まず道をひこう';
+ return lotSlots.length?'道路ぞいの色がついたマスをなぞろう':'空いている場所に道をひくと、まちのパーツをおけるよ';
+}
+function refreshTownLots(){
+ if(!townView)return;
+ const kind=townLotTool();
+ if(kind===lotKind&&(!kind||!lotsDirty))return;
+ lotKind=kind;lotsDirty=false;
+ lotSlots=kind?townLots(project,kind):[];
+ townView.showLots(lotSlots,kind);
+}
+function townLotPoint(event){
+ if(!withinSurface(event)||!townView?.lotSurface.visible)return null;
+ const hit=hits(event,[townView.lotSurface])[0];
+ return hit?{x:hit.point.x,y:hit.point.y-.05,z:hit.point.z}:null;
+}
+function paintTownLots(event,start=false){
+ const point=townLotPoint(event);
+ if(start){
+  if(!point)return false;
+  look.townStroke={parts:new Map(),last:point};
+ }
+ const stroke=look.townStroke;
+ if(!stroke)return false;
+ const end=point||(withinSurface(event)?pointOnDragPlane(event,stroke.last.y):null);
+ if(end){
+  addTownStroke(lotSlots,stroke.parts,stroke.last,end,project);
+  stroke.last=end;
+  townView.showLotPreviews(stroke.parts);
+ }
+ return true;
+}
+function finishTownStroke(commit){
+ const stroke=look?.townStroke;
+ if(!stroke)return;
+ look.townStroke=null;
+ townView.showLotPreviews(new Map());
+ if(commit&&stroke.parts.size){
+  const parts=[...stroke.parts.values()].map(({id,...lot})=>({...part('town'),...lot}));
+  project.objects.push(...parts);selected=parts.at(-1).id;
+  save();rebuild();objectList();inspector();
+  toast(TOWN_PARTS[parts[0].townKind].name+'を'+parts.length+'こ おいたよ');
+ }
+}
 function beginEditorDrag(drag){if(drag.started)return;drag.started=true;const source=meshes.get(drag.original.id),copy=source.clone(true);copy.position.set(0,0,0);copy.visible=true;copy.traverse(child=>{child.layers.set(0);if(child.isMesh)child.material=ghostMaterial;});dragPreview.clear();dragPreview.add(copy);source.visible=false;structureRenderer.sync(project.objects.map(o=>o.id===drag.original.id?{...o,hidden:true}:o),meshes);surface.classList.add('is-object-dragging');}
 function updateEditorDrag(event,drag){if(drag.group){updateGroupDrag(event,drag);return;}const point=pointOnDragPlane(event,drag.height),candidate=dragCandidate(drag.original,drag.grab,point,project.objects,project.spawn,project);if(!candidate)return;drag.candidate=candidate;beginEditorDrag(drag);
  if(candidate.piece.type==='raceGate'){
@@ -482,10 +533,10 @@ function showTappedCharacterRange(event){
  }
  return false;
 }
-surface.onpointerdown=e=>{if(mode==='edit'&&stageRangePointer('start',e.pointerId,roadEditorPointer(e))){e.preventDefault();surface.setPointerCapture(e.pointerId);surface.focus({preventScroll:true});return;}if(mode==='edit'&&(!look||look.id===e.pointerId))editorPointer={clientX:e.clientX,clientY:e.clientY};e.preventDefault();if(look)return;surface.setPointerCapture(e.pointerId);look={id:e.pointerId,x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY,moved:false,placing:mode==='edit'&&!stageExtra&&!isLiveRangeEditing()&&GRID_PARTS.has(tool)&&!placementLook,viewOnly:mode==='edit'&&!stageExtra&&GRID_PARTS.has(tool)&&placementLook};if(mode==='edit'&&!isLiveRangeEditing()&&multiSelect&&groupMoving){const hit=hits(e,[objectsGroup]).find(visibleHit);if(hit&&groupIds.has(objectId(hit.object)))look.drag={group:[...groupIds],grab:{x:hit.point.x,z:hit.point.z},height:hit.point.y,started:false,candidate:null};}if(mode==='edit'&&!stageExtra&&!isLiveRangeEditing()&&!multiSelect&&tool==='select'&&selected){const hit=hits(e,[objectsGroup]).find(visibleHit);if(hit&&objectId(hit.object)===selected){const original=editedObject();look.drag={original:{...original},grab:{x:hit.point.x,z:hit.point.z},height:hit.point.y,started:false,candidate:null};}}};
-surface.onpointermove=e=>{if(mode==='edit'&&stageRangePointer('move',e.pointerId,roadEditorPointer(e)))return;if(mode==='edit'&&(!look||look.id===e.pointerId))editorPointer={clientX:e.clientX,clientY:e.clientY};if(!look||look.id!==e.pointerId)return;const dx=e.clientX-look.x,dy=e.clientY-look.y;look.x=e.clientX;look.y=e.clientY;if(Math.hypot(e.clientX-look.startX,e.clientY-look.startY)>6)look.moved=true;if(look.placing){updateEditorGhost();return;}if(mode==='edit'&&look.drag){if(look.moved)updateEditorDrag(e,look.drag);return;}if(mode==='play'){yaw-=dx*.005;pitch=clamp(pitch-dy*.004,-1.2,1.15);}else{editYaw-=dx*.006;editPitch=clamp(editPitch+dy*.004,.18,1.4);}};
-surface.onpointerup=e=>{if(stageRangePointer('end',e.pointerId,isLiveRangeEditing()?roadEditorPointer(e):null))return;if(!look||look.id!==e.pointerId)return;if(look.drag&&look.moved){updateEditorDrag(e,look.drag);finishEditorDrag(true);look=null;return;}const click=!look.viewOnly&&(look.placing||!look.moved)&&withinSurface(e)&&(mode!=='play'||Math.hypot(e.clientX-look.startX,e.clientY-look.startY)<=6);look=null;if(mode==='play'){if(click)showTappedCharacterRange(e);return;}if(mode!=='edit'||!click||isLiveRangeEditing()||commonPreview)return;if(stageExtra&&handleStageExtra(e))return;const intersect=hits(e,[objectsGroup]);if(multiSelect){const hit=intersect.find(visibleHit),id=hit&&objectId(hit.object);if(id&&!groupMoving){if(groupIds.has(id))groupIds.delete(id);else groupIds.add(id);updateSelection();}return;}if(tool==='select'||tool==='erase'){if(tool==='select'&&project.template==='car'&&roadEditor?.editAt(e,intersect.find(visibleHit)?.distance))return;const id=intersect.length?objectId(intersect[0].object):null;if(tool==='erase'&&id){project.objects=project.objects.filter(o=>o.id!==id);if(selected===id)selected=null;save();rebuild();}else selected=id;updateSelection();objectList();inspector();}else{const candidate=editorCandidate(e);if(!candidate){toast('ステージの面をタップしよう');return;}if(candidate.reason){toast(candidate.reason);return;}const o=inheritNewCharacter(project,candidate.piece);prepareEnemyDropWeapon(project,o);project.objects.push(o);selected=o.id;save();rebuild();objectList();inspector();toast((FURNITURE_PRESETS[o.furnitureKind]||DOOR_PRESETS[o.doorVariant]?.name||(o.type==='floor'?FLOOR_PRESETS[floorPresetKey(o)]:null)||ROOF_PRESETS[o.wallGable]||ROOF_PRESETS[o.roofStyle==='slope'?'roofSlope':'']||FENCE_PRESETS[fencePresetKey(o)]||RAMP_PRESETS[o.rampStyle]||(o.type==='town'?TOWN_PARTS[o.townKind].name:PARTS[tool]))+'を追加したよ！');}};
-surface.onpointerleave=()=>{if(!look)editorPointer=null;};surface.onpointercancel=surface.onlostpointercapture=e=>{if(stageRangePointer('end',e.pointerId,null,true))return;if(look?.id===e.pointerId){finishEditorDrag(false);look=null;editorPointer=null;ghost.visible=false;}};surface.onwheel=e=>{if(mode==='edit'&&!look?.drag){e.preventDefault();zoomEditor(e.deltaY*.025);}};surface.addEventListener('wheel',e=>e.preventDefault(),{passive:false});
+surface.onpointerdown=e=>{if(mode==='edit'&&stageRangePointer('start',e.pointerId,roadEditorPointer(e))){e.preventDefault();surface.setPointerCapture(e.pointerId);surface.focus({preventScroll:true});return;}if(mode==='edit'&&(!look||look.id===e.pointerId))editorPointer={clientX:e.clientX,clientY:e.clientY};e.preventDefault();if(look)return;surface.setPointerCapture(e.pointerId);look={id:e.pointerId,x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY,moved:false,placing:mode==='edit'&&!stageExtra&&!isLiveRangeEditing()&&GRID_PARTS.has(tool)&&!placementLook,viewOnly:mode==='edit'&&!stageExtra&&GRID_PARTS.has(tool)&&placementLook};if(tool==='town'&&townLotTool()){refreshTownLots();if(paintTownLots(e,true))return;}if(mode==='edit'&&!isLiveRangeEditing()&&multiSelect&&groupMoving){const hit=hits(e,[objectsGroup]).find(visibleHit);if(hit&&groupIds.has(objectId(hit.object)))look.drag={group:[...groupIds],grab:{x:hit.point.x,z:hit.point.z},height:hit.point.y,started:false,candidate:null};}if(mode==='edit'&&!stageExtra&&!isLiveRangeEditing()&&!multiSelect&&tool==='select'&&selected){const hit=hits(e,[objectsGroup]).find(visibleHit);if(hit&&objectId(hit.object)===selected){const original=editedObject();look.drag={original:{...original},grab:{x:hit.point.x,z:hit.point.z},height:hit.point.y,started:false,candidate:null};}}};
+surface.onpointermove=e=>{if(mode==='edit'&&stageRangePointer('move',e.pointerId,roadEditorPointer(e)))return;if(mode==='edit'&&(!look||look.id===e.pointerId))editorPointer={clientX:e.clientX,clientY:e.clientY};if(!look||look.id!==e.pointerId)return;if(look.townStroke){paintTownLots(e);return;}const dx=e.clientX-look.x,dy=e.clientY-look.y;look.x=e.clientX;look.y=e.clientY;if(Math.hypot(e.clientX-look.startX,e.clientY-look.startY)>6)look.moved=true;if(look.placing){updateEditorGhost();return;}if(mode==='edit'&&look.drag){if(look.moved)updateEditorDrag(e,look.drag);return;}if(mode==='play'){yaw-=dx*.005;pitch=clamp(pitch-dy*.004,-1.2,1.15);}else{editYaw-=dx*.006;editPitch=clamp(editPitch+dy*.004,.18,1.4);}};
+surface.onpointerup=e=>{if(stageRangePointer('end',e.pointerId,isLiveRangeEditing()?roadEditorPointer(e):null))return;if(!look||look.id!==e.pointerId)return;if(look.townStroke){paintTownLots(e);finishTownStroke(true);look=null;return;}if(look.drag&&look.moved){updateEditorDrag(e,look.drag);finishEditorDrag(true);look=null;return;}const click=!look.viewOnly&&(look.placing||!look.moved)&&withinSurface(e)&&(mode!=='play'||Math.hypot(e.clientX-look.startX,e.clientY-look.startY)<=6);look=null;if(mode==='play'){if(click)showTappedCharacterRange(e);return;}if(mode!=='edit'||!click||isLiveRangeEditing()||commonPreview)return;if(stageExtra&&handleStageExtra(e))return;if(tool==='town'&&townLotTool()){toast(townLotHint());return;}const intersect=hits(e,[objectsGroup]);if(multiSelect){const hit=intersect.find(visibleHit),id=hit&&objectId(hit.object);if(id&&!groupMoving){if(groupIds.has(id))groupIds.delete(id);else groupIds.add(id);updateSelection();}return;}if(tool==='select'||tool==='erase'){if(tool==='select'&&project.template==='car'&&roadEditor?.editAt(e,intersect.find(visibleHit)?.distance))return;const id=intersect.length?objectId(intersect[0].object):null;if(tool==='erase'&&id){project.objects=project.objects.filter(o=>o.id!==id);if(selected===id)selected=null;save();rebuild();}else {selected=id;if(tool==='select'&&project.template==='car')townUI?.showHouseRoute(editedObject());}updateSelection();objectList();inspector();}else{const candidate=editorCandidate(e);if(!candidate){toast('ステージの面をタップしよう');return;}if(candidate.reason){toast(candidate.reason);return;}const o=inheritNewCharacter(project,candidate.piece);prepareEnemyDropWeapon(project,o);project.objects.push(o);selected=o.id;save();rebuild();objectList();inspector();toast((FURNITURE_PRESETS[o.furnitureKind]||DOOR_PRESETS[o.doorVariant]?.name||(o.type==='floor'?FLOOR_PRESETS[floorPresetKey(o)]:null)||ROOF_PRESETS[o.wallGable]||ROOF_PRESETS[o.roofStyle==='slope'?'roofSlope':'']||FENCE_PRESETS[fencePresetKey(o)]||RAMP_PRESETS[o.rampStyle]||(o.type==='town'?TOWN_PARTS[o.townKind].name:PARTS[tool]))+'を追加したよ！');}};
+surface.onpointerleave=()=>{if(!look)editorPointer=null;};surface.onpointercancel=surface.onlostpointercapture=e=>{if(stageRangePointer('end',e.pointerId,null,true))return;if(look?.id===e.pointerId){if(look.townStroke)finishTownStroke(false);finishEditorDrag(false);look=null;editorPointer=null;ghost.visible=false;}};surface.onwheel=e=>{if(mode==='edit'&&!look?.drag){e.preventDefault();zoomEditor(e.deltaY*.025);}};surface.addEventListener('wheel',e=>e.preventDefault(),{passive:false});
 
 function zoomEditor(delta){
  editDistance=clamp(editDistance+delta*(carTemplate?Math.max(1,editDistance/45):1),5,carTemplate?cityZoomLimit(project):65);
@@ -497,7 +548,7 @@ if(carTemplate)for(const button of cityCameraButtons)button.onclick=()=>{
  editPitch=top?CITY_TOP_PITCH:CITY_ANGLE_PITCH;
  if(top)editYaw=0;
 };
-window.addEventListener('keydown',e=>{if(e.key==='Escape'&&look?.drag){e.preventDefault();finishEditorDrag(false);look=null;return;}if(e.key==='Escape'&&look?.placing){look=null;editorPointer=null;ghost.visible=false;return;}if(e.key==='Escape'&&isLiveRangeEditing()){e.preventDefault();closeLiveRangeEditor();return;}if(e.key==='Escape'&&stageExtra&&!document.querySelector('dialog[open]')){e.preventDefault();closeStageExtra();return;}if(e.target.matches('input,select,textarea')||document.querySelector('dialog[open]'))return;if([' ','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key))e.preventDefault();keys.add(e.key.toLowerCase());if(e.key===' '&&!e.repeat)jumpPressed=true;if(mode==='play'&&e.key.toLowerCase()==='e'&&!e.repeat){e.preventDefault();if(seatButton.hidden)doorPressed=true;else seatPressed=true;}});window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));window.addEventListener('blur',resetInput);document.addEventListener('visibilitychange',resetInput);
+window.addEventListener('keydown',e=>{if(e.key==='Escape'&&look?.townStroke){e.preventDefault();finishTownStroke(false);look=null;return;}if(e.key==='Escape'&&look?.drag){e.preventDefault();finishEditorDrag(false);look=null;return;}if(e.key==='Escape'&&look?.placing){look=null;editorPointer=null;ghost.visible=false;return;}if(e.key==='Escape'&&isLiveRangeEditing()){e.preventDefault();closeLiveRangeEditor();return;}if(e.key==='Escape'&&stageExtra&&!document.querySelector('dialog[open]')){e.preventDefault();closeStageExtra();return;}if(e.target.matches('input,select,textarea')||document.querySelector('dialog[open]'))return;if([' ','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key))e.preventDefault();keys.add(e.key.toLowerCase());if(e.key===' '&&!e.repeat)jumpPressed=true;if(mode==='play'&&e.key.toLowerCase()==='e'&&!e.repeat){e.preventDefault();if(seatButton.hidden)doorPressed=true;else seatPressed=true;}});window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));window.addEventListener('blur',resetInput);document.addEventListener('visibilitychange',resetInput);
 let allyCommand=null;
 const allyButton=$('#ally-order3'),formationButton=$('#formation3');
 const giftButton=$('#ally-gift3');
@@ -644,8 +695,9 @@ placementBlocker.material.depthTest=false;placementBlocker.renderOrder=5;
 scene.add(placementContact,placementBlocker);
 function updateEditorGhost(){
  syncPlacementUI();
+ refreshTownLots();
  ghost.visible=placementContact.visible=placementBlocker.visible=false;
- if(stageExtra||placementLook||isLiveRangeEditing()||look?.drag||!editorPointer||!withinSurface(editorPointer)||(!GRID_PARTS.has(tool)&&!['raceGate','trafficSignal','town'].includes(tool)))return;
+ if(townLotTool()||stageExtra||placementLook||isLiveRangeEditing()||look?.drag||!editorPointer||!withinSurface(editorPointer)||(!GRID_PARTS.has(tool)&&!['raceGate','trafficSignal','town'].includes(tool)))return;
  const candidate=editorCandidate(editorPointer);if(!candidate)return;
  const {piece,reason,blocker}=candidate;
  showGhost(piece,!reason);
@@ -728,7 +780,7 @@ const workshop=createWorkshop({
  if(object){editTarget.set(object.x,object.y,object.z);editYaw=0;editPitch=1.4;editDistance=38;}
  else if(commonCamera){editTarget.copy(commonCamera.target);editYaw=commonCamera.yaw;editPitch=commonCamera.pitch;editDistance=commonCamera.distance;commonCamera=null;}
  rebuild();
-},previewPatrol:route=>{const o=editedObject();patrolOverlay.show(route,o?.y||0,enemyRangeView==='waypoints'&&(o?.routeEnd||'loop')==='loop');},lookFromAbove:({facing=false}={})=>{const o=editedObject();if(o){editTarget.set(o.x,enemyEditHeight(o),o.z);editYaw=facing?(o.facing||0)*Math.PI/180:0;editPitch=1.4;editDistance=38;}},getToolSelection:()=>({type:tool,preset:tool==='door'?doorPreset:piecePresets[tool]}),getRangeView:()=>enemyRangeView,showRange:key=>{enemyRangeView=key;updateSelection();},refreshRange:updateSelection,renderLoadout:()=>toolsUI.renderLauncher(),$,getProject:()=>project,getSelected:()=>selected,select:id=>{resetGroupSelection();selected=id;},save,rebuild,field,advancedInspector,advancedWeaponFields,loadProject,toast,objectList,setTool:(id,preset)=>{closeStageExtra();resetGroupSelection();if(preset&&id==='town')townPreset=preset;if(preset&&id==='door')doorPreset=preset;if(preset&&id==='weapon')weaponPresetId=preset;if(preset&&['box','wall','floor','ramp','roof'].includes(id))piecePresets[id]=preset;if(mode==='play')setMode('edit');tool=id;document.querySelectorAll('[data-town-kind]').forEach(button=>button.setAttribute('aria-pressed',String(id==='town'&&button.dataset.townKind===townPreset)));placementLook=false;editorPointer=null;syncPlacementUI();document.querySelectorAll('[data-part]').forEach(x=>{const active=x.dataset.part===(['gableLeft','gableRight'].includes(preset)?'roof':id==='door'&&DOOR_PRESETS[doorPreset]?.window?'wall':id);x.classList.toggle('active',active);x.setAttribute('aria-pressed',String(active));});}});
+},previewPatrol:route=>{const o=editedObject();patrolOverlay.show(route,o?.y||0,enemyRangeView==='waypoints'&&(o?.routeEnd||'loop')==='loop');},lookFromAbove:({facing=false}={})=>{const o=editedObject();if(o){editTarget.set(o.x,enemyEditHeight(o),o.z);editYaw=facing?(o.facing||0)*Math.PI/180:0;editPitch=1.4;editDistance=38;}},getToolSelection:()=>({type:tool,preset:tool==='town'?townPreset:tool==='door'?doorPreset:piecePresets[tool]}),getRangeView:()=>enemyRangeView,showRange:key=>{enemyRangeView=key;updateSelection();},refreshRange:updateSelection,renderLoadout:()=>toolsUI.renderLauncher(),$,getProject:()=>project,getSelected:()=>selected,select:id=>{resetGroupSelection();selected=id;},save,rebuild,field,advancedInspector,advancedWeaponFields,loadProject,toast,objectList,setTool:(id,preset)=>{closeStageExtra();resetGroupSelection();if(preset&&id==='town')townPreset=preset;if(preset&&id==='door')doorPreset=preset;if(preset&&id==='weapon')weaponPresetId=preset;if(preset&&['box','wall','floor','ramp','roof'].includes(id))piecePresets[id]=preset;if(mode==='play')setMode('edit');tool=id;refreshTownLots();if(townLotTool()){townUI?.clear();toast(townLotHint());}document.querySelectorAll('[data-town-kind]').forEach(button=>button.setAttribute('aria-pressed',String(id==='town'&&button.dataset.townKind===townPreset)));placementLook=false;editorPointer=null;syncPlacementUI();document.querySelectorAll('[data-part]').forEach(x=>{const active=x.dataset.part===(['gableLeft','gableRight'].includes(preset)?'roof':id==='door'&&DOOR_PRESETS[doorPreset]?.window?'wall':id);x.classList.toggle('active',active);x.setAttribute('aria-pressed',String(active));});}});
 function inspector(){closeLiveRangeEditor();workshop.inspect();positionPlacementPanel();}
 $('#common-preview-back3').onclick=()=>workshop.resumeBasic();$('#common-preview-done3').onclick=()=>workshop.finishBasic();
 function renderPlayerRules(){playerRulesUI.render();}

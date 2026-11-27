@@ -3,8 +3,8 @@ import {createChoiceControl} from './choices3d.js?v=20261119d';
 import {mountLiveRangeEditor} from './range-panel3d.js?v=20261124a';
 import {setStageRangePainter} from './stage-range3d.js?v=20261124a';
 import {createRoadNetwork} from './road-network3d.js?v=20261125g';
-import {townRoute,raceRoute} from './town-traffic3d.js?v=20261125g';
-import {ARRIVAL_TYPES,DEFAULT_FLEET,DEFAULT_RIVAL,MAX_RIVALS,MAX_TOWN_CARS,RIVAL_SPEEDS,RIVAL_CORNERS,TOWN_PARTS,townParkingCapacity} from './town3d.js?v=20261125g';
+import {townRoute,raceRoute,resolveTownTrip} from './town-traffic3d.js?v=20261127c';
+import {ARRIVAL_TYPES,AUTO_TOWN_DESTINATION,DEFAULT_RIVAL,MAX_RIVALS,MAX_TOWN_CARS,RIVAL_SPEEDS,RIVAL_CORNERS,TOWN_PARTS,townFleetSettings,townParkingCapacity} from './town3d.js?v=20261127c';
 
 function elem(tag,text,className){
  const el=document.createElement(tag);
@@ -63,7 +63,7 @@ export function installTownUI({$,getProject,getSelected,save,view,showRoute,pick
   const source=places.find(part=>part.id===current);
   const capacity=TOWN_PARTS[source.townKind].capacity;
   const max=Math.max(0,Math.min(capacity,MAX_TOWN_CARS-total+(source.townFleet?.count||0)));
-  const fleet={...DEFAULT_FLEET,count:source.townKind==='house'?Math.min(1,max):0,...source.townFleet};
+  const fleet=townFleetSettings(source);
   const update=patch=>{source.townFleet={...fleet,...source.townFleet,...patch};};
   const change=patch=>{update(patch);save();render();};
   const mapPick=elem('button','マップで行き先をえらぶ');
@@ -71,16 +71,20 @@ export function installTownUI({$,getProject,getSelected,save,view,showRoute,pick
   mapPick.onclick=()=>chooseDestination(source,places,change);body.append(mapPick);
   const sourceIds=new Set(sources.map(part=>part.id));
   choices(body,'しゅっぱつする場所',labels.filter(([id])=>sourceIds.has(id)),current,id=>{current=id;render();});
-  choices(body,'くるまの数',Array.from({length:max+1},(_,i)=>[i,i?i+'だい':'なし']),fleet.count,count=>change({count:Number(count)}));
-  choices(body,'行き先',[['','まだえらばない'],...labels.filter(([id])=>id!==current)],fleet.targetId,id=>change({targetId:id}));
+  choices(body,'くるまの数',Array.from({length:Math.max(max,fleet.count)+1},(_,i)=>[i,i?i+'だい':'なし']),fleet.count,count=>change({count:Number(count)}));
+  const automatic=source.townKind==='house'?[[AUTO_TOWN_DESTINATION,'近くのおみせに行く']]:[];
+  choices(body,'行き先',[...automatic,['','まだえらばない'],...labels.filter(([id])=>id!==current)],fleet.targetId,id=>change({targetId:id}));
   const numbers=elem('div',null,'town-numbers');
   field(numbers,'何びょう後に出る？',fleet.delay,0,60,1,value=>{update({delay:value});return value;});
   if(capacity>1)field(numbers,'何びょうごとに出る？',fleet.interval,1,30,1,value=>{update({interval:value});return value;});
   body.append(numbers);
   choices(body,'はしる速さ',[[20,'ゆっくり'],[35,'ふつう'],[50,'はやい']],fleet.speed,speed=>change({speed:Number(speed)}));
   choices(body,'着いたらどうする？',Object.entries(ARRIVAL_TYPES),fleet.arrival,arrival=>change({arrival}));
-  const target=places.find(part=>part.id===fleet.targetId),path=target&&townRoute(createRoadNetwork(p.roads),source,target);
-  if(fleet.targetId&&!path)body.append(elem('p','この行き先にはまだ行けないよ。どうろのつながりをたしかめよう。','town-note'));
+  const trip=resolveTownTrip(createRoadNetwork(p.roads),source,places),{target,path}=trip||{};
+  if(fleet.targetId===AUTO_TOWN_DESTINATION){
+   const label=labels.find(([id])=>id===target?.id)?.[1];
+   body.append(elem('p',label?'行き先は「'+label+'」だよ。':'つながった道路ぞいにおみせをおこう。','town-note'));
+  }else if(fleet.targetId&&!path)body.append(elem('p','この行き先にはまだ行けないよ。どうろのつながりをたしかめよう。','town-note'));
   if(target&&fleet.arrival==='park'&&fleet.count>townParkingCapacity(target))body.append(elem('p','行き先の空いている台数まで、くるまが出るよ。','town-note'));
   if(total>=MAX_TOWN_CARS)body.append(elem('p',MAX_TOWN_CARS+'だいまで走らせられるよ。','town-note'));
   const buttons=elem('div',null,'town-actions'),preview=elem('button','走るみちを見る','primary');
@@ -97,12 +101,15 @@ export function installTownUI({$,getProject,getSelected,save,view,showRoute,pick
   render();dialog.showModal();
  };
  opener.hidden=false;
- return {clear,refresh(){
+ function refresh(){
   if(!activeRoute)return;
   const p=getProject(),source=p.objects.find(part=>part.id===activeRoute);
-  const target=p.objects.find(part=>part.id===source?.townFleet?.targetId);
-  const route=source&&target?townRoute(createRoadNetwork(p.roads),source,target):null;
+  const route=source&&townFleetSettings(source).count?resolveTownTrip(createRoadNetwork(p.roads),source,p.objects)?.path:null;
   if(route)view.showRoute(route);else clear();
+ }
+ return {clear,refresh,showHouseRoute(source){
+  if(source?.townKind!=='house'){clear();return;}
+  activeRoute=source.id;refresh();closePreview.hidden=!activeRoute;
  }};
 }
 
